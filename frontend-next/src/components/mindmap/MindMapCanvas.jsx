@@ -68,6 +68,8 @@ function layoutNodes(mapData) {
 
 /* ─── Inner Canvas (needs ReactFlow provider) ─── */
 function MindMapCanvasInner({ mapData, onClose }) {
+  const toggleCollapseRef = useRef(null);
+  const edgesRef = useRef([]);
   const initialLayout = useMemo(() => layoutNodes(mapData), [mapData]);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialLayout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialLayout.edges);
@@ -77,6 +79,9 @@ function MindMapCanvasInner({ mapData, onClose }) {
   const containerRef = useRef(null);
   const setPendingChatMessage = useAppStore((s) => s.setPendingChatMessage);
   const toast = useToast();
+
+  // Keep edgesRef in sync without adding edges to other effect deps
+  useEffect(() => { edgesRef.current = edges; }, [edges]);
 
   // Search highlighting
   useEffect(() => {
@@ -98,35 +103,39 @@ function MindMapCanvasInner({ mapData, onClose }) {
     );
   }, [searchTerm, setNodes]);
 
-  // Collapse/expand
-  const toggleCollapse = useCallback(
-    (nodeId) => {
-      setCollapsedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(nodeId)) next.delete(nodeId);
-        else next.add(nodeId);
-        return next;
-      });
-    },
-    []
-  );
+  // Collapse/expand — stable ref avoids stale closure in effect
+  const toggleCollapse = useCallback((nodeId) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  }, []);
+  toggleCollapseRef.current = toggleCollapse;
 
-  // Apply collapse visibility
+  // Apply collapse visibility — uses edgesRef to avoid edges in dep array
+  // so setNodes → onNodesChange → edges change does NOT re-trigger this
   useEffect(() => {
+    const currentEdges = edgesRef.current;
     if (!collapsedIds.size) {
-      setNodes((nds) => nds.map((n) => ({ ...n, hidden: false })));
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          hidden: false,
+          data: { ...n.data, collapsed: false, onToggleCollapse: toggleCollapseRef.current },
+        }))
+      );
       setEdges((eds) => eds.map((e) => ({ ...e, hidden: false })));
       return;
     }
 
-    // Find all descendants of collapsed nodes
     const hiddenSet = new Set();
     const childMap = {};
-    edges.forEach((e) => {
+    currentEdges.forEach((e) => {
       if (!childMap[e.source]) childMap[e.source] = [];
       childMap[e.source].push(e.target);
     });
-
     const collectDescendants = (parentId) => {
       (childMap[parentId] || []).forEach((childId) => {
         if (!collapsedIds.has(childId)) {
@@ -135,30 +144,17 @@ function MindMapCanvasInner({ mapData, onClose }) {
         }
       });
     };
-
     collapsedIds.forEach(collectDescendants);
 
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
         hidden: hiddenSet.has(n.id),
-        data: { ...n.data, collapsed: collapsedIds.has(n.id), onToggleCollapse: toggleCollapse },
+        data: { ...n.data, collapsed: collapsedIds.has(n.id), onToggleCollapse: toggleCollapseRef.current },
       }))
     );
-    setEdges((eds) =>
-      eds.map((e) => ({ ...e, hidden: hiddenSet.has(e.target) }))
-    );
-  }, [collapsedIds, edges, setNodes, setEdges, toggleCollapse]);
-
-  // Pass collapse handler to nodes
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((n) => ({
-        ...n,
-        data: { ...n.data, onToggleCollapse: toggleCollapse },
-      }))
-    );
-  }, [toggleCollapse, setNodes]);
+    setEdges((eds) => eds.map((e) => ({ ...e, hidden: hiddenSet.has(e.target) })));
+  }, [collapsedIds, setNodes, setEdges]); // ← no `edges` dep → breaks infinite loop
 
   // Node click → send to chat
   const onNodeClick = useCallback(
@@ -188,37 +184,37 @@ function MindMapCanvasInner({ mapData, onClose }) {
   return (
     <div ref={containerRef} className="w-full h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-(--border) bg-(--surface-raised)">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)]">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) transition-colors">
-            <X className="w-5 h-5 text-(--text-secondary)" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+            <X className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
-          <h3 className="text-sm font-semibold text-(--text-primary)">Mind Map</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Mind Map</h3>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--text-muted)" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search nodes..."
-              className="pl-8 pr-3 py-1.5 text-xs rounded-lg bg-(--surface) border border-(--border) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-1 focus:ring-(--accent) w-40"
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] w-40"
             />
           </div>
 
-          <button onClick={() => zoomIn()} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) text-(--text-muted)">
+          <button onClick={() => zoomIn()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button onClick={() => zoomOut()} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) text-(--text-muted)">
+          <button onClick={() => zoomOut()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
             <ZoomOut className="w-4 h-4" />
           </button>
-          <button onClick={() => fitView({ padding: 0.2 })} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) text-(--text-muted)">
+          <button onClick={() => fitView({ padding: 0.2 })} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
             <Maximize2 className="w-4 h-4" />
           </button>
-          <button onClick={handleExport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-(--accent) text-white hover:bg-(--accent-light) transition-colors">
+          <button onClick={handleExport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
             <Download className="w-3.5 h-3.5" /> PNG
           </button>
         </div>
@@ -242,7 +238,7 @@ function MindMapCanvasInner({ mapData, onClose }) {
           <Controls
             position="bottom-left"
             showInteractive={false}
-            className="!bg-(--surface-raised) !border-(--border) !rounded-lg !shadow-lg"
+            className="!bg-[var(--surface-raised)] !border-[var(--border)] !rounded-lg !shadow-lg"
           />
         </ReactFlow>
       </div>

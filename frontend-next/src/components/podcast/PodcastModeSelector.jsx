@@ -54,14 +54,14 @@ export default function PodcastModeSelector() {
       {/* Back */}
       <button
         onClick={() => setPhase('idle')}
-        className="flex items-center gap-1.5 text-sm text-(--text-muted) hover:text-(--text-primary) transition-colors"
+        className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
       >
         <ChevronLeft className="w-4 h-4" /> Back
       </button>
 
       <div>
-        <h3 className="text-sm font-semibold text-(--text-primary) mb-1">New Podcast</h3>
-        <p className="text-xs text-(--text-muted)">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">New Podcast</h3>
+        <p className="text-xs text-[var(--text-muted)]">
           {hasSources
             ? `Using ${selectedSources.size} selected source${selectedSources.size > 1 ? 's' : ''}`
             : 'Select sources in the sidebar first'}
@@ -70,7 +70,7 @@ export default function PodcastModeSelector() {
 
       {/* Mode */}
       <div>
-        <label className="text-xs font-medium text-(--text-secondary) mb-2 block">Style</label>
+        <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">Style</label>
         <div className="grid grid-cols-2 gap-2">
           {MODES.map((m) => (
             <button
@@ -78,12 +78,12 @@ export default function PodcastModeSelector() {
               onClick={() => setMode(m.id)}
               className={`text-left p-2.5 rounded-lg border transition-all ${
                 mode === m.id
-                  ? 'border-(--accent) bg-(--accent)/10 text-(--text-primary)'
-                  : 'border-(--border) hover:border-(--text-muted) text-(--text-secondary)'
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--text-primary)]'
+                  : 'border-[var(--border)] hover:border-[var(--text-muted)] text-[var(--text-secondary)]'
               }`}
             >
               <span className="text-xs font-medium block">{m.label}</span>
-              <span className="text-[10px] text-(--text-muted) block mt-0.5">{m.desc}</span>
+              <span className="text-[10px] text-[var(--text-muted)] block mt-0.5">{m.desc}</span>
             </button>
           ))}
         </div>
@@ -91,25 +91,25 @@ export default function PodcastModeSelector() {
 
       {/* Topic */}
       <div>
-        <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">
-          Focus Topic <span className="text-(--text-muted)">(optional)</span>
+        <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
+          Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
         </label>
         <input
           type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. Chapter 3: Neural Networks"
-          className="w-full px-3 py-2 text-sm rounded-lg bg-(--surface) border border-(--border) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-1 focus:ring-(--accent)"
+          className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
         />
       </div>
 
       {/* Language */}
       <div>
-        <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">Language</label>
+        <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Language</label>
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="w-full px-3 py-2 text-sm rounded-lg bg-(--surface) border border-(--border) text-(--text-primary) focus:outline-none focus:ring-1 focus:ring-(--accent)"
+          className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
         >
           {languages.length > 0 ? (
             languages.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)
@@ -134,7 +134,7 @@ export default function PodcastModeSelector() {
       <div>
         <button
           onClick={() => setShowVoices(!showVoices)}
-          className="flex items-center gap-2 text-xs text-(--accent) hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 text-xs text-[var(--accent)] hover:opacity-80 transition-opacity"
         >
           {showVoices ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           {showVoices ? 'Hide voice options' : 'Choose voices'}
@@ -159,7 +159,7 @@ export default function PodcastModeSelector() {
       <button
         onClick={handleGenerate}
         disabled={!hasSources || loading}
-        className="w-full py-2.5 rounded-lg bg-(--accent) hover:bg-(--accent-light) text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-2.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

@@ -47,7 +47,7 @@ export default function Header({ user, onBack }) {
 
   const handleBackClick = () => {
     if (onBack) onBack();
-    router.push('/');
+    else router.push('/');
   };
 
   const userInitial = user?.username?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U';

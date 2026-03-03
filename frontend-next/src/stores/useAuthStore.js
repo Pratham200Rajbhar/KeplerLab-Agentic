@@ -1,70 +1,73 @@
 import { create } from 'zustand';
-import { login as apiLogin, signup as apiSignup, logout as apiLogout, getCurrentUser, refreshToken } from '@/lib/api/auth';
-import { setAccessToken as syncTokenToApi } from '@/lib/api/config';
+import {
+  login as apiLogin,
+  signup as apiSignup,
+  logout as apiLogout,
+  getCurrentUser,
+  refreshToken,
+} from '@/lib/api/auth';
+import { setAccessToken as syncTokenToApi, onSessionExpired } from '@/lib/api/config';
 import { TIMERS } from '@/lib/utils/constants';
+
+// Module-level refs to avoid storing non-serializable values in Zustand state
+let _refreshTimer = null;
+let _accessTokenRef = null;
+let _initPromise = null;
 
 const useAuthStore = create((set, get) => ({
   user: null,
-  accessToken: null,
   isLoading: true,
   isAuthenticated: false,
   error: null,
 
-  _refreshTimerRef: null,
-  _accessTokenRef: null,
-  _isInitializing: false,
-
   _syncToken: (token) => {
+    _accessTokenRef = token;
     syncTokenToApi(token);
-    const store = get();
-    store._accessTokenRef = token;
   },
 
   scheduleRefresh: () => {
-    const state = get();
-    if (state._refreshTimerRef) {
-      clearTimeout(state._refreshTimerRef);
-    }
-    const timer = setTimeout(async () => {
+    if (_refreshTimer) clearTimeout(_refreshTimer);
+    _refreshTimer = setTimeout(async () => {
       try {
         const tokens = await refreshToken();
-        set({ accessToken: tokens.access_token });
+        set({ });  // no state change needed for token
         get()._syncToken(tokens.access_token);
         get().scheduleRefresh();
       } catch {
-        set({ accessToken: null, user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false });
         get()._syncToken(null);
       }
     }, TIMERS.TOKEN_REFRESH_INTERVAL);
-    set({ _refreshTimerRef: timer });
   },
 
   initAuth: async () => {
-    const state = get();
-    if (state._isInitializing) return;
-    set({ _isInitializing: true });
+    // Deduplicate concurrent init calls (React Strict Mode)
+    if (_initPromise) return _initPromise;
 
-    try {
-      const tokens = await refreshToken();
-      set({ accessToken: tokens.access_token });
-      get()._syncToken(tokens.access_token);
+    _initPromise = (async () => {
+      try {
+        const tokens = await refreshToken();
+        get()._syncToken(tokens.access_token);
 
-      const userData = await getCurrentUser(tokens.access_token);
-      set({ user: userData, isAuthenticated: true });
-      get().scheduleRefresh();
-    } catch {
-      set({ accessToken: null, user: null, isAuthenticated: false });
-      get()._syncToken(null);
-    } finally {
-      set({ isLoading: false, _isInitializing: false });
-    }
+        const userData = await getCurrentUser(tokens.access_token);
+        set({ user: userData, isAuthenticated: true });
+        get().scheduleRefresh();
+      } catch {
+        set({ user: null, isAuthenticated: false });
+        get()._syncToken(null);
+      } finally {
+        set({ isLoading: false });
+        _initPromise = null;
+      }
+    })();
+
+    return _initPromise;
   },
 
   login: async (email, password) => {
     set({ error: null });
     try {
       const tokens = await apiLogin(email, password);
-      set({ accessToken: tokens.access_token });
       get()._syncToken(tokens.access_token);
 
       const userData = await getCurrentUser(tokens.access_token);
@@ -89,19 +92,18 @@ const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    const state = get();
     try {
-      await apiLogout(state._accessTokenRef || state.accessToken);
-    } catch { /* ignore */ }
+      await apiLogout(_accessTokenRef);
+    } catch { /* ignore logout API errors */ }
 
-    if (state._refreshTimerRef) {
-      clearTimeout(state._refreshTimerRef);
+    if (_refreshTimer) {
+      clearTimeout(_refreshTimer);
+      _refreshTimer = null;
     }
+
     set({
-      accessToken: null,
       user: null,
       isAuthenticated: false,
-      _refreshTimerRef: null,
     });
     get()._syncToken(null);
   },
@@ -109,5 +111,13 @@ const useAuthStore = create((set, get) => ({
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
 }));
+
+// Register session expiry handler for soft redirects
+if (typeof window !== 'undefined') {
+  onSessionExpired(() => {
+    useAuthStore.getState().logout();
+    window.location.href = '/auth';
+  });
+}
 
 export default useAuthStore;

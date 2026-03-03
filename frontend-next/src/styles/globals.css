@@ -1030,10 +1030,9 @@ body {
 .user-bubble {
   background: var(--accent);
   color: white;
-  padding: 0.625rem 1rem;
-  border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
-  max-width: 80%;
-  font-size: 0.875rem;
+  padding: 0.75rem 1.125rem;
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
   word-break: break-word;
 }

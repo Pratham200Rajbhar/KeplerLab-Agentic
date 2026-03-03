@@ -106,9 +106,11 @@ function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
 
+  const redirectTo = searchParams.get('redirect') || '/';
+
   useEffect(() => {
-    if (!authGlobalLoading && isAuthenticated) router.replace('/');
-  }, [isAuthenticated, authGlobalLoading, router]);
+    if (!authGlobalLoading && isAuthenticated) router.replace(redirectTo);
+  }, [isAuthenticated, authGlobalLoading, router, redirectTo]);
 
   useEffect(() => clearError(), [clearError]);
 
@@ -120,10 +122,17 @@ function AuthForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isLogin && password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     if (isLogin) {
       const ok = await login(email, password);
-      if (ok) router.replace('/');
+      if (ok) router.replace(redirectTo);
     } else {
       const ok = await signup(email, username, password);
       if (ok) {

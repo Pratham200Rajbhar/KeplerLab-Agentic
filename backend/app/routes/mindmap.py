@@ -25,23 +25,45 @@ async def create_mindmap(
     if not request.material_ids:
         raise HTTPException(status_code=400, detail="No materials selected")
 
+    logger.info(
+        "MindMap generation started | user=%s | notebook=%s | material_ids=%s",
+        current_user.id, request.notebook_id, request.material_ids,
+    )
+
     # Verify notebook belongs to user
     prisma = get_prisma()
     notebook = await prisma.notebook.find_first(
         where={"id": request.notebook_id, "userId": str(current_user.id)}
     )
     if not notebook:
+        logger.warning(
+            "MindMap generation rejected — notebook not found | user=%s | notebook=%s",
+            current_user.id, request.notebook_id,
+        )
         raise HTTPException(status_code=404, detail="Notebook not found")
 
+    import time
+    _t0 = time.monotonic()
     try:
+        logger.info("MindMap LLM call dispatched | user=%s | notebook=%s", current_user.id, request.notebook_id)
         result = await generate_mindmap(
             material_ids=request.material_ids,
             notebook_id=request.notebook_id,
             user_id=str(current_user.id),
         )
+        elapsed = time.monotonic() - _t0
+        node_count = len(result.get("nodes") or [])
+        logger.info(
+            "MindMap generation complete | user=%s | notebook=%s | nodes=%d | elapsed=%.2fs",
+            current_user.id, request.notebook_id, node_count, elapsed,
+        )
         return JSONResponse(content=result)
     except Exception as e:
-        logger.error(f"Mind map generation failed: {e}")
+        elapsed = time.monotonic() - _t0
+        logger.error(
+            "MindMap generation failed | user=%s | notebook=%s | elapsed=%.2fs | error=%s",
+            current_user.id, request.notebook_id, elapsed, e, exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Failed to generate mind map")
 
 

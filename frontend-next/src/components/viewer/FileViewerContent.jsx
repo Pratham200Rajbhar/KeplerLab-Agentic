@@ -64,17 +64,17 @@ function getDomain(url) {
 
 function TopBar({ filename, domain, fileUrl, onBack }) {
   return (
-    <div className="h-12 shrink-0 flex items-center gap-3 px-4 bg-(--surface-sunken) border-b border-(--border) z-10">
+    <div className="h-12 shrink-0 flex items-center gap-3 px-4 bg-[var(--surface-sunken)] border-b border-[var(--border)] z-10">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-(--text-muted) hover:text-(--text-primary) transition-colors group"
+        className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors group"
         title="Back"
       >
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="w-px h-5 bg-(--border)" />
+      <div className="w-px h-5 bg-[var(--border)]" />
 
       {/* Favicon + domain */}
       <img
@@ -85,14 +85,14 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
           e.target.style.display = 'none';
         }}
       />
-      <span className="text-xs text-(--text-muted) font-medium uppercase tracking-wide hidden sm:block">
+      <span className="text-xs text-[var(--text-muted)] font-medium uppercase tracking-wide hidden sm:block">
         {domain}
       </span>
 
-      <div className="w-px h-5 bg-(--border) hidden sm:block" />
+      <div className="w-px h-5 bg-[var(--border)] hidden sm:block" />
 
       {/* Filename */}
-      <span className="text-sm text-(--text-primary) truncate flex-1 min-w-0">
+      <span className="text-sm text-[var(--text-primary)] truncate flex-1 min-w-0">
         {decodeURIComponent(filename)}
       </span>
 
@@ -101,7 +101,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
         <a
           href={fileUrl}
           download
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-(--text-muted) hover:text-(--text-primary) hover:bg-(--surface-overlay) transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-overlay)] transition-colors"
           title="Download original"
         >
           <Download className="w-3.5 h-3.5" />
@@ -111,7 +111,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
           href={fileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-(--text-muted) hover:text-(--text-primary) hover:bg-(--surface-overlay) transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-overlay)] transition-colors"
           title="Open original URL"
         >
           <ExternalLink className="w-3.5 h-3.5" />
@@ -124,8 +124,8 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
 
 function LoadingSpinner({ message = 'Loading\u2026' }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-(--text-muted)">
-      <div className="w-10 h-10 border-2 border-(--border) border-t-(--accent) rounded-full animate-spin" />
+    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-[var(--text-muted)]">
+      <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--accent) rounded-full animate-spin" />
       <p className="text-sm">{message}</p>
     </div>
   );
@@ -134,14 +134,14 @@ function LoadingSpinner({ message = 'Loading\u2026' }) {
 function ErrorCard({ message, fileUrl }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-      <div className="w-16 h-16 rounded-2xl bg-(--danger-subtle) border border-(--danger-border) flex items-center justify-center">
-        <AlertTriangle className="w-8 h-8 text-(--danger)" />
+      <div className="w-16 h-16 rounded-2xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] flex items-center justify-center">
+        <AlertTriangle className="w-8 h-8 text-[var(--danger)]" />
       </div>
       <div className="text-center max-w-sm">
-        <h3 className="text-(--text-primary) font-semibold mb-1">
+        <h3 className="text-[var(--text-primary)] font-semibold mb-1">
           Cannot display file
         </h3>
-        <p className="text-sm text-(--text-muted)">{message}</p>
+        <p className="text-sm text-[var(--text-muted)]">{message}</p>
       </div>
       {fileUrl && (
         <a
@@ -149,7 +149,7 @@ function ErrorCard({ message, fileUrl }) {
           target="_blank"
           rel="noopener noreferrer"
           download
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-(--surface-overlay) hover:bg-(--surface-100) text-(--text-primary) text-sm transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-overlay)] hover:bg-[var(--surface-100)] text-[var(--text-primary)] text-sm transition-colors"
         >
           <Download className="w-4 h-4" />
           Download file instead
@@ -162,14 +162,14 @@ function ErrorCard({ message, fileUrl }) {
 function OtherFileCard({ fileUrl, filename, ext }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-5 p-8">
-      <div className="w-20 h-20 rounded-2xl bg-(--surface-overlay) border border-(--border-strong) flex items-center justify-center">
-        <FileText className="w-10 h-10 text-(--text-muted)" />
+      <div className="w-20 h-20 rounded-2xl bg-[var(--surface-overlay)] border border-[var(--border-strong)] flex items-center justify-center">
+        <FileText className="w-10 h-10 text-[var(--text-muted)]" />
       </div>
       <div className="text-center">
-        <h3 className="text-(--text-primary) font-semibold mb-1">
+        <h3 className="text-[var(--text-primary)] font-semibold mb-1">
           {decodeURIComponent(filename)}
         </h3>
-        <p className="text-sm text-(--text-muted)">
+        <p className="text-sm text-[var(--text-muted)]">
           {ext ? `${ext.slice(1).toUpperCase()} file` : 'File'} — cannot be
           previewed in the browser.
         </p>
@@ -178,7 +178,7 @@ function OtherFileCard({ fileUrl, filename, ext }) {
         <a
           href={fileUrl}
           download
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-(--accent) hover:bg-(--accent-light) text-white text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white text-sm font-medium transition-colors"
         >
           <Download className="w-4 h-4" />
           Download
@@ -187,7 +187,7 @@ function OtherFileCard({ fileUrl, filename, ext }) {
           href={fileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-(--surface-overlay) hover:bg-(--surface-100) text-(--text-primary) text-sm transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-overlay)] hover:bg-[var(--surface-100)] text-[var(--text-primary)] text-sm transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
           Open URL
@@ -265,7 +265,7 @@ export default function FileViewerContent() {
 
   /* ── Render ── */
   return (
-    <div className="h-screen flex flex-col bg-(--surface) text-(--text-primary) overflow-hidden">
+    <div className="h-screen flex flex-col bg-[var(--surface)] text-[var(--text-primary)] overflow-hidden">
       <TopBar
         filename={filename}
         domain={domain}
@@ -285,8 +285,8 @@ export default function FileViewerContent() {
         ) : viewerInfo?.kind === 'pdf' ? (
           <div className="flex-1 relative flex flex-col">
             {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-(--text-muted) bg-(--surface) z-10">
-                <div className="w-10 h-10 border-2 border-(--border) border-t-(--danger) rounded-full animate-spin" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
+                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--danger) rounded-full animate-spin" />
                 <p className="text-sm">Loading PDF\u2026</p>
               </div>
             )}
@@ -307,16 +307,16 @@ export default function FileViewerContent() {
         ) : viewerInfo?.kind === 'office' ? (
           <div className="flex-1 relative flex flex-col">
             {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-(--text-muted) bg-(--surface) z-10">
-                <div className="w-10 h-10 border-2 border-(--border) border-t-(--accent) rounded-full animate-spin" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
+                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--accent) rounded-full animate-spin" />
                 <p className="text-sm">Opening in Office Viewer\u2026</p>
-                <p className="text-xs text-(--text-muted)">
+                <p className="text-xs text-[var(--text-muted)]">
                   The file must be publicly accessible on the internet.
                 </p>
               </div>
             )}
-            <div className="shrink-0 flex items-center gap-2 px-4 py-2 bg-(--surface-raised) border-b border-(--border) text-xs text-(--text-muted)">
-              <FileText className="w-4 h-4 text-(--accent)" />
+            <div className="shrink-0 flex items-center gap-2 px-4 py-2 bg-[var(--surface-raised)] border-b border-[var(--border)] text-xs text-[var(--text-muted)]">
+              <FileText className="w-4 h-4 text-[var(--accent)]" />
               Powered by Microsoft Office Online Viewer — file must be publicly
               accessible
             </div>
@@ -332,8 +332,8 @@ export default function FileViewerContent() {
         ) : viewerInfo?.kind === 'text' ? (
           <div className="flex-1 relative flex flex-col">
             {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-(--text-muted) bg-(--surface) z-10">
-                <div className="w-10 h-10 border-2 border-(--border) border-t-(--success) rounded-full animate-spin" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
+                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--success) rounded-full animate-spin" />
                 <p className="text-sm">Loading file\u2026</p>
               </div>
             )}

@@ -25,10 +25,6 @@ export default function NotebookPage() {
     currentNotebook,
     setCurrentNotebook,
     setDraftMode,
-    setMaterials,
-    setMessages,
-    setCurrentMaterial,
-    deselectAllSources,
     resetForNotebookSwitch,
   } = useAppStore();
 
@@ -37,6 +33,8 @@ export default function NotebookPage() {
 
   // Load notebook data from URL param
   useEffect(() => {
+    let cancelled = false;
+
     const loadNotebook = async () => {
       if (id === 'draft') {
         if (!currentNotebook?.isDraft) {
@@ -52,27 +50,24 @@ export default function NotebookPage() {
         resetForNotebookSwitch();
         try {
           const notebook = await getNotebook(id);
+          if (cancelled) return;
           setCurrentNotebook(notebook);
           setDraftMode(false);
         } catch (error) {
           console.error('Failed to load notebook:', error);
-          router.replace('/');
+          if (!cancelled) router.replace('/');
           return;
         }
       }
-      setLoaded(true);
+      if (!cancelled) setLoaded(true);
     };
 
     loadNotebook();
-  }, [id]);
+    return () => { cancelled = true; };
+  }, [id, currentNotebook?.id, currentNotebook?.isDraft, resetForNotebookSwitch, setCurrentNotebook, setDraftMode, router]);
 
   const handleBack = () => {
-    setCurrentNotebook(null);
-    setDraftMode(false);
-    setMaterials([]);
-    setMessages([]);
-    setCurrentMaterial(null);
-    deselectAllSources();
+    resetForNotebookSwitch();
     router.push('/');
   };
 

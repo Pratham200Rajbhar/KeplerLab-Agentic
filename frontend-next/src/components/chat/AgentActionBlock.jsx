@@ -4,106 +4,106 @@ import { useState, memo, useEffect } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+/* ─────────────────────────────────────────────────────
+   Minimal, animated step display.
+   – During streaming: animated cycling text (no boxes)
+   – After done: one clean line per step with icon + label + time
+   – Python/code steps get a subtle collapsible output block
+───────────────────────────────────────────────────── */
+
 const TOOL_META = {
-  rag_tool:       { icon: '🔍', label: 'Search',      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
-  research_tool:  { icon: '🌐', label: 'Research',    color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-  python_tool:    { icon: '🐍', label: 'Python',      color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
-  quiz_tool:      { icon: '📝', label: 'Quiz',        color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
-  flashcard_tool: { icon: '🃏', label: 'Flashcards',  color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20' },
-  ppt_tool:       { icon: '📊', label: 'Slides',      color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
-  data_profiler:  { icon: '🧠', label: 'Profile',     color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
-  file_generator: { icon: '📄', label: 'File',        color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
-  code_executor:  { icon: '⚙️', label: 'Execute',     color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20' },
+  rag_tool:       { icon: '🔍', label: 'Searching your materials' },
+  research_tool:  { icon: '🌐', label: 'Researching the web' },
+  python_tool:    { icon: '🐍', label: 'Running analysis' },
+  quiz_tool:      { icon: '📝', label: 'Generating quiz' },
+  flashcard_tool: { icon: '🃏', label: 'Creating flashcards' },
+  ppt_tool:       { icon: '📊', label: 'Building slides' },
+  data_profiler:  { icon: '🧠', label: 'Profiling dataset' },
+  file_generator: { icon: '📄', label: 'Generating file' },
+  code_executor:  { icon: '⚙️', label: 'Executing code' },
 };
 
 function getToolMeta(tool) {
-  return TOOL_META[tool] || { icon: '⚡', label: tool || 'Tool', color: 'bg-surface-overlay text-text-secondary border-border/40' };
+  return TOOL_META[tool] || { icon: '⚡', label: tool ? tool.replace(/_/g, ' ') : 'Processing' };
 }
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button onClick={async () => { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="text-xs px-2 py-0.5 rounded-md bg-surface-overlay hover:bg-surface-raised text-text-muted hover:text-text-primary transition-all">
-      {copied ? '✓' : 'Copy'}
+    <button
+      onClick={async () => { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="text-[11px] px-2 py-0.5 rounded bg-surface-overlay hover:bg-surface-raised text-text-muted hover:text-text-secondary transition-all tabular-nums"
+    >
+      {copied ? '✓ copied' : 'copy'}
     </button>
   );
 }
 
-function StepCard({ step, idx, isLiveRunning = false }) {
-  const [expanded, setExpanded] = useState(false);
+/* A single completed step row — simple text line, no boxes */
+function StepRow({ step, idx }) {
+  const [showCode, setShowCode] = useState(false);
   const meta = getToolMeta(step.tool);
-  const hasDetails = step.code || step.stdout || step.stderr;
-  const isRunningNow = step.status === 'running';
-
-  useEffect(() => {
-    if (isRunningNow && (step.code || step.stdout)) setExpanded(true);
-  }, [isRunningNow, step.code, step.stdout]);
+  const isCode = !!(step.code || step.stdout);
+  const isError = step.status === 'error';
+  const attempts = step._attempts || 1;
 
   return (
-    <div className={`rounded-xl border overflow-hidden ${isRunningNow ? 'border-accent/40 bg-accent/5' : 'border-border/30 bg-surface-overlay/40'}`}>
-      <button onClick={() => (hasDetails || isRunningNow) && setExpanded(v => !v)}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left ${(hasDetails || isRunningNow) ? 'hover:bg-surface-raised/60 cursor-pointer' : 'cursor-default'} transition-colors`}>
-        {isRunningNow ? (
-          <span className="w-5 h-5 flex items-center justify-center shrink-0">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-accent/30 border-t-accent inline-block" style={{ animation: 'spin 0.8s linear infinite' }} />
-          </span>
-        ) : (
-          <span className="text-xs text-text-muted tabular-nums w-5 text-right shrink-0">{idx + 1}</span>
-        )}
-        <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium shrink-0 ${meta.color}`}>
-          <span>{meta.icon}</span><span>{meta.label}</span>
+    <div className="py-0.5">
+      <div className="flex items-center gap-2">
+        <span className="text-xs shrink-0" aria-hidden>{meta.icon}</span>
+        <span className={`text-[13px] ${
+          isError ? 'text-red-400' : 'text-text-muted'
+        }`}>
+          {meta.label}
         </span>
-        <span className="text-sm text-text-secondary truncate flex-1">{step.label || step.tool}</span>
-        <div className="flex items-center gap-2 shrink-0">
-          {step.time_taken != null && <span className="text-xs tabular-nums text-text-muted">{step.time_taken}s</span>}
-          {isRunningNow ? <span className="text-xs text-accent animate-pulse">running</span>
-            : step.status === 'success' ? <span className="text-green-500 text-sm">✓</span>
-            : step.status === 'error' ? <span className="text-red-500 text-sm">✗</span> : null}
-          {(hasDetails || isRunningNow) && (
-            <span className={`text-text-muted text-xs transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}>▶</span>
-          )}
-        </div>
-      </button>
-      {(hasDetails || isRunningNow) && expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-border/20 pt-2">
+        {attempts > 1 && (
+          <span className="text-[11px] tabular-nums text-text-muted/40">×{attempts}</span>
+        )}
+        {step.time_taken != null && (
+          <span className="text-[11px] tabular-nums text-text-muted/50">{step.time_taken}s</span>
+        )}
+        {isError ? (
+          <span className="text-[11px] text-red-400">✗</span>
+        ) : (
+          <span className="text-[11px]" style={{ color: 'var(--accent)' }}>✓</span>
+        )}
+        {isCode && (
+          <button
+            onClick={() => setShowCode(v => !v)}
+            className="text-[11px] text-text-muted/50 hover:text-text-muted ml-1 transition-colors"
+          >
+            {showCode ? 'hide' : 'details'}
+          </button>
+        )}
+      </div>
+      {isCode && showCode && (
+        <div className="ml-5 mt-1.5 space-y-1.5">
           {step.code && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Code</span>
+            <div className="rounded-lg overflow-hidden border border-border/20">
+              <div className="flex items-center justify-between px-2.5 py-1 border-b border-border/20">
+                <span className="text-[10px] text-text-muted uppercase tracking-wide">code</span>
                 <CopyBtn text={step.code} />
               </div>
-              <div className="rounded-lg overflow-hidden max-h-56 overflow-y-auto border border-border/40">
-                <SyntaxHighlighter language="python" style={oneDark}
-                  customStyle={{ margin: 0, padding: '10px 12px', fontSize: '11.5px', lineHeight: '1.6', background: 'var(--surface-sunken)' }}>
+              <div className="max-h-48 overflow-y-auto">
+                <SyntaxHighlighter
+                  language="python"
+                  style={oneDark}
+                  customStyle={{ margin: 0, padding: '8px 10px', fontSize: '11px', lineHeight: '1.6', background: 'var(--surface-sunken)' }}
+                >
                   {step.code}
                 </SyntaxHighlighter>
               </div>
             </div>
           )}
           {step.stdout && (
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Output</span>
-                {isRunningNow && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" title="Live output" />}
-              </div>
-              <pre ref={el => { if (el && isRunningNow) el.scrollTop = el.scrollHeight; }}
-                className={`text-xs font-mono p-2.5 rounded-lg bg-surface border border-border/30 max-h-40 overflow-y-auto whitespace-pre-wrap text-text-secondary ${isRunningNow ? 'border-accent/30' : ''}`}>
-                {step.stdout}{isRunningNow && <span className="inline-block w-1.5 h-3.5 bg-accent/60 ml-0.5 animate-pulse" />}
-              </pre>
-            </div>
-          )}
-          {!step.code && !step.stdout && isRunningNow && (
-            <div className="flex items-center gap-2 py-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="text-xs text-text-muted">Waiting for output…</span>
-            </div>
+            <pre className="text-[11px] font-mono p-2 rounded-lg bg-surface/60 border border-border/20 max-h-32 overflow-y-auto whitespace-pre-wrap text-text-muted">
+              {step.stdout}
+            </pre>
           )}
           {step.stderr && (
-            <div>
-              <span className="text-xs font-medium text-red-500 uppercase tracking-wide block mb-1">Error</span>
-              <pre className="text-xs font-mono p-2.5 rounded-lg bg-red-500/5 border border-red-500/20 max-h-40 overflow-y-auto whitespace-pre-wrap text-red-400">{step.stderr}</pre>
-            </div>
+            <pre className="text-[11px] font-mono p-2 rounded-lg bg-red-500/5 border border-red-500/15 max-h-28 overflow-y-auto whitespace-pre-wrap text-red-400">
+              {step.stderr}
+            </pre>
           )}
         </div>
       )}
@@ -112,40 +112,35 @@ function StepCard({ step, idx, isLiveRunning = false }) {
 }
 
 export default memo(function AgentActionBlock({ stepLog = [], toolsUsed = [], totalTime = 0, isStreaming = false }) {
-  const [isExpanded, setIsExpanded] = useState(isStreaming);
-
-  useEffect(() => {
-    if (isStreaming && stepLog.length > 0) setIsExpanded(true);
-  }, [isStreaming, stepLog.length]);
-
   if (!stepLog.length && !toolsUsed.length) return null;
 
-  const uniqueTools = [...new Set(stepLog.map(s => s.tool).concat(toolsUsed))].filter(Boolean);
   const timeStr = totalTime > 0 ? `${totalTime.toFixed(1)}s` : '';
 
+  /* During streaming: don't render here — ChatPanel's live view handles it */
+  if (isStreaming) return null;
+
+  /* Collapse consecutive same-tool attempts into a single row (keep last entry).
+     This prevents showing 7 "Searching ✗" rows when the planner retried. */
+  const collapsed = [];
+  for (const step of stepLog) {
+    const prev = collapsed[collapsed.length - 1];
+    if (prev && prev.tool === step.tool) {
+      const attempts = (prev._attempts || 1) + 1;
+      collapsed[collapsed.length - 1] = { ...step, _attempts: attempts };
+    } else {
+      collapsed.push({ ...step, _attempts: 1 });
+    }
+  }
+
+  /* After completion: clean inline step list */
   return (
-    <div className="mb-2.5">
-      <button onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-overlay/70 hover:bg-surface-overlay border border-border/30 transition-colors text-left">
-        {isStreaming ? (
-          <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
-        ) : (
-          <span className={`text-xs text-text-muted transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
-        )}
-        <span className="text-sm text-text-secondary">
-          {isStreaming ? (stepLog.length > 0 ? `${stepLog.length} step${stepLog.length !== 1 ? 's' : ''}…` : 'Working…')
-            : `${stepLog.length} step${stepLog.length !== 1 ? 's' : ''}`}
-        </span>
-        {uniqueTools.slice(0, 4).map(tool => {
-          const m = getToolMeta(tool);
-          return <span key={tool} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${m.color}`}>{m.icon} {m.label}</span>;
-        })}
-        {uniqueTools.length > 4 && <span className="text-xs text-text-muted">+{uniqueTools.length - 4}</span>}
-        {timeStr && <span className="ml-auto text-xs tabular-nums text-text-muted shrink-0">{timeStr}</span>}
-      </button>
-      {isExpanded && (
-        <div className="mt-1.5 rounded-xl border border-border/30 bg-surface-overlay/50 overflow-hidden divide-y divide-border/20">
-          {stepLog.map((step, idx) => <StepCard key={idx} step={step} idx={idx} isLiveRunning={isStreaming} />)}
+    <div className="mb-3 space-y-0.5">
+      {collapsed.map((step, idx) => (
+        <StepRow key={idx} step={step} idx={idx} />
+      ))}
+      {totalTime > 0 && (
+        <div className="pt-1">
+          <span className="text-[11px] tabular-nums text-text-muted/40">{timeStr} total</span>
         </div>
       )}
     </div>

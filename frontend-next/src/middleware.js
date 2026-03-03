@@ -2,24 +2,23 @@ import { NextResponse } from 'next/server';
 
 /**
  * Edge middleware: checks for the refresh cookie on protected routes.
- * If missing, redirect to /auth. The cookie name must match whatever
- * the backend sets (commonly "refresh_token").
+ * If missing, redirect to /auth with ?redirect= so the auth page can
+ * redirect back after login.
  */
+
+const PUBLIC_PREFIXES = ['/auth', '/view', '/api'];
+const STATIC_EXT = /\.(ico|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|eot|css|js|map|json|txt|xml|webmanifest)$/i;
+
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't require auth
-  const publicPaths = ['/auth', '/view', '/api'];
-  if (publicPaths.some((p) => pathname.startsWith(p))) {
+  // Public routes — no auth needed
+  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Static assets and Next.js internals
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon') ||
-    pathname.includes('.')
-  ) {
+  // Next.js internals & static assets
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || STATIC_EXT.test(pathname)) {
     return NextResponse.next();
   }
 
@@ -27,7 +26,7 @@ export function middleware(request) {
   const refreshToken = request.cookies.get('refresh_token');
   if (!refreshToken?.value) {
     const loginUrl = new URL('/auth', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    if (pathname !== '/') loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 

@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, memo } from 'react';
-import { Check, Copy, ChevronRight, Lightbulb, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { useState, memo, useCallback } from 'react';
+import {
+  Check, Copy, ChevronRight, Lightbulb, ThumbsUp, ThumbsDown,
+  Search, Globe, Code2, Brain, ClipboardList, BookOpen, Monitor,
+  Wrench, RotateCcw, Pencil, Trash2, X, SendHorizonal,
+} from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import AgentStepsPanel from './AgentStepsPanel';
 import AgentActionBlock from './AgentActionBlock';
@@ -12,14 +16,14 @@ import BlockHoverMenu from './BlockHoverMenu';
 import CommandBadge from './CommandBadge';
 
 const TOOL_BADGE = {
-  rag_tool:       { icon: '🔍', label: 'RAG Search' },
-  research_tool:  { icon: '🌐', label: 'Web Research' },
-  python_tool:    { icon: '🐍', label: 'Python' },
-  data_profiler:  { icon: '🧠', label: 'Data Profile' },
-  quiz_tool:      { icon: '📝', label: 'Quiz' },
-  flashcard_tool: { icon: '🃏', label: 'Flashcards' },
-  ppt_tool:       { icon: '📊', label: 'Slides' },
-  code_repair:    { icon: '🔧', label: 'Code Repair' },
+  rag_tool:       { Icon: Search,        label: 'RAG Search' },
+  research_tool:  { Icon: Globe,         label: 'Web Research' },
+  python_tool:    { Icon: Code2,         label: 'Python' },
+  data_profiler:  { Icon: Brain,         label: 'Data Profile' },
+  quiz_tool:      { Icon: ClipboardList, label: 'Quiz' },
+  flashcard_tool: { Icon: BookOpen,      label: 'Flashcards' },
+  ppt_tool:       { Icon: Monitor,       label: 'Slides' },
+  code_repair:    { Icon: Wrench,        label: 'Code Repair' },
 };
 
 function tryParseDataAnalysis(content) {
@@ -108,12 +112,28 @@ function CopyActionButton({ content }) {
   );
 }
 
-export default memo(function ChatMessage({ message, notebookId }) {
+export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit, onDelete }) {
   const isUser = message.role === 'user';
   const blocks = message.blocks || [];
   const agentMeta = message.agentMeta || null;
   const stepLog = agentMeta?.step_log || message.stepLog || [];
   const generatedFiles = agentMeta?.generated_files || message.generatedFiles || [];
+
+  /* ── User message edit state ── */
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(message.content || '');
+
+  const handleEditSave = useCallback(() => {
+    if (editText.trim() && editText.trim() !== message.content) {
+      onEdit?.(message.id, editText.trim());
+    }
+    setIsEditing(false);
+  }, [editText, message.content, message.id, onEdit]);
+
+  const handleEditCancel = useCallback(() => {
+    setEditText(message.content || '');
+    setIsEditing(false);
+  }, [message.content]);
 
   const dataAnalysis = !isUser ? tryParseDataAnalysis(message.content) : null;
   const multiSource = !isUser && !dataAnalysis ? tryParseMultiSource(message.content) : null;
@@ -148,7 +168,13 @@ export default memo(function ChatMessage({ message, notebookId }) {
             const researchMd = !analysis && block.json ? tryParseResearchJSON(block.raw) : null;
             return (
               <div key={i}>
-                {meta && <div className="flex items-center gap-1.5 mb-2"><span className="text-xs text-text-muted font-medium">{meta.icon} {meta.label}</span></div>}
+                {/* Tool badge — shown without source-N label */}
+                {meta && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <meta.Icon className="w-3.5 h-3.5 text-text-muted" />
+                    <span className="text-xs text-text-muted font-medium">{meta.label}</span>
+                  </div>
+                )}
                 {analysis ? (
                   <div className="markdown-content">
                     {analysis.base64_chart && <ChartRenderer base64Chart={analysis.base64_chart} explanation={analysis.explanation} title="Data Analysis Chart" />}
@@ -194,12 +220,57 @@ export default memo(function ChatMessage({ message, notebookId }) {
 
   if (isUser) {
     return (
-      <div className="chat-msg chat-msg-user flex justify-end py-3">
-        <div className="max-w-[80%] sm:max-w-[70%]">
-          <div className="user-bubble">
-            {message.slashCommand && <div className="mb-1.5"><CommandBadge command={message.slashCommand} small /></div>}
-            <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{message.content}</p>
-          </div>
+      <div className="chat-msg chat-msg-user group flex justify-end py-3 px-1">
+        <div className="max-w-[75%]">
+          {message.slashCommand && (
+            <div className="mb-1.5"><CommandBadge command={message.slashCommand} small /></div>
+          )}
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEditSave(); }
+                  if (e.key === 'Escape') handleEditCancel();
+                }}
+                rows={Math.min(8, editText.split('\n').length + 1)}
+                autoFocus
+                className="w-full px-3 py-2 text-sm rounded-xl bg-surface-overlay text-text-primary border border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent resize-none leading-relaxed"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={handleEditCancel} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors">
+                  <X className="w-3 h-3" /> Cancel
+                </button>
+                <button onClick={handleEditSave} disabled={!editText.trim()} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors disabled:opacity-40">
+                  <SendHorizonal className="w-3 h-3" /> Send
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="user-bubble">
+                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{message.content}</p>
+              </div>
+              <div className="flex items-center justify-end gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                {onEdit && (
+                  <button onClick={() => { setIsEditing(true); setEditText(message.content || ''); }} title="Edit message" className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-text-secondary hover:bg-surface-overlay transition-colors">
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+                {onRetry && (
+                  <button onClick={() => onRetry(message)} title="Retry" className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-text-secondary hover:bg-surface-overlay transition-colors">
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={() => onDelete(message.id)} title="Delete" className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -232,13 +303,27 @@ export default memo(function ChatMessage({ message, notebookId }) {
             <CopyActionButton content={message.content} />
             <ActionButton label="Good response" icon={<ThumbsUp className="w-3.5 h-3.5" />} />
             <ActionButton label="Bad response" icon={<ThumbsDown className="w-3.5 h-3.5" />} />
+            {onRetry && (
+              <button onClick={() => onRetry(message)} title="Regenerate response" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:text-text-secondary hover:bg-surface-overlay transition-all duration-150">
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => onDelete(message.id)} title="Delete message" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-all duration-150">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           {agentMeta?.tools_used?.length > 0 && !stepLog.length && (
             <div className="flex flex-wrap gap-1.5 mt-2.5">
               {[...new Set(agentMeta.tools_used)].map(tool => {
                 const b = TOOL_BADGE[tool];
                 if (!b) return null;
-                return <span key={tool} className="inline-flex items-center gap-1 text-xs text-text-muted px-2 py-0.5 rounded-full bg-surface-overlay/60 border border-border/20">{b.icon} {b.label}</span>;
+                return (
+                  <span key={tool} className="inline-flex items-center gap-1 text-xs text-text-muted px-2 py-0.5 rounded-full bg-surface-overlay/60 border border-border/20">
+                    <b.Icon className="w-3 h-3" /> {b.label}
+                  </span>
+                );
               })}
             </div>
           )}

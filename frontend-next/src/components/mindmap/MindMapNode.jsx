@@ -5,7 +5,7 @@ import { Handle, Position } from '@xyflow/react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const DEPTH_COLORS = [
-  { bg: 'bg-(--accent)/20', border: 'border-(--accent)/40', text: 'text-(--accent)' },
+  { bg: 'bg-[var(--accent)]', border: 'border-[var(--accent)]', text: 'text-[var(--accent)]' },
   { bg: 'bg-blue-500/15', border: 'border-blue-500/30', text: 'text-blue-400' },
   { bg: 'bg-purple-500/15', border: 'border-purple-500/30', text: 'text-purple-400' },
   { bg: 'bg-green-500/15', border: 'border-green-500/30', text: 'text-green-400' },
@@ -27,7 +27,7 @@ function MindMapNode({ id, data }) {
           : `${colors.bg} ${colors.border} hover:shadow-md`
       }`}
     >
-      <Handle type="target" position={Position.Top} className="!bg-(--border) !w-2 !h-2 !border-0" />
+      <Handle type="target" position={Position.Top} className="!bg-[var(--border)] !w-2 !h-2 !border-0" />
 
       <div className="flex items-center gap-1.5">
         {/* Collapse toggle */}
@@ -49,7 +49,7 @@ function MindMapNode({ id, data }) {
 
         <span
           className={`text-xs font-medium leading-snug ${
-            isHighlighted ? 'text-yellow-300' : 'text-(--text-primary)'
+            isHighlighted ? 'text-yellow-300' : 'text-[var(--text-primary)]'
           }`}
         >
           {data.label}
@@ -57,12 +57,12 @@ function MindMapNode({ id, data }) {
       </div>
 
       {data.description && (
-        <p className="text-[10px] text-(--text-muted) mt-1 line-clamp-2 leading-relaxed">
+        <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed">
           {data.description}
         </p>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-(--border) !w-2 !h-2 !border-0" />
+      <Handle type="source" position={Position.Bottom} className="!bg-[var(--border)] !w-2 !h-2 !border-0" />
     </div>
   );
 }

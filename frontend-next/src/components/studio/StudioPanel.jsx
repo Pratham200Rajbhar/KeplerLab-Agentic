@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FlaskConical,
   AlertTriangle,
+  Network,
 } from 'lucide-react';
 
 import useAppStore from '@/stores/useAppStore';
@@ -224,7 +225,6 @@ export default function StudioPanel() {
 
   const handleFlashcardsClick = () => {
     setShowFlashcardConfig(true);
-    setActiveView('flashcard-config');
   };
 
   const handleGenerateFlashcards = async (options = {}) => {
@@ -241,13 +241,15 @@ export default function StudioPanel() {
       });
       setFlashcardsData(data);
       setFlashcards(data);
-      setActiveView('flashcards');
       const saved = await trySave(
         'flashcards',
         data,
         data.title || `${data.flashcards?.length || 0} Flashcards`
       );
-      if (saved) setContentHistory((prev) => [saved, ...prev]);
+      if (saved) {
+        setContentHistory((prev) => [saved, ...prev]);
+        toast.success(`Flashcards saved to Created`);
+      }
     } catch (error) {
       if (error.name === 'AbortError') return;
       toast.error(error.message || 'Failed to generate flashcards. Please try again.');
@@ -258,7 +260,6 @@ export default function StudioPanel() {
 
   const handleQuizClick = () => {
     setShowQuizConfig(true);
-    setActiveView('quiz-config');
   };
 
   const handleGenerateQuiz = async (options = {}) => {
@@ -275,13 +276,15 @@ export default function StudioPanel() {
       });
       setQuizData(data);
       setQuiz(data);
-      setActiveView('quiz');
       const saved = await trySave(
         'quiz',
         data,
         data.title || `${data.questions?.length || 0} Questions`
       );
-      if (saved) setContentHistory((prev) => [saved, ...prev]);
+      if (saved) {
+        setContentHistory((prev) => [saved, ...prev]);
+        toast.success(`Quiz saved to Created`);
+      }
     } catch (error) {
       if (error.name === 'AbortError') return;
       toast.error(error.message || 'Failed to generate quiz. Please try again.');
@@ -292,14 +295,12 @@ export default function StudioPanel() {
 
   const handlePresentationClick = () => {
     setShowPresentationConfig(true);
-    setActiveView('presentation-config');
   };
 
   const handleGeneratePresentation = async (options = {}) => {
     if (!effectiveMaterial) return;
     setShowPresentationConfig(false);
     setLoadingState('presentation', true);
-    setActiveView('presentation');
     const ac = new AbortController();
     abortControllerRef.current.presentation = ac;
     try {
@@ -310,13 +311,12 @@ export default function StudioPanel() {
       });
       setPresentationData(data);
       const saved = await trySave('presentation', data, data.title || 'Presentation');
-      if (saved) setContentHistory((prev) => [saved, ...prev]);
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        setActiveView(null);
-        return;
+      if (saved) {
+        setContentHistory((prev) => [saved, ...prev]);
+        toast.success(`Presentation saved to Created`);
       }
-      setPresentationData(null);
+    } catch (error) {
+      if (error.name === 'AbortError') return;
       toast.error(error.message || 'Failed to generate presentation. Please try again.');
     } finally {
       setLoadingState('presentation', false);
@@ -559,11 +559,7 @@ export default function StudioPanel() {
       id: 'mindmap',
       title: 'Mind Map',
       description: 'Visualize concept relationships',
-      icon: (
-        <span className="w-5 h-5 flex items-center justify-center text-base">
-          {'\u{1F5FA}'}
-        </span>
-      ),
+      icon: <Network className="w-5 h-5" />,
       onClick: () => setActiveView('mindmap'),
     },
   ];
@@ -596,11 +592,11 @@ export default function StudioPanel() {
         return loading['presentation'] ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3" role="status">
             <div className="loading-spinner w-8 h-8" />
-            <p className="text-sm text-(--text-muted)">Generating presentation...</p>
-            <p className="text-xs text-(--text-muted)">This may take a minute</p>
+            <p className="text-sm text-[var(--text-muted)]">Generating presentation...</p>
+            <p className="text-xs text-[var(--text-muted)]">This may take a minute</p>
             <button
               onClick={() => handleCancelGeneration('presentation')}
-              className="mt-2 btn-secondary text-(--danger) text-sm flex items-center gap-2"
+              className="mt-2 btn-secondary text-[var(--danger)] text-sm flex items-center gap-2"
             >
               Cancel
             </button>
@@ -647,20 +643,14 @@ export default function StudioPanel() {
       {showPresentationConfig && (
         <PresentationConfigDialog
           onConfirm={handleGeneratePresentation}
-          onClose={() => {
-            setShowPresentationConfig(false);
-            if (activeView === 'presentation-config') setActiveView(null);
-          }}
+          onClose={() => setShowPresentationConfig(false)}
         />
       )}
 
       {showQuizConfig && (
         <QuizConfigDialog
           onGenerate={handleGenerateQuiz}
-          onCancel={() => {
-            setShowQuizConfig(false);
-            if (activeView === 'quiz-config') setActiveView(null);
-          }}
+          onCancel={() => setShowQuizConfig(false)}
           loading={loading['quiz']}
         />
       )}
@@ -668,10 +658,7 @@ export default function StudioPanel() {
       {showFlashcardConfig && (
         <FlashcardConfigDialog
           onGenerate={handleGenerateFlashcards}
-          onCancel={() => {
-            setShowFlashcardConfig(false);
-            if (activeView === 'flashcard-config') setActiveView(null);
-          }}
+          onCancel={() => setShowFlashcardConfig(false)}
           loading={loading['flashcards']}
         />
       )}
@@ -698,14 +685,14 @@ export default function StudioPanel() {
       >
         {/* Resize Handle */}
         <div
-          className={`absolute top-0 left-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group ${isResizing ? 'bg-(--accent)/50' : 'hover:bg-(--accent)/30'
+          className={`absolute top-0 left-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group ${isResizing ? 'bg-[var(--accent)]' : 'hover:bg-[var(--accent)]'
             }`}
           onMouseDown={() => setIsResizing(true)}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize studio panel"
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-(--text-muted)/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
         {/* Header with Breadcrumb */}
@@ -720,13 +707,13 @@ export default function StudioPanel() {
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="text-(--text-muted) text-sm">Studio</span>
-                <ChevronRight className="w-4 h-4 text-(--text-muted)" />
+                <span className="text-[var(--text-muted)] text-sm">Studio</span>
+                <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
                 <span className="panel-title">{viewTitles[activeView]}</span>
               </>
             ) : (
               <>
-                <FlaskConical className="w-5 h-5 text-(--text-muted)" />
+                <FlaskConical className="w-5 h-5 text-[var(--text-muted)]" />
                 <span className="panel-title">Studio</span>
               </>
             )}
@@ -782,27 +769,27 @@ export default function StudioPanel() {
 
               {/* Podcast generating progress */}
               {podcast.phase === 'generating' && podcast.generationProgress && (
-                <div className="mt-3 p-3 rounded-xl border border-(--accent)/20 bg-(--accent)/5 animate-fade-in">
+                <div className="mt-3 p-3 rounded-xl border border-[var(--accent)] bg-[var(--accent)] animate-fade-in">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="loading-spinner w-4 h-4" />
-                    <span className="text-xs font-medium text-(--text-primary)">
+                    <span className="text-xs font-medium text-[var(--text-primary)]">
                       {podcast.generationProgress.message || 'Generating podcast\u2026'}
                     </span>
                   </div>
                   <div
-                    className="h-1.5 rounded-full bg-(--surface-overlay) overflow-hidden"
+                    className="h-1.5 rounded-full bg-[var(--surface-overlay)] overflow-hidden"
                     role="progressbar"
                     aria-valuenow={Math.round(podcast.generationProgress.pct || 0)}
                     aria-valuemax={100}
                   >
                     <div
-                      className="h-full rounded-full bg-(--accent) transition-all duration-700 ease-out"
+                      className="h-full rounded-full bg-[var(--accent)] transition-all duration-700 ease-out"
                       style={{
                         width: `${Math.max(podcast.generationProgress.pct || 0, 3)}%`,
                       }}
                     />
                   </div>
-                  <p className="text-[11px] text-(--text-muted) mt-1.5">
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
                     {Math.round(podcast.generationProgress.pct || 0)}% complete
                   </p>
                 </div>
@@ -810,17 +797,17 @@ export default function StudioPanel() {
 
               {/* Podcast error */}
               {podcast.error && podcast.phase === 'idle' && (
-                <div className="mt-3 p-3 rounded-xl bg-(--danger-subtle) border border-(--danger-border) animate-fade-in">
+                <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-(--danger) shrink-0" />
-                    <span className="text-xs text-(--danger)">{podcast.error}</span>
+                    <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
+                    <span className="text-xs text-[var(--danger)]">{podcast.error}</span>
                   </div>
                   <button
                     onClick={() => {
                       podcast.setError(null);
                       setShowPodcastConfig(true);
                     }}
-                    className="mt-2 text-xs text-(--danger) hover:underline"
+                    className="mt-2 text-xs text-[var(--danger)] hover:underline"
                   >
                     Try Again
                   </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getMindMap, generateMindMap } from '@/lib/api/mindmap';
 
 /**
@@ -11,6 +11,7 @@ export default function useMindMap({ notebookId, selectedSources, onGenerated })
   const [mapData, setMapData] = useState(null);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const abortControllerRef = useRef(null);
 
   // Stabilize the selectedSources array reference
   const sourcesKey = useMemo(
@@ -57,17 +58,26 @@ export default function useMindMap({ notebookId, selectedSources, onGenerated })
 
     // Generate new mind map
     setStatus('generating');
+    abortControllerRef.current = new AbortController();
     try {
       const response = await generateMindMap({
         notebookId,
         materialIds: stableSources,
+        signal: abortControllerRef.current.signal,
       });
       setMapData(response);
       setStatus('ready');
       onGenerated?.(response);
     } catch (err) {
-      setStatus('error');
-      setErrorMessage(err.message || 'Failed to generate mind map');
+      if (err.name === 'AbortError') {
+        setStatus('idle');
+        setErrorMessage(null);
+      } else {
+        setStatus('error');
+        setErrorMessage(err.message || 'Failed to generate mind map');
+      }
+    } finally {
+      abortControllerRef.current = null;
     }
   }, [notebookId, stableSources, onGenerated]);
 
@@ -75,23 +85,37 @@ export default function useMindMap({ notebookId, selectedSources, onGenerated })
     checkAndGenerate();
   }, [checkAndGenerate]);
 
+  const cancel = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
+
   const regenerate = useCallback(async () => {
     if (!notebookId || stableSources.length === 0) return;
 
+    abortControllerRef.current?.abort();
     setStatus('generating');
     setErrorMessage(null);
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await generateMindMap({
         notebookId,
         materialIds: stableSources,
+        signal: abortControllerRef.current.signal,
       });
       setMapData(response);
       setStatus('ready');
       onGenerated?.(response);
     } catch (err) {
-      setStatus('error');
-      setErrorMessage(err.message || 'Failed to regenerate mind map');
+      if (err.name === 'AbortError') {
+        setStatus('idle');
+        setErrorMessage(null);
+      } else {
+        setStatus('error');
+        setErrorMessage(err.message || 'Failed to regenerate mind map');
+      }
+    } finally {
+      abortControllerRef.current = null;
     }
   }, [notebookId, stableSources, onGenerated]);
 
@@ -103,6 +127,7 @@ export default function useMindMap({ notebookId, selectedSources, onGenerated })
     mapData,
     isCanvasOpen,
     errorMessage,
+    cancel,
     regenerate,
     openCanvas,
     closeCanvas,

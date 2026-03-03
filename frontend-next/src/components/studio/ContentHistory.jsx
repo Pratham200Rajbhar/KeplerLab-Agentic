@@ -17,7 +17,7 @@ function contentTypeIcon(type) {
     explainer: <FileText className="w-3.5 h-3.5 text-cyan-400" />,
     mindmap: <Brain className="w-3.5 h-3.5 text-pink-400" />,
   };
-  return icons[type] || <FileText className="w-3.5 h-3.5 text-(--text-muted)" />;
+  return icons[type] || <FileText className="w-3.5 h-3.5 text-[var(--text-muted)]" />;
 }
 
 function contentSubtitle(item) {
@@ -50,8 +50,8 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
   if (!filtered.length) {
     return (
       <div className="px-3 py-6 text-center">
-        <Clock className="w-5 h-5 text-(--text-muted) mx-auto mb-2 opacity-40" />
-        <p className="text-xs text-(--text-muted)">No generated content yet</p>
+        <Clock className="w-5 h-5 text-[var(--text-muted)] mx-auto mb-2 opacity-40" />
+        <p className="text-xs text-[var(--text-muted)]">No generated content yet</p>
       </div>
     );
   }
@@ -66,8 +66,8 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
             onClick={() => onSelect?.(item)}
             className={`group relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
               isActive
-                ? 'bg-(--accent)/10 border border-(--accent)/20'
-                : 'hover:bg-(--surface-overlay) border border-transparent'
+                ? 'bg-[var(--accent)] border border-[var(--accent)]'
+                : 'hover:bg-[var(--surface-overlay)] border border-transparent'
             }`}
           >
             {/* Icon */}
@@ -75,10 +75,10 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
 
             {/* Text */}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-(--text-primary) truncate">
+              <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                 {item.title || `${item.content_type} ${item.id?.slice(0, 6)}`}
               </p>
-              <p className="text-[10px] text-(--text-muted) mt-0.5">
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                 {contentSubtitle(item)}
               </p>
             </div>
@@ -90,22 +90,22 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
                   e.stopPropagation();
                   setMenuOpenId(menuOpenId === item.id ? null : item.id);
                 }}
-                className="p-1 rounded hover:bg-(--surface) transition-colors opacity-0 group-hover:opacity-100"
+                className="p-1 rounded hover:bg-[var(--surface)] transition-colors opacity-0 group-hover:opacity-100"
               >
-                <MoreVertical className="w-3.5 h-3.5 text-(--text-muted)" />
+                <MoreVertical className="w-3.5 h-3.5 text-[var(--text-muted)]" />
               </button>
 
               {menuOpenId === item.id && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
-                  <div className="absolute right-0 top-full mt-1 z-20 w-32 bg-(--surface-raised) border border-(--border) rounded-lg shadow-lg overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 z-20 w-32 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpenId(null);
                         onRename?.(item);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-(--text-secondary) hover:bg-(--surface-overlay) transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors"
                     >
                       <Pencil className="w-3 h-3" /> Rename
                     </button>

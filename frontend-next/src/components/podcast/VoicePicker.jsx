@@ -48,10 +48,10 @@ export default function VoicePicker({ label, language, value, onChange }) {
 
   return (
     <div>
-      <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">{label}</label>
+      <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">{label}</label>
       <div className="space-y-1 max-h-32 overflow-y-auto">
         {voices.length === 0 && (
-          <p className="text-[10px] text-(--text-muted) py-1">Loading voices...</p>
+          <p className="text-[10px] text-[var(--text-muted)] py-1">Loading voices...</p>
         )}
         {voices.map((v) => (
           <div
@@ -59,13 +59,13 @@ export default function VoicePicker({ label, language, value, onChange }) {
             onClick={() => onChange(v.id)}
             className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
               value === v.id
-                ? 'bg-(--accent)/10 border border-(--accent)/30'
-                : 'hover:bg-(--surface-overlay) border border-transparent'
+                ? 'bg-[var(--accent)] border border-[var(--accent)]'
+                : 'hover:bg-[var(--surface-overlay)] border border-transparent'
             }`}
           >
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-(--text-primary) block truncate">{v.name || v.id}</span>
-              {v.gender && <span className="text-[9px] text-(--text-muted) capitalize">{v.gender}</span>}
+              <span className="text-xs text-[var(--text-primary)] block truncate">{v.name || v.id}</span>
+              {v.gender && <span className="text-[9px] text-[var(--text-muted)] capitalize">{v.gender}</span>}
             </div>
 
             <button
@@ -73,17 +73,17 @@ export default function VoicePicker({ label, language, value, onChange }) {
                 e.stopPropagation();
                 handlePreview(v.id);
               }}
-              className="p-1 rounded hover:bg-(--surface-overlay) transition-colors shrink-0"
+              className="p-1 rounded hover:bg-[var(--surface-overlay)] transition-colors shrink-0"
               title="Preview voice"
             >
               {previewingId === v.id ? (
-                <Pause className="w-3.5 h-3.5 text-(--accent)" fill="currentColor" />
+                <Pause className="w-3.5 h-3.5 text-[var(--accent)]" fill="currentColor" />
               ) : (
-                <Play className="w-3.5 h-3.5 text-(--text-muted)" fill="currentColor" />
+                <Play className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="currentColor" />
               )}
             </button>
 
-            {value === v.id && <Check className="w-3.5 h-3.5 text-(--accent) shrink-0" strokeWidth={2.5} />}
+            {value === v.id && <Check className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" strokeWidth={2.5} />}
           </div>
         ))}
       </div>

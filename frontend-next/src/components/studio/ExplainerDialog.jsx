@@ -137,13 +137,13 @@ export default function ExplainerDialog({ onClose, onComplete }) {
 
   return (
     <Modal onClose={handleCancel} maxWidth="lg">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-(--border)">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-(--accent)" />
-          <h3 className="text-base font-semibold text-(--text-primary)">AI Explainer</h3>
+          <Wand2 className="w-5 h-5 text-[var(--accent)]" />
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">AI Explainer</h3>
         </div>
-        <button onClick={handleCancel} className="p-1 rounded-lg hover:bg-(--surface-overlay) transition-colors">
-          <X className="w-4 h-4 text-(--text-muted)" />
+        <button onClick={handleCancel} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <X className="w-4 h-4 text-[var(--text-muted)]" />
         </button>
       </div>
 
@@ -152,9 +152,9 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-1">
             <div className={`w-2 h-2 rounded-full ${
-              STEPS.indexOf(step) >= i ? 'bg-(--accent)' : 'bg-(--border)'
+              STEPS.indexOf(step) >= i ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'
             }`} />
-            {i < STEPS.length - 1 && <div className="w-6 h-px bg-(--border)" />}
+            {i < STEPS.length - 1 && <div className="w-6 h-px bg-[var(--border)]" />}
           </div>
         ))}
       </div>
@@ -164,13 +164,13 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         {step === 'select' && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <h4 className="text-sm font-medium text-(--text-primary) mb-1">Presentation Source</h4>
-              <p className="text-xs text-(--text-muted)">Choose an existing presentation or create a new one</p>
+              <h4 className="text-sm font-medium text-[var(--text-primary)] mb-1">Presentation Source</h4>
+              <p className="text-xs text-[var(--text-muted)]">Choose an existing presentation or create a new one</p>
             </div>
 
             {loadingPpts ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 text-(--accent) animate-spin" />
+                <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
               </div>
             ) : (
               <div className="space-y-2">
@@ -179,16 +179,16 @@ export default function ExplainerDialog({ onClose, onComplete }) {
                   onClick={() => { setCreateNewPpt(true); setSelectedPptId(null); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
                     createNewPpt
-                      ? 'border-(--accent) bg-(--accent)/5'
-                      : 'border-(--border) hover:border-(--text-muted)'
+                      ? 'border-[var(--accent)] bg-[var(--accent)]'
+                      : 'border-[var(--border)] hover:border-[var(--text-muted)]'
                   }`}
                 >
-                  <Presentation className="w-5 h-5 text-(--accent)" />
+                  <Presentation className="w-5 h-5 text-[var(--accent)]" />
                   <div className="text-left">
-                    <p className="text-sm font-medium text-(--text-primary)">Create new presentation</p>
-                    <p className="text-[10px] text-(--text-muted)">AI will generate slides from selected sources</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">Create new presentation</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">AI will generate slides from selected sources</p>
                   </div>
-                  {createNewPpt && <Check className="w-4 h-4 text-(--accent) ml-auto" />}
+                  {createNewPpt && <Check className="w-4 h-4 text-[var(--accent)] ml-auto" />}
                 </button>
 
                 {/* Existing presentations */}
@@ -198,16 +198,16 @@ export default function ExplainerDialog({ onClose, onComplete }) {
                     onClick={() => { setSelectedPptId(ppt.id); setCreateNewPpt(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
                       selectedPptId === ppt.id
-                        ? 'border-(--accent) bg-(--accent)/5'
-                        : 'border-(--border) hover:border-(--text-muted)'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]'
+                        : 'border-[var(--border)] hover:border-[var(--text-muted)]'
                     }`}
                   >
-                    <FileText className="w-5 h-5 text-(--text-muted)" />
+                    <FileText className="w-5 h-5 text-[var(--text-muted)]" />
                     <div className="text-left flex-1 min-w-0">
-                      <p className="text-sm font-medium text-(--text-primary) truncate">{ppt.title || ppt.id}</p>
-                      <p className="text-[10px] text-(--text-muted)">{ppt.slide_count || '?'} slides</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">{ppt.title || ppt.id}</p>
+                      <p className="text-[10px] text-[var(--text-muted)]">{ppt.slide_count || '?'} slides</p>
                     </div>
-                    {selectedPptId === ppt.id && <Check className="w-4 h-4 text-(--accent)" />}
+                    {selectedPptId === ppt.id && <Check className="w-4 h-4 text-[var(--accent)]" />}
                   </button>
                 ))}
               </div>
@@ -217,7 +217,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
               <button
                 onClick={() => setStep('configure')}
                 disabled={!createNewPpt && !selectedPptId}
-                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--accent-light) transition-colors disabled:opacity-40"
+                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-light)] transition-colors disabled:opacity-40"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -229,19 +229,19 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         {step === 'configure' && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <h4 className="text-sm font-medium text-(--text-primary) mb-1">Configuration</h4>
-              <p className="text-xs text-(--text-muted)">Customize your explainer video</p>
+              <h4 className="text-sm font-medium text-[var(--text-primary)] mb-1">Configuration</h4>
+              <p className="text-xs text-[var(--text-muted)]">Customize your explainer video</p>
             </div>
 
             {/* PPT Language */}
             <div>
-              <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
                 <Globe className="inline w-3.5 h-3.5 mr-1" /> Slide Language
               </label>
               <select
                 value={pptLanguage}
                 onChange={(e) => setPptLanguage(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-(--surface) border border-(--border) text-(--text-primary)"
+                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)]"
               >
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -253,13 +253,13 @@ export default function ExplainerDialog({ onClose, onComplete }) {
 
             {/* Narration Language */}
             <div>
-              <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
                 <Mic className="inline w-3.5 h-3.5 mr-1" /> Narration Language
               </label>
               <select
                 value={narrationLanguage}
                 onChange={(e) => setNarrationLanguage(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-(--surface) border border-(--border) text-(--text-primary)"
+                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)]"
               >
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -271,7 +271,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
 
             {/* Voice */}
             <div>
-              <label className="text-xs font-medium text-(--text-secondary) mb-1.5 block">Voice</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Voice</label>
               <div className="flex gap-2">
                 {['female', 'male'].map((v) => (
                   <button
@@ -279,8 +279,8 @@ export default function ExplainerDialog({ onClose, onComplete }) {
                     onClick={() => setVoiceGender(v)}
                     className={`flex-1 py-2 rounded-lg text-xs font-medium capitalize transition-all ${
                       voiceGender === v
-                        ? 'bg-(--accent) text-white'
-                        : 'bg-(--surface) border border-(--border) text-(--text-secondary)'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)]'
                     }`}
                   >
                     {v}
@@ -292,13 +292,13 @@ export default function ExplainerDialog({ onClose, onComplete }) {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => setStep('select')}
-                className="flex items-center gap-1 text-sm text-(--text-secondary) hover:text-(--text-primary)"
+                className="flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
               <button
                 onClick={handleGenerate}
-                className="px-5 py-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--accent-light) transition-colors"
+                className="px-5 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-light)] transition-colors"
               >
                 Generate Explainer
               </button>
@@ -309,15 +309,15 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         {/* Step: Generating */}
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center py-10 animate-fade-in">
-            <Loader2 className="w-8 h-8 text-(--accent) animate-spin mb-4" />
-            <p className="text-sm font-medium text-(--text-primary) mb-1">{progress.message}</p>
-            <div className="w-48 h-1.5 rounded-full bg-(--surface) mt-3 overflow-hidden">
+            <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin mb-4" />
+            <p className="text-sm font-medium text-[var(--text-primary)] mb-1">{progress.message}</p>
+            <div className="w-48 h-1.5 rounded-full bg-[var(--surface)] mt-3 overflow-hidden">
               <div
-                className="h-full rounded-full bg-(--accent) transition-all"
+                className="h-full rounded-full bg-[var(--accent)] transition-all"
                 style={{ width: `${progress.pct}%` }}
               />
             </div>
-            <p className="text-[10px] text-(--text-muted) mt-2">{Math.round(progress.pct)}% complete</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-2">{Math.round(progress.pct)}% complete</p>
           </div>
         )}
 
@@ -327,11 +327,11 @@ export default function ExplainerDialog({ onClose, onComplete }) {
             <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
               <Check className="w-6 h-6 text-green-400" />
             </div>
-            <p className="text-sm font-medium text-(--text-primary) mb-1">Explainer Ready!</p>
-            <p className="text-xs text-(--text-muted)">Your video explainer has been generated</p>
+            <p className="text-sm font-medium text-[var(--text-primary)] mb-1">Explainer Ready!</p>
+            <p className="text-xs text-[var(--text-muted)]">Your video explainer has been generated</p>
             <button
               onClick={handleComplete}
-              className="mt-6 px-5 py-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--accent-light) transition-colors"
+              className="mt-6 px-5 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-light)] transition-colors"
             >
               View Explainer
             </button>

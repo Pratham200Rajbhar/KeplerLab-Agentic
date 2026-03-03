@@ -40,6 +40,37 @@ import { parseSlashCommand } from './slashCommands';
 import ChatHistoryModal from './ChatHistoryModal';
 import ChatEmptyState from './ChatEmptyState';
 
+const LIVE_TOOL_LABELS = {
+  rag_tool:       'Searching your materials',
+  research_tool:  'Researching the web',
+  python_tool:    'Running code',
+  data_profiler:  'Analyzing data',
+  quiz_tool:      'Generating quiz',
+  flashcard_tool: 'Creating flashcards',
+  ppt_tool:       'Building slides',
+  code_repair:    'Fixing error',
+};
+
+function getLiveLabel(tool = '') {
+  const key = Object.keys(LIVE_TOOL_LABELS).find(k => tool.toLowerCase().includes(k));
+  return key ? LIVE_TOOL_LABELS[key] : (tool || 'Processing');
+}
+
+function LiveStepText({ steps }) {
+  const latest = steps[steps.length - 1];
+  const label = getLiveLabel(latest?.tool || '');
+  return (
+    <div className="flex items-center gap-1.5 mb-2 animate-fade-in">
+      <span className="flex gap-0.5 items-end h-3 shrink-0">
+        <span className="w-0.5 h-1.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
+        <span className="w-0.5 h-2.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '150ms' }} />
+        <span className="w-0.5 h-1.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
+      </span>
+      <span className="text-xs text-text-muted">{label}…</span>
+    </div>
+  );
+}
+
 export default function ChatPanel() {
   /* ── Store selectors ── */
   const currentMaterial = useAppStore((s) => s.currentMaterial);
@@ -561,6 +592,33 @@ export default function ChatPanel() {
     }
   };
 
+  /* ── Message actions (delete / retry / edit) ── */
+  const handleDeleteMessage = useCallback((messageId) => {
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  }, [setMessages]);
+
+  const handleRetryMessage = useCallback((message) => {
+    const msgList = messages;
+    const idx = msgList.findIndex((m) => m.id === message.id);
+    if (idx === -1) return;
+    let userMsg = null;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (msgList[i].role === 'user') { userMsg = msgList[i]; break; }
+    }
+    if (!userMsg) return;
+    setMessages((prev) => prev.slice(0, idx));
+    handleSend(userMsg.content);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, setMessages]);
+
+  const handleEditMessage = useCallback((messageId, newContent) => {
+    const idx = messages.findIndex((m) => m.id === messageId);
+    if (idx === -1) return;
+    setMessages((prev) => prev.slice(0, idx));
+    handleSend(newContent);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, setMessages]);
+
   /* ── Research handler ── */
   const handleResearch = async () => {
     const query = inputValue.trim();
@@ -814,7 +872,14 @@ export default function ChatPanel() {
         ) : (
           <div className="max-w-4xl w-full mx-auto px-4 py-8 sm:px-6 md:px-8">
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} notebookId={currentNotebook?.id} />
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                notebookId={currentNotebook?.id}
+                onRetry={msg.role === 'assistant' ? handleRetryMessage : undefined}
+                onEdit={msg.role === 'user' ? handleEditMessage : undefined}
+                onDelete={handleDeleteMessage}
+              />
             ))}
 
             {/* Research progress */}
@@ -834,13 +899,8 @@ export default function ChatPanel() {
                     <Lightbulb className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    {liveStepLog.length > 0 && (
-                      <AgentActionBlock
-                        stepLog={liveStepLog}
-                        toolsUsed={[]}
-                        totalTime={0}
-                        isStreaming
-                      />
+                    {liveStepLog.length > 0 && !streamingContent && (
+                      <LiveStepText steps={liveStepLog} />
                     )}
                     {streamingContent && (
                       <div className="markdown-content">

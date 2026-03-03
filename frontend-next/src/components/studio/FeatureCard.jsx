@@ -61,17 +61,25 @@ export default function FeatureCard({ icon, label, description, onClick, loading
         {/* Right side actions */}
         <div className="shrink-0 flex items-center gap-1">
           {loading && onCancel ? (
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 onCancel();
               }}
-              className="p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted hover:text-danger transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  onCancel();
+                }
+              }}
+              className="p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted hover:text-danger transition-colors cursor-pointer"
               title="Cancel"
             >
               <X className="w-3.5 h-3.5" />
-            </button>
-          ) : !disabled && (
+            </div>
+          ) : !loading && !disabled && (
             <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
           )}
         </div>

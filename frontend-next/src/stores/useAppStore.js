@@ -40,40 +40,54 @@ const useAppStore = create((set, get) => ({
 
   // ── Material actions ──
   setCurrentMaterial: (material) => set({ currentMaterial: material }),
-  setMaterials: (materialsOrUpdater) => set((state) => ({
-    materials: typeof materialsOrUpdater === 'function'
-      ? materialsOrUpdater(state.materials)
-      : (Array.isArray(materialsOrUpdater) ? materialsOrUpdater : state.materials),
-  })),
-  addMaterial: (material) => set((state) => ({
-    materials: [...state.materials, material],
-    currentMaterial: state.currentMaterial || material,
-  })),
+  setMaterials: (materialsOrUpdater) =>
+    set((state) => ({
+      materials:
+        typeof materialsOrUpdater === 'function'
+          ? materialsOrUpdater(state.materials)
+          : Array.isArray(materialsOrUpdater)
+            ? materialsOrUpdater
+            : state.materials,
+    })),
+  addMaterial: (material) =>
+    set((state) => ({
+      materials: [...state.materials, material],
+      currentMaterial: state.currentMaterial || material,
+    })),
 
   // ── Source selection ──
-  setSelectedSources: (sourcesOrUpdater) => set((state) => ({
-    selectedSources: typeof sourcesOrUpdater === 'function'
-      ? sourcesOrUpdater(state.selectedSources)
-      : sourcesOrUpdater
-  })),
-  toggleSourceSelection: (id) => set((state) => {
-    const next = new Set(state.selectedSources);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return { selectedSources: next };
-  }),
-  selectAllSources: () => set((state) => ({
-    selectedSources: new Set(state.materials.map(m => m.id)),
-  })),
+  setSelectedSources: (sourcesOrUpdater) =>
+    set((state) => ({
+      selectedSources:
+        typeof sourcesOrUpdater === 'function'
+          ? sourcesOrUpdater(state.selectedSources)
+          : sourcesOrUpdater,
+    })),
+
+  toggleSourceSelection: (id) =>
+    set((state) => {
+      const next = new Set(state.selectedSources);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { selectedSources: next };
+    }),
+
+  selectAllSources: () =>
+    set((state) => ({
+      selectedSources: new Set(state.materials.map((m) => m.id)),
+    })),
+
   deselectAllSources: () => set({ selectedSources: new Set() }),
 
   // ── Chat actions ──
   setSessionId: (id) => set({ sessionId: id }),
-  setMessages: (messagesOrUpdater) => set((state) => ({
-    messages: typeof messagesOrUpdater === 'function'
-      ? messagesOrUpdater(state.messages)
-      : messagesOrUpdater
-  })),
+  setMessages: (messagesOrUpdater) =>
+    set((state) => ({
+      messages:
+        typeof messagesOrUpdater === 'function'
+          ? messagesOrUpdater(state.messages)
+          : messagesOrUpdater,
+    })),
   addMessage: (role, content, extra = null) => {
     const message = {
       id: generateId(),
@@ -107,9 +121,10 @@ const useAppStore = create((set, get) => ({
   setPendingChatMessage: (msg) => set({ pendingChatMessage: msg }),
 
   // ── UI actions ──
-  setLoadingState: (key, value) => set((state) => ({
-    loading: { ...state.loading, [key]: value },
-  })),
+  setLoadingState: (key, value) =>
+    set((state) => ({
+      loading: { ...state.loading, [key]: value },
+    })),
   setError: (error) => set({ error }),
   setActivePanel: (panel) => set({ activePanel: panel }),
 
@@ -125,6 +140,8 @@ const useAppStore = create((set, get) => ({
       quiz: null,
       notes: [],
       error: null,
+      loading: {},
+      activePanel: 'chat',
     });
   },
 

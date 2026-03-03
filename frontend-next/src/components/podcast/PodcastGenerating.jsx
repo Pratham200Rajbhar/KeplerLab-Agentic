@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, Radio, FileText, Mic } from 'lucide-react';
+import { Loader2, Radio, FileText, Mic, CheckCircle2 } from 'lucide-react';
 import usePodcastStore from '@/stores/usePodcastStore';
 
 export default function PodcastGenerating() {
@@ -12,75 +12,61 @@ export default function PodcastGenerating() {
   const pct = progress?.pct || 0;
   const message = progress?.message || 'Starting...';
 
-  const STAGES = [
-    { id: 'script', label: 'Script', icon: FileText },
-    { id: 'audio', label: 'Audio', icon: Mic },
-  ];
+  const stageIndex = stage === 'audio' ? 1 : 0;
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 text-center animate-fade-in">
-        <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
-          <Radio className="w-6 h-6 text-red-400" />
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 animate-fade-in">
+        <Radio className="w-4 h-4 text-red-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-red-400 truncate">Generation failed</p>
+          <p className="text-[10px] text-red-400/70 truncate">{error}</p>
         </div>
-        <p className="text-sm font-medium text-red-400 mb-1">Generation Failed</p>
-        <p className="text-xs text-(--text-muted) mb-4">{error}</p>
         <button
           onClick={() => setPhase('idle')}
-          className="px-4 py-2 rounded-lg text-xs bg-(--surface) border border-(--border) text-(--text-primary) hover:bg-(--surface-overlay) transition-colors"
+          className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface-overlay)] transition-colors"
         >
-          Go Back
+          Back
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 animate-fade-in">
-      {/* Animated icon */}
-      <div className="relative mb-6">
-        <div className="w-16 h-16 rounded-full bg-(--accent)/10 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-(--accent) animate-spin" />
+    <div className="px-1 py-2 space-y-2 animate-fade-in">
+      {/* Stage + status row */}
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin shrink-0" />
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {/* Script */}
+          <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+            stageIndex > 0 ? 'text-green-400' : stage === 'script' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+          }`}>
+            {stageIndex > 0 ? <CheckCircle2 className="w-2.5 h-2.5" /> : <FileText className="w-2.5 h-2.5" />}
+            Script
+          </span>
+          <div className="w-4 h-px bg-[var(--border)]" />
+          {/* Audio */}
+          <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+            stage === 'audio' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+          }`}>
+            <Mic className="w-2.5 h-2.5" />
+            Audio
+          </span>
         </div>
-        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-(--surface-raised) border border-(--border) flex items-center justify-center">
-          {stage === 'script' ? (
-            <FileText className="w-3 h-3 text-(--accent)" />
-          ) : (
-            <Mic className="w-3 h-3 text-purple-400" />
-          )}
-        </div>
+        <span className="text-[10px] tabular-nums text-[var(--text-muted)] shrink-0">{Math.round(pct)}%</span>
       </div>
 
-      {/* Stage indicators */}
-      <div className="flex items-center gap-3 mb-4">
-        {STAGES.map((s, i) => (
-          <div key={s.id} className="flex items-center gap-1.5">
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${
-              stage === s.id
-                ? 'bg-(--accent)/10 text-(--accent)'
-                : STAGES.findIndex((st) => st.id === stage) > i
-                ? 'text-green-400'
-                : 'text-(--text-muted)'
-            }`}>
-              <s.icon className="w-3 h-3" />
-              {s.label}
-            </div>
-            {i < STAGES.length - 1 && (
-              <div className="w-6 h-px bg-(--border)" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Progress */}
-      <p className="text-sm font-medium text-(--text-primary) mb-2">{message}</p>
-      <div className="w-48 h-1.5 rounded-full bg-(--surface) overflow-hidden">
+      {/* Thin progress bar */}
+      <div className="h-1 rounded-full bg-[var(--surface)] overflow-hidden">
         <div
-          className="h-full rounded-full bg-(--accent) transition-all duration-500"
+          className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-[10px] text-(--text-muted) mt-2 tabular-nums">{Math.round(pct)}%</p>
+
+      {/* Status message */}
+      <p className="text-[10px] text-[var(--text-muted)] truncate">{message}</p>
     </div>
   );
 }

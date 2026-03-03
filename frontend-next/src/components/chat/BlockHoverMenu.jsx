@@ -53,10 +53,10 @@ export default function BlockHoverMenu({ blockId, children }) {
               </button>
               {showLangPicker && (
                 <div className="lang-picker flex flex-col max-h-[250px] w-40">
-                  <div className="px-2 pb-1 border-b border-(--border)">
+                  <div className="px-2 pb-1 border-b border-[var(--border)]">
                     <input type="text" placeholder="Search language..." value={langSearch}
                       onChange={e => setLangSearch(e.target.value)} autoFocus onClick={e => e.stopPropagation()}
-                      className="w-full bg-(--surface-overlay) text-(--text-primary) text-xs px-2 py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-(--accent)" />
+                      className="w-full bg-[var(--surface-overlay)] text-[var(--text-primary)] text-xs px-2 py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]" />
                   </div>
                   <div className="overflow-y-auto overflow-x-hidden flex-1 py-1 custom-scrollbar">
                     {LANG_OPTIONS.filter(l => l.toLowerCase().includes(langSearch.toLowerCase())).length > 0 ? (
@@ -64,7 +64,7 @@ export default function BlockHoverMenu({ blockId, children }) {
                         <button key={lang} className="lang-picker-item" onClick={() => openAction('translate', lang)}>{lang}</button>
                       ))
                     ) : (
-                      <div className="px-3 py-2 text-xs text-(--text-muted) text-center">No results</div>
+                      <div className="px-3 py-2 text-xs text-[var(--text-muted)] text-center">No results</div>
                     )}
                   </div>
                 </div>

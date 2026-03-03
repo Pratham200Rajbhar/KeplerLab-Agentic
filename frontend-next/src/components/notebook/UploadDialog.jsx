@@ -222,7 +222,7 @@ export default function UploadDialog({
                 onDrop={handleDrop}
                 onClick={() => !loading && fileInputRef.current?.click()}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 border ${dragActive ? 'scale-110 bg-accent-subtle border-(--accent-border)' : 'bg-surface-overlay border-border-light'}`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 border ${dragActive ? 'scale-110 bg-accent-subtle border-[var(--accent-border)]' : 'bg-surface-overlay border-border-light'}`}>
                   <CloudUpload className={`w-7 h-7 ${dragActive ? 'text-accent-light' : 'text-text-muted'}`} />
                 </div>
                 <p className="text-sm font-medium text-text-primary mb-1">

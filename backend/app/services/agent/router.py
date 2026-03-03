@@ -328,7 +328,21 @@ async def route_and_execute(state: AgentState) -> AgentState:
         )
         step_log_entry["stdout"] = meta_block.get("stdout", result.get("output", ""))
         step_log_entry["stderr"] = meta_block.get("stderr", result.get("error", ""))
-    step_log.append(step_log_entry)
+
+    # On a retry (step_retries > 0), replace the existing entry for this tool
+    # instead of appending — prevents duplicate rows in the UI.
+    current_retries = state.get("step_retries", 0)
+    if current_retries > 0:
+        replaced = False
+        for i in range(len(step_log) - 1, -1, -1):
+            if step_log[i].get("tool") == tool_name:
+                step_log[i] = step_log_entry
+                replaced = True
+                break
+        if not replaced:
+            step_log.append(step_log_entry)
+    else:
+        step_log.append(step_log_entry)
 
     # -- Update stdout/stderr in state for reflection ----------------------------
     last_stdout = result.get("metadata", {}).get("stdout", "") if result.get("metadata") else ""
@@ -339,7 +353,9 @@ async def route_and_execute(state: AgentState) -> AgentState:
         "tool_results": tool_results,
         "selected_tool": tool_name,
         "current_step": current_step + 1,
-        "step_retries": 0,
+        # Preserve step_retries on failure so reflection.py can count correctly.
+        # Reset to 0 only on success (step completed) or when advancing past a step.
+        "step_retries": 0 if success else current_retries,
         "step_log": step_log,
         "last_stdout": last_stdout,
         "last_stderr": last_stderr,

@@ -88,18 +88,18 @@ export default function PodcastPlayer() {
   return (
     <div className="flex flex-col h-full animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-(--border)">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--border)]">
         <button
           onClick={() => setPhase('idle')}
-          className="p-1 rounded-lg hover:bg-(--surface-overlay) transition-colors"
+          className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors"
         >
-          <ChevronLeft className="w-4 h-4 text-(--text-muted)" />
+          <ChevronLeft className="w-4 h-4 text-[var(--text-muted)]" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-(--text-primary) truncate">
+          <p className="text-xs font-medium text-[var(--text-primary)] truncate">
             {session?.title || 'Podcast'}
           </p>
-          <p className="text-[10px] text-(--text-muted)">
+          <p className="text-[10px] text-[var(--text-muted)]">
             {segments.length} segments
           </p>
         </div>
@@ -108,9 +108,9 @@ export default function PodcastPlayer() {
 
       {/* Progress bar */}
       <div className="px-3 pt-2">
-        <div className="h-1 rounded-full bg-(--surface) overflow-hidden">
+        <div className="h-1 rounded-full bg-[var(--surface)] overflow-hidden">
           <div
-            className="h-full bg-(--accent) rounded-full transition-all"
+            className="h-full bg-[var(--accent)] rounded-full transition-all"
             style={{ width: `${totalPct}%` }}
           />
         </div>
@@ -122,12 +122,12 @@ export default function PodcastPlayer() {
           <div className="flex items-center gap-2">
             <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
               currentSeg.speaker === 'host'
-                ? 'bg-(--accent)/15 text-(--accent)'
+                ? 'bg-[var(--accent)] text-[var(--accent)]'
                 : 'bg-purple-500/15 text-purple-400'
             }`}>
               {currentSeg.speaker || 'Speaker'}
             </span>
-            <p className="text-xs text-(--text-secondary) truncate flex-1">
+            <p className="text-xs text-[var(--text-secondary)] truncate flex-1">
               {currentSeg.text?.slice(0, 80)}...
             </p>
           </div>
@@ -136,19 +136,19 @@ export default function PodcastPlayer() {
 
       {/* Transport controls */}
       <div className="flex items-center justify-center gap-4 px-3 py-3">
-        <button onClick={prevSegment} className="p-2 rounded-xl hover:bg-(--surface-overlay) transition-colors">
-          <SkipBack className="w-5 h-5 text-(--text-secondary)" />
+        <button onClick={prevSegment} className="p-2 rounded-xl hover:bg-[var(--surface-overlay)] transition-colors">
+          <SkipBack className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
 
         <button
           onClick={togglePlayPause}
-          className="p-3 rounded-2xl bg-(--accent) text-white hover:bg-(--accent-light) transition-colors shadow-lg shadow-(--accent)/20"
+          className="p-3 rounded-2xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors shadow-lg shadow-[var(--accent)]"
         >
           {isPlaying ? <Pause className="w-6 h-6" fill="currentColor" /> : <Play className="w-6 h-6" fill="currentColor" />}
         </button>
 
-        <button onClick={nextSegment} className="p-2 rounded-xl hover:bg-(--surface-overlay) transition-colors">
-          <SkipForward className="w-5 h-5 text-(--text-secondary)" />
+        <button onClick={nextSegment} className="p-2 rounded-xl hover:bg-[var(--surface-overlay)] transition-colors">
+          <SkipForward className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
       </div>
 
@@ -156,34 +156,34 @@ export default function PodcastPlayer() {
       <div className="flex items-center justify-center gap-3 px-3 pb-3">
         <button
           onClick={handleSpeedCycle}
-          className="px-2 py-1 rounded-lg text-[10px] font-bold text-(--text-muted) hover:bg-(--surface-overlay) transition-colors tabular-nums"
+          className="px-2 py-1 rounded-lg text-[10px] font-bold text-[var(--text-muted)] hover:bg-[var(--surface-overlay)] transition-colors tabular-nums"
         >
           {playbackSpeed}x
         </button>
         <button
           onClick={handleBookmark}
-          className="p-1.5 rounded-lg text-(--text-muted) hover:bg-(--surface-overlay) hover:text-(--accent) transition-colors"
+          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-overlay)] hover:text-[var(--accent)] transition-colors"
         >
           <Bookmark className="w-4 h-4" />
         </button>
         <button
           onClick={() => setInterruptOpen(true)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-(--accent) hover:bg-(--accent)/10 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-[var(--accent)] hover:bg-[var(--accent)] transition-colors"
         >
           <MessageCircle className="w-3.5 h-3.5" /> Ask
         </button>
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-(--border)">
+      <div className="flex border-b border-[var(--border)]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium transition-colors border-b-2 ${
               activeTab === tab.id
-                ? 'border-(--accent) text-(--accent)'
-                : 'border-transparent text-(--text-muted) hover:text-(--text-secondary)'
+                ? 'border-[var(--accent)] text-[var(--accent)]'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
           >
             <tab.icon className="w-3.5 h-3.5" />

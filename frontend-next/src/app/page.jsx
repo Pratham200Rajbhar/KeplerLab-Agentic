@@ -145,7 +145,7 @@ export default function HomePage() {
 
       {/* ── Header ── */}
       <header
-        className="relative z-30 sticky top-0 flex items-center justify-between h-14 px-6"
+        className="z-30 sticky top-0 flex items-center justify-between h-14 px-6"
         style={{
           background: 'rgba(10,10,11,0.7)',
           backdropFilter: 'blur(16px) saturate(180%)',
@@ -263,6 +263,29 @@ export default function HomePage() {
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{error}</p>
             <button onClick={loadNotebooks} className="btn-primary text-sm px-5 py-2">Retry</button>
           </div>
+        ) : notebooks.length === 0 ? (
+          /* Empty State */
+          <div className="mt-20 text-center">
+            <div
+              className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+              style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}
+            >
+              <Sparkles className="w-7 h-7" style={{ color: 'var(--accent)' }} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+              Create your first notebook
+            </h3>
+            <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
+              Upload documents and let AI help you study, research, and create content.
+            </p>
+            <button
+              onClick={() => router.push('/notebook/draft')}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              Get started
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* New Notebook Card */}
@@ -373,31 +396,6 @@ export default function HomePage() {
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {notebooks.length === 0 && !loading && !error && (
-          <div className="mt-20 text-center">
-            <div
-              className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}
-            >
-              <Sparkles className="w-7 h-7" style={{ color: 'var(--accent)' }} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-              Create your first notebook
-            </h3>
-            <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
-              Upload documents and let AI help you study, research, and create content.
-            </p>
-            <button
-              onClick={() => router.push('/notebook/draft')}
-              className="btn-primary inline-flex items-center gap-2"
-            >
-              Get started
-              <ArrowRight className="w-4 h-4" />
-            </button>
           </div>
         )}
       </main>

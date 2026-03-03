@@ -82,33 +82,33 @@ export default function PodcastInterruptDrawer() {
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 animate-slide-up">
-      <div className="bg-(--surface-raised) border-t border-(--border) rounded-t-2xl shadow-lg p-4">
+      <div className="bg-[var(--surface-raised)] border-t border-[var(--border)] rounded-t-2xl shadow-lg p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-(--text-primary)">Ask a Question</h4>
-          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-(--surface-overlay) transition-colors">
-            <X className="w-4 h-4 text-(--text-muted)" />
+          <h4 className="text-sm font-semibold text-[var(--text-primary)]">Ask a Question</h4>
+          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+            <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
 
         {/* Answer display */}
         {answer && (
-          <div className="mb-3 p-3 rounded-xl bg-(--surface) border border-(--border) animate-fade-in">
+          <div className="mb-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] animate-fade-in">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">
                 ANSWER
               </span>
               {answer.audioPath && (
-                <button onClick={toggleAnswerAudio} className="p-0.5 rounded hover:bg-(--surface-overlay)">
+                <button onClick={toggleAnswerAudio} className="p-0.5 rounded hover:bg-[var(--surface-overlay)]">
                   {playingAnswer ? (
-                    <Pause className="w-3 h-3 text-(--accent)" fill="currentColor" />
+                    <Pause className="w-3 h-3 text-[var(--accent)]" fill="currentColor" />
                   ) : (
-                    <Play className="w-3 h-3 text-(--text-muted)" fill="currentColor" />
+                    <Play className="w-3 h-3 text-[var(--text-muted)]" fill="currentColor" />
                   )}
                 </button>
               )}
             </div>
-            <p className="text-xs text-(--text-secondary) leading-relaxed">{answer.answerText}</p>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{answer.answerText}</p>
           </div>
         )}
 
@@ -119,7 +119,7 @@ export default function PodcastInterruptDrawer() {
             className={`p-2.5 rounded-xl shrink-0 transition-colors ${
               isRecording
                 ? 'bg-red-500/20 text-red-400 animate-pulse'
-                : 'bg-(--surface) text-(--text-muted) hover:bg-(--surface-overlay)'
+                : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-overlay)]'
             }`}
           >
             {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -132,13 +132,13 @@ export default function PodcastInterruptDrawer() {
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             placeholder="Type your question..."
-            className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-(--surface) border border-(--border) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-1 focus:ring-(--accent)"
+            className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
 
           <button
             onClick={handleSubmit}
             disabled={!question.trim() || submitting}
-            className="p-2.5 rounded-xl bg-(--accent) text-white hover:bg-(--accent-light) transition-colors disabled:opacity-40 shrink-0"
+            className="p-2.5 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors disabled:opacity-40 shrink-0"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

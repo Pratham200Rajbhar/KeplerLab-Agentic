@@ -14,6 +14,7 @@ import {
   getMaterialText, deleteMaterial, updateMaterial, webSearch, uploadUrl,
 } from '@/lib/api/materials';
 import useMaterialUpdates from '@/hooks/useMaterialUpdates';
+import usePodcastStore from '@/stores/usePodcastStore';
 import SourceItem from '@/components/notebook/SourceItem';
 import UploadDialog from '@/components/notebook/UploadDialog';
 import WebSearchDialog from '@/components/notebook/WebSearchDialog';
@@ -43,8 +44,10 @@ export default function Sidebar({ onNavigate }) {
     addMaterial, setLoadingState, loading, currentNotebook,
     setCurrentNotebook, draftMode, setDraftMode, selectedSources,
     setSelectedSources, toggleSourceSelection, selectAllSources,
-    deselectAllSources, podcastWsHandlerRef,
+    deselectAllSources,
   } = useAppStore();
+
+  const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
 
   const [dragActive, setDragActive] = useState(false);
   const [width, setWidth] = useState(320);
@@ -76,7 +79,11 @@ export default function Sidebar({ onNavigate }) {
           status: m.status, chunkCount: m.chunk_count, source_type: m.source_type,
         }));
         setMaterials(formatted);
-        if (formatted.length > 0 && !currentMaterial) setCurrentMaterial(formatted[0]);
+        // Only auto-select first material if none is currently selected in store
+        const store = useAppStore.getState();
+        if (formatted.length > 0 && !store.currentMaterial) {
+          setCurrentMaterial(formatted[0]);
+        }
         if (autoSelect) {
           const completedIds = formatted.filter((m) => m.status === 'completed').map((m) => m.id);
           if (completedIds.length > 0) {
@@ -87,7 +94,7 @@ export default function Sidebar({ onNavigate }) {
         setLoadError('Failed to load sources. Click to retry.');
       }
     }
-  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, setMaterials, currentMaterial, setCurrentMaterial, setSelectedSources]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, setMaterials, setCurrentMaterial, setSelectedSources]);
 
   useEffect(() => {
     loadMaterials(true);
@@ -96,7 +103,7 @@ export default function Sidebar({ onNavigate }) {
   // WebSocket real-time updates
   const handleWsMessage = useCallback((msg) => {
     if (msg.type?.startsWith('podcast_')) {
-      podcastWsHandlerRef?.current?.(msg);
+      handlePodcastWsEvent(msg);
       return;
     }
     if (msg.type === 'material_update' && msg.material_id) {
@@ -114,7 +121,7 @@ export default function Sidebar({ onNavigate }) {
         }
       }
     }
-  }, [setMaterials, loadMaterials, setSelectedSources, podcastWsHandlerRef]);
+  }, [setMaterials, loadMaterials, setSelectedSources, handlePodcastWsEvent]);
 
   useMaterialUpdates(user?.id || null, handleWsMessage);
 
@@ -272,7 +279,7 @@ export default function Sidebar({ onNavigate }) {
       await updateMaterial(source.id, payload);
       const updates = isUrlOrYoutube ? { title: newName } : { filename: newName };
       setMaterials((prev) => prev.map((m) => (m.id === source.id ? { ...m, ...updates } : m)));
-      if (currentMaterial?.id === source.id) setCurrentMaterial((prev) => (prev ? { ...prev, ...updates } : null));
+      if (currentMaterial?.id === source.id) setCurrentMaterial({ ...currentMaterial, ...updates });
     } catch (error) {
       toast.error('Failed to rename source: ' + error.message);
     }

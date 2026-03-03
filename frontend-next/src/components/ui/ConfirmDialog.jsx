@@ -26,12 +26,12 @@ export default function ConfirmDialog() {
     <div className="fixed inset-0 z-[9998] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-(--backdrop) animate-fade-in"
+        className="absolute inset-0 bg-[var(--backdrop)] animate-fade-in"
         onClick={handleClose}
       />
 
       {/* Dialog */}
-      <div className="relative bg-(--surface-raised) border border-(--border) rounded-2xl shadow-(--shadow-glass) max-w-sm w-full mx-4 animate-slide-up">
+      <div className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] max-w-sm w-full mx-4 animate-slide-up">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start gap-4 mb-4">
@@ -39,19 +39,19 @@ export default function ConfirmDialog() {
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   isDanger
-                    ? 'bg-(--danger-subtle) text-(--danger)'
-                    : 'bg-(--accent-subtle) text-(--accent)'
+                    ? 'bg-[var(--danger-subtle)] text-[var(--danger)]'
+                    : 'bg-[var(--accent-subtle)] text-[var(--accent)]'
                 }`}
               >
                 {state.icon || <AlertTriangle className="w-5 h-5" />}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-(--text-primary)">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">
                 {state.title}
               </h3>
               {state.message && (
-                <p className="mt-1.5 text-sm text-(--text-secondary) leading-relaxed">
+                <p className="mt-1.5 text-sm text-[var(--text-secondary)] leading-relaxed">
                   {state.message}
                 </p>
               )}
@@ -70,7 +70,7 @@ export default function ConfirmDialog() {
                   if (e.key === 'Enter' && inputValue.trim()) handleConfirm();
                 }}
                 placeholder={state.placeholder}
-                className="w-full px-3 py-2.5 rounded-xl bg-(--surface) border border-(--border) text-(--text-primary) text-sm placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-(--focus-ring) transition-all"
+                className="w-full px-3 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] transition-all"
                 aria-label={state.title}
               />
             </div>
@@ -80,7 +80,7 @@ export default function ConfirmDialog() {
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm rounded-lg border border-(--border) text-(--text-secondary) hover:bg-(--surface-overlay) transition-colors"
+              className="px-4 py-2 text-sm rounded-lg border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors"
             >
               {state.cancelLabel}
             </button>
@@ -89,8 +89,8 @@ export default function ConfirmDialog() {
               disabled={state.prompt && !inputValue.trim()}
               className={`px-4 py-2 text-sm rounded-lg text-white font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 isDanger
-                  ? 'bg-(--danger) hover:bg-(--danger-dark)'
-                  : 'bg-(--accent) hover:bg-(--accent-dark)'
+                  ? 'bg-[var(--danger)] hover:bg-[var(--danger-dark)]'
+                  : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]'
               }`}
               autoFocus={!state.prompt}
             >

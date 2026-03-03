@@ -17,16 +17,16 @@ router = APIRouter()
 
 
 class DifficultyLevel(str, Enum):
-    easy = "Easy"
-    medium = "Medium"
-    hard = "Hard"
+    easy = "easy"
+    medium = "medium"
+    hard = "hard"
 
 
 class FlashcardRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
     topic: Optional[str] = Field(None, max_length=500)
-    card_count: Optional[int] = Field(None, ge=1, le=100)
+    card_count: Optional[int] = Field(None, ge=1, le=150)
     difficulty: DifficultyLevel = DifficultyLevel.medium
     additional_instructions: Optional[str] = Field(None, max_length=2000)
 
@@ -40,27 +40,44 @@ async def create_flashcards(
     if not ids:
         raise HTTPException(status_code=400, detail="No material selected")
 
+    logger.info(
+        "Flashcard generation started | user=%s | material_ids=%s | count=%s | difficulty=%s | topic=%s",
+        current_user.id, ids, request.card_count, request.difficulty.value, request.topic or "none",
+    )
+
     if len(ids) == 1:
         text = await require_material_text(ids[0], current_user.id)
     else:
         text = await require_materials_text(ids, current_user.id)
-    
+
+    logger.debug("Flashcard source text loaded | chars=%d", len(text))
+
     if request.topic and request.topic.strip():
         text = f"Focus on the topic: {request.topic}\n\nContent:\n{text}"
+        logger.debug("Flashcard topic filter applied | topic=%s", request.topic)
 
     try:
         loop = asyncio.get_running_loop()
+        logger.info("Flashcard LLM call dispatched | user=%s", current_user.id)
         flashcards = await loop.run_in_executor(
             None,
             lambda: generate_flashcards(
                 text,
                 card_count=request.card_count,
-                difficulty=request.difficulty.value,
+                difficulty=request.difficulty.value.capitalize(),
                 instructions=request.additional_instructions,
             ),
         )
+        count = len(flashcards.get("flashcards") or flashcards.get("cards") or [])
+        logger.info(
+            "Flashcard generation complete | user=%s | cards=%d",
+            current_user.id, count,
+        )
         return JSONResponse(content=flashcards)
     except Exception as e:
-        logger.error(f"Flashcard generation failed: {e}")
+        logger.error(
+            "Flashcard generation failed | user=%s | material_ids=%s | error=%s",
+            current_user.id, ids, e, exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Failed to generate flashcards")
 

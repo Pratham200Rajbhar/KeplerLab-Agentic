@@ -165,25 +165,37 @@ async def reflect(state: AgentState) -> AgentState:
 
         # -- 2b. Tool failed (non-code) — retry if budget allows ---
         if not last_success and last_tool not in _CODE_TOOLS:
-            new_retries = step_retries + 1
-            if new_retries <= _MAX_STEP_RETRIES:
-                logger.info(
-                    "[reflect] Tool failed — retry #%d for step %d (tool=%s)",
-                    new_retries, current_step, last_tool,
-                )
-                return {
-                    **state,
-                    "iterations": iterations,
-                    "step_retries": new_retries,
-                    "needs_retry": True,
-                    "current_step": max(0, current_step - 1),
-                }
-            else:
+            error_text = str(last_result.get("error", "") or "")
+            is_rate_limit = any(
+                kw in error_text
+                for kw in ("429", "quota", "ResourceExhausted", "rate limit", "rate_limit")
+            )
+            if is_rate_limit:
                 logger.warning(
-                    "[reflect] Tool '%s' failed after %d retries — moving on",
-                    last_tool, _MAX_STEP_RETRIES,
+                    "[reflect] Rate-limit error on tool '%s' — skipping (will not retry quota errors)",
+                    last_tool,
                 )
-                # Fall through to step-advance logic below
+                # Fall through to step-advance logic — do not retry
+            else:
+                new_retries = step_retries + 1
+                if new_retries <= _MAX_STEP_RETRIES:
+                    logger.info(
+                        "[reflect] Tool failed — retry #%d for step %d (tool=%s)",
+                        new_retries, current_step, last_tool,
+                    )
+                    return {
+                        **state,
+                        "iterations": iterations,
+                        "step_retries": new_retries,
+                        "needs_retry": True,
+                        "current_step": max(0, current_step - 1),
+                    }
+                else:
+                    logger.warning(
+                        "[reflect] Tool '%s' failed after %d retries — moving on",
+                        last_tool, _MAX_STEP_RETRIES,
+                    )
+                    # Fall through to step-advance logic below
 
         # -- 2c. Reset repair_attempts on success ---
         if last_success and repair_attempts > 0:

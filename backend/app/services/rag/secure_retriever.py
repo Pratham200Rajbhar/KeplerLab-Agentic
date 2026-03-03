@@ -518,7 +518,8 @@ def secure_similarity_search_enhanced(
             # query_results["embeddings"] is [ [vec_for_result_0, ...] ] per query.
             # We want the single query vector (first result's embedding).
             raw_embs = query_results.get("embeddings", [[]])[0]
-            query_embedding = raw_embs[0] if raw_embs else []
+            # Use len() instead of truthiness check — numpy arrays raise on `if array`
+            query_embedding = raw_embs[0] if (raw_embs is not None and len(raw_embs) > 0) else []
 
             if query_embedding:
                 mmr_indices = _apply_mmr(

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw, Download, List, Grid, Keyboard } from 'lucide-react';
 
 export default function InlineFlashcardsView({ flashcards, onClose }) {
-  const cards = useMemo(() => flashcards?.cards || flashcards || [], [flashcards]);
+  const cards = useMemo(() => flashcards?.flashcards || flashcards?.cards || (Array.isArray(flashcards) ? flashcards : []), [flashcards]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [viewMode, setViewMode] = useState('card'); // card | list
@@ -76,7 +76,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
   if (!cards.length) {
     return (
       <div className="px-4 py-8 text-center">
-        <p className="text-sm text-(--text-muted)">No flashcards available</p>
+        <p className="text-sm text-[var(--text-muted)]">No flashcards available</p>
       </div>
     );
   }
@@ -85,55 +85,64 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
     <div ref={containerRef} className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setViewMode('card')}
-            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'card' ? 'bg-(--accent)/10 text-(--accent)' : 'text-(--text-muted) hover:bg-(--surface-overlay)'}`}
+            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'card' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-overlay)]'}`}
           >
             <Grid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-(--accent)/10 text-(--accent)' : 'text-(--text-muted) hover:bg-(--surface-overlay)'}`}
+            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-overlay)]'}`}
           >
             <List className="w-4 h-4" />
           </button>
         </div>
         <button
           onClick={handleExportPDF}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-(--text-secondary) hover:bg-(--surface-overlay) transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors border border-[var(--border)]"
         >
-          <Download className="w-3.5 h-3.5" /> PDF
+          <Download className="w-3.5 h-3.5" /> Export PDF
         </button>
       </div>
 
       {viewMode === 'card' ? (
         <>
-          {/* Card view */}
+          {/* Card view — proper 3D flip */}
           <div
             onClick={() => setFlipped(!flipped)}
-            className="relative min-h-[200px] rounded-xl border border-(--border) bg-(--surface) cursor-pointer select-none transition-all hover:border-(--accent)/30 overflow-hidden"
-            style={{ perspective: '1000px' }}
+            className="relative h-52 rounded-xl border border-[var(--border)] bg-[var(--surface)] cursor-pointer select-none hover:border-[var(--accent)] transition-colors"
+            style={{ perspective: '1200px' }}
           >
             <div
-              className="w-full h-full p-6 flex flex-col items-center justify-center text-center transition-transform duration-500"
-              style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+              className="w-full h-full transition-transform duration-500 relative"
+              style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
             >
-              {!flipped ? (
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-(--text-muted) mb-3 block">Question</span>
-                  <p className="text-sm text-(--text-primary) leading-relaxed">{card.front || card.question}</p>
+              {/* Front face */}
+              <div
+                className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center rounded-xl bg-[var(--surface)]"
+                style={{ backfaceVisibility: 'hidden' }}
+              >
+                <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3 block font-medium">Question</span>
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">{card.front || card.question}</p>
+                <div className="absolute bottom-3 right-3 opacity-30">
+                  <RotateCw className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                 </div>
-              ) : (
-                <div style={{ transform: 'rotateY(180deg)' }}>
-                  <span className="text-[10px] uppercase tracking-wider text-(--accent) mb-3 block">Answer</span>
-                  <p className="text-sm text-(--text-primary) leading-relaxed">{card.back || card.answer}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="absolute bottom-3 right-3">
-              <RotateCw className="w-3.5 h-3.5 text-(--text-muted) opacity-40" />
+              </div>
+              {/* Back face */}
+              <div
+                className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center rounded-xl"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  background: 'linear-gradient(135deg, var(--accent-subtle), var(--surface))',
+                  border: '1px solid var(--accent-border)',
+                }}
+              >
+                <span className="text-[10px] uppercase tracking-widest text-[var(--accent)] mb-3 block font-medium">Answer</span>
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">{card.back || card.answer}</p>
+              </div>
             </div>
           </div>
 
@@ -142,24 +151,24 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
             <button
               onClick={goPrev}
               disabled={currentIndex === 0}
-              className="p-2 rounded-lg hover:bg-(--surface-overlay) transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors disabled:opacity-30"
             >
-              <ChevronLeft className="w-5 h-5 text-(--text-secondary)" />
+              <ChevronLeft className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
-            <span className="text-xs text-(--text-muted)">
+            <span className="text-xs text-[var(--text-muted)]">
               {currentIndex + 1} / {cards.length}
             </span>
             <button
               onClick={goNext}
               disabled={currentIndex === cards.length - 1}
-              className="p-2 rounded-lg hover:bg-(--surface-overlay) transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors disabled:opacity-30"
             >
-              <ChevronRight className="w-5 h-5 text-(--text-secondary)" />
+              <ChevronRight className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-[10px] text-(--text-muted) text-center flex items-center justify-center gap-1">
+          <p className="text-[10px] text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
             <Keyboard className="w-3 h-3" /> Space to flip, arrows to navigate
           </p>
         </>
@@ -167,12 +176,12 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
         /* List view */
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {cards.map((c, i) => (
-            <div key={i} className="p-3 rounded-lg border border-(--border) bg-(--surface)">
-              <p className="text-xs font-medium text-(--text-primary) mb-1.5">
-                <span className="text-(--text-muted) mr-1">{i + 1}.</span>
+            <div key={i} className="p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+              <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5">
+                <span className="text-[var(--text-muted)] mr-1">{i + 1}.</span>
                 {c.front || c.question}
               </p>
-              <p className="text-xs text-(--text-secondary) pl-4 border-l-2 border-(--accent)/30">
+              <p className="text-xs text-[var(--text-secondary)] pl-4 border-l-2 border-[var(--accent)]">
                 {c.back || c.answer}
               </p>
             </div>

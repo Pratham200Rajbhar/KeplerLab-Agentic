@@ -78,8 +78,8 @@ export default function InlineExplainerView({ explainer, onClose }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-(--accent) animate-spin" />
-        <span className="ml-2 text-sm text-(--text-muted)">Loading video...</span>
+        <Loader2 className="w-6 h-6 text-[var(--accent)] animate-spin" />
+        <span className="ml-2 text-sm text-[var(--text-muted)]">Loading video...</span>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
     return (
       <div className="px-4 py-8 text-center">
         <p className="text-sm text-red-400">{error}</p>
-        <button onClick={onClose} className="mt-3 text-xs text-(--accent) hover:underline">Go back</button>
+        <button onClick={onClose} className="mt-3 text-xs text-[var(--accent)] hover:underline">Go back</button>
       </div>
     );
   }
@@ -111,20 +111,20 @@ export default function InlineExplainerView({ explainer, onClose }) {
 
       {/* Controls */}
       <div className="flex items-center gap-3 px-2">
-        <button onClick={() => skip(-10)} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) transition-colors">
-          <SkipBack className="w-4 h-4 text-(--text-secondary)" />
+        <button onClick={() => skip(-10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <SkipBack className="w-4 h-4 text-[var(--text-secondary)]" />
         </button>
-        <button onClick={togglePlay} className="p-2 rounded-xl bg-(--accent) text-white hover:bg-(--accent-light) transition-colors">
+        <button onClick={togglePlay} className="p-2 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
           {isPlaying ? <Pause className="w-4 h-4" fill="currentColor" /> : <Play className="w-4 h-4" fill="currentColor" />}
         </button>
-        <button onClick={() => skip(10)} className="p-1.5 rounded-lg hover:bg-(--surface-overlay) transition-colors">
-          <SkipForward className="w-4 h-4 text-(--text-secondary)" />
+        <button onClick={() => skip(10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <SkipForward className="w-4 h-4 text-[var(--text-secondary)]" />
         </button>
 
         {/* Progress */}
         <div className="flex-1 mx-2">
           <div
-            className="h-1 rounded-full bg-(--surface) cursor-pointer"
+            className="h-1 rounded-full bg-[var(--surface)] cursor-pointer"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = (e.clientX - rect.left) / rect.width;
@@ -132,20 +132,20 @@ export default function InlineExplainerView({ explainer, onClose }) {
             }}
           >
             <div
-              className="h-full rounded-full bg-(--accent) transition-all"
+              className="h-full rounded-full bg-[var(--accent)] transition-all"
               style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
             />
           </div>
         </div>
 
-        <span className="text-[10px] text-(--text-muted) tabular-nums">
+        <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
 
         {chapters.length > 0 && (
           <button
             onClick={() => setShowChapters(!showChapters)}
-            className={`p-1.5 rounded-lg transition-colors ${showChapters ? 'bg-(--accent)/10 text-(--accent)' : 'hover:bg-(--surface-overlay) text-(--text-muted)'}`}
+            className={`p-1.5 rounded-lg transition-colors ${showChapters ? 'bg-[var(--accent)] text-[var(--accent)]' : 'hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]'}`}
           >
             <List className="w-4 h-4" />
           </button>
@@ -159,10 +159,10 @@ export default function InlineExplainerView({ explainer, onClose }) {
             <button
               key={i}
               onClick={() => jumpToChapter(ch)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-(--surface-overlay) transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-[var(--surface-overlay)] transition-colors"
             >
-              <span className="text-[10px] text-(--text-muted) tabular-nums w-10">{formatTime(ch.startTime || 0)}</span>
-              <span className="text-xs text-(--text-primary) truncate">{ch.title || `Chapter ${i + 1}`}</span>
+              <span className="text-[10px] text-[var(--text-muted)] tabular-nums w-10">{formatTime(ch.startTime || 0)}</span>
+              <span className="text-xs text-[var(--text-primary)] truncate">{ch.title || `Chapter ${i + 1}`}</span>
             </button>
           ))}
         </div>
