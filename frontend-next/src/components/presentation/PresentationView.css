@@ -1,0 +1,41 @@
+/* ─── Presentation Viewer Styles ─── */
+
+.presentation-viewer {
+  position: relative;
+}
+
+.presentation-viewer iframe {
+  transform-origin: top left;
+  background: white;
+  border-radius: 0;
+}
+
+/* Fullscreen overrides */
+.presentation-viewer:fullscreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.presentation-viewer:fullscreen .controls-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+/* Slide transition */
+.presentation-viewer .slide-container {
+  transition: opacity 0.2s ease;
+}
+
+/* Overview grid hover effect */
+.presentation-viewer .overview-thumb:hover {
+  transform: scale(1.02);
+}
