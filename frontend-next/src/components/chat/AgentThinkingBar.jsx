@@ -29,10 +29,21 @@ export default memo(function AgentThinkingBar({
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!isActive || currentStep) { clearInterval(timerRef.current); return; }
-    setCycleIdx(0);
-    timerRef.current = setInterval(() => setCycleIdx(i => (i + 1) % THINKING_CYCLE.length), 1800);
-    return () => clearInterval(timerRef.current);
+    if (!isActive || currentStep) {
+      clearInterval(timerRef.current);
+      return;
+    }
+    // Schedule the index reset as a macrotask so setState is called
+    // asynchronously (not synchronously inside the effect body).
+    const resetTimer = setTimeout(() => setCycleIdx(0), 0);
+    timerRef.current = setInterval(
+      () => setCycleIdx((i) => (i + 1) % THINKING_CYCLE.length),
+      1800,
+    );
+    return () => {
+      clearTimeout(resetTimer);
+      clearInterval(timerRef.current);
+    };
   }, [isActive, currentStep]);
 
   if (!isActive) return null;

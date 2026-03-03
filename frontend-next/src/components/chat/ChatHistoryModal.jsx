@@ -24,7 +24,7 @@ export default function ChatHistoryModal({
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
     const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     filteredSessions.forEach(session => {
-      const d = new Date(session.createdAt || Date.now());
+      const d = new Date(session.createdAt ?? 0);
       if (d >= today) groups.today.push(session);
       else if (d >= yesterday) groups.yesterday.push(session);
       else if (d >= sevenDaysAgo) groups.previous7Days.push(session);

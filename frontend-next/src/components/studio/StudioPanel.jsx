@@ -20,6 +20,7 @@ import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
 import usePodcast from '@/hooks/usePodcast';
 import { generateFlashcards, generateQuiz, generatePresentation } from '@/lib/api/generation';
+import { generateMindMap } from '@/lib/api/mindmap';
 import {
   saveGeneratedContent,
   getGeneratedContent,
@@ -52,8 +53,8 @@ const PodcastStudio = dynamic(
   () => import('@/components/podcast/PodcastStudio'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
-const MindMapView = dynamic(
-  () => import('@/components/mindmap/MindMapView'),
+const MindMapCanvas = dynamic(
+  () => import('@/components/mindmap/MindMapCanvas'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
 
@@ -98,6 +99,7 @@ export default function StudioPanel() {
   const [presentationData, setPresentationData] = useState(null);
   const [explainerData, setExplainerData] = useState(null);
   const [mindmapData, setMindmapData] = useState(null);
+  const [showMindmapCanvas, setShowMindmapCanvas] = useState(false);
 
   /* ── Config dialog visibility ── */
   const [showPresentationConfig, setShowPresentationConfig] = useState(false);
@@ -323,21 +325,62 @@ export default function StudioPanel() {
     }
   };
 
-  const handleMindmapGenerated = useCallback(
-    async () => {
-      if (!canSave) return;
-      try {
-        const contents = await getGeneratedContent(currentNotebook.id);
-        setContentHistory(contents.map((c) => ({ ...c })));
-        const latest = contents.find((c) => c.content_type === 'mindmap');
-        if (latest) setMindmapData(latest.data);
-      } catch (err) {
-        console.error('Failed to refresh content history after mindmap generation:', err);
+  const handleMindmapClick = async () => {
+    if (!effectiveMaterial) return;
+    if (mindmapData) {
+      setShowMindmapCanvas(true);
+      return;
+    }
+    setLoadingState('mindmap', true);
+    const ac = new AbortController();
+    abortControllerRef.current.mindmap = ac;
+    try {
+      const data = await generateMindMap({
+        notebookId: currentNotebook.id,
+        materialIds: selectedMaterialIds,
+        signal: ac.signal,
+      });
+      setMindmapData(data);
+      const saved = await trySave('mindmap', data, data.title || 'Mind Map');
+      if (saved) {
+        setContentHistory((prev) => [saved, ...prev]);
+        toast.success('Mind map saved to Created');
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canSave, currentNotebook?.id]
-  );
+      setShowMindmapCanvas(true);
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      toast.error(error.message || 'Failed to generate mind map. Please try again.');
+    } finally {
+      setLoadingState('mindmap', false);
+    }
+  };
+
+  const handleMindmapRegenerate = async () => {
+    if (!currentNotebook?.id || !selectedMaterialIds.length) return;
+    setLoadingState('mindmap', true);
+    const ac = new AbortController();
+    abortControllerRef.current.mindmap = ac;
+    try {
+      const data = await generateMindMap({
+        notebookId: currentNotebook.id,
+        materialIds: selectedMaterialIds,
+        signal: ac.signal,
+      });
+      setMindmapData(data);
+      const saved = await trySave('mindmap', data, data.title || 'Mind Map');
+      if (saved) {
+        setContentHistory((prev) => {
+          const exists = prev.find((c) => c.content_type === 'mindmap' && c.id === saved.id);
+          return exists ? prev.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...prev];
+        });
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      toast.error(error.message || 'Failed to regenerate mind map.');
+    } finally {
+      setLoadingState('mindmap', false);
+    }
+  };
 
   /* ═══════════════ History item actions ═══════════════ */
 
@@ -363,7 +406,7 @@ export default function StudioPanel() {
         break;
       case 'mindmap':
         setMindmapData(item.data);
-        setActiveView('mindmap');
+        setShowMindmapCanvas(true);
         break;
     }
   };
@@ -426,7 +469,7 @@ export default function StudioPanel() {
             break;
           case 'mindmap':
             setMindmapData(null);
-            setActiveView(null);
+            setShowMindmapCanvas(false);
             break;
         }
       }
@@ -560,7 +603,8 @@ export default function StudioPanel() {
       title: 'Mind Map',
       description: 'Visualize concept relationships',
       icon: <Network className="w-5 h-5" />,
-      onClick: () => setActiveView('mindmap'),
+      onClick: handleMindmapClick,
+      onCancel: () => handleCancelGeneration('mindmap'),
     },
   ];
 
@@ -578,7 +622,6 @@ export default function StudioPanel() {
     presentation: 'Presentation',
     explainer: 'Explainer Video',
     podcast: 'AI Podcast',
-    mindmap: 'Mind Map',
   };
 
   /* ── Inline content renderer ── */
@@ -611,12 +654,7 @@ export default function StudioPanel() {
         return <InlineExplainerView explainer={explainerData} onClose={() => setActiveView(null)} />;
       case 'podcast':
         return <PodcastStudio onRequestNew={() => setShowPodcastConfig(true)} />;
-      case 'mindmap':
-        return (
-          <MindMapView
-            notebookId={currentNotebook?.id}
-          />
-        );
+
       default:
         return null;
     }
@@ -677,6 +715,14 @@ export default function StudioPanel() {
         />
       )}
 
+      {showMindmapCanvas && mindmapData && (
+        <MindMapCanvas
+          mapData={mindmapData}
+          onClose={() => setShowMindmapCanvas(false)}
+          onRegenerate={handleMindmapRegenerate}
+        />
+      )}
+
       <aside
         ref={panelRef}
         className="glass-light h-full overflow-hidden flex flex-col relative"
@@ -721,7 +767,9 @@ export default function StudioPanel() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 relative">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Main scrollable area */}
+          <div className="flex-1 overflow-y-auto p-4 relative">
           {activeView ? (
             renderInlineContent()
           ) : effectiveMaterial ? (
@@ -744,13 +792,13 @@ export default function StudioPanel() {
                 )}
               </p>
 
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {outputs.map((output, i) => (
                   <div
                     key={output.id}
                     className="animate-fade-up"
                     style={{
-                      animationDelay: `${i * 60}ms`,
+                      animationDelay: `${i * 50}ms`,
                       animationFillMode: 'backwards',
                     }}
                   >
@@ -769,11 +817,14 @@ export default function StudioPanel() {
 
               {/* Podcast generating progress */}
               {podcast.phase === 'generating' && podcast.generationProgress && (
-                <div className="mt-3 p-3 rounded-xl border border-[var(--accent)] bg-[var(--accent)] animate-fade-in">
+                <div className="mt-3 p-3 rounded-xl border border-[var(--accent-border,var(--accent))] bg-[var(--accent-subtle)] animate-fade-in">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="loading-spinner w-4 h-4" />
-                    <span className="text-xs font-medium text-[var(--text-primary)]">
-                      {podcast.generationProgress.message || 'Generating podcast\u2026'}
+                    <div className="loading-spinner w-3.5 h-3.5" />
+                    <span className="text-xs font-medium text-[var(--text-primary)] flex-1 truncate">
+                      {podcast.generationProgress.message || 'Generating podcast…'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
+                      {Math.round(podcast.generationProgress.pct || 0)}%
                     </span>
                   </div>
                   <div
@@ -784,14 +835,9 @@ export default function StudioPanel() {
                   >
                     <div
                       className="h-full rounded-full bg-[var(--accent)] transition-all duration-700 ease-out"
-                      style={{
-                        width: `${Math.max(podcast.generationProgress.pct || 0, 3)}%`,
-                      }}
+                      style={{ width: `${Math.max(podcast.generationProgress.pct || 0, 3)}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
-                    {Math.round(podcast.generationProgress.pct || 0)}% complete
-                  </p>
                 </div>
               )}
 
@@ -814,12 +860,6 @@ export default function StudioPanel() {
                 </div>
               )}
 
-              <ContentHistory
-                items={contentHistory}
-                onSelect={handleViewHistoryItem}
-                onRename={openHistoryRenameModal}
-                onDelete={handleHistoryDelete}
-              />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
@@ -833,7 +873,33 @@ export default function StudioPanel() {
               </p>
             </div>
           )}
-        </div>
+          </div>{/* end main scrollable */}
+
+          {/* ── Created ─ persistent section always visible when items exist ── */}
+          {contentHistory.length > 0 && (
+            <div
+              className="border-t border-[var(--border)] flex flex-col shrink-0"
+              style={{ maxHeight: '42%' }}
+            >
+              {/* Partition label */}
+              <div className="flex items-center gap-3 px-4 py-2 shrink-0">
+                <div className="flex-1 h-px bg-[var(--border)]" />
+                <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                  Created
+                </span>
+                <div className="flex-1 h-px bg-[var(--border)]" />
+              </div>
+              <div className="overflow-y-auto px-2 pb-2">
+                <ContentHistory
+                  items={contentHistory}
+                  onSelect={handleViewHistoryItem}
+                  onRename={openHistoryRenameModal}
+                  onDelete={handleHistoryDelete}
+                />
+              </div>
+            </div>
+          )}
+        </div>{/* end Content Area */}
       </aside>
     </>
   );

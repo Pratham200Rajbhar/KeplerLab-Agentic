@@ -50,15 +50,18 @@ const useToastStore = create((set, get) => ({
   warning: (msg, duration) => get().addToast(msg, 'warning', duration),
 }));
 
-// Create a toast function with convenience methods for backward compat
+// Hook that returns a plain object with all toast methods.
+// Usage: const toast = useToast(); then call toast.success('msg'), toast.error('msg'), etc.
 export function useToast() {
   const store = useToastStore();
-  const toast = (message, type, duration) => store.addToast(message, type, duration);
-  toast.success = store.success;
-  toast.error = store.error;
-  toast.info = store.info;
-  toast.warning = store.warning;
-  return toast;
+  // Return a new object — never mutate the value returned from the hook.
+  return {
+    toast: (message, type, duration) => store.addToast(message, type, duration),
+    success: store.success,
+    error: store.error,
+    info: store.info,
+    warning: store.warning,
+  };
 }
 
 export default useToastStore;

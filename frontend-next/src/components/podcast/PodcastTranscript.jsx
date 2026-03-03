@@ -39,8 +39,8 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
             <div className="flex items-start gap-2">
               {/* Speaker badge */}
               <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${
-                seg.speaker === 'host'
-                  ? 'bg-[var(--accent)] text-[var(--accent)]'
+                (seg.speaker === 'host' || seg.speaker === 'HOST')
+                  ? 'bg-blue-500/15 text-blue-400'
                   : 'bg-purple-500/15 text-purple-400'
               }`}>
                 {seg.speaker || 'Speaker'}

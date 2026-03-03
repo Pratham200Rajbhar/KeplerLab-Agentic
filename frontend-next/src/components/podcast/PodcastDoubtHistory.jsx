@@ -10,10 +10,13 @@ export default function PodcastDoubtHistory({ doubts = [], playSegment }) {
 
   // Cleanup audio on unmount
   useEffect(() => {
+    // Copy the ref value to a local variable so the cleanup function reads
+    // the same Audio instance even if the ref changes before cleanup runs.
+    const audio = audioRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (audio) {
+        audio.pause();
+        audio.src = '';
       }
     };
   }, []);

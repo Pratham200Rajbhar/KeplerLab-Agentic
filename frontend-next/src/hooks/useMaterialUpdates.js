@@ -21,6 +21,10 @@ export default function useMaterialUpdates(userId, onMessage) {
     onMessageRef.current = onMessage;
   }, [onMessage]);
 
+  // Stable ref to the connect function so ws.onclose can schedule a reconnect
+  // without creating a circular self-reference inside the useCallback.
+  const connectRef = useRef(null);
+
   const connect = useCallback(() => {
     if (!userId) return;
 
@@ -59,7 +63,9 @@ export default function useMaterialUpdates(userId, onMessage) {
         wsRef.current = null;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         reconnectAttempts.current += 1;
-        reconnectTimer.current = setTimeout(connect, delay);
+        // Use the ref to schedule reconnection — avoids a self-referential closure
+        // that the linter would flag as accessing `connect` before it is declared.
+        reconnectTimer.current = setTimeout(() => connectRef.current?.(), delay);
       };
 
       ws.onerror = () => {
@@ -70,9 +76,14 @@ export default function useMaterialUpdates(userId, onMessage) {
     } catch {
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
       reconnectAttempts.current += 1;
-      reconnectTimer.current = setTimeout(connect, delay);
+      reconnectTimer.current = setTimeout(() => connectRef.current?.(), delay);
     }
   }, [userId]);
+
+  // Keep the ref current so ws.onclose always calls the latest version
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   useEffect(() => {
     connect();

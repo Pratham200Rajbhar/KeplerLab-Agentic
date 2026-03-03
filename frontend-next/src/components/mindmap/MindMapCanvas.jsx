@@ -5,6 +5,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Controls,
+  MiniMap,
   Background,
   useNodesState,
   useEdgesState,
@@ -13,7 +14,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
 import { toPng } from 'html-to-image';
-import { X, Search, Download, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { X, Search, Download, ZoomIn, ZoomOut, Maximize2, RefreshCw } from 'lucide-react';
 import MindMapNode from './MindMapNode';
 import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
@@ -27,9 +28,30 @@ const NODE_HEIGHT = 50;
 function layoutNodes(mapData) {
   if (!mapData?.nodes?.length) return { nodes: [], edges: [] };
 
+  // ── Derive edges from parent_id when no explicit edges array provided ──
+  const edgesList = Array.isArray(mapData.edges) && mapData.edges.length > 0
+    ? mapData.edges
+    : mapData.nodes
+        .filter((n) => n.parent_id)
+        .map((n) => ({ source: n.parent_id, target: n.id }));
+
+  // ── Derive depth from parent_id hierarchy ──
+  const depthMap = {};
+  const getDepth = (nodeId, visited = new Set()) => {
+    if (depthMap[nodeId] !== undefined) return depthMap[nodeId];
+    if (visited.has(nodeId)) { depthMap[nodeId] = 0; return 0; } // cycle guard
+    visited.add(nodeId);
+    const node = mapData.nodes.find((n) => n.id === nodeId);
+    if (!node || !node.parent_id) { depthMap[nodeId] = 0; return 0; }
+    const parentDepth = getDepth(node.parent_id, visited);
+    depthMap[nodeId] = parentDepth + 1;
+    return parentDepth + 1;
+  };
+  mapData.nodes.forEach((n) => getDepth(n.id));
+
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', ranksep: 80, nodesep: 40 });
+  g.setGraph({ rankdir: 'LR', ranksep: 120, nodesep: 28 });
 
   const rfNodes = [];
   const rfEdges = [];
@@ -39,12 +61,12 @@ function layoutNodes(mapData) {
     rfNodes.push({
       id: n.id,
       type: 'mindmap',
-      data: { label: n.label, depth: n.depth || 0, description: n.description },
+      data: { label: n.label, depth: depthMap[n.id] ?? (n.depth || 0), description: n.description },
       position: { x: 0, y: 0 },
     });
   });
 
-  (mapData.edges || []).forEach((e) => {
+  edgesList.forEach((e) => {
     g.setEdge(e.source, e.target);
     rfEdges.push({
       id: `${e.source}-${e.target}`,
@@ -67,7 +89,7 @@ function layoutNodes(mapData) {
 }
 
 /* ─── Inner Canvas (needs ReactFlow provider) ─── */
-function MindMapCanvasInner({ mapData, onClose }) {
+function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   const toggleCollapseRef = useRef(null);
   const edgesRef = useRef([]);
   const initialLayout = useMemo(() => layoutNodes(mapData), [mapData]);
@@ -112,7 +134,12 @@ function MindMapCanvasInner({ mapData, onClose }) {
       return next;
     });
   }, []);
-  toggleCollapseRef.current = toggleCollapse;
+
+  // Keep the ref in sync with the latest toggleCollapse callback.
+  // Must run in an effect — not during render — to avoid React skipping updates.
+  useEffect(() => {
+    toggleCollapseRef.current = toggleCollapse;
+  }, [toggleCollapse]);
 
   // Apply collapse visibility — uses edgesRef to avoid edges in dep array
   // so setNodes → onNodesChange → edges change does NOT re-trigger this
@@ -182,16 +209,24 @@ function MindMapCanvasInner({ mapData, onClose }) {
   }, [toast]);
 
   return (
-    <div ref={containerRef} className="w-full h-full flex flex-col">
+    /* Always a fixed full-screen dialog — same pattern as original project */
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--surface)' }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
+        {/* Left: close + title */}
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
-            <X className="w-5 h-5 text-[var(--text-secondary)]" />
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors"
+          >
+            <X className="w-3.5 h-3.5" /> Close
           </button>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Mind Map</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+            {mapData?.title || 'Mind Map'}
+          </h3>
         </div>
 
+        {/* Right: actions */}
         <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
@@ -201,27 +236,41 @@ function MindMapCanvasInner({ mapData, onClose }) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search nodes..."
-              className="pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] w-40"
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] w-44"
             />
           </div>
 
-          <button onClick={() => zoomIn()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
+          {onRegenerate && (
+            <button
+              onClick={onRegenerate}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface-overlay)] transition-colors"
+              title="Regenerate"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Regen
+            </button>
+          )}
+
+          <button onClick={() => zoomIn()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]" title="Zoom in">
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button onClick={() => zoomOut()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
+          <button onClick={() => zoomOut()} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]" title="Zoom out">
             <ZoomOut className="w-4 h-4" />
           </button>
-          <button onClick={() => fitView({ padding: 0.2 })} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]">
+          <button onClick={() => fitView({ padding: 0.15 })} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]" title="Fit all nodes">
             <Maximize2 className="w-4 h-4" />
           </button>
-          <button onClick={handleExport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
+
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+          >
             <Download className="w-3.5 h-3.5" /> PNG
           </button>
         </div>
       </div>
 
-      {/* React Flow canvas */}
-      <div className="flex-1">
+      {/* React Flow canvas — flex-1 so it fills remaining screen */}
+      <div ref={containerRef} className="flex-1">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -230,7 +279,7 @@ function MindMapCanvasInner({ mapData, onClose }) {
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
           fitView
-          minZoom={0.2}
+          minZoom={0.1}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
@@ -240,6 +289,12 @@ function MindMapCanvasInner({ mapData, onClose }) {
             showInteractive={false}
             className="!bg-[var(--surface-raised)] !border-[var(--border)] !rounded-lg !shadow-lg"
           />
+          <MiniMap
+            position="bottom-right"
+            nodeColor="var(--accent)"
+            maskColor="rgba(0,0,0,0.4)"
+            className="!bg-[var(--surface-raised)] !border !border-[var(--border)] !rounded-lg"
+          />
         </ReactFlow>
       </div>
     </div>
@@ -247,10 +302,10 @@ function MindMapCanvasInner({ mapData, onClose }) {
 }
 
 /* ─── Wrapper with Provider ─── */
-export default function MindMapCanvas({ mapData, onClose }) {
+export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
   return (
     <ReactFlowProvider>
-      <MindMapCanvasInner mapData={mapData} onClose={onClose} />
+      <MindMapCanvasInner mapData={mapData} onClose={onClose} onRegenerate={onRegenerate} />
     </ReactFlowProvider>
   );
 }

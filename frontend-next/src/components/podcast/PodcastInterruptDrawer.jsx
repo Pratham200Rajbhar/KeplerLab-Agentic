@@ -26,10 +26,12 @@ export default function PodcastInterruptDrawer() {
 
   useEffect(() => {
     inputRef.current?.focus();
+    // Copy the ref value so cleanup always operates on the same Audio node
+    const answerAudio = answerAudioRef.current;
     return () => {
-      answerAudioRef.current?.pause();
-      if (answerAudioRef.current?.src) {
-        URL.revokeObjectURL(answerAudioRef.current.src);
+      answerAudio?.pause();
+      if (answerAudio?.src) {
+        URL.revokeObjectURL(answerAudio.src);
       }
     };
   }, []);

@@ -12,7 +12,13 @@ import usePodcastStore from '@/stores/usePodcastStore';
 export default function usePodcastWebSocket(wsRef) {
   const handleWsEvent = usePodcastStore((s) => s.handleWsEvent);
   const handlerRef = useRef(handleWsEvent);
-  handlerRef.current = handleWsEvent;
+
+  // Keep the ref in sync with the latest handler.
+  // Must run in an effect — assigning to a ref during render can cause
+  // React to miss updates when the handler changes.
+  useEffect(() => {
+    handlerRef.current = handleWsEvent;
+  }, [handleWsEvent]);
 
   useEffect(() => {
     const ws = wsRef?.current;

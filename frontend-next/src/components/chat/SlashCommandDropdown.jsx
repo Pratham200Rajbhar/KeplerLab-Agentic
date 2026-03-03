@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { SLASH_COMMANDS } from './slashCommands';
 
 export default memo(function SlashCommandDropdown({ filter, onSelect, onClose, visible }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Derived-state pattern: tie the active index to the specific filter value it was
+  // set for. When `filter` changes, activeIndex auto-resets to 0 during render
+  // without needing a separate useEffect setState call.
+  const [{ index, forFilter }, setActive] = useState({ index: 0, forFilter: filter });
+  const activeIndex = forFilter === filter ? index : 0;
   const listRef = useRef(null);
 
   const filtered = SLASH_COMMANDS.filter(cmd => {
@@ -13,18 +17,27 @@ export default memo(function SlashCommandDropdown({ filter, onSelect, onClose, v
     return cmd.command.slice(1).startsWith(search) || cmd.label.toLowerCase().startsWith(search);
   });
 
-  useEffect(() => { setActiveIndex(0); }, [filter]);
   useEffect(() => {
     if (listRef.current) listRef.current.children[activeIndex]?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
   const handleKeyDown = useCallback(e => {
     if (!visible || filtered.length === 0) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(prev => (prev + 1) % filtered.length); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(prev => (prev - 1 + filtered.length) % filtered.length); }
-    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onSelect(filtered[activeIndex]); }
-    else if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-  }, [visible, filtered, activeIndex, onSelect, onClose]);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      // setActive is a stable setState setter — no need to add it to deps
+      setActive(prev => ({ index: (prev.index + 1) % filtered.length, forFilter: filter }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(prev => ({ index: (prev.index - 1 + filtered.length) % filtered.length, forFilter: filter }));
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      onSelect(filtered[activeIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  }, [visible, filtered, filter, activeIndex, onSelect, onClose]);
 
   useEffect(() => {
     if (!visible) return;

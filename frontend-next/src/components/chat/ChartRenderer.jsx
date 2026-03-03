@@ -23,6 +23,7 @@ export default function ChartRenderer({ base64Chart, explanation, title = 'Chart
       <div className="chart-renderer">
         <div className="chart-header"><span className="chart-icon">📊</span><span className="chart-title">{title}</span></div>
         <div className="chart-image-wrapper">
+          {/* eslint-disable-next-line @next/next/no-img-element -- chart image is a dynamic data URL; Next <Image> requires known dimensions */}
           <img ref={imgRef} src={src} alt={title} className="chart-image" onClick={() => setExpanded(true)} />
         </div>
         <div className="chart-actions">
@@ -40,6 +41,7 @@ export default function ChartRenderer({ base64Chart, explanation, title = 'Chart
         <div className="chart-modal-backdrop" onClick={() => setExpanded(false)}>
           <div className="chart-modal" onClick={e => e.stopPropagation()}>
             <button className="chart-modal-close" onClick={() => setExpanded(false)}><X size={16} /></button>
+            {/* eslint-disable-next-line @next/next/no-img-element -- same dynamic data URL in the modal */}
             <img src={src} alt={title} className="chart-modal-image" />
             {explanation && <div className="chart-modal-insight markdown-content"><MarkdownRenderer content={explanation} /></div>}
           </div>

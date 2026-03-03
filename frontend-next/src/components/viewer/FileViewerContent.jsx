@@ -77,6 +77,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
       <div className="w-px h-5 bg-[var(--border)]" />
 
       {/* Favicon + domain */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- external Google favicon; domain is dynamic */}
       <img
         src={`https://www.google.com/s2/favicons?sz=32&domain=${domain}`}
         alt=""

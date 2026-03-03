@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import {
   Youtube, Globe, FileText, Presentation, Sheet, Music, Film,
-  Archive, Image, FileType, File, MoreVertical, Eye, Pencil,
+  Archive, Image as ImageIcon, FileType, File, MoreVertical, Eye, Pencil,
   Trash2, Check,
 } from 'lucide-react';
 import { useConfirm } from '@/stores/useConfirmStore';
@@ -29,7 +29,7 @@ function getSourceIcon(type, filename) {
   if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'm4a') return <Music className="w-5 h-5" />;
   if (ext === 'mp4' || ext === 'avi' || ext === 'mov' || ext === 'mkv' || ext === 'webm') return <Film className="w-5 h-5" />;
   if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') return <Archive className="w-5 h-5" />;
-  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'svg' || ext === 'webp') return <Image className="w-5 h-5" />;
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'svg' || ext === 'webp') return <ImageIcon className="w-5 h-5" />;
   if (type === 'text' || ext === 'txt') return <FileType className="w-5 h-5" />;
   return <File className="w-5 h-5" />;
 }

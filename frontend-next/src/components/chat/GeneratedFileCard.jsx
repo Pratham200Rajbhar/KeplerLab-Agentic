@@ -79,6 +79,7 @@ export default memo(function GeneratedFileCard({ filename, downloadUrl, size, fi
       {showPreview && (
         <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title={filename} size="lg">
           <div className="flex items-center justify-center p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element -- preview URL is dynamic; Next <Image> requires known dimensions */}
             <img src={downloadUrl} alt={filename} className="max-w-full max-h-[70vh] rounded-lg object-contain" />
           </div>
         </Modal>

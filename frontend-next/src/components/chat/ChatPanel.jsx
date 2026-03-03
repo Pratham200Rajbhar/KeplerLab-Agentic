@@ -241,7 +241,7 @@ export default function ChatPanel() {
     return () => {
       cancelled = true;
     };
-  }, [currentNotebook?.id, currentSessionId, draftMode, setMessages]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, currentSessionId, draftMode, setMessages]);
 
   // Auto-scroll
   useEffect(() => {

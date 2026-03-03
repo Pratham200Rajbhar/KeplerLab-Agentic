@@ -118,6 +118,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                           {isSelected && <Check className="w-3.5 h-3.5" strokeWidth={3.5} />}
                         </div>
                         {domain && (
+                          // eslint-disable-next-line @next/next/no-img-element -- external favicon URL; domain is dynamic
                           <img src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`} alt="" className="shrink-0 w-6 h-6 rounded bg-surface-overlay object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
                         )}
                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
@@ -144,6 +145,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
               <div className="absolute top-0 right-0 w-48 h-48 bg-accent-subtle rounded-full blur-3xl pointer-events-none transform translate-x-10 -translate-y-10" />
               <div className="p-6 flex-1 overflow-y-auto custom-scrollbar relative z-10 flex flex-col">
                 <div className="flex items-center gap-3 mb-5">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- external favicon URL; domain is dynamic */}
                   <img src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`} alt="" className="w-10 h-10 rounded-lg bg-surface-overlay object-contain p-1 border border-border-strong/50" onError={(e) => { e.target.style.display = 'none'; }} />
                   <h4 className="text-[13px] font-medium text-accent-light/80 tracking-wide uppercase">{getDomain(previewResult.link)}</h4>
                 </div>

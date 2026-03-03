@@ -129,6 +129,7 @@ export default function MarkdownRenderer({ content }) {
         hr: () => <hr className="md-hr" />,
         img: ({ src, alt }) => (
           <div className="md-image-wrapper">
+            {/* eslint-disable-next-line @next/next/no-img-element -- user-provided markdown image; src/dimensions unknown at build time */}
             <img src={src} alt={alt} className="md-image" loading="lazy" />
             {alt && <span className="md-image-caption">{alt}</span>}
           </div>

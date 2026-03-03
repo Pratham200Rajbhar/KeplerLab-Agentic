@@ -50,24 +50,48 @@ export default function usePodcastPlayer() {
     prefetchedRef.current.clear();
   }, [session?.id]);
 
-  // Seek within the current segment
+  // ── Auto-advance: when a segment ends, play the next one ──
+  useEffect(() => {
+    const audio = _audioEl;
+    if (!audio) return;
+
+    const onEnded = () => {
+      // Read latest state via getState() to avoid stale closures
+      const { currentSegmentIndex: idx, segments: segs, playSegment: play, pause: pauseFn } =
+        usePodcastStore.getState();
+      if (idx < segs.length - 1) {
+        play(idx + 1);
+      } else {
+        pauseFn();
+      }
+    };
+
+    audio.addEventListener('ended', onEnded);
+    return () => audio.removeEventListener('ended', onEnded);
+  }, [_audioEl]);
+
+  // Seek within the current segment.
+  // Read the audio element from getState() at call time so we're not modifying
+  // a value returned directly from a hook call (which the linter forbids).
   const seekTo = useCallback(
     (timeInSeconds) => {
-      if (_audioEl) {
-        _audioEl.currentTime = timeInSeconds;
+      const audio = usePodcastStore.getState()._audioEl;
+      if (audio) {
+        audio.currentTime = timeInSeconds;
       }
     },
-    [_audioEl],
+    [],
   );
 
   // Skip forward/back by N seconds
   const skip = useCallback(
     (deltaSeconds) => {
-      if (_audioEl) {
-        _audioEl.currentTime = Math.max(0, _audioEl.currentTime + deltaSeconds);
+      const audio = usePodcastStore.getState()._audioEl;
+      if (audio) {
+        audio.currentTime = Math.max(0, audio.currentTime + deltaSeconds);
       }
     },
-    [_audioEl],
+    [],
   );
 
   // Jump to a specific segment by index

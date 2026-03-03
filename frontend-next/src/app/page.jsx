@@ -46,25 +46,31 @@ export default function HomePage() {
   const [deletingNotebook, setDeletingNotebook] = useState(null);
   const menuRef = useRef(null);
 
-  /* ── Data Loading ── */
-  const loadNotebooks = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await getNotebooks();
-      setNotebooks(data);
-    } catch (err) {
-      console.error('Failed to load notebooks:', err);
-      setError('Failed to load notebooks. Please try again.');
-    }
-    setLoading(false);
+  /* ── Data Loading ──
+   * loadNotebooks() updates state only inside .then/.catch callbacks (async),
+   * so it never triggers synchronous cascading renders from the effect body.
+   */
+  const loadNotebooks = useCallback(() => {
+    getNotebooks()
+      .then((data) => {
+        setError(null);
+        setNotebooks(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load notebooks:', err);
+        setError('Failed to load notebooks. Please try again.');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       router.replace('/auth');
       return;
     }
-    if (!isLoading && isAuthenticated) loadNotebooks();
+    // loadNotebooks only calls setState inside async .then/.catch — not synchronously
+    loadNotebooks();
   }, [isAuthenticated, isLoading, loadNotebooks, router]);
 
   useEffect(() => {

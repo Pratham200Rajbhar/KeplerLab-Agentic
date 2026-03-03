@@ -35,19 +35,22 @@ export default function ExplainerDialog({ onClose, onComplete }) {
   const pollRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Load presentations
+  // Load presentations for the selected sources.
+  // All setState calls happen inside async .then/.catch callbacks — never synchronously
+  // in the effect body — to avoid cascading renders.
   useEffect(() => {
     if (!currentNotebook?.id) return;
-    const materialIds = [...selectedSources];
-    if (!materialIds.length) {
-      setLoadingPpts(false);
-      return;
-    }
 
+    const materialIds = [...selectedSources];
     const controller = new AbortController();
     abortRef.current = controller;
 
-    checkExplainerPresentations(materialIds, currentNotebook.id, { signal: controller.signal })
+    // If no sources are selected resolve immediately with an empty list
+    const fetchPromise = materialIds.length
+      ? checkExplainerPresentations(materialIds, currentNotebook.id, { signal: controller.signal })
+      : Promise.resolve({ presentations: [] });
+
+    fetchPromise
       .then((data) => {
         setPresentations(data?.presentations || []);
         setLoadingPpts(false);

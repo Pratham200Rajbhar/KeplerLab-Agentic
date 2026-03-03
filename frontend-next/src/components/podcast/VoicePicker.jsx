@@ -15,10 +15,13 @@ export default function VoicePicker({ label, language, value, onChange }) {
 
   // Cleanup audio on unmount
   useEffect(() => {
+    // Copy the ref value so the cleanup function always operates on the same
+    // Audio instance, even if the ref changes before cleanup runs.
+    const audio = audioRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (audio) {
+        audio.pause();
+        audio.src = '';
       }
     };
   }, []);
