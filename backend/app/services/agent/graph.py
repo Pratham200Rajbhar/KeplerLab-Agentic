@@ -386,6 +386,19 @@ async def run_agent_stream(
                     # Code has been generated, about to execute
                     code = event["data"].get("code", "")
                     yield f"event: code_written\ndata: {json.dumps({'session_id': session_id, 'code': code})}\n\n"
+                # ── /agent — ReAct step cards ────────────────────────────────
+                elif event["name"] == "agent_step":
+                    data = event["data"]
+                    yield f"event: agent_step\ndata: {json.dumps({'session_id': session_id, **data})}\n\n"
+                # ── /web — 5-phase research progress ────────────────────────
+                elif event["name"] == "web_research_phase":
+                    data = event["data"]
+                    yield f"event: web_research_phase\ndata: {json.dumps({'session_id': session_id, **data})}\n\n"
+                # ── /code — generated code awaiting user approval ────────────
+                elif event["name"] == "code_for_review":
+                    data = event["data"]
+                    yield f"event: code_for_review\ndata: {json.dumps({'session_id': session_id, **data})}\n\n"
+                    _streamed_tokens = True  # suppress duplicate token emission for /code
 
             # 4) Metadata from response_generator node — also emit response as tokens
             elif kind == "on_chain_end" and event.get("name") == "response_generator":

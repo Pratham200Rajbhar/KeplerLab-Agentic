@@ -12,15 +12,19 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 ───────────────────────────────────────────────────── */
 
 const TOOL_META = {
-  rag_tool:       { icon: '🔍', label: 'Searching your materials' },
-  research_tool:  { icon: '🌐', label: 'Researching the web' },
-  python_tool:    { icon: '🐍', label: 'Running analysis' },
-  quiz_tool:      { icon: '📝', label: 'Generating quiz' },
-  flashcard_tool: { icon: '🃏', label: 'Creating flashcards' },
-  ppt_tool:       { icon: '📊', label: 'Building slides' },
-  data_profiler:  { icon: '🧠', label: 'Profiling dataset' },
-  file_generator: { icon: '📄', label: 'Generating file' },
-  code_executor:  { icon: '⚙️', label: 'Executing code' },
+  rag_tool:            { icon: '🔍', label: 'Searching your materials' },
+  research_tool:       { icon: '🌐', label: 'Researching the web' },
+  python_tool:         { icon: '🐍', label: 'Running analysis' },
+  quiz_tool:           { icon: '📝', label: 'Generating quiz' },
+  flashcard_tool:      { icon: '🃏', label: 'Creating flashcards' },
+  ppt_tool:            { icon: '📊', label: 'Building slides' },
+  data_profiler:       { icon: '🧠', label: 'Profiling dataset' },
+  file_generator:      { icon: '📄', label: 'Generating file' },
+  code_executor:       { icon: '⚙️', label: 'Executing code' },
+  // New slash-command tools
+  agent_task_tool:     { icon: '🤖', label: 'Executing task' },
+  web_research_tool:   { icon: '🔬', label: 'Researching (structured)' },
+  code_generation_tool:{ icon: '✍️', label: 'Generating code' },
 };
 
 function getToolMeta(tool) {

@@ -23,17 +23,17 @@ CODE_EXECUTION = "CODE_EXECUTION"
 FILE_GENERATION = "FILE_GENERATION"
 CONTENT_GENERATION = "CONTENT_GENERATION"
 
+# ── Slash Command Intents (new) ────────────────────────────────
+AGENT_TASK = "AGENT_TASK"       # /agent — autonomous agentic executor
+WEB_RESEARCH = "WEB_RESEARCH"   # /web   — structured 5-phase web research
+CODE_GENERATION = "CODE_GENERATION"  # /code  — generate code, never auto-run
+
 # ── Slash Command → Intent Mapping ────────────────────────────
-# Used by the frontend to skip AI intent detection via intent_override.
+# Only these 3 commands are active.  Removed: /data /quiz /flash /summarize /mindmap
 SLASH_COMMAND_INTENTS: Dict[str, str] = {
-    "agent":     RESEARCH,           # full agentic multi-step execution
-    "web":       RESEARCH,           # web search and synthesize
-    "code":      CODE_EXECUTION,     # write and run Python code
-    "data":      DATA_ANALYSIS,      # analyze uploaded data files
-    "quiz":      CONTENT_GENERATION, # generate quiz inline in chat
-    "flash":     CONTENT_GENERATION, # generate flashcards inline in chat
-    "summarize": QUESTION,           # summarize selected materials
-    "mindmap":   CONTENT_GENERATION, # trigger mind map generation
+    "agent": AGENT_TASK,      # autonomous multi-step task executor
+    "web":   WEB_RESEARCH,   # 5-phase structured web research
+    "code":  CODE_GENERATION, # generate code + explanation, user runs explicitly
 }
 
 # ── Intent Hierarchy — order matters, checked top to bottom ──
@@ -145,11 +145,16 @@ async def detect_intent(state: AgentState) -> AgentState:
     # ── Fast bypass: caller pre-set the intent or intent_override ──────────
     if state.get("intent_override"):
         override = state["intent_override"]
-        # Map override to a valid intent.  SUMMARIZE is a special modifier
-        # that routes to QUESTION but the planner reads the override value.
+        # Map slash-command overrides to resolved internal intents.
+        # Overrides that equal a valid intent name map to themselves (default).
         intent_map = {
+            # Legacy (retained for any saved sessions)
             "SUMMARIZE": QUESTION,
             "MINDMAP": CONTENT_GENERATION,
+            # New slash commands
+            "AGENT_TASK":      AGENT_TASK,
+            "WEB_RESEARCH":    WEB_RESEARCH,
+            "CODE_GENERATION": CODE_GENERATION,
         }
         resolved_intent = intent_map.get(override, override)
         logger.info(

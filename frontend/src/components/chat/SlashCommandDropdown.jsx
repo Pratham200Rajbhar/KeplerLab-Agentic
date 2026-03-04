@@ -56,7 +56,7 @@ export default memo(function SlashCommandDropdown({ filter, onSelect, onClose, v
         </div>
         <div ref={listRef} className="py-1">
           {filtered.map((cmd, idx) => (
-            <button key={cmd.command} onClick={() => onSelect(cmd)} onMouseEnter={() => setActiveIndex(idx)}
+            <button key={cmd.command} onClick={() => onSelect(cmd)} onMouseEnter={() => setActive({ index: idx, forFilter: filter })}
               className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-75 ${idx === activeIndex ? 'bg-accent/10' : 'hover:bg-surface-overlay/50'}`}>
               <span className="inline-flex items-center justify-center w-16 text-xs font-mono font-semibold rounded-md px-1.5 py-0.5 border"
                 style={{ borderColor: `${cmd.color}40`, backgroundColor: `${cmd.color}15`, color: cmd.color }}>{cmd.command}</span>

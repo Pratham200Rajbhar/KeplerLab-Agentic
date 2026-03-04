@@ -13,6 +13,7 @@ from app.services.agent.state import AgentState
 from app.services.agent.intent import (
     QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION,
     FILE_GENERATION, CONTENT_GENERATION,
+    AGENT_TASK, WEB_RESEARCH, CODE_GENERATION,
 )
 
 logger = logging.getLogger(__name__)
@@ -238,6 +239,28 @@ async def plan_execution(state: AgentState) -> AgentState:
     elif intent == CODE_EXECUTION:
         plan = [
             {"tool": "python_tool", "description": "Generate and execute Python code"},
+        ]
+
+    # ── New slash-command intents ──────────────────────────────────────────
+    elif intent == AGENT_TASK:
+        # Autonomous ReAct loop: plan → act → observe → decide, one step at a time.
+        # The agent_task_tool drives its own internal loop and emits step cards.
+        plan = [
+            {"tool": "agent_task_tool", "description": "Autonomous agentic task execution"},
+        ]
+
+    elif intent == WEB_RESEARCH:
+        # 5-phase structured web research: decompose → retrieve → validate →
+        # gap-find → synthesize.  Output format is LLM-determined, not templated.
+        plan = [
+            {"tool": "web_research_tool", "description": "Structured 5-phase web research with inline citations"},
+        ]
+
+    elif intent == CODE_GENERATION:
+        # Generate code + explanation.  Never auto-executes.
+        # Emits a code_for_review event; user decides Run or Copy.
+        plan = [
+            {"tool": "code_generation_tool", "description": "Generate code with explanation — awaiting user approval to run"},
         ]
 
     elif intent == CONTENT_GENERATION:

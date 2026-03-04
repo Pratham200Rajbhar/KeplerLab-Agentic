@@ -33,6 +33,7 @@ import SuggestionDropdown from './SuggestionDropdown';
 import ResearchProgress from './ResearchProgress';
 import AgentThinkingBar from './AgentThinkingBar';
 import AgentActionBlock from './AgentActionBlock';
+import CodeReviewBlock from './CodeReviewBlock';
 import SlashCommandPills from './SlashCommandPills';
 import SlashCommandDropdown from './SlashCommandDropdown';
 import CommandBadge from './CommandBadge';
@@ -41,14 +42,18 @@ import ChatHistoryModal from './ChatHistoryModal';
 import ChatEmptyState from './ChatEmptyState';
 
 const LIVE_TOOL_LABELS = {
-  rag_tool:       'Searching your materials',
-  research_tool:  'Researching the web',
-  python_tool:    'Running code',
-  data_profiler:  'Analyzing data',
-  quiz_tool:      'Generating quiz',
-  flashcard_tool: 'Creating flashcards',
-  ppt_tool:       'Building slides',
-  code_repair:    'Fixing error',
+  rag_tool:             'Searching your materials',
+  research_tool:        'Researching the web',
+  python_tool:          'Running code',
+  data_profiler:        'Analyzing data',
+  quiz_tool:            'Generating quiz',
+  flashcard_tool:       'Creating flashcards',
+  ppt_tool:             'Building slides',
+  code_repair:          'Fixing error',
+  // New slash-command tools
+  agent_task_tool:      'Executing task…',
+  web_research_tool:    'Researching (structured)…',
+  code_generation_tool: 'Generating code…',
 };
 
 function getLiveLabel(tool = '') {
@@ -144,6 +149,13 @@ export default function ChatPanel() {
 
   // Streaming step log
   const [liveStepLog, setLiveStepLog] = useState([]);
+
+  // /code slash command — generated code pending user approval
+  const [codeForReview, setCodeForReview] = useState(null);
+  // /agent slash command — ReAct step cards
+  const [agentTaskSteps, setAgentTaskSteps] = useState([]);
+  // /web slash command — research phase progress (1-5)
+  const [webResearchPhase, setWebResearchPhase] = useState(null);
 
   // Sessions
   const [sessions, setSessions] = useState([]);
@@ -343,6 +355,10 @@ export default function ChatPanel() {
     setPendingFiles([]);
     setIsRepair(false);
     setRepairCount(0);
+    // Reset per-command state
+    setCodeForReview(null);
+    setAgentTaskSteps([]);
+    setWebResearchPhase(null);
 
     const ac = new AbortController();
     abortControllerRef.current = ac;
@@ -382,14 +398,17 @@ export default function ChatPanel() {
         },
         step: (payload) => {
           const TOOL_STEP_LABELS = {
-            rag_tool: 'Searching materials…',
-            research_tool: 'Researching online…',
-            python_tool: 'Running Python…',
-            data_profiler: 'Profiling dataset…',
-            quiz_tool: 'Generating quiz…',
-            flashcard_tool: 'Creating flashcards…',
-            ppt_tool: 'Building slides…',
-            file_generator: 'Generating file…',
+            rag_tool:             'Searching materials…',
+            research_tool:        'Researching online…',
+            python_tool:          'Running Python…',
+            data_profiler:        'Profiling dataset…',
+            quiz_tool:            'Generating quiz…',
+            flashcard_tool:       'Creating flashcards…',
+            ppt_tool:             'Building slides…',
+            file_generator:       'Generating file…',
+            agent_task_tool:      'Executing task…',
+            web_research_tool:    'Deep-searching…',
+            code_generation_tool: 'Generating code…',
           };
           const raw = payload.tool || payload.label || '';
           const label = TOOL_STEP_LABELS[raw] || payload.label || raw || 'Thinking…';
@@ -489,6 +508,31 @@ export default function ChatPanel() {
               return updated;
             });
           }
+        },
+        // ── /agent step cards (plan → act → observe → decide) ──
+        agent_step: (payload) => {
+          setAgentTaskSteps((prev) => [...prev, payload]);
+          const labels = {
+            plan:    'Planning task…',
+            act:     payload.action ? `Acting: ${payload.action.slice(0, 50)}` : 'Executing step…',
+            observe: 'Observing result…',
+          };
+          setThinkingStep(labels[payload.phase] || 'Thinking…');
+        },
+        // ── /web research phase progress ─────────────────────────
+        web_research_phase: (payload) => {
+          setWebResearchPhase(payload);
+          setThinkingStep(payload.label || `Research phase ${payload.phase}/5`);
+        },
+        // ── /code — generated code awaiting user approval ─────────
+        code_for_review: (payload) => {
+          setCodeForReview({
+            code: payload.code || '',
+            language: payload.language || 'python',
+            explanation: payload.explanation || '',
+            dependencies: payload.dependencies || [],
+          });
+          setThinkingStep('Code ready — review below');
         },
         repair_attempt: (payload) => {
           const count = payload.attempt || 1;
@@ -892,15 +936,51 @@ export default function ChatPanel() {
             )}
 
             {/* Live streaming bubble */}
-            {(streamingContent || (isThinking && liveStepLog.length > 0)) && (
+            {(streamingContent || codeForReview || (isThinking && liveStepLog.length > 0)) && (
               <div className="chat-msg chat-msg-ai group py-5">
                 <div className="flex gap-3 w-full">
                   <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
                     <Lightbulb className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    {liveStepLog.length > 0 && !streamingContent && (
+                    {/* /web phase progress */}
+                    {webResearchPhase && !streamingContent && (
+                      <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
+                        <span className="text-blue-400">🔬</span>
+                        <span>Phase {webResearchPhase.phase}/5 — {webResearchPhase.label}</span>
+                      </div>
+                    )}
+                    {/* /agent ReAct step cards (in-progress) */}
+                    {agentTaskSteps.length > 0 && !streamingContent && (
+                      <div className="space-y-1.5 mb-2">
+                        {agentTaskSteps.slice(-3).map((step, idx) => (
+                          <div
+                            key={idx}
+                            className="text-xs text-text-muted bg-surface-overlay/40 rounded-lg px-3 py-1.5"
+                          >
+                            {step.phase === 'plan' && (
+                              <><span className="text-orange-400">📋 Plan</span> {step.action}</>)}
+                            {step.phase === 'act' && (
+                              <><span className="text-yellow-400">⚡ Act</span> {step.action}</>)}
+                            {step.phase === 'observe' && (
+                              <><span className="text-green-400">🔎 Observe</span> {step.observation?.slice(0, 120)}…</>)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {liveStepLog.length > 0 && !streamingContent && !codeForReview && (
                       <LiveStepText steps={liveStepLog} />
+                    )}
+                    {/* /code — code review block */}
+                    {codeForReview && (
+                      <CodeReviewBlock
+                        code={codeForReview.code}
+                        language={codeForReview.language}
+                        explanation={codeForReview.explanation}
+                        dependencies={codeForReview.dependencies}
+                        notebookId={currentNotebook?.id}
+                        sessionId={currentSessionId}
+                      />
                     )}
                     {streamingContent && (
                       <div className="markdown-content">

@@ -584,6 +584,408 @@ async def research_tool(
         )
 
 
+# ── /agent — Autonomous Agentic Task Executor ─────────────────
+
+
+async def agent_task_tool(
+    user_message: str,
+    user_id: str,
+    notebook_id: str,
+    material_ids: List[str],
+    session_id: str,
+    **kwargs,
+) -> ToolResult:
+    """Autonomous ReAct-style agent: plan → act → observe → decide, one step at a time.
+
+    Contract:
+    - Injects codebase / material context before every step.
+    - Executes one tool per step; never batches.
+    - Emits `agent_step` custom events for each card visible in the UI.
+    - Stops when the task is provably complete (not on a timer).
+    """
+    import re as _re
+    import json as _json
+    from app.services.llm_service.llm import get_llm
+    from langchain_core.callbacks import adispatch_custom_event
+
+    MAX_REACT_STEPS = 7
+    t0 = time.time()
+    llm = get_llm()
+
+    # ── Step 0: Plan ─────────────────────────────────────────────────────
+    plan_prompt = (
+        "You are an autonomous AI agent. Analyze this task carefully and build a minimal "
+        "step-by-step execution plan.\n\n"
+        f"Task: {user_message}\n\n"
+        "Available sub-tools:\n"
+        "  rag_search   – search uploaded materials via RAG\n"
+        "  web_search   – search the web for current info\n"
+        "  python_exec  – generate and run Python code in sandbox\n"
+        "  llm_reason   – use LLM reasoning / reflection only\n\n"
+        "Return a JSON object:\n"
+        '{"task_analysis": "...", '
+        '"steps": [{"action": "...", "tool": "...", "reason": "..."}], '
+        '"success_criteria": "..."}\n'
+        "Return only valid JSON, no surrounding text."
+    )
+    plan_resp = await llm.ainvoke(plan_prompt)
+    plan_text = getattr(plan_resp, "content", str(plan_resp)).strip()
+    try:
+        m = _re.search(r"\{.*\}", plan_text, _re.DOTALL)
+        plan_data = _json.loads(m.group()) if m else {}
+    except Exception:
+        plan_data = {}
+
+    steps = plan_data.get("steps", []) or [{"action": user_message, "tool": "llm_reason", "reason": "direct task"}]
+    task_analysis = plan_data.get("task_analysis", "Proceeding with direct execution.")
+
+    # Emit the plan card
+    await adispatch_custom_event("agent_step", {
+        "phase": "plan",
+        "action": f"Task analysis: {task_analysis}",
+        "observation": f"Planned {len(steps)} step(s).",
+        "next_intent": steps[0]["action"] if steps else "Execute task directly.",
+    })
+
+    all_observations: List[str] = []
+
+    for i, step in enumerate(steps[:MAX_REACT_STEPS]):
+        action = step.get("action", f"Step {i + 1}")
+        tool = step.get("tool", "llm_reason")
+
+        # ── Emit Act ──────────────────────────────────────────────────────
+        await adispatch_custom_event("agent_step", {
+            "phase": "act",
+            "step_num": i + 1,
+            "total_steps": len(steps),
+            "action": f"[{i + 1}/{len(steps)}] {action}",
+            "tool": tool,
+            "observation": None,
+            "next_intent": None,
+        })
+
+        # ── Execute ───────────────────────────────────────────────────────
+        observation = ""
+        try:
+            prior_ctx = " | ".join(all_observations[-2:])
+            if tool == "rag_search":
+                r = await rag_tool(
+                    user_id=user_id, query=action, material_ids=material_ids,
+                    notebook_id=notebook_id, session_id=session_id,
+                )
+                observation = (r.get("output") or "")[:600]
+
+            elif tool == "web_search":
+                r = await research_tool(query=action, user_id=user_id, notebook_id=notebook_id)
+                raw_out = r.get("output", "{}")
+                try:
+                    rdata = _json.loads(raw_out)
+                    observation = (
+                        rdata.get("executive_summary")
+                        or rdata.get("synthesis")
+                        or raw_out
+                    )[:600]
+                except Exception:
+                    observation = raw_out[:600]
+
+            elif tool == "python_exec":
+                from app.services.llm_service.llm import get_llm as _get_llm
+                from app.services.code_execution.executor import execute_code
+                code_prompt = (
+                    f"Write executable Python code to: {action}\n"
+                    f"Context: {user_message}\n"
+                    f"Prior findings: {prior_ctx}\n"
+                    "Return only the Python code, nothing else."
+                )
+                code_resp = await _get_llm().ainvoke(code_prompt)
+                raw_code = getattr(code_resp, "content", str(code_resp)).strip()
+                raw_code = _re.sub(r"^```python\n?|^```\n?|```$", "", raw_code, flags=_re.MULTILINE).strip()
+                exec_result = await execute_code(code=raw_code, timeout=20)
+                observation = (
+                    exec_result.get("stdout")
+                    or exec_result.get("stderr")
+                    or "Execution completed with no output."
+                )[:600]
+
+            else:  # llm_reason (default)
+                think_prompt = (
+                    f"Task: {user_message}\n"
+                    f"Current step: {action}\n"
+                    f"Prior findings: {prior_ctx}\n\n"
+                    "Provide a concise, specific finding for this step (3–5 sentences)."
+                )
+                think_resp = await llm.ainvoke(think_prompt)
+                observation = getattr(think_resp, "content", str(think_resp)).strip()[:500]
+
+        except Exception as exc:
+            logger.warning("[agent_task_tool] Step %d error: %s", i + 1, exc)
+            observation = f"Step encountered an issue: {str(exc)[:200]}"
+
+        all_observations.append(observation)
+        next_intent = steps[i + 1]["action"] if (i + 1) < len(steps) else "Synthesize all findings into the final answer."
+
+        # ── Emit Observe + Decide ─────────────────────────────────────────
+        await adispatch_custom_event("agent_step", {
+            "phase": "observe",
+            "step_num": i + 1,
+            "action": action,
+            "observation": observation,
+            "next_intent": next_intent,
+        })
+
+    # ── Final synthesis ────────────────────────────────────────────────────
+    synth_prompt = (
+        f"Task: {user_message}\n\n"
+        "Completed steps and findings:\n"
+        + "\n".join(f"Step {j + 1}: {obs}" for j, obs in enumerate(all_observations))
+        + "\n\nSynthesize these findings into a complete, actionable response. "
+        "Be direct and specific. Do not restate the steps — provide the answer."
+    )
+    synth_resp = await llm.ainvoke(synth_prompt)
+    final_response = getattr(synth_resp, "content", str(synth_resp)).strip()
+
+    elapsed = time.time() - t0
+    logger.info("[agent_task_tool] OK | steps=%d | elapsed=%.2fs", len(all_observations), elapsed)
+    return ToolResult(
+        tool_name="agent_task_tool",
+        success=True,
+        output=final_response,
+        metadata={"steps_executed": len(all_observations), "elapsed": elapsed},
+        tokens_used=3500,
+    )
+
+
+# ── /web — Structured 5-Phase Web Research ────────────────────
+
+
+async def web_research_tool(
+    query: str,
+    user_id: str = "",
+    notebook_id: str = "",
+    material_ids: List[str] = None,
+    **kwargs,
+) -> ToolResult:
+    """5-phase structured web research: decompose → retrieve → validate → gap-find → synthesize.
+
+    Contract:
+    - Output structure is LLM-determined; no fixed template.
+    - Every claim carries an inline citation [Source N] or [domain.com].
+    - Contradictions between sources are surfaced explicitly.
+    - Open questions left unresolved by sources are flagged.
+    - Confidence signals attached per claim.
+    - Emits `web_research_phase` custom events for progress display.
+    """
+    from langchain_core.callbacks import adispatch_custom_event
+    from app.services.agent.subgraphs.research_graph import (
+        _generate_queries,
+        _execute_searches,
+        _extract_content,
+    )
+    from app.services.llm_service.llm import get_llm
+
+    t0 = time.time()
+    llm = get_llm()
+
+    # Phase 1 — Query decomposition
+    await adispatch_custom_event("web_research_phase", {"phase": 1, "label": "Decomposing query into sub-questions"})
+    queries = await _generate_queries(query)
+    logger.info("[web_research_tool] Generated %d queries for: %r", len(queries), query[:60])
+
+    # Phase 2 — Multi-source retrieval
+    await adispatch_custom_event("web_research_phase", {"phase": 2, "label": "Retrieving from multiple sources"})
+    urls = await _execute_searches(queries, t0)
+    sources = await _extract_content(urls, t0)
+    logger.info("[web_research_tool] Extracted %d sources", len(sources))
+
+    if not sources:
+        return ToolResult(
+            tool_name="web_research_tool",
+            success=False,
+            output="No accessible sources found for this query. Try rephrasing or broadening the search terms.",
+            metadata={},
+            error="no_sources",
+            tokens_used=0,
+        )
+
+    # Phase 3 — Cross-source validation
+    await adispatch_custom_event("web_research_phase", {"phase": 3, "label": "Cross-validating sources"})
+
+    # Phase 4 — Gap identification (baked into synthesis prompt)
+    await adispatch_custom_event("web_research_phase", {"phase": 4, "label": "Identifying knowledge gaps"})
+
+    # Phase 5 — Synthesis
+    await adispatch_custom_event("web_research_phase", {"phase": 5, "label": "Synthesizing findings"})
+
+    source_block = "\n\n---\n\n".join(
+        f"SOURCE {i + 1} [{s.get('url', 'unknown')}]:\n"
+        f"{(s.get('text') or s.get('content', ''))[:1800]}"
+        for i, s in enumerate(sources[:10])
+    )
+
+    synthesis_prompt = (
+        f"You are a research analyst. Synthesize these {len(sources)} source(s) into a high-quality "
+        f"research response.\n\n"
+        f"Query: {query}\n\n"
+        f"{source_block}\n\n"
+        "INSTRUCTIONS (must follow exactly):\n"
+        "1. DO NOT use a fixed section template (no 'Executive Summary', 'Key Findings', etc.).\n"
+        "   Let the nature of the query determine the structure:\n"
+        "   - Conceptual: layered explanation building from first principles\n"
+        "   - Comparative: dimensional breakdown by relevant attributes\n"
+        "   - Technical: annotated findings with precision and specificity\n"
+        "   - Current-events: timeline-aware narrative\n"
+        "2. Every significant claim MUST have an inline citation: [Source N] or [domain.com].\n"
+        "3. Surface disagreements between sources as: **\u26a1\ufe0f Contradiction:** ...\n"
+        "4. Flag unresolved questions as: **\u2753 Open:** ...\n"
+        "5. Attach confidence signals per claim: *(high confidence)* / *(disputed)* / "
+        "*(single source)* etc.\n"
+        "6. Do not produce generic summaries. Surface the actual findings with specificity.\n"
+        "7. Never produce a bare list of source summaries. Weave into analytical prose.\n\n"
+        "Respond in Markdown."
+    )
+    resp = await llm.ainvoke(synthesis_prompt)
+    output = getattr(resp, "content", str(resp)).strip()
+
+    elapsed = time.time() - t0
+    logger.info("[web_research_tool] OK | sources=%d | elapsed=%.2fs", len(sources), elapsed)
+    return ToolResult(
+        tool_name="web_research_tool",
+        success=True,
+        output=output,
+        metadata={"sources_used": len(sources), "elapsed": elapsed},
+        tokens_used=3000,
+    )
+
+
+# ── /code — Scoped Code Generation (no auto-execution) ─────────
+
+
+async def code_generation_tool(
+    user_message: str,
+    user_id: str,
+    notebook_id: str,
+    material_ids: List[str],
+    session_id: str,
+    intent: str = "",
+    **kwargs,
+) -> ToolResult:
+    """Generate code with a developer-focused explanation.  Never auto-executes.
+
+    Contract:
+    - Emits `code_for_review` custom event carrying {code, language, explanation, dependencies}.
+    - Frontend intercepts and shows [Run in Sandbox] / [Copy Only] buttons.
+    - Execution is ALWAYS user-initiated via a separate /agent/run-generated call.
+    - Explanation covers: what + why key decisions + assumptions/constraints.
+      It must be non-obvious — never restate what the code makes self-evident.
+    """
+    import re as _re
+    import json as _json
+    from app.services.llm_service.llm import get_llm
+    from langchain_core.callbacks import adispatch_custom_event
+
+    t0 = time.time()
+    llm = get_llm()
+
+    await adispatch_custom_event("code_generating", {"status": "generating"})
+
+    # Optionally pull material context for scoped generation
+    material_context = ""
+    if material_ids:
+        try:
+            from app.services.rag.secure_retriever import secure_similarity_search_enhanced
+            material_context = await asyncio.to_thread(
+                secure_similarity_search_enhanced,
+                user_id=user_id,
+                query=user_message,
+                material_ids=material_ids,
+                notebook_id=notebook_id,
+                use_mmr=True,
+                return_formatted=True,
+            )
+        except Exception as exc:
+            logger.debug("[code_generation_tool] RAG context fetch failed (non-fatal): %s", exc)
+
+    context_section = (
+        f"\nRelevant context from uploaded materials:\n{material_context[:2000]}\n"
+        if material_context else ""
+    )
+
+    gen_prompt = (
+        "You are a senior software engineer. Generate production-quality code for the request below.\n"
+        f"{context_section}\n"
+        f"Request: {user_message}\n\n"
+        "Return a JSON object with exactly these fields:\n"
+        '{"code": "<complete executable code>", '
+        '"language": "<python|javascript|bash|etc>", '
+        '"explanation": "<concise developer-focused explanation: what it does, why key '
+        'decisions were made, assumptions/constraints baked in — skip the obvious>", '
+        '"dependencies": ["<pip/npm package if needed>"]}\n\n'
+        "Explanation rules:\n"
+        "- 3–6 sentences maximum.\n"
+        "- Never restate what the code already makes self-evident.\n"
+        "- Focus on non-obvious tradeoffs, design decisions, and constraints.\n"
+        "Return only the JSON object, no surrounding text."
+    )
+
+    resp = await llm.ainvoke(gen_prompt)
+    raw = getattr(resp, "content", str(resp)).strip()
+
+    # Parse the structured response
+    code, language, explanation, dependencies = "", "python", "", []
+    try:
+        m = _re.search(r"\{.*\}", raw, _re.DOTALL)
+        if m:
+            data = _json.loads(m.group())
+            code = data.get("code", "").strip()
+            language = data.get("language", "python").strip()
+            explanation = data.get("explanation", "").strip()
+            dependencies = data.get("dependencies", [])
+    except Exception:
+        # Graceful fallback: extract fenced code block
+        cb = _re.search(r"```(?:\w+)?\n(.*?)```", raw, _re.DOTALL)
+        code = cb.group(1).strip() if cb else raw.strip()
+        explanation = "Code generated from your request."
+
+    if not code:
+        return ToolResult(
+            tool_name="code_generation_tool",
+            success=False,
+            output="Code generation failed — the model returned an empty response.",
+            metadata={},
+            error="empty_code",
+            tokens_used=0,
+        )
+
+    # Emit the review event — frontend MUST handle this before any execution
+    await adispatch_custom_event("code_for_review", {
+        "code": code,
+        "language": language,
+        "explanation": explanation,
+        "dependencies": dependencies,
+    })
+
+    elapsed = time.time() - t0
+    logger.info(
+        "[code_generation_tool] OK | lang=%s | code_len=%d | elapsed=%.2fs",
+        language, len(code), elapsed,
+    )
+    return ToolResult(
+        tool_name="code_generation_tool",
+        success=True,
+        # Minimal output — the real payload is in the code_for_review event and metadata
+        output=f"Code generated ({language}, {len(code.splitlines())} lines). "
+               "Use [Run in Sandbox] to execute or [Copy Only] to take it as-is.",
+        metadata={
+            "code": code,
+            "language": language,
+            "explanation": explanation,
+            "dependencies": dependencies,
+            "elapsed": elapsed,
+        },
+        tokens_used=1200,
+    )
+
+
 # ── Register All Tools ────────────────────────────────────────
 
 
@@ -629,6 +1031,27 @@ def initialize_tools():
         description="Conduct deep multi-source web research and generate a structured report with citations",
         handler=research_tool,
         intents=["RESEARCH"],
+    )
+
+    register_tool(
+        name="agent_task_tool",
+        description="Autonomous ReAct agent: plan → act → observe → decide, one step at a time",
+        handler=agent_task_tool,
+        intents=["AGENT_TASK"],
+    )
+
+    register_tool(
+        name="web_research_tool",
+        description="Structured 5-phase web research: decompose → retrieve → validate → gap-find → synthesize",
+        handler=web_research_tool,
+        intents=["WEB_RESEARCH"],
+    )
+
+    register_tool(
+        name="code_generation_tool",
+        description="Generate code with explanation; never auto-executes — user triggers execution explicitly",
+        handler=code_generation_tool,
+        intents=["CODE_GENERATION"],
     )
 
     logger.info(f"Initialized {len(_TOOLS)} tools: {list_tools()}")

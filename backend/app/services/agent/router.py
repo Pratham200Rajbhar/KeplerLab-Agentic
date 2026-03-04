@@ -254,6 +254,7 @@ async def route_and_execute(state: AgentState) -> AgentState:
     tool_kwargs: Dict[str, Any] = {
         "user_id": state.get("user_id", ""),
         "query": user_message,
+        "user_message": user_message,   # consumed by agent_task_tool, code_generation_tool
         "material_ids": state.get("material_ids", []),
         "notebook_id": state.get("notebook_id", ""),
         "session_id": state.get("session_id", ""),
