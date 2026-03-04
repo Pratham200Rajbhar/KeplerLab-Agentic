@@ -170,13 +170,13 @@ async def _persist_and_finalize(
 
 async def _route_agent(request, ids, session_id, current_user, start_time):
     """Fully agentic open-loop system via LangGraph."""
-    from app.services.agent.agentic_loop import run_agentic_loop
+    from app.services.agent.agentic_loop import stream_agentic_loop
 
     async def generate():
         try:
             full_response = []
             agent_meta = {}
-            async for event in run_agentic_loop(
+            async for event in stream_agentic_loop(
                 query=request.message,
                 material_ids=ids,
                 notebook_id=request.notebook_id,
@@ -184,16 +184,15 @@ async def _route_agent(request, ids, session_id, current_user, start_time):
                 session_id=session_id,
             ):
                 yield event
-                if event.startswith("event: token"):
-                    data_line = event.split("data: ", 1)[-1].strip()
+                if event.startswith("data: "):
+                    data_str = event[len("data: "):].strip()
                     try:
-                        full_response.append(json.loads(data_line).get("content", ""))
-                    except json.JSONDecodeError:
-                        pass
-                elif event.startswith("event: meta"):
-                    data_line = event.split("data: ", 1)[-1].strip()
-                    try:
-                        agent_meta = json.loads(data_line)
+                        payload = json.loads(data_str)
+                        event_type = payload.get("type", "")
+                        if event_type == "token":
+                            full_response.append(payload.get("content", ""))
+                        elif event_type == "done":
+                            agent_meta = payload
                     except json.JSONDecodeError:
                         pass
 
@@ -229,17 +228,19 @@ async def _route_web_research(request, ids, session_id, current_user, start_time
                 session_id=session_id,
             ):
                 yield event
-                # pipeline emits: data: {"type": "token", "content": "..."}\n\n
-                if event.startswith("data: "):
-                    data_str = event[len("data: "):].strip()
-                    try:
-                        payload = json.loads(data_str)
-                        if payload.get("type") == "token":
-                            full_response.append(payload.get("content", ""))
-                        elif payload.get("type") == "citations":
-                            citations = payload.get("citations", [])
-                    except json.JSONDecodeError:
-                        pass
+                # pipeline emits: event: token\ndata: {"content": "..."}\n\n
+                # and:            event: citations\ndata: {"citations": [...]}\n\n
+                if event.startswith("event: token\n") or event.startswith("event: citations\n"):
+                    for line in event.split("\n"):
+                        if line.startswith("data: "):
+                            try:
+                                payload = json.loads(line[len("data: "):])
+                                if event.startswith("event: token\n"):
+                                    full_response.append(payload.get("content", ""))
+                                else:
+                                    citations = payload.get("citations", [])
+                            except json.JSONDecodeError:
+                                pass
 
             complete = "".join(full_response)
             if complete:
