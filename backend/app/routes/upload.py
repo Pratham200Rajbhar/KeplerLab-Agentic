@@ -17,12 +17,6 @@ from urllib.parse import urlparse, parse_qs
 
 from app.services.material_service import (
     create_material_record,
-    process_url_material,
-    process_text_material,
-    get_user_materials,
-    delete_material,
-    update_material,
-    get_material_for_user,
 )
 from app.services.job_service import create_job
 from app.services.notebook_service import create_notebook
@@ -34,15 +28,12 @@ from app.services.file_validator import validate_upload, FileValidationError
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/upload", tags=["upload"])
 
 UPLOAD_DIR = settings.UPLOAD_DIR
 MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 # ── Allowed MIME types (server-side whitelist) ────────────────────
-ALLOWED_MIME_TYPES: set[str] = set(FileTypeDetector.SUPPORTED_TYPES.keys())
-
-
 # ── Unified error response ────────────────────────────────────────
 
 
@@ -123,7 +114,7 @@ class TextUploadRequest(BaseModel):
     auto_create_notebook: Optional[bool] = False
 
 
-@router.post("/upload", status_code=202)
+@router.post("", status_code=202)
 async def upload_file(
     file: UploadFile,
     notebook_id: Optional[str] = Form(None),
@@ -364,7 +355,7 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
         return {"filename": file.filename, "status": "error", "error": str(e)}
 
 
-@router.post("/upload/batch", status_code=202)
+@router.post("/batch", status_code=202)
 async def upload_batch(
     files: List[UploadFile],
     notebook_id: Optional[str] = Form(None),
@@ -404,7 +395,7 @@ async def upload_batch(
     return JSONResponse(status_code=202, content=response)
 
 
-@router.post("/upload/url", status_code=202)
+@router.post("/url", status_code=202)
 async def upload_url(
     request: URLUploadRequest,
     current_user=Depends(get_current_user),
@@ -511,7 +502,7 @@ async def upload_url(
     return response
 
 
-@router.post("/upload/text", status_code=202)
+@router.post("/text", status_code=202)
 async def upload_text(
     request: TextUploadRequest,
     current_user=Depends(get_current_user),
@@ -577,9 +568,9 @@ async def upload_text(
     return response
 
 
-@router.get("/upload/supported-formats")
+@router.get("/supported-formats")
 async def get_supported_formats():
-    """Get list of supported file formats and upload limits"""
+    """Get list of supported file formats and upload limits."""
     return {
         "max_upload_size_mb": settings.MAX_UPLOAD_SIZE_MB,
         "file_extensions": FileTypeDetector.get_supported_extensions(),
@@ -598,83 +589,3 @@ async def get_supported_formats():
             "youtube": "YouTube videos use transcript extraction"
         }
     }
-
-
-@router.get("/materials")
-async def list_materials(
-    notebook_id: Optional[str] = None,
-    current_user=Depends(get_current_user),
-):
-    nb_id = notebook_id if notebook_id else None
-    materials = await get_user_materials(current_user.id, nb_id)
-    return [
-        {
-            "id": str(m.id),
-            "filename": m.filename,
-            "title": getattr(m, "title", None),
-            "status": m.status,
-            "chunk_count": m.chunkCount,
-            "source_type": getattr(m, "sourceType", None) or "file",
-            "created_at": m.createdAt.isoformat(),
-            **({"error": m.error} if getattr(m, "error", None) else {}),
-        }
-        for m in materials
-    ]
-
-
-class MaterialUpdateBody(BaseModel):
-    filename: Optional[str] = None
-    title: Optional[str] = None
-
-
-@router.patch("/materials/{material_id}")
-async def patch_material(
-    material_id: str,
-    body: MaterialUpdateBody,
-    current_user=Depends(get_current_user),
-):
-    updated = await update_material(
-        material_id, current_user.id,
-        filename=body.filename,
-        title=body.title,
-    )
-    if not updated:
-        raise HTTPException(status_code=404, detail="Material not found")
-    return {
-        "id": str(updated.id),
-        "filename": updated.filename,
-        "status": updated.status,
-        "chunk_count": updated.chunkCount,
-        "source_type": getattr(updated, "sourceType", None) or "file",
-    }
-
-
-@router.delete("/materials/{material_id}")
-async def remove_material(
-    material_id: str,
-    current_user=Depends(get_current_user),
-):
-    deleted = await delete_material(material_id, current_user.id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Material not found")
-    return {"deleted": True}
-
-
-@router.get("/materials/{material_id}/text")
-async def get_material_text_endpoint(
-    material_id: str,
-    current_user=Depends(get_current_user),
-):
-    """Get full material text from file storage."""
-    from app.services.material_service import get_material_text, get_material_for_user
-    
-    material = await get_material_for_user(material_id, str(current_user.id))
-    if not material:
-        raise HTTPException(status_code=404, detail="Material not found")
-    
-    text = await get_material_text(material_id, str(current_user.id))
-    if not text:
-        raise HTTPException(status_code=404, detail="Material text not found")
-    
-    filename = getattr(material, "filename", "") or ""
-    return {"text": text, "filename": filename}

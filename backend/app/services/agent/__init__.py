@@ -1,5 +1,8 @@
 """Agent module — LangGraph-based agentic chat orchestration.
 
-Provides multi-step intent detection, tool routing, planning,
-and reflection for an autonomous chat agent.
+Provides:
+  - agentic_loop: fully autonomous open-loop agent (Section 5)
+  - graph: backward-compatible tool routing graph
+  - tools_registry: all registered agent tools
+  - reflection: tool output evaluation and safety limits
 """

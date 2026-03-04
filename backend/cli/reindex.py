@@ -72,6 +72,7 @@ async def _reindex(
     user_id: str | None = None,
     material_id: str | None = None,
     dry_run: bool = False,
+    include_failed: bool = False,
 ) -> dict:
     """Run the reindex pipeline.  Returns summary stats."""
 
@@ -79,14 +80,21 @@ async def _reindex(
 
     try:
         # ── Resolve materials ─────────────────────────────────
-        where: dict = {"status": "completed"}
+        statuses = ["completed"]
+        if include_failed:
+            statuses.append("failed")
+
+        where: dict = {"status": {"in": statuses}}
         if user_id:
             where["userId"] = user_id
         if material_id:
             where["id"] = material_id
 
         materials = await prisma.material.find_many(where=where)
-        logger.info("Found %d completed materials to reindex.", len(materials))
+        logger.info(
+            "Found %d material(s) to reindex (statuses: %s).",
+            len(materials), ", ".join(statuses),
+        )
 
         if dry_run:
             for m in materials:
@@ -135,7 +143,7 @@ async def _reindex(
                 # 4. Update Prisma record
                 await prisma.material.update(
                     where={"id": mid},
-                    data={"chunkCount": len(chunks)},
+                    data={"chunkCount": len(chunks), "status": "completed"},
                 )
 
                 logger.info(
@@ -173,6 +181,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Reindex a single material by UUID.",
     )
     parser.add_argument(
+        "--include-failed",
+        action="store_true",
+        default=False,
+        help="Also reindex materials whose status is 'failed' (e.g. after fixing an embedding mismatch).",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
@@ -185,6 +199,7 @@ def main(argv: list[str] | None = None) -> None:
             user_id=args.user_id,
             material_id=args.material_id,
             dry_run=args.dry_run,
+            include_failed=args.include_failed,
         )
     )
 

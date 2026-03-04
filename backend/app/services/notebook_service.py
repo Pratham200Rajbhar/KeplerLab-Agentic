@@ -66,45 +66,53 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
     if not notebook:
         return False
 
-    # Clean up related data before deleting notebook
-    try:
-        # Delete generated content
-        await prisma.generatedcontent.delete_many(
-            where={"notebookId": str(notebook_id), "userId": str(user_id)}
-        )
-    except Exception as e:
-        logger.warning(f"Failed to delete generated content for notebook {notebook_id}: {e}")
+    nid = str(notebook_id)
+    uid = str(user_id)
 
     try:
-        # Delete associated materials and their text files
+        # ── Bulk delete ChromaDB vectors for all materials in one call ──
+        try:
+            from app.db.chroma import get_collection
+            collection = get_collection()
+            await asyncio.to_thread(
+                collection.delete, where={"notebook_id": nid}
+            )
+        except Exception as chroma_exc:
+            logger.warning("Failed to bulk-delete ChromaDB embeddings for notebook %s: %s", nid, chroma_exc)
+
+        # ── Delete material text files from disk ──
         materials = await prisma.material.find_many(
-            where={"notebookId": str(notebook_id), "userId": str(user_id)}
+            where={"notebookId": nid, "userId": uid}
         )
         for mat in materials:
-            # Delete material text file from storage (sync I/O → thread pool)
             try:
                 from app.services.storage_service import delete_material_text
                 await asyncio.to_thread(delete_material_text, str(mat.id))
             except Exception:
                 pass
-            # Delete embeddings from ChromaDB (run sync call in thread pool)
-            try:
-                from app.db.chroma import get_collection
-                collection = get_collection()
-                await asyncio.to_thread(
-                    collection.delete, where={"material_id": str(mat.id)}
-                )
-            except Exception as chroma_exc:
-                logger.warning("Failed to delete ChromaDB embeddings for material %s: %s", mat.id, chroma_exc)
-        # Delete material records
-        await prisma.material.delete_many(
-            where={"notebookId": str(notebook_id), "userId": str(user_id)}
-        )
-    except Exception as e:
-        logger.warning(f"Failed to delete materials for notebook {notebook_id}: {e}")
 
-    await prisma.notebook.delete(where={"id": str(notebook_id)})
-    logger.info(f"Deleted notebook and associated data: {notebook_id}")
+        # ── Atomic DB transaction: chat data → content → materials → notebook ──
+        async with prisma.tx() as tx:
+            # 1. ResponseBlocks (FK → ChatMessage)
+            await tx.responseblock.delete_many(
+                where={"chatMessage": {"is": {"notebookId": nid}}}
+            )
+            # 2. ChatMessages
+            await tx.chatmessage.delete_many(where={"notebookId": nid})
+            # 3. ChatSessions
+            await tx.chatsession.delete_many(where={"notebookId": nid})
+            # 4. GeneratedContent
+            await tx.generatedcontent.delete_many(where={"notebookId": nid, "userId": uid})
+            # 5. Materials
+            await tx.material.delete_many(where={"notebookId": nid, "userId": uid})
+            # 6. Notebook
+            await tx.notebook.delete(where={"id": nid})
+
+    except Exception as e:
+        logger.error("Failed to delete notebook %s: %s", notebook_id, e)
+        return False
+
+    logger.info("Deleted notebook and all associated data: %s", notebook_id)
     return True
 
 

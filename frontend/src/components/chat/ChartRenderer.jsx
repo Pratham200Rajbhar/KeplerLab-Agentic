@@ -40,7 +40,7 @@ export default function ChartRenderer({ base64Chart, explanation, title = 'Chart
       {expanded && (
         <div className="chart-modal-backdrop" onClick={() => setExpanded(false)}>
           <div className="chart-modal" onClick={e => e.stopPropagation()}>
-            <button className="chart-modal-close" onClick={() => setExpanded(false)}><X size={16} /></button>
+            <button className="chart-modal-close" onClick={() => setExpanded(false)} aria-label="Close expanded chart"><X size={16} /></button>
             {/* eslint-disable-next-line @next/next/no-img-element -- same dynamic data URL in the modal */}
             <img src={src} alt={title} className="chart-modal-image" />
             {explanation && <div className="chart-modal-insight markdown-content"><MarkdownRenderer content={explanation} /></div>}

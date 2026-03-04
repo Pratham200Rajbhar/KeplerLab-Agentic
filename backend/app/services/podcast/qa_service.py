@@ -14,26 +14,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
+from app.prompts import get_podcast_qa_prompt
 from app.services.llm_service.llm import get_llm
 from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 from app.services.podcast.tts_service import synthesize_single
 from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
-
-_PROMPT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "prompts")
-
-
-def _load_qa_prompt() -> str:
-    path = os.path.join(_PROMPT_DIR, "podcast_qa_prompt.txt")
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
 
 
 def _rag_for_question(
@@ -79,7 +71,7 @@ async def handle_question(
 
     Pipeline: RAG retrieval → LLM answer → TTS synthesis → DB persist.
     """
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )
@@ -99,7 +91,7 @@ async def handle_question(
 
     # 2. Generate answer
     language_name = LANGUAGE_NAMES.get(session.language, "English")
-    prompt = _load_qa_prompt().format(
+    prompt = get_podcast_qa_prompt(
         language=language_name,
         context=context,
         question=question_text,
@@ -144,7 +136,7 @@ async def handle_question(
 
 async def get_doubts(session_id: str, user_id: str) -> list:
     """Get all Q&A doubts for a session."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )
@@ -173,7 +165,7 @@ async def get_doubts(session_id: str, user_id: str) -> list:
 
 async def resolve_doubt(doubt_id: str) -> None:
     """Mark a doubt as resolved."""
-    db = get_prisma()
+    db = prisma
     await db.podcastdoubt.update(
         where={"id": doubt_id},
         data={"resolvedAt": datetime.now(timezone.utc)},

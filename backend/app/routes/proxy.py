@@ -15,7 +15,7 @@ from app.services.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1")
 
 # ── Constants ────────────────────────────────────────────────────────────────
 

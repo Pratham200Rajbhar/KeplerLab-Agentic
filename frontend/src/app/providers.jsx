@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { ChakraUIProvider } from '@/lib/chakra/provider';
 import useAuthStore from '@/stores/useAuthStore';
 import ToastContainer from '@/components/ui/ToastContainer';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -25,13 +24,11 @@ export default function Providers({ children }) {
       storageKey="kepler-theme"
       disableTransitionOnChange
     >
-      <ChakraUIProvider>
-        <AuthInitializer>
-          {children}
-          <ToastContainer />
-          <ConfirmDialog />
-        </AuthInitializer>
-      </ChakraUIProvider>
+      <AuthInitializer>
+        {children}
+        <ToastContainer />
+        <ConfirmDialog />
+      </AuthInitializer>
     </ThemeProvider>
   );
 }

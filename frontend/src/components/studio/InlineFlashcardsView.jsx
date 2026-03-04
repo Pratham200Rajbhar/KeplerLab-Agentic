@@ -89,12 +89,14 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
           <button
             onClick={() => setViewMode('card')}
             className={`p-1.5 rounded-lg transition-colors ${viewMode === 'card' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-overlay)]'}`}
+            aria-label="Card view"
           >
             <Grid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
             className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-overlay)]'}`}
+            aria-label="List view"
           >
             <List className="w-4 h-4" />
           </button>
@@ -152,6 +154,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
               onClick={goPrev}
               disabled={currentIndex === 0}
               className="p-2 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors disabled:opacity-30"
+              aria-label="Previous flashcard"
             >
               <ChevronLeft className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
@@ -162,6 +165,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
               onClick={goNext}
               disabled={currentIndex === cards.length - 1}
               className="p-2 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors disabled:opacity-30"
+              aria-label="Next flashcard"
             >
               <ChevronRight className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
@@ -176,7 +180,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
         /* List view */
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {cards.map((c, i) => (
-            <div key={i} className="p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+            <div key={c.id || c.front || c.question || i} className="p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
               <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5">
                 <span className="text-[var(--text-muted)] mr-1">{i + 1}.</span>
                 {c.front || c.question}

@@ -18,10 +18,10 @@ from app.db.chroma import get_collection
 from app.services.llm_service.llm import get_llm
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/health", tags=["health"])
 
 
-@router.get("/health")
+@router.get("")
 async def health_check(current_user=Depends(get_current_user)):
     """Health check endpoint - verify all system components.
     
@@ -100,7 +100,7 @@ async def health_check(current_user=Depends(get_current_user)):
     )
 
 
-@router.get("/health/simple")
+@router.get("/simple")
 async def simple_health_check():
     """Simple health check - just returns 200 OK.
     

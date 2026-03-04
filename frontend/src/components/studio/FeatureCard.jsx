@@ -1,12 +1,13 @@
 'use client';
 
+import { memo } from 'react';
 import { Loader2, X, ArrowRight } from 'lucide-react';
 
 /**
  * A card button for triggering content generation in the studio panel.
  * Shows loading spinner + cancel when generating.
  */
-export default function FeatureCard({ icon, label, description, onClick, loading, onCancel, disabled, accent }) {
+export default memo(function FeatureCard({ icon, label, description, onClick, loading, onCancel, disabled, accent }) {
   // accent can be a CSS color string like 'var(--accent)' or a tailwind-compatible color
   const accentStyle = accent || 'var(--accent)';
 
@@ -80,4 +81,4 @@ export default function FeatureCard({ icon, label, description, onClick, loading
       </div>
     </button>
   );
-}
+});

@@ -1,0 +1,280 @@
+{
+  "run_id": "733980b7",
+  "base_url": "http://localhost:8000",
+  "skip_slow": false,
+  "total": 45,
+  "passed": 45,
+  "failed": 0,
+  "results": [
+    {
+      "name": "PDF resource exists",
+      "passed": true,
+      "detail": "/home/pratham/disk1/New KeplerLab /Introduction.pdf",
+      "duration": 0.0
+    },
+    {
+      "name": "Backend reachable",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.19
+    },
+    {
+      "name": "POST /auth/signup (new user)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.521
+    },
+    {
+      "name": "POST /auth/signup (duplicate rejected)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.04
+    },
+    {
+      "name": "POST /auth/login (valid)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.43
+    },
+    {
+      "name": "POST /auth/login (wrong password \u2192 401)",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.405
+    },
+    {
+      "name": "POST /auth/refresh (cookie-based)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.051
+    },
+    {
+      "name": "GET /notebooks (no token \u2192 401)",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.047
+    },
+    {
+      "name": "GET /auth/me",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.043
+    },
+    {
+      "name": "GET /health",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 1772618881.119
+    },
+    {
+      "name": "Health \u2014 database component ok",
+      "passed": true,
+      "detail": "database=ok",
+      "duration": 0.0
+    },
+    {
+      "name": "GET /models/status",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.05
+    },
+    {
+      "name": "POST /notebooks (create)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.049
+    },
+    {
+      "name": "GET /notebooks (list)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.057
+    },
+    {
+      "name": "Notebook appears in list",
+      "passed": true,
+      "detail": "count=1",
+      "duration": 0.0
+    },
+    {
+      "name": "GET /notebooks/71e0373a-c267-4c53-a731-8bcc4b917adf",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.057
+    },
+    {
+      "name": "PUT /notebooks/:id (update name)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.063
+    },
+    {
+      "name": "POST /notebooks (second notebook)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.065
+    },
+    {
+      "name": "DELETE /notebooks/:id",
+      "passed": true,
+      "detail": "HTTP 204",
+      "duration": 0.096
+    },
+    {
+      "name": "POST /upload (PDF file)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.116
+    },
+    {
+      "name": "POST /upload (duplicate upload handled)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.188
+    },
+    {
+      "name": "POST /upload/text",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.177
+    },
+    {
+      "name": "Job processing completes (PDF \u2192 completed)",
+      "passed": true,
+      "detail": "final_status=completed",
+      "duration": 60.97
+    },
+    {
+      "name": "GET /materials (list for notebook)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.936
+    },
+    {
+      "name": "Material appears in list",
+      "passed": true,
+      "detail": "total=3",
+      "duration": 0.0
+    },
+    {
+      "name": "PATCH /materials/:id (update title)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.082
+    },
+    {
+      "name": "POST /upload/url (web page)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.496
+    },
+    {
+      "name": "POST /flashcard (easy, 5 cards)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 8.999
+    },
+    {
+      "name": "Flashcards \u2014 has cards",
+      "passed": true,
+      "detail": "count=5",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /flashcard (medium, topic filter)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 5.748
+    },
+    {
+      "name": "Flashcards \u2014 topic filter returns cards",
+      "passed": true,
+      "detail": "count=3",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /flashcard (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.035
+    },
+    {
+      "name": "POST /quiz (5 questions)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 35.688
+    },
+    {
+      "name": "Quiz \u2014 has questions",
+      "passed": true,
+      "detail": "count=5",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /quiz (hard, topic)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 40.422
+    },
+    {
+      "name": "Quiz \u2014 hard difficulty returns questions",
+      "passed": true,
+      "detail": "count=3",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /quiz (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.051
+    },
+    {
+      "name": "POST /chat/sessions (create)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.076
+    },
+    {
+      "name": "POST /chat (RAG, non-streaming)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 30.955
+    },
+    {
+      "name": "Chat \u2014 RAG response non-empty",
+      "passed": true,
+      "detail": "length=3747",
+      "duration": 0.0
+    },
+    {
+      "name": "GET /chat/sessions/:notebook_id (list)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.079
+    },
+    {
+      "name": "GET /chat/history/:notebook_id (with session)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.066
+    },
+    {
+      "name": "POST /chat (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.041
+    },
+    {
+      "name": "DELETE /chat/sessions/:session_id",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.059
+    },
+    {
+      "name": "DELETE /chat/history/:notebook_id",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.057
+    }
+  ]
+}

@@ -1,22 +1,21 @@
 """Mind map generation route."""
 
-import asyncio
 import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from app.models.mindmap_schemas import MindMapRequest, MindMapResponse
+from app.models.mindmap_schemas import MindMapRequest
 from app.services.mindmap.generator import generate_mindmap
 from app.services.auth import get_current_user
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/mindmap", tags=["mindmap"])
 
 
-@router.post("/mindmap")
+@router.post("")
 async def create_mindmap(
     request: MindMapRequest,
     current_user=Depends(get_current_user),
@@ -31,7 +30,6 @@ async def create_mindmap(
     )
 
     # Verify notebook belongs to user
-    prisma = get_prisma()
     notebook = await prisma.notebook.find_first(
         where={"id": request.notebook_id, "userId": str(current_user.id)}
     )
@@ -67,13 +65,12 @@ async def create_mindmap(
         raise HTTPException(status_code=500, detail="Failed to generate mind map")
 
 
-@router.get("/mindmap/{notebook_id}")
+@router.get("/{notebook_id}")
 async def get_mindmap(
     notebook_id: str,
     current_user=Depends(get_current_user),
 ):
     """Retrieve saved mind map for a notebook."""
-    prisma = get_prisma()
     content = await prisma.generatedcontent.find_first(
         where={
             "notebookId": notebook_id,
@@ -85,16 +82,17 @@ async def get_mindmap(
         raise HTTPException(status_code=404, detail="Mind map not found")
 
     data = content.data if isinstance(content.data, dict) else (json.loads(content.data) if content.data else {})
+    # Expose the GeneratedContent record UUID as `id` so callers (e.g. DELETE) can use it
+    data["id"] = content.id
     return JSONResponse(content=data)
 
 
-@router.delete("/mindmap/{id}")
+@router.delete("/{id}")
 async def delete_mindmap(
     id: str,
     current_user=Depends(get_current_user),
 ):
     """Delete a mind map."""
-    prisma = get_prisma()
     content = await prisma.generatedcontent.find_first(
         where={
             "id": id,

@@ -19,7 +19,7 @@ export default function HistoryRenameModal({ item, onConfirm, onClose }) {
       <form onSubmit={handleSubmit}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Rename</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close rename dialog">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>

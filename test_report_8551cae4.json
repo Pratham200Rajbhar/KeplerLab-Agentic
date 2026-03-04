@@ -1,0 +1,448 @@
+{
+  "run_id": "8551cae4",
+  "base_url": "http://localhost:8000",
+  "skip_slow": false,
+  "total": 73,
+  "passed": 65,
+  "failed": 8,
+  "results": [
+    {
+      "name": "PDF resource exists",
+      "passed": true,
+      "detail": "/home/pratham/disk1/New KeplerLab /Introduction.pdf",
+      "duration": 0.0
+    },
+    {
+      "name": "Backend reachable",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.097
+    },
+    {
+      "name": "POST /auth/signup (new user)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.295
+    },
+    {
+      "name": "POST /auth/signup (duplicate rejected)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.021
+    },
+    {
+      "name": "POST /auth/login (valid)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.25
+    },
+    {
+      "name": "POST /auth/login (wrong password \u2192 401)",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.24
+    },
+    {
+      "name": "POST /auth/refresh (cookie-based)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.03
+    },
+    {
+      "name": "GET /notebooks (no token \u2192 401)",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.019
+    },
+    {
+      "name": "GET /auth/me",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.023
+    },
+    {
+      "name": "GET /health",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 1772615545.204
+    },
+    {
+      "name": "Health \u2014 database component ok",
+      "passed": true,
+      "detail": "database=ok",
+      "duration": 0.0
+    },
+    {
+      "name": "GET /models/status",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.034
+    },
+    {
+      "name": "POST /notebooks (create)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.027
+    },
+    {
+      "name": "GET /notebooks (list)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.022
+    },
+    {
+      "name": "Notebook appears in list",
+      "passed": true,
+      "detail": "count=1",
+      "duration": 0.0
+    },
+    {
+      "name": "GET /notebooks/edc1192e-7d92-448e-8184-54aa6e7c889c",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.023
+    },
+    {
+      "name": "PUT /notebooks/:id (update name)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.03
+    },
+    {
+      "name": "POST /notebooks (second notebook)",
+      "passed": true,
+      "detail": "HTTP 201",
+      "duration": 0.098
+    },
+    {
+      "name": "DELETE /notebooks/:id",
+      "passed": true,
+      "detail": "HTTP 204",
+      "duration": 0.053
+    },
+    {
+      "name": "POST /upload (PDF file)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.138
+    },
+    {
+      "name": "POST /upload (duplicate upload handled)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.235
+    },
+    {
+      "name": "POST /upload/text",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.112
+    },
+    {
+      "name": "Job processing completes (PDF \u2192 completed)",
+      "passed": true,
+      "detail": "final_status=completed",
+      "duration": 44.544
+    },
+    {
+      "name": "GET /materials (list for notebook)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.031
+    },
+    {
+      "name": "Material appears in list",
+      "passed": true,
+      "detail": "total=3",
+      "duration": 0.0
+    },
+    {
+      "name": "PATCH /materials/:id (update title)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.037
+    },
+    {
+      "name": "POST /upload/url (web page)",
+      "passed": true,
+      "detail": "HTTP 202",
+      "duration": 0.41
+    },
+    {
+      "name": "POST /flashcard (easy, 5 cards)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 6.134
+    },
+    {
+      "name": "Flashcards \u2014 has cards",
+      "passed": true,
+      "detail": "count=5",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /flashcard (medium, topic filter)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 6.552
+    },
+    {
+      "name": "Flashcards \u2014 topic filter returns cards",
+      "passed": true,
+      "detail": "count=3",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /flashcard (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.027
+    },
+    {
+      "name": "POST /quiz (5 questions)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 14.508
+    },
+    {
+      "name": "Quiz \u2014 has questions",
+      "passed": true,
+      "detail": "count=5",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /quiz (hard, topic)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 16.177
+    },
+    {
+      "name": "Quiz \u2014 hard difficulty returns questions",
+      "passed": true,
+      "detail": "count=3",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /quiz (no material \u2192 400)",
+      "passed": false,
+      "detail": "HTTP 429",
+      "duration": 0.032
+    },
+    {
+      "name": "POST /chat/sessions (create)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.033
+    },
+    {
+      "name": "POST /chat (RAG, non-streaming)",
+      "passed": false,
+      "detail": "Expected 200, got 500: {'detail': 'Failed to generate response'}",
+      "duration": 0.034
+    },
+    {
+      "name": "GET /chat/sessions/:notebook_id (list)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.033
+    },
+    {
+      "name": "GET /chat/history/:notebook_id (with session)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.022
+    },
+    {
+      "name": "POST /chat (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.021
+    },
+    {
+      "name": "DELETE /chat/sessions/:session_id",
+      "passed": false,
+      "detail": "Expected 200, got 404: {'detail': 'Session not found or could not be deleted'}",
+      "duration": 0.023
+    },
+    {
+      "name": "DELETE /chat/history/:notebook_id",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.02
+    },
+    {
+      "name": "POST /mindmap (generate)",
+      "passed": false,
+      "detail": "Expected 200, got 500: {'detail': 'Failed to generate mind map'}",
+      "duration": 3.885
+    },
+    {
+      "name": "GET /mindmap/:notebook_id",
+      "passed": true,
+      "detail": "HTTP 404",
+      "duration": 0.023
+    },
+    {
+      "name": "POST /presentation (generate)",
+      "passed": false,
+      "detail": "Expected 200, got 500: {'detail': 'Failed to generate presentation: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-2.5-flash\\nPlease retry in 57.995736865s. [links {\\n  description: \"Learn more about Gemini API quotas\"\\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\\n}\\n, violations {\\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\\n  quota_id: \"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\"\\n  quota_dimensions {\\n    key: \"model\"\\n    value: \"gemini-2.5-flash\"\\n  }\\n  quota_dimensions {\\n    key: \"location\"\\n    value: \"global\"\\n  }\\n  quota_value: 5\\n}\\n, retry_delay {\\n  seconds: 57\\n}\\n]'}",
+      "duration": 3.861
+    },
+    {
+      "name": "POST /presentation (no material \u2192 400)",
+      "passed": true,
+      "detail": "HTTP 400",
+      "duration": 0.021
+    },
+    {
+      "name": "POST /notebooks/:id/content (flashcards)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.037
+    },
+    {
+      "name": "GET /notebooks/:id/content",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.032
+    },
+    {
+      "name": "Content appears in notebook",
+      "passed": true,
+      "detail": "total=1",
+      "duration": 0.0
+    },
+    {
+      "name": "POST /notebooks/:id/content (quiz)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.04
+    },
+    {
+      "name": "PUT /notebooks/:id/content/:cid (update title)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.03
+    },
+    {
+      "name": "DELETE /notebooks/:id/content/:cid",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.028
+    },
+    {
+      "name": "POST /podcast/session (create)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.03
+    },
+    {
+      "name": "GET /podcast/sessions/:notebook_id (list)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.023
+    },
+    {
+      "name": "GET /podcast/voices",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.018
+    },
+    {
+      "name": "POST /explainer/check-presentations",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.024
+    },
+    {
+      "name": "POST /search/web",
+      "passed": true,
+      "detail": "HTTP 502",
+      "duration": 0.534
+    },
+    {
+      "name": "DELETE /materials/fb4aacc9\u2026",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.069
+    },
+    {
+      "name": "DELETE /materials/913944b5\u2026 (text)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.034
+    },
+    {
+      "name": "DELETE /materials (non-existent \u2192 404)",
+      "passed": true,
+      "detail": "HTTP 404",
+      "duration": 0.023
+    },
+    {
+      "name": "GET /jobs/:id (non-existent \u2192 404)",
+      "passed": true,
+      "detail": "HTTP 404",
+      "duration": 0.024
+    },
+    {
+      "name": "GET /jobs/:id (valid job)",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.037
+    },
+    {
+      "name": "POST /auth/logout",
+      "passed": true,
+      "detail": "HTTP 200",
+      "duration": 0.031
+    },
+    {
+      "name": "POST /auth/refresh after logout \u2192 401 (refresh token revoked)",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.022
+    },
+    {
+      "name": "GET /notebooks (no token) \u2192 401",
+      "passed": true,
+      "detail": "HTTP 401",
+      "duration": 0.018
+    },
+    {
+      "name": "POST /auth/signup (weak password \u2192 422)",
+      "passed": true,
+      "detail": "HTTP 422",
+      "duration": 0.018
+    },
+    {
+      "name": "POST /auth/signup (invalid email \u2192 422)",
+      "passed": true,
+      "detail": "HTTP 422",
+      "duration": 0.019
+    },
+    {
+      "name": "POST /notebooks (empty name \u2192 422)",
+      "passed": true,
+      "detail": "HTTP 422",
+      "duration": 0.02
+    },
+    {
+      "name": "POST /flashcard (multi-material)",
+      "passed": false,
+      "detail": "Expected 200, got 429: {'error': 'Rate limit exceeded', 'limit': 5, 'window_seconds': 60, 'retry_after': 8}",
+      "duration": 0.018
+    },
+    {
+      "name": "POST /quiz (multi-material)",
+      "passed": false,
+      "detail": "Expected 200, got 429: {'error': 'Rate limit exceeded', 'limit': 5, 'window_seconds': 60, 'retry_after': 8}",
+      "duration": 0.017
+    },
+    {
+      "name": "POST /mindmap (multi-material)",
+      "passed": false,
+      "detail": "Expected 200, got 500: {'detail': 'Failed to generate mind map'}",
+      "duration": 3.741
+    }
+  ]
+}

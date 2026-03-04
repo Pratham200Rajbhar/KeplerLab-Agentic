@@ -28,14 +28,32 @@ const useAuthStore = create((set, get) => ({
   scheduleRefresh: () => {
     if (_refreshTimer) clearTimeout(_refreshTimer);
     _refreshTimer = setTimeout(async () => {
-      try {
-        const tokens = await refreshToken();
-        set({ });  // no state change needed for token
-        get()._syncToken(tokens.access_token);
-        get().scheduleRefresh();
-      } catch {
-        set({ user: null, isAuthenticated: false });
-        get()._syncToken(null);
+      // Retry up to 3 times with exponential backoff before giving up.
+      // This handles transient network blips without prematurely logging the
+      // user out.
+      const MAX_RETRIES = 3;
+      let attempt = 0;
+
+      while (attempt < MAX_RETRIES) {
+        try {
+          const tokens = await refreshToken();
+          get()._syncToken(tokens.access_token);
+          get().scheduleRefresh(); // reschedule on success
+          return;
+        } catch {
+          attempt++;
+          if (attempt < MAX_RETRIES) {
+            // Exponential back-off: 2s, 4s, 8s …
+            await new Promise((r) => setTimeout(r, 2000 * 2 ** (attempt - 1)));
+          }
+        }
+      }
+
+      // All retries exhausted — session is genuinely expired.
+      set({ user: null, isAuthenticated: false });
+      get()._syncToken(null);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth?reason=expired';
       }
     }, TIMERS.TOKEN_REFRESH_INTERVAL);
   },
@@ -116,7 +134,7 @@ const useAuthStore = create((set, get) => ({
 if (typeof window !== 'undefined') {
   onSessionExpired(() => {
     useAuthStore.getState().logout();
-    window.location.href = '/auth';
+    window.location.href = '/auth?reason=expired';
   });
 }
 

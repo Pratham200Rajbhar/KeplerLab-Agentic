@@ -223,7 +223,7 @@ async def get_user_monthly_usage(user_id: str, year: int, month: int) -> int:
         Total tokens used in that month
     """
     try:
-        # Query records for the month
+        # SQL aggregation instead of Python sum — much more efficient
         from datetime import datetime
         start_date = datetime(year, month, 1).date()
         
@@ -232,17 +232,21 @@ async def get_user_monthly_usage(user_id: str, year: int, month: int) -> int:
         else:
             end_date = datetime(year, month + 1, 1).date()
         
-        records = await prisma.usertokenusage.find_many(
+        result = await prisma.usertokenusage.group_by(
+            by=["userId"],
             where={
                 "userId": user_id,
                 "date": {
                     "gte": start_date,
                     "lt": end_date,
                 }
-            }
+            },
+            sum={"tokensUsed": True},
         )
         
-        return sum(r.tokensUsed for r in records)
+        if result and len(result) > 0:
+            return result[0].get("_sum", {}).get("tokensUsed", 0) or 0
+        return 0
         
     except Exception as e:
         logger.error(f"Failed to get monthly usage: {e}")

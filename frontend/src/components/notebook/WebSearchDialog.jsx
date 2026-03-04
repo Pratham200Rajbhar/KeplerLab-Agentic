@@ -106,7 +106,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                   const isPreviewed = previewResult?.link === result.link;
                   return (
                     <div
-                      key={idx}
+                      key={result.link}
                       onMouseEnter={() => setPreviewResult(result)}
                       onClick={() => { toggleSelection(result); setPreviewResult(result); }}
                       className={`p-3 rounded-xl border transition-all cursor-pointer group ${

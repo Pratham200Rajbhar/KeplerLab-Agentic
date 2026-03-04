@@ -3,11 +3,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, List, Loader2 } from 'lucide-react';
 import { fetchExplainerVideoBlob } from '@/lib/api/explainer';
+import { useToast } from '@/stores/useToastStore';
 
 export default function InlineExplainerView({ explainer, onClose }) {
+  const toast = useToast();
+  // Stable refs so the video-load effect doesn't re-run when callbacks change
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const [videoUrl, setVideoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -32,7 +38,10 @@ export default function InlineExplainerView({ explainer, onClose }) {
           URL.revokeObjectURL(url);
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Failed to load video');
+        if (!cancelled) {
+          toastRef.current.error(err.message || 'Failed to load video');
+          onCloseRef.current?.();
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -84,15 +93,6 @@ export default function InlineExplainerView({ explainer, onClose }) {
     );
   }
 
-  if (error) {
-    return (
-      <div className="px-4 py-8 text-center">
-        <p className="text-sm text-red-400">{error}</p>
-        <button onClick={onClose} className="mt-3 text-xs text-[var(--accent)] hover:underline">Go back</button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3 animate-fade-in">
       {/* Video */}
@@ -111,13 +111,13 @@ export default function InlineExplainerView({ explainer, onClose }) {
 
       {/* Controls */}
       <div className="flex items-center gap-3 px-2">
-        <button onClick={() => skip(-10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+        <button onClick={() => skip(-10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Skip back 10 seconds">
           <SkipBack className="w-4 h-4 text-[var(--text-secondary)]" />
         </button>
-        <button onClick={togglePlay} className="p-2 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
+        <button onClick={togglePlay} className="p-2 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}>
           {isPlaying ? <Pause className="w-4 h-4" fill="currentColor" /> : <Play className="w-4 h-4" fill="currentColor" />}
         </button>
-        <button onClick={() => skip(10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+        <button onClick={() => skip(10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Skip forward 10 seconds">
           <SkipForward className="w-4 h-4 text-[var(--text-secondary)]" />
         </button>
 
@@ -146,6 +146,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
           <button
             onClick={() => setShowChapters(!showChapters)}
             className={`p-1.5 rounded-lg transition-colors ${showChapters ? 'bg-[var(--accent)] text-[var(--accent)]' : 'hover:bg-[var(--surface-overlay)] text-[var(--text-muted)]'}`}
+            aria-label={showChapters ? 'Hide chapters' : 'Show chapters'}
           >
             <List className="w-4 h-4" />
           </button>
@@ -157,7 +158,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
         <div className="space-y-1 px-2 animate-fade-in">
           {chapters.map((ch, i) => (
             <button
-              key={i}
+              key={ch.title || i}
               onClick={() => jumpToChapter(ch)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-[var(--surface-overlay)] transition-colors"
             >

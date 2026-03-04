@@ -19,7 +19,7 @@ from app.services.notebook_service import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/notebooks")
+router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
 
 class NotebookCreate(BaseModel):

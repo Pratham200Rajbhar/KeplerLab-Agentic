@@ -34,6 +34,33 @@ export default function UploadDialog({
   const [textTitle, setTextTitle] = useState('');
   const router = useRouter();
   const toast = useToast();
+  const dialogRef = useRef(null);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e) => { if (e.key === 'Escape' && !loading) onClose(); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen, loading, onClose]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length > 0) focusable[0].focus();
+    const trap = (e) => {
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    dialog.addEventListener('keydown', trap);
+    return () => dialog.removeEventListener('keydown', trap);
+  }, [isOpen]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -167,6 +194,10 @@ export default function UploadDialog({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in bg-backdrop backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Upload sources"
+      ref={dialogRef}
     >
       <div className="relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in bg-surface-raised border border-border shadow-glass max-h-[88vh]">
         {/* Header */}

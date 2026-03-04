@@ -84,11 +84,11 @@ export default function StudioPanel() {
   const confirm = useConfirm();
 
   const effectiveMaterial =
-    selectedSources.size > 0
-      ? materials.find((m) => selectedSources.has(m.id)) || null
+    selectedSources.length > 0
+      ? materials.find((m) => selectedSources.includes(m.id)) || null
       : null;
 
-  const selectedMaterialIds = [...selectedSources];
+  const selectedMaterialIds = selectedSources;
 
   /* ── View state ── */
   const [activeView, setActiveView] = useState(null);

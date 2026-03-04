@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useToast } from '@/stores/useToastStore';
 
 /**
  * Provides microphone recording via MediaRecorder.
@@ -8,15 +9,14 @@ import { useState, useRef, useCallback } from 'react';
  * (using the Web Speech API when available).
  */
 export default function useMicInput({ onTranscript } = {}) {
+  const toast = useToast();
   const [isRecording, setIsRecording] = useState(false);
-  const [error, setError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const recognitionRef = useRef(null);
 
   const start = useCallback(async () => {
     try {
-      setError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
       chunksRef.current = [];
@@ -51,10 +51,10 @@ export default function useMicInput({ onTranscript } = {}) {
         recognitionRef.current = recognition;
       }
     } catch (err) {
-      setError('Microphone access denied');
+      toast.error('Microphone access denied');
       console.error('Mic error:', err);
     }
-  }, [onTranscript]);
+  }, [onTranscript, toast]);
 
   const stop = useCallback(() => {
     return new Promise((resolve) => {
@@ -93,5 +93,5 @@ export default function useMicInput({ onTranscript } = {}) {
     }
   }, []);
 
-  return { isRecording, error, start, stop, cancel };
+  return { isRecording, start, stop, cancel };
 }

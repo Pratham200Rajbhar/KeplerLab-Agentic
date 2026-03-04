@@ -167,7 +167,7 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
             const analysis = block.json && ('stdout' in block.json || 'base64_chart' in block.json || 'explanation' in block.json) ? block.json : null;
             const researchMd = !analysis && block.json ? tryParseResearchJSON(block.raw) : null;
             return (
-              <div key={i}>
+              <div key={`${block.tool || 'block'}-${i}`}>
                 {/* Tool badge — shown without source-N label */}
                 {meta && (
                   <div className="flex items-center gap-1.5 mb-2">
@@ -295,7 +295,7 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
           {message.citations?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {message.citations.map((citation, idx) => (
-                <span key={idx} className="citation"><span className="citation-number">{idx + 1}</span><span className="truncate max-w-[100px]">{citation.source || 'Source'}</span></span>
+                <span key={citation.source || idx} className="citation"><span className="citation-number">{idx + 1}</span><span className="truncate max-w-[100px]">{citation.source || 'Source'}</span></span>
               ))}
             </div>
           )}

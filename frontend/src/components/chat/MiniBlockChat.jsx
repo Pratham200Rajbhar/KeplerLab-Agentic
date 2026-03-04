@@ -78,7 +78,7 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
            action === 'simplify' ? <><RefreshCw size={12} className="animate-spin" /> Simplifying...</> :
            action === 'translate' ? `🌍 Translating to ${lang}` : '📚 Explaining in depth'}
         </span>
-        <button className="mini-block-close-btn" onClick={onClose}><X size={14} /></button>
+        <button className="mini-block-close-btn" onClick={onClose} aria-label="Close mini chat"><X size={14} /></button>
       </div>
       {action === 'ask' && !response && (
         <div className="mini-block-input-row">

@@ -11,6 +11,7 @@ export default function ConfirmDialog() {
   const handleClose = useConfirmStore((s) => s.handleClose);
   const handleConfirm = useConfirmStore((s) => s.handleConfirm);
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
 
   useEffect(() => {
     if (state?.prompt && inputRef.current) {
@@ -18,12 +19,38 @@ export default function ConfirmDialog() {
     }
   }, [state]);
 
+  // Escape key to close
+  useEffect(() => {
+    if (!state) return;
+    const handleKey = (e) => { if (e.key === 'Escape') handleClose(); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [state, handleClose]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!state) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const trap = (e) => {
+      if (e.key !== 'Tab') return;
+      const focusable = dialog.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    dialog.addEventListener('keydown', trap);
+    return () => dialog.removeEventListener('keydown', trap);
+  }, [state]);
+
   if (!state) return null;
 
   const isDanger = state.variant === 'danger';
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center">
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center" role="dialog" aria-modal="true" aria-label={state.title || 'Confirm'} ref={dialogRef}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[var(--backdrop)] animate-fade-in"

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ async def log_code_execution(
 ) -> None:
     """Write a CodeExecutionSession row.  Best-effort — never raises."""
     try:
-        prisma = get_prisma()
         await prisma.codeexecutionsession.create(
             data={
                 "userId": user_id,

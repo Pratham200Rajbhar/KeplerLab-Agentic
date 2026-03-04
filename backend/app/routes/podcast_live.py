@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.services.auth import get_current_user
+from app.db.prisma_client import prisma
 from app.services.podcast import session_manager, qa_service, export_service
 from app.services.podcast.tts_service import (
     get_segment_audio_path,
@@ -222,8 +223,7 @@ async def add_bookmark(
     session_id: str, req: BookmarkRequest, user=Depends(get_current_user)
 ):
     """Add a bookmark to a segment."""
-    from app.db.prisma_client import get_prisma
-    db = get_prisma()
+    db = prisma
     
     # Verify ownership
     session = await db.podcastsession.find_first(
@@ -249,8 +249,7 @@ async def add_bookmark(
 @router.get("/session/{session_id}/bookmarks")
 async def get_bookmarks(session_id: str, user=Depends(get_current_user)):
     """Get all bookmarks for a session."""
-    from app.db.prisma_client import get_prisma
-    db = get_prisma()
+    db = prisma
     
     bookmarks = await db.podcastbookmark.find_many(
         where={"sessionId": session_id, "session": {"userId": user.id}},
@@ -272,8 +271,7 @@ async def delete_bookmark(
     session_id: str, bookmark_id: str, user=Depends(get_current_user)
 ):
     """Remove a bookmark."""
-    from app.db.prisma_client import get_prisma
-    db = get_prisma()
+    db = prisma
     
     bookmark = await db.podcastbookmark.find_first(
         where={"id": bookmark_id, "session": {"id": session_id, "userId": user.id}}
@@ -293,8 +291,7 @@ async def add_annotation(
     session_id: str, req: AnnotationRequest, user=Depends(get_current_user)
 ):
     """Add an annotation to a segment."""
-    from app.db.prisma_client import get_prisma
-    db = get_prisma()
+    db = prisma
     
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user.id}
@@ -321,8 +318,7 @@ async def delete_annotation(
     session_id: str, annotation_id: str, user=Depends(get_current_user)
 ):
     """Remove an annotation."""
-    from app.db.prisma_client import get_prisma
-    db = get_prisma()
+    db = prisma
     
     annotation = await db.podcastannotation.find_first(
         where={"id": annotation_id, "session": {"id": session_id, "userId": user.id}}
@@ -448,9 +444,8 @@ async def check_satisfaction(
 ):
     """Test satisfaction detection for a message."""
     from app.services.podcast.satisfaction_detector import detect_satisfaction
-    from app.db.prisma_client import get_prisma
     
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user.id}
     )

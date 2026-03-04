@@ -151,7 +151,7 @@ export default memo(function SourceItem({
         </p>
         {(isProcessing || isFailed) && (
           <div className="mt-2 mb-1 flex items-center gap-2">
-            <div className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${statusStyle.bg} ${statusStyle.border} ${isProcessing ? 'animate-pulse' : ''}`}>
+            <div className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${statusStyle.bg} ${statusStyle.border} ${isProcessing ? 'animate-pulse' : ''}`} title={statusLabel} role="status">
               {isProcessing && (
                 <div className={`w-1.5 h-1.5 rounded-full bg-current ${statusStyle.text} animate-ping absolute left-2 opacity-75`} />
               )}

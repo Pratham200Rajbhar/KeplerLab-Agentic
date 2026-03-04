@@ -91,6 +91,7 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
                   setMenuOpenId(menuOpenId === item.id ? null : item.id);
                 }}
                 className="p-1 rounded hover:bg-[var(--surface)] transition-colors opacity-0 group-hover:opacity-100"
+                aria-label="More options"
               >
                 <MoreVertical className="w-3.5 h-3.5 text-[var(--text-muted)]" />
               </button>

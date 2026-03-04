@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from prisma import Json
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 from app.services.ws_manager import ws_manager
 from app.services.podcast.script_generator import generate_podcast_script
 from app.services.podcast.tts_service import synthesize_all_segments
@@ -32,7 +32,7 @@ async def create_session(
     material_ids: Optional[List[str]] = None,
 ) -> Dict:
     """Create a new podcast session."""
-    db = get_prisma()
+    db = prisma
 
     # Resolve default voices if not provided
     defaults = get_default_voices(language)
@@ -59,7 +59,7 @@ async def create_session(
 
 async def get_session(session_id: str, user_id: str) -> Optional[Dict]:
     """Get full session state including segments."""
-    db = get_prisma()
+    db = prisma
 
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id},
@@ -81,7 +81,7 @@ async def get_sessions_for_notebook(
     notebook_id: str, user_id: str
 ) -> List[Dict]:
     """List all podcast sessions for a notebook."""
-    db = get_prisma()
+    db = prisma
 
     sessions = await db.podcastsession.find_many(
         where={"notebookId": notebook_id, "userId": user_id},
@@ -95,7 +95,7 @@ async def update_session_status(
     session_id: str, status: str, **extra_fields
 ) -> None:
     """Update session status and optional extra fields."""
-    db = get_prisma()
+    db = prisma
     data = {"status": status, **extra_fields}
     if status == "completed":
         data["completedAt"] = datetime.now(timezone.utc)
@@ -105,7 +105,7 @@ async def update_session_status(
 
 async def update_current_segment(session_id: str, segment_index: int) -> None:
     """Update the current playback position."""
-    db = get_prisma()
+    db = prisma
     await db.podcastsession.update(
         where={"id": session_id},
         data={"currentSegment": segment_index},
@@ -117,7 +117,7 @@ async def start_generation(session_id: str, user_id: str) -> None:
     
     This runs as a background task — progress is pushed via WebSocket.
     """
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )
@@ -146,7 +146,7 @@ async def _generation_pipeline(session_id: str, user_id: str, session) -> None:
     • Duration accumulation and final ``ready`` status happen only after every
       segment's callback has resolved, so the total duration value is accurate.
     """
-    db = get_prisma()
+    db = prisma
 
     try:
         # ── Phase 1: Script generation ────────────────────────────────────
@@ -302,7 +302,7 @@ async def _generation_pipeline(session_id: str, user_id: str, session) -> None:
 
 async def delete_session(session_id: str, user_id: str) -> bool:
     """Delete a podcast session and its files."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )
@@ -327,7 +327,7 @@ async def update_session_title(
     session_id: str, user_id: str, title: str
 ) -> Optional[Dict]:
     """Rename a podcast session."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )
@@ -344,7 +344,7 @@ async def update_session_tags(
     session_id: str, user_id: str, tags: List[str]
 ) -> Optional[Dict]:
     """Update tags for a podcast session."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
     )

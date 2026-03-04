@@ -82,17 +82,14 @@ httpx>=0.25.0
 fake-useragent>=1.4.0
 trafilatura>=1.6.0
 
-sqlalchemy[asyncio]==2.0.35  # kept for potential direct queries
-asyncpg==0.29.0             # kept for potential direct queries
 prisma==0.15.0
-redis==5.0.8
 
 # playwright removed — replaced by LibreOffice headless + poppler
 # pdf2image is already listed above
 
-TTS
-# moviepy — removed (no longer used; numpy concatenation replaced it)
 soundfile
+
+duckduckgo-search>=6.0.0
 
 pytest>=7.0
 pytest-asyncio>=0.21

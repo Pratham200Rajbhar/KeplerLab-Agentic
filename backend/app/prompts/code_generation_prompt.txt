@@ -23,3 +23,8 @@ SECURITY — FORBIDDEN (will cause validation errors):
 - NEVER use multiprocessing, threading, signal, ctypes, pickle
 - You CAN use os.path.join(), os.path.exists(), os.path.basename() — those are allowed
 - You CAN use: pandas, numpy, scipy, sklearn, matplotlib, seaborn, plotly, math, json, csv, re
+
+USER REQUEST:
+{{USER_REQUEST}}
+
+Generate ONLY the Python code. No explanations, no markdown fences.

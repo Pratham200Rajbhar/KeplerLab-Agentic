@@ -95,6 +95,7 @@ function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSignupParam = searchParams.get('mode') === 'signup';
+  const sessionExpired = searchParams.get('reason') === 'expired';
 
   const { login, signup, error, setError, clearError, isLoading: authGlobalLoading, isAuthenticated } = useAuthStore();
 
@@ -169,6 +170,21 @@ function AuthForm() {
           >
             <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>Account created successfully. Please sign in.</span>
+          </div>
+        )}
+
+        {/* Session expired notice */}
+        {sessionExpired && !signupDone && (
+          <div
+            className="mb-6 p-3.5 rounded-xl flex items-start gap-2.5 text-sm animate-fade-in"
+            style={{
+              background: 'var(--warning-subtle, rgba(234,179,8,0.08))',
+              border: '1px solid var(--warning-border, rgba(234,179,8,0.25))',
+              color: 'var(--warning, #ca8a04)',
+            }}
+          >
+            <span className="flex-shrink-0 mt-0.5">⚠️</span>
+            <span>Your session has expired. Please sign in again to continue.</span>
           </div>
         )}
 

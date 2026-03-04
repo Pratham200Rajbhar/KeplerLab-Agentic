@@ -17,17 +17,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import re
 from typing import Dict, List, Optional
 
+from app.prompts import get_podcast_script_prompt
 from app.services.llm_service.llm import get_llm
 from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
-
-_PROMPT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "prompts")
 
 # Queries per mode: primary query + optional supplementary angles
 _MODE_QUERIES: Dict[str, List[str]] = {
@@ -53,12 +51,6 @@ _MODE_QUERIES: Dict[str, List[str]] = {
     ],
     "topic": [],  # filled dynamically from req.topic
 }
-
-
-def _load_prompt() -> str:
-    path = os.path.join(_PROMPT_DIR, "podcast_script_prompt.txt")
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
 
 
 def _extract_json(text: str) -> dict:
@@ -234,7 +226,7 @@ async def generate_podcast_script(
         }.get(mode, "Cover all major topics and concepts from the source material comprehensively.")
     )
 
-    prompt = _load_prompt().format(
+    prompt = get_podcast_script_prompt(
         language=language_name,
         mode_instruction=mode_instruction,
         context=context,

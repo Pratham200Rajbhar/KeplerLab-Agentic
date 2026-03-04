@@ -6,6 +6,7 @@ import usePodcastStore from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
 import VoicePicker from './VoicePicker';
 import { getLanguages } from '@/lib/api/podcast';
+import { useToast } from '@/stores/useToastStore';
 
 const MODES = [
   { id: 'overview', label: 'Overview', desc: 'A broad tour of all uploaded material' },
@@ -15,6 +16,7 @@ const MODES = [
 ];
 
 export default function PodcastModeSelector() {
+  const toast = useToast();
   const create = usePodcastStore((s) => s.create);
   const startGeneration = usePodcastStore((s) => s.startGeneration);
   const setPhase = usePodcastStore((s) => s.setPhase);
@@ -22,6 +24,10 @@ export default function PodcastModeSelector() {
   const loading = usePodcastStore((s) => s.loading);
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const selectedSources = useAppStore((s) => s.selectedSources);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error, toast]);
 
   const [mode, setMode] = useState('overview');
   const [topic, setTopic] = useState('');
@@ -47,7 +53,7 @@ export default function PodcastModeSelector() {
     }
   };
 
-  const hasSources = selectedSources.size > 0;
+  const hasSources = selectedSources.length > 0;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -63,7 +69,7 @@ export default function PodcastModeSelector() {
         <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">New Podcast</h3>
         <p className="text-xs text-[var(--text-muted)]">
           {hasSources
-            ? `Using ${selectedSources.size} selected source${selectedSources.size > 1 ? 's' : ''}`
+            ? `Using ${selectedSources.length} selected source${selectedSources.length > 1 ? 's' : ''}`
             : 'Select sources in the sidebar first'}
         </p>
       </div>
@@ -147,13 +153,6 @@ export default function PodcastModeSelector() {
           </div>
         )}
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-          {error}
-        </div>
-      )}
 
       {/* Generate button */}
       <button

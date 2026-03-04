@@ -1,6 +1,8 @@
-'use client';
-
 import { Suspense } from 'react';
+
+export async function generateMetadata() {
+  return { title: 'Notebook — KeplerLab' };
+}
 
 export default function NotebookLayout({ children }) {
   return (

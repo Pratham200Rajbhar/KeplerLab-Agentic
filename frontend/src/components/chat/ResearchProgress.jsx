@@ -12,7 +12,7 @@ export default function ResearchProgress({ steps = [], query = '' }) {
       </div>
       <div className="research-steps">
         {steps.map((step, idx) => (
-          <div key={idx} className={`research-step research-step--${step.status}`}>
+          <div key={step.label} className={`research-step research-step--${step.status}`}>
             <span className="research-step-indicator">
               {step.status === 'done' && '✅'}
               {step.status === 'active' && <span className="research-pulse-dot" />}

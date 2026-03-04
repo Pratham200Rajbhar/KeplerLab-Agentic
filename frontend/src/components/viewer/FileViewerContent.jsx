@@ -23,9 +23,9 @@ import {
   FileText,
 } from 'lucide-react';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-const FILE_VIEWER_BASE = `${API_BASE}/api/v1`;
+import { apiConfig } from '@/lib/api/config';
+
+const FILE_VIEWER_BASE = `${apiConfig.baseUrl}/api/v1`;
 
 const OFFICE_EXTS = new Set([
   '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.odt', '.ods', '.odp',

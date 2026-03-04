@@ -7,7 +7,7 @@ from app.services.auth import get_current_user
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/search", tags=["search"])
 
 class WebSearchRequest(BaseModel):
     query: str

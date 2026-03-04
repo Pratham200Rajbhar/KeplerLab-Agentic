@@ -23,7 +23,7 @@ from app.core.config import settings
 from .utils import require_material, require_material_text, require_materials_text, safe_path
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/presentation", tags=["presentation"])
 
 
 # ── Request / Response models ─────────────────────────────
@@ -53,7 +53,7 @@ class PresentationRequest(BaseModel):
 # ── Synchronous endpoint ──────────────────────────────────
 
 
-@router.post("/presentation")
+@router.post("")
 async def generate_ppt(
     request: PresentationRequest,
     current_user=Depends(get_current_user),
@@ -115,7 +115,7 @@ async def generate_ppt(
 # ── Background job endpoint ───────────────────────────────
 
 
-@router.post("/presentation/async")
+@router.post("/async")
 async def generate_ppt_async(
     request: PresentationRequest,
     background_tasks: BackgroundTasks,
@@ -124,14 +124,22 @@ async def generate_ppt_async(
     """Start presentation generation as a background job.
 
     Returns a job_id that can be polled via GET /jobs/{job_id}.
+    Accepts material_ids list, identical to sync version.
     """
+    ids = request.material_ids or ([request.material_id] if request.material_id else [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No material selected")
+
     logger.info(
-        "PPT async request received | user=%s | material=%s",
+        "PPT async request received | user=%s | material_ids=%s",
         current_user.id,
-        request.material_id,
+        ids,
     )
 
-    text = await require_material_text(request.material_id, current_user.id)
+    if len(ids) == 1:
+        text = await require_material_text(ids[0], current_user.id)
+    else:
+        text = await require_materials_text(ids, current_user.id)
 
     job_id = await create_job(str(current_user.id), "presentation")
     logger.info("PPT background job created | job_id=%s", job_id)
@@ -188,8 +196,7 @@ async def _run_ppt_job(
 # ── Slide image serving endpoint ──────────────────────────
 
 
-@router.get("/presentation/slides/{user_id}/{presentation_id}/{filename}")
-@router.get("/api/presentation/slides/{user_id}/{presentation_id}/{filename}", include_in_schema=False)
+@router.get("/slides/{user_id}/{presentation_id}/{filename}")
 async def get_slide_image(
     user_id: str,
     presentation_id: str, 

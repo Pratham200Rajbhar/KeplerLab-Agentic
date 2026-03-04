@@ -13,17 +13,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ───────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum VideoStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum ExportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 // ─── Users ───────────────────────────────────────────────
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  email          String   @unique @db.VarChar(255)
-  username       String   @db.VarChar(100)
-  hashedPassword String   @map("hashed_password") @db.VarChar(255)
-  isActive       Boolean  @default(true) @map("is_active")
-  role           String   @default("user") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique @db.VarChar(255)
+  username       String    @db.VarChar(100)
+  hashedPassword String    @map("hashed_password") @db.VarChar(255)
+  isActive       Boolean   @default(true) @map("is_active")
+  role           UserRole  @default(USER)
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 
   notebooks        Notebook[]
   materials        Material[]
@@ -58,6 +80,10 @@ model Notebook {
   chatSessions     ChatSession[]
   chatMessages     ChatMessage[]
   generatedContent GeneratedContent[]
+  agentLogs        AgentExecutionLog[]
+  codeExecutions   CodeExecutionSession[]
+  researchSessions ResearchSession[]
+  podcastSessions  PodcastSession[]
 
   @@index([userId])
   @@map("notebooks")
@@ -85,14 +111,16 @@ model Material {
   status       MaterialStatus @default(pending)
   chunkCount   Int            @default(0) @map("chunk_count")
   sourceType   String?        @default("file") @map("source_type") @db.VarChar(50) // 'file', 'url', 'youtube', 'text'
-  metadata     String?        @db.Text // JSON string for extraction metadata (consider migrating to Json type)
+  metadata     Json? // Extraction metadata (migrated from String)
   error        String?        @db.Text // Error message if processing failed
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at")
 
-  owner            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notebook         Notebook?          @relation(fields: [notebookId], references: [id], onDelete: SetNull)
-  generatedContent GeneratedContent[]
+  owner                    User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook                 Notebook?                  @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+  generatedContent         GeneratedContent[]
+  generatedContentJoins    GeneratedContentMaterial[]
+  podcastSessionJoins      PodcastSessionMaterial[]
 
   @@index([userId])
   @@index([notebookId])
@@ -138,6 +166,8 @@ model ChatMessage {
   responseBlocks ResponseBlock[]
 
   @@index([chatSessionId])
+  @@index([notebookId])
+  @@index([notebookId, createdAt])
   @@map("chat_messages")
 }
 
@@ -152,15 +182,28 @@ model GeneratedContent {
   title       String?  @db.VarChar(255)
   data        Json
   language    String?  @db.VarChar(10)
-  materialIds String[] @default([]) @map("material_ids")
+  materialIds String[] @default([]) @map("material_ids") // Legacy — use GeneratedContentMaterial join table
   createdAt   DateTime @default(now()) @map("created_at")
 
-  notebook        Notebook          @relation(fields: [notebookId], references: [id], onDelete: Cascade)
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  material        Material?         @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  notebook        Notebook                   @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material        Material?                  @relation(fields: [materialId], references: [id], onDelete: Cascade)
   explainerVideos ExplainerVideo[]
+  materialJoins   GeneratedContentMaterial[]
 
+  @@index([notebookId, userId, contentType])
   @@map("generated_content")
+}
+
+model GeneratedContentMaterial {
+  generatedContentId String @map("generated_content_id") @db.Uuid
+  materialId         String @map("material_id") @db.Uuid
+
+  generatedContent GeneratedContent @relation(fields: [generatedContentId], references: [id], onDelete: Cascade)
+  material         Material         @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@id([generatedContentId, materialId])
+  @@map("generated_content_materials")
 }
 
 // ─── Explainer Videos ────────────────────────────────────
@@ -173,7 +216,7 @@ model ExplainerVideo {
   narrationLanguage String    @map("narration_language") @db.VarChar(10)
   voiceGender       String    @map("voice_gender") @db.VarChar(10)
   voiceId           String    @map("voice_id") @db.VarChar(100)
-  status            String    @default("pending") @db.VarChar(30)
+  status            VideoStatus @default(pending)
   script            Json?
   audioFiles        Json?     @map("audio_files")
   videoUrl          String?   @map("video_url") @db.Text
@@ -291,7 +334,8 @@ model AgentExecutionLog {
   elapsedTime   Float    @default(0.0) @map("elapsed_time")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([notebookId])
@@ -327,7 +371,8 @@ model CodeExecutionSession {
   elapsedTime   Float    @default(0.0) @map("elapsed_time")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([notebookId])
@@ -349,7 +394,8 @@ model ResearchSession {
   sourceUrls    String[] @default([]) @map("source_urls")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([notebookId])
@@ -384,24 +430,37 @@ model PodcastSession {
   tags             String[]             @default([])
   chapters         Json?                // [{name, startSegment}]
   totalDurationMs  Int                  @default(0) @map("total_duration_ms")
-  materialIds      String[]             @default([]) @map("material_ids")
+  materialIds      String[]             @default([]) @map("material_ids") // Legacy — use PodcastSessionMaterial join table
   summary          String?              @db.Text
   error            String?              @db.Text
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
   completedAt      DateTime?            @map("completed_at")
 
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  segments PodcastSegment[]
-  doubts   PodcastDoubt[]
-  exports  PodcastExport[]
-  bookmarks PodcastBookmark[]
-  annotations PodcastAnnotation[]
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook        Notebook                 @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  segments        PodcastSegment[]
+  doubts          PodcastDoubt[]
+  exports         PodcastExport[]
+  bookmarks       PodcastBookmark[]
+  annotations     PodcastAnnotation[]
+  materialJoins   PodcastSessionMaterial[]
 
   @@index([userId])
   @@index([notebookId])
   @@index([userId, status])
   @@map("podcast_sessions")
+}
+
+model PodcastSessionMaterial {
+  podcastSessionId String @map("podcast_session_id") @db.Uuid
+  materialId       String @map("material_id") @db.Uuid
+
+  podcastSession PodcastSession @relation(fields: [podcastSessionId], references: [id], onDelete: Cascade)
+  material       Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@id([podcastSessionId, materialId])
+  @@map("podcast_session_materials")
 }
 
 model PodcastSegment {
@@ -444,8 +503,8 @@ model PodcastExport {
   sessionId String   @map("session_id") @db.Uuid
   format    String   @db.VarChar(10) // 'pdf' or 'json'
   fileUrl   String?  @map("file_url") @db.Text
-  status    String   @default("pending") @db.VarChar(20)
-  createdAt DateTime @default(now()) @map("created_at")
+  status    ExportStatus @default(pending)
+  createdAt DateTime     @default(now()) @map("created_at")
 
   session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

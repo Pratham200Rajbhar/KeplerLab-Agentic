@@ -80,7 +80,7 @@ export default function ChatHistoryModal({
               onChange={e => setHistorySearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-surface-overlay rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all text-text-primary placeholder:text-text-muted" />
             {historySearchTerm && (
-              <button onClick={() => setHistorySearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors">
+              <button onClick={() => setHistorySearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors" aria-label="Clear search">
                 <X className="w-4 h-4" />
               </button>
             )}

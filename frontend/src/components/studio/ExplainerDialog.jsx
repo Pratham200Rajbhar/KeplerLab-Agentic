@@ -145,7 +145,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
           <Wand2 className="w-5 h-5 text-[var(--accent)]" />
           <h3 className="text-base font-semibold text-[var(--text-primary)]">AI Explainer</h3>
         </div>
-        <button onClick={handleCancel} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+        <button onClick={handleCancel} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close explainer dialog">
           <X className="w-4 h-4 text-[var(--text-muted)]" />
         </button>
       </div>

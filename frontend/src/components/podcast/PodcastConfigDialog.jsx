@@ -7,6 +7,7 @@ import VoicePicker from './VoicePicker';
 import { getLanguages } from '@/lib/api/podcast';
 import usePodcastStore from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
+import { useToast } from '@/stores/useToastStore';
 
 const MODES = [
   { id: 'overview',  label: 'Overview',   desc: 'Broad tour of all material',      emoji: '🗺️' },
@@ -28,12 +29,17 @@ const DEFAULT_LANGUAGES = [
 ];
 
 export default function PodcastConfigDialog({ onClose }) {
+  const toast = useToast();
   const create = usePodcastStore((s) => s.create);
   const startGeneration = usePodcastStore((s) => s.startGeneration);
   const loading = usePodcastStore((s) => s.loading);
   const error = usePodcastStore((s) => s.error);
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const selectedSources = useAppStore((s) => s.selectedSources);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error, toast]);
 
   const [scope, setScope]         = useState('full');   // 'full' | 'topic'
   const [mode, setMode]           = useState('overview');
@@ -72,7 +78,7 @@ export default function PodcastConfigDialog({ onClose }) {
     }
   };
 
-  const canGenerate = selectedSources.size > 0 && !loading && (scope === 'full' || topic.trim().length > 0);
+  const canGenerate = selectedSources.length > 0 && !loading && (scope === 'full' || topic.trim().length > 0);
 
   return (
     <Modal onClose={onClose} maxWidth="lg">
@@ -203,13 +209,6 @@ export default function PodcastConfigDialog({ onClose }) {
             </div>
           </div>
         </div>
-
-        {error && (
-          <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/20 text-xs text-red-400 flex items-start gap-2">
-            <span className="text-base leading-none">⚠</span>
-            {error}
-          </div>
-        )}
       </div>
 
       {/* Footer */}

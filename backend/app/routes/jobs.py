@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.services.auth import get_current_user
 from app.services.job_service import get_job
 
-router = APIRouter(prefix="/jobs")
+router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 @router.get("/{job_id}")

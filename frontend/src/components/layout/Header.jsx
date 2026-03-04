@@ -99,6 +99,7 @@ export default function Header({ user, onBack }) {
           <button
             className="w-7 h-7 rounded-lg bg-accent/15 flex items-center justify-center text-accent text-xs font-semibold hover:bg-accent/25 transition-all duration-200"
             onClick={() => setShowMenu(!showMenu)}
+            aria-label="User menu"
           >
             {userInitial}
           </button>

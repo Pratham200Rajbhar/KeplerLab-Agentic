@@ -19,7 +19,7 @@ export default function useMindMap({ notebookId, selectedSources, onGenerated })
     [selectedSources],
   );
   const stableSources = useMemo(
-    () => selectedSources || [],
+    () => (Array.isArray(selectedSources) ? selectedSources : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sourcesKey],
   );

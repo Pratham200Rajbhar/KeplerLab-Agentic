@@ -33,6 +33,7 @@ async def register_user(email: str, username: str, password: str):
             "email": email,
             "username": username,
             "hashedPassword": hash_password(password),
+            "role": "USER",  # Explicit uppercase to match PostgreSQL enum values
         }
     )
     return user

@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { generateId } from '@/lib/utils/helpers';
 
+// ── Re-export focused stores for gradual migration ──
+export { default as useChatStore } from './useChatStore';
+export { default as useMaterialStore } from './useMaterialStore';
+export { default as useNotebookStore } from './useNotebookStore';
+export { default as useUIStore } from './useUIStore';
+
 // Shared ref for routing podcast WS events
 const _podcastWsHandlerRef = { current: null };
 
@@ -12,7 +18,7 @@ const useAppStore = create((set, get) => ({
   // ── Material state ──
   currentMaterial: null,
   materials: [],
-  selectedSources: new Set(),
+  selectedSources: [],
 
   // ── Chat state ──
   sessionId: null,
@@ -65,19 +71,23 @@ const useAppStore = create((set, get) => ({
     })),
 
   toggleSourceSelection: (id) =>
-    set((state) => {
-      const next = new Set(state.selectedSources);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { selectedSources: next };
-    }),
+    set((state) => ({
+      selectedSources: state.selectedSources.includes(id)
+        ? state.selectedSources.filter((sid) => sid !== id)
+        : [...state.selectedSources, id],
+    })),
 
   selectAllSources: () =>
     set((state) => ({
-      selectedSources: new Set(state.materials.map((m) => m.id)),
+      selectedSources: state.materials.map((m) => m.id),
     })),
 
-  deselectAllSources: () => set({ selectedSources: new Set() }),
+  deselectAllSources: () => set({ selectedSources: [] }),
+
+  isSourceSelected: (id) => {
+    const state = useAppStore.getState();
+    return state.selectedSources.includes(id);
+  },
 
   // ── Chat actions ──
   setSessionId: (id) => set({ sessionId: id }),
@@ -131,7 +141,7 @@ const useAppStore = create((set, get) => ({
   // ── Notebook switch cleanup ──
   resetForNotebookSwitch: () => {
     set({
-      selectedSources: new Set(),
+      selectedSources: [],
       currentMaterial: null,
       materials: [],
       messages: [],
@@ -152,7 +162,7 @@ const useAppStore = create((set, get) => ({
       draftMode: false,
       currentMaterial: null,
       materials: [],
-      selectedSources: new Set(),
+      selectedSources: [],
       sessionId: null,
       messages: [],
       flashcards: null,

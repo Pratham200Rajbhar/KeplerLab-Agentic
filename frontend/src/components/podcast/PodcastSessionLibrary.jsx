@@ -45,7 +45,7 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
     }
   };
 
-  const hasSources = selectedSources.size > 0;
+  const hasSources = selectedSources.length > 0;
 
   return (
     <div className="space-y-4 animate-fade-in">

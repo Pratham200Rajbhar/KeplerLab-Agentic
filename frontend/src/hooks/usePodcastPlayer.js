@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import usePodcastStore from '@/stores/usePodcastStore';
 
 /**
  * Manages segment-level audio playback with lookahead prefetch,
  * speed control, and seek/skip helpers.
- * Reads from usePodcastStore instead of PodcastContext.
+ *
+ * Owns Audio element and cache via useRef (not stored in Zustand for serializability).
  */
 export default function usePodcastPlayer() {
   const {
@@ -15,7 +16,6 @@ export default function usePodcastPlayer() {
     currentSegmentIndex,
     isPlaying,
     playbackSpeed,
-    _audioEl,
     playSegment,
     prefetchSegment,
     pause,
@@ -25,7 +25,33 @@ export default function usePodcastPlayer() {
     prevSegment,
     changeSpeed,
     setCurrentSegmentIndex,
+    setAudioRefs,
   } = usePodcastStore();
+
+  // ── Audio refs owned by this hook (not in store) ──
+  const audioElRef = useRef(typeof window !== 'undefined' ? new Audio() : null);
+  const audioCacheRef = useRef(new Map());
+
+  // Register refs with store so playback actions can access them
+  useEffect(() => {
+    setAudioRefs(audioElRef, audioCacheRef);
+  }, [setAudioRefs]);
+
+  // ── Cleanup audio on unmount ──
+  useEffect(() => {
+    const audio = audioElRef.current;
+    const cache = audioCacheRef.current;
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      if (cache) {
+        cache.forEach(url => URL.revokeObjectURL(url));
+        cache.clear();
+      }
+    };
+  }, []);
 
   // Prefetch cache: keep next 2 segments in browser cache
   const prefetchedRef = useRef(new Set());
@@ -50,13 +76,27 @@ export default function usePodcastPlayer() {
     prefetchedRef.current.clear();
   }, [session?.id]);
 
+  // ── Track segment duration via event listener (avoids reading ref during render) ──
+  const [segmentDuration, setSegmentDuration] = useState(0);
+
+  useEffect(() => {
+    const audio = audioElRef.current;
+    if (!audio) return;
+    const update = () => setSegmentDuration(audio.duration || 0);
+    audio.addEventListener('loadedmetadata', update);
+    audio.addEventListener('durationchange', update);
+    return () => {
+      audio.removeEventListener('loadedmetadata', update);
+      audio.removeEventListener('durationchange', update);
+    };
+  }, []);
+
   // ── Auto-advance: when a segment ends, play the next one ──
   useEffect(() => {
-    const audio = _audioEl;
+    const audio = audioElRef.current;
     if (!audio) return;
 
     const onEnded = () => {
-      // Read latest state via getState() to avoid stale closures
       const { currentSegmentIndex: idx, segments: segs, playSegment: play, pause: pauseFn } =
         usePodcastStore.getState();
       if (idx < segs.length - 1) {
@@ -68,16 +108,13 @@ export default function usePodcastPlayer() {
 
     audio.addEventListener('ended', onEnded);
     return () => audio.removeEventListener('ended', onEnded);
-  }, [_audioEl]);
+  }, []);
 
   // Seek within the current segment.
-  // Read the audio element from getState() at call time so we're not modifying
-  // a value returned directly from a hook call (which the linter forbids).
   const seekTo = useCallback(
     (timeInSeconds) => {
-      const audio = usePodcastStore.getState()._audioEl;
-      if (audio) {
-        audio.currentTime = timeInSeconds;
+      if (audioElRef.current) {
+        audioElRef.current.currentTime = timeInSeconds;
       }
     },
     [],
@@ -86,9 +123,8 @@ export default function usePodcastPlayer() {
   // Skip forward/back by N seconds
   const skip = useCallback(
     (deltaSeconds) => {
-      const audio = usePodcastStore.getState()._audioEl;
-      if (audio) {
-        audio.currentTime = Math.max(0, audio.currentTime + deltaSeconds);
+      if (audioElRef.current) {
+        audioElRef.current.currentTime = Math.max(0, audioElRef.current.currentTime + deltaSeconds);
       }
     },
     [],
@@ -103,8 +139,6 @@ export default function usePodcastPlayer() {
     },
     [segments.length, playSegment],
   );
-
-  const segmentDuration = _audioEl?.duration || 0;
 
   return {
     isPlaying,

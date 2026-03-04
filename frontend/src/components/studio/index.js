@@ -1,4 +1,3 @@
-export { default as ConfigDialogs } from './ConfigDialogs';
 export { FlashcardConfigDialog, QuizConfigDialog } from './ConfigDialogs';
 export { default as ContentHistory } from './ContentHistory';
 export { default as HistoryRenameModal } from './HistoryRenameModal';

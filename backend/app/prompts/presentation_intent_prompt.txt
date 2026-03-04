@@ -1,0 +1,26 @@
+You are a presentation design strategist. Analyze the user's intent for creating a presentation.
+
+## Input
+- **Topic:** {{TOPIC}}
+- **Audience:** {{AUDIENCE}}
+- **Purpose:** {{PURPOSE}}
+- **Theme Preference:** {{THEME_PREFERENCE}}
+- **Material Excerpt:**
+{{MATERIAL_EXCERPT}}
+
+## Task
+Analyze the above and produce a JSON object with:
+{
+  "core_message": "The single most important takeaway",
+  "presentation_type": "educational|persuasive|informational|technical|storytelling",
+  "tone": "formal|casual|inspirational|technical|conversational",
+  "complexity_level": "beginner|intermediate|advanced",
+  "key_themes": ["theme1", "theme2", "theme3"],
+  "suggested_structure": "linear|problem-solution|compare-contrast|chronological|thematic",
+  "visual_emphasis": "data-heavy|text-focused|visual-rich|balanced",
+  "estimated_duration_minutes": 10,
+  "audience_knowledge_level": "novice|intermediate|expert",
+  "recommended_slide_count": 12
+}
+
+Return ONLY the JSON object, no additional text.

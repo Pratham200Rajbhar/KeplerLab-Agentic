@@ -24,7 +24,7 @@ from app.services.explainer.processor import EXPLAINER_OUTPUT_DIR, process_expla
 from app.services.explainer.tts import get_voice_id, EDGE_TTS_VOICES
 
 logger = logging.getLogger("explainer.route")
-router = APIRouter()
+router = APIRouter(prefix="/explainer", tags=["explainer"])
 
 
 # ── Request / Response models ─────────────────────────────
@@ -62,7 +62,7 @@ def _validate_language(lang: str, label: str) -> None:
 # ── Routes ────────────────────────────────────────────────
 
 
-@router.post("/explainer/check-presentations")
+@router.post("/check-presentations")
 async def check_presentations(
     request: CheckPresentationsRequest,
     current_user=Depends(get_current_user),
@@ -107,7 +107,7 @@ async def check_presentations(
     }
 
 
-@router.post("/explainer/generate")
+@router.post("/generate")
 async def generate_explainer(
     request: GenerateExplainerRequest,
     background_tasks: BackgroundTasks,
@@ -228,7 +228,7 @@ async def generate_explainer(
     }
 
 
-@router.get("/explainer/{explainer_id}/status")
+@router.get("/{explainer_id}/status")
 async def get_explainer_status(
     explainer_id: str,
     current_user=Depends(get_current_user),
@@ -266,7 +266,7 @@ async def get_explainer_status(
     }
 
 
-@router.get("/explainer/{explainer_id}/video")
+@router.get("/{explainer_id}/video")
 async def get_explainer_video(
     explainer_id: str,
     current_user=Depends(get_current_user),

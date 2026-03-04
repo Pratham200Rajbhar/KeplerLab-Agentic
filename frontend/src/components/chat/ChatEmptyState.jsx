@@ -12,10 +12,10 @@ export default function ChatEmptyState({ hasSource, isSourceProcessing, selected
             style={{ background: 'var(--accent-subtle)' }}>
             <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
             <span className="text-sm text-text-secondary">
-              {selectedSources.size > 1 ? (
-                <><span className="text-accent font-medium">{selectedSources.size} sources</span> selected</>
+              {selectedSources.length > 1 ? (
+                <><span className="text-accent font-medium">{selectedSources.length} sources</span> selected</>
               ) : (
-                <>Ready to explore <span className="text-accent font-medium">{materials.find(m => selectedSources.has(m.id))?.filename}</span></>
+                <>Ready to explore <span className="text-accent font-medium">{materials.find(m => selectedSources.includes(m.id))?.filename}</span></>
               )}
             </span>
           </div>

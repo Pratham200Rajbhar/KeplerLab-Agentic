@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import useAppStore from '@/stores/useAppStore';
 import useAuthStore from '@/stores/useAuthStore';
 import { useToast } from '@/stores/useToastStore';
+import useResizablePanel from '@/hooks/useResizablePanel';
 import {
   uploadBatch, uploadBatchWithAutoNotebook, getMaterials,
   getMaterialText, deleteMaterial, updateMaterial, webSearch, uploadUrl,
@@ -49,9 +50,9 @@ export default function Sidebar({ onNavigate }) {
 
   const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
 
+  const { width, startDrag } = useResizablePanel('left', { defaultWidth: 320, minWidth: 260, maxWidth: 600 });
+
   const [dragActive, setDragActive] = useState(false);
-  const [width, setWidth] = useState(320);
-  const [isResizing, setIsResizing] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
   const [modalText, setModalText] = useState('');
   const [modalFilename, setModalFilename] = useState('');
@@ -63,11 +64,7 @@ export default function Sidebar({ onNavigate }) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
-  const [searchError, setSearchError] = useState(null);
   const [loadError, setLoadError] = useState(null);
-
-  const minWidth = 260;
-  const maxWidth = 600;
 
   const loadMaterials = useCallback(async (autoSelect = false) => {
     if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
@@ -87,7 +84,10 @@ export default function Sidebar({ onNavigate }) {
         if (autoSelect) {
           const completedIds = formatted.filter((m) => m.status === 'completed').map((m) => m.id);
           if (completedIds.length > 0) {
-            setSelectedSources((prev) => new Set([...prev, ...completedIds]));
+            setSelectedSources((prev) => {
+              const merged = [...new Set([...prev, ...completedIds])];
+              return merged;
+            });
           }
         }
       } catch {
@@ -117,7 +117,10 @@ export default function Sidebar({ onNavigate }) {
       if (msg.status === 'completed' || msg.status === 'failed') {
         loadMaterials();
         if (msg.status === 'completed') {
-          setSelectedSources((prev) => new Set([...prev, msg.material_id]));
+          setSelectedSources((prev) => {
+            if (prev.includes(msg.material_id)) return prev;
+            return [...prev, msg.material_id];
+          });
         }
       }
     }
@@ -132,27 +135,6 @@ export default function Sidebar({ onNavigate }) {
     const interval = setInterval(() => loadMaterials(true), 8000);
     return () => clearInterval(interval);
   }, [materials, loadMaterials]);
-
-  // Resize handling
-  const handleMouseMove = useCallback((e) => {
-    if (isResizing) {
-      const newWidth = e.clientX;
-      if (newWidth >= minWidth && newWidth <= maxWidth) setWidth(newWidth);
-    }
-  }, [isResizing]);
-
-  const handleMouseUp = useCallback(() => setIsResizing(false), []);
-
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   const handleFileUpload = async (files) => {
     if (!files?.length) return;
@@ -186,7 +168,6 @@ export default function Sidebar({ onNavigate }) {
     setIsSearching(true);
     setShowSearchDialog(true);
     setSearchResults([]);
-    setSearchError(null);
     try {
       let fileType = selectedFileType;
       let cleanQuery = searchQuery.trim();
@@ -198,7 +179,7 @@ export default function Sidebar({ onNavigate }) {
       const results = await webSearch(cleanQuery, fileType);
       setSearchResults(results);
     } catch (error) {
-      setSearchError(error.message || 'Failed to search');
+      toast.error(error.message || 'Failed to search');
     } finally {
       setIsSearching(false);
     }
@@ -289,7 +270,7 @@ export default function Sidebar({ onNavigate }) {
     <>
       <aside
         className="h-full overflow-hidden flex flex-col relative bg-surface text-text-primary"
-        style={{ width: `${width}px`, minWidth: `${minWidth}px` }}
+        style={{ width: `${width}px`, minWidth: '260px' }}
       >
         {/* Header */}
         <div className="panel-header px-4">
@@ -366,16 +347,17 @@ export default function Sidebar({ onNavigate }) {
         <div className="px-4 pt-3 pb-2 flex justify-between items-center">
           <span className="text-[10.5px] font-semibold text-text-muted uppercase tracking-wider">All Sources</span>
           <button
-            onClick={() => selectedSources.size === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
-            className={`flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${selectedSources.size === materials.length && materials.length > 0
+            onClick={() => selectedSources.length === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
+            className={`flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${selectedSources.length === materials.length && materials.length > 0
               ? 'bg-transparent border-text-primary text-text-primary'
-              : selectedSources.size > 0 ? 'bg-transparent border-border-strong text-text-muted' : 'border-border bg-transparent hover:border-border-strong'
+              : selectedSources.length > 0 ? 'bg-transparent border-border-strong text-text-muted' : 'border-border bg-transparent hover:border-border-strong'
               }`}
-            title={selectedSources.size === materials.length && materials.length > 0 ? 'Deselect all' : 'Select all'}
+            title={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all' : 'Select all'}
+            aria-label={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all sources' : 'Select all sources'}
           >
-            {selectedSources.size === materials.length && materials.length > 0 ? (
+            {selectedSources.length === materials.length && materials.length > 0 ? (
               <Check className="w-3 h-3" strokeWidth={2.5} />
-            ) : selectedSources.size > 0 ? (
+            ) : selectedSources.length > 0 ? (
               <Minus className="w-3 h-3" strokeWidth={2.5} />
             ) : null}
           </button>
@@ -398,9 +380,9 @@ export default function Sidebar({ onNavigate }) {
                   <SourceItem
                     key={source.id}
                     source={source}
-                    checked={selectedSources.has(source.id)}
+                    checked={selectedSources.includes(source.id)}
                     active={currentMaterial?.id === source.id}
-                    anySelected={selectedSources.size > 0}
+                    anySelected={selectedSources.length > 0}
                     onClick={() => setCurrentMaterial(source)}
                     onToggle={() => toggleSourceSelection(source.id)}
                     onSeeText={handleSeeText}
@@ -423,8 +405,8 @@ export default function Sidebar({ onNavigate }) {
 
         {/* Resize Handle */}
         <div
-          className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group ${isResizing ? 'bg-accent/50' : 'hover:bg-accent/30'}`}
-          onMouseDown={() => setIsResizing(true)}
+          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group hover:bg-accent/30"
+          onMouseDown={startDrag}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize sidebar"
@@ -450,7 +432,7 @@ export default function Sidebar({ onNavigate }) {
                   </p>
                 </div>
               </div>
-              <button onClick={() => setShowTextModal(false)} className="p-2 mr-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors">
+              <button onClick={() => setShowTextModal(false)} className="p-2 mr-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors" aria-label="Close document preview">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -491,7 +473,7 @@ export default function Sidebar({ onNavigate }) {
         onClose={() => setShowSearchDialog(false)}
         results={searchResults}
         isSearching={isSearching}
-        error={searchError}
+        error={null}
         query={searchQuery}
         onAddSelected={handleAddWebSources}
       />

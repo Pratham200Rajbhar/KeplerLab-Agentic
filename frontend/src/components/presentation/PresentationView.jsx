@@ -9,6 +9,10 @@ import Modal from '@/components/ui/Modal';
 import './PresentationView.css';
 
 /* ─────────────────── Slide Scale Hook ─────────────────── */
+// Slides are generated at 1920 × 1080 (16:9 widescreen).
+const SLIDE_W = 1920;
+const SLIDE_H = 1080;
+
 function useSlideScale(containerRef) {
   const [scale, setScale] = useState(1);
 
@@ -18,9 +22,8 @@ function useSlideScale(containerRef) {
 
     const update = () => {
       const containerWidth = el.clientWidth;
-      // Standard slide width is 960px
-      const s = Math.min(containerWidth / 960, 1);
-      setScale(s);
+      // Scale the 1920-wide slide down to fit available width.
+      setScale(containerWidth / SLIDE_W);
     };
 
     const observer = new ResizeObserver(update);
@@ -134,7 +137,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
         <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto animate-fade-in">
           {slides.map((s, i) => (
             <button
-              key={i}
+              key={s.id || i}
               onClick={() => { setCurrentSlide(i); setShowOverview(false); }}
               className={`relative rounded-lg border overflow-hidden transition-all aspect-video ${
                 i === currentSlide
@@ -143,11 +146,28 @@ export default function InlinePresentationView({ presentation, onClose }) {
               }`}
             >
               {s.html ? (
-                <div
-                  className="w-full h-full p-2 text-[4px] leading-tight overflow-hidden bg-white text-gray-800"
-                  // Safe: HTML is system-generated slide content from backend, not user input
-                  dangerouslySetInnerHTML={{ __html: s.html }}
-                />
+                // Thumbnail: render the complete standalone slide HTML in a
+                // scaled-down iframe so styles are preserved.
+                <div className="relative w-full" style={{ paddingTop: `${(SLIDE_H / SLIDE_W) * 100}%` }}>
+                  <div className="absolute inset-0 overflow-hidden">
+                    <iframe
+                      srcDoc={s.html}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: `${SLIDE_W}px`,
+                        height: `${SLIDE_H}px`,
+                        transform: `scale(${1 / (SLIDE_W / 240)})`,
+                        transformOrigin: 'top left',
+                        border: 'none',
+                        pointerEvents: 'none',
+                      }}
+                      sandbox="allow-same-origin"
+                      title={`Slide ${i + 1} thumbnail`}
+                    />
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[var(--surface)] text-[var(--text-muted)] text-[10px]">
                   Slide {i + 1}
@@ -159,20 +179,38 @@ export default function InlinePresentationView({ presentation, onClose }) {
         </div>
       ) : (
         <>
-          {/* Main slide */}
-          <div className="relative rounded-xl border border-[var(--border)] overflow-hidden bg-white aspect-video">
-            {slide.html ? (
-              <iframe
-                srcDoc={`<!DOCTYPE html><html><head><style>body{margin:0;padding:24px;font-family:system-ui,-apple-system,sans-serif;color:#1a1a2e;overflow:hidden;}</style></head><body>${slide.html}</body></html>`}
-                className="w-full h-full border-none"
-                sandbox="allow-same-origin"
-                title={`Slide ${currentSlide + 1}`}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
-                <p className="text-sm">Slide {currentSlide + 1}</p>
-              </div>
-            )}
+          {/* Main slide — the iframe is 1920×1080 and CSS-scaled to fit the container */}
+          <div
+            className="slide-container relative rounded-xl border border-[var(--border)] overflow-hidden bg-black"
+            style={{ paddingTop: `${(SLIDE_H / SLIDE_W) * 100}%` }}
+          >
+            <div className="absolute inset-0">
+              {slide.html ? (
+                <iframe
+                  // slide.html is already a complete standalone HTML document
+                  // (<!DOCTYPE html>…</html>) produced by slide_extractor.py.
+                  // Do NOT wrap it — that creates invalid nested <html> and strips
+                  // the embedded CSS, producing blank slides.
+                  srcDoc={slide.html}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: `${SLIDE_W}px`,
+                    height: `${SLIDE_H}px`,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                    border: 'none',
+                  }}
+                  sandbox="allow-same-origin"
+                  title={`Slide ${currentSlide + 1}`}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
+                  <p className="text-sm">Slide {currentSlide + 1}</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Navigation */}

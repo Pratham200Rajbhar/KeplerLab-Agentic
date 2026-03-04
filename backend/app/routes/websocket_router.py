@@ -37,7 +37,7 @@ from starlette.websockets import WebSocketState
 from app.services.ws_manager import ws_manager
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["websocket"])
+router = APIRouter(prefix="/ws", tags=["websocket"])
 
 
 # ── Auth helper ───────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ def _close_msg(code: int, reason: str) -> str:
 # ── /ws/jobs/{user_id} ────────────────────────────────────────────────────
 
 
-@router.websocket("/ws/jobs/{user_id}")
+@router.websocket("/jobs/{user_id}")
 async def ws_jobs(
     websocket: WebSocket,
     user_id: str,

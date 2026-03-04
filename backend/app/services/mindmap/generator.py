@@ -11,7 +11,7 @@ from app.prompts import get_mindmap_prompt
 from app.models.mindmap_schemas import MindMapResponse
 from app.services.llm_service.structured_invoker import invoke_structured
 from app.services.material_service import get_material_text
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
 
@@ -60,15 +60,13 @@ async def generate_mindmap(
         node["has_children"] = node["id"] in parent_ids
 
     # Fill in metadata
-    mindmap_id = uuid.uuid4().hex[:12]
+    mindmap_id = str(uuid.uuid4())
     result["id"] = mindmap_id
     result["notebook_id"] = notebook_id
     result["material_ids"] = material_ids
     result["created_at"] = datetime.now(timezone.utc).isoformat()
 
     # ── Step 5: Upsert into GeneratedContent ──────────────
-    prisma = get_prisma()
-
     existing = await prisma.generatedcontent.find_first(
         where={
             "notebookId": notebook_id,

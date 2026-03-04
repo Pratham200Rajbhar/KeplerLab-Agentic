@@ -1,8 +1,13 @@
+"""GPU resource manager — single asyncio.Lock as sole GPU gate.
+
+All GPU access goes through ``gpu_session()`` async context manager.
+Sync callers must acquire via:
+    asyncio.run_coroutine_threadsafe(lock.acquire(), loop).result()
+"""
+
 import asyncio
 import logging
-import threading
-from contextlib import asynccontextmanager, contextmanager
-from typing import Optional
+from contextlib import asynccontextmanager
 
 try:
     import torch
@@ -11,74 +16,55 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-class GPUManager:
+# ── Single async Lock — the ONLY GPU gate ─────────────────────
+_gpu_lock = asyncio.Lock()
+_has_gpu: bool = torch is not None and torch.cuda.is_available()
+
+if _has_gpu:
+    logger.info("GPUManager: Found %s", torch.cuda.get_device_name(0))
+else:
+    logger.info("GPUManager: No CUDA GPU detected")
+
+
+def _clear_memory() -> None:
+    """Aggressive GPU memory cleanup."""
+    if _has_gpu:
+        try:
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        except Exception as e:
+            logger.warning("Failed to clear GPU memory: %s", e)
+
+
+@asynccontextmanager
+async def gpu_session(task_name: str = "Generic Task"):
+    """Async-only context manager for exclusive GPU access.
+
+    Usage:
+        async with gpu_session("Embedding"):
+            ...
     """
-    Singleton manager for coordination of GPU resources.
-    Ensures that only one GPU-intensive task runs at a time to prevent OOM.
-    """
-    _instance: Optional['GPUManager'] = None
-    _lock = threading.Lock()
+    if not _has_gpu:
+        yield
+        return
 
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(GPUManager, cls).__new__(cls)
-                    cls._instance._init_manager()
-        return cls._instance
-
-    def _init_manager(self):
-        self.gpu_lock = threading.Lock()
-        self._async_gpu_lock = asyncio.Lock()
-        self.has_gpu = torch is not None and torch.cuda.is_available()
-        if self.has_gpu:
-            logger.info(f"GPUManager initialized: Found {torch.cuda.get_device_name(0)}")
-        else:
-            logger.info("GPUManager initialized: No CUDA GPU detected")
-
-    @contextmanager
-    def gpu_session(self, task_name: str = "Generic Task"):
-        """Context manager for exclusive access to the GPU (sync version)."""
-        if not self.has_gpu:
+    logger.info("Waiting for GPU lock: %s", task_name)
+    async with _gpu_lock:
+        logger.info("Acquired GPU lock: %s", task_name)
+        try:
+            _clear_memory()
             yield
-            return
+        finally:
+            _clear_memory()
+            logger.info("Released GPU lock: %s", task_name)
 
-        logger.info(f"Waiting for GPU lock: {task_name}")
-        with self.gpu_lock:
-            logger.info(f"Acquired GPU lock: {task_name}")
-            try:
-                self._clear_memory()
-                yield
-            finally:
-                self._clear_memory()
-                logger.info(f"Released GPU lock: {task_name}")
 
-    @asynccontextmanager
-    async def async_gpu_session(self, task_name: str = "Generic Task"):
-        """Async context manager for exclusive access to the GPU."""
-        if not self.has_gpu:
-            yield
-            return
+def get_gpu_lock() -> asyncio.Lock:
+    """Return the singleton GPU lock for sync callers that need
+    ``asyncio.run_coroutine_threadsafe(lock.acquire(), loop).result()``."""
+    return _gpu_lock
 
-        logger.info(f"Waiting for async GPU lock: {task_name}")
-        async with self._async_gpu_lock:
-            logger.info(f"Acquired async GPU lock: {task_name}")
-            try:
-                self._clear_memory()
-                yield
-            finally:
-                self._clear_memory()
-                logger.info(f"Released async GPU lock: {task_name}")
 
-    def _clear_memory(self):
-        """Aggressive GPU memory cleanup."""
-        if self.has_gpu:
-            try:
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
-            except Exception as e:
-                logger.warning(f"Failed to clear GPU memory: {e}")
-
-def get_gpu_manager() -> GPUManager:
-    """Returns the GPUManager singleton."""
-    return GPUManager()
+def has_gpu() -> bool:
+    """Whether a CUDA GPU is available."""
+    return _has_gpu

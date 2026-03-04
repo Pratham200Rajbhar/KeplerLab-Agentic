@@ -35,15 +35,15 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from datetime import datetime, timedelta, timezone
 
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 from app.services.job_service import fetch_next_pending_job
 from app.services.material_service import (
     process_material_by_id,
     process_url_material_by_id,
     process_text_material_by_id,
 )
-from app.services.storage_service import load_material_text
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ async def _recover_stuck_jobs() -> None:
     interfering with legitimately running jobs in multi-worker setups.
     """
     try:
-        result = await get_prisma().query_raw(
+        result = await prisma.query_raw(
             """
             UPDATE background_jobs
             SET    status     = 'pending',
@@ -132,6 +132,9 @@ async def job_processor() -> None:
     # Recover jobs stuck from a previous crash
     await _recover_stuck_jobs()
 
+    # Launch periodic cleanup as a background sibling task
+    cleanup_task = asyncio.create_task(_cleanup_old_jobs())
+
     active_tasks: set[asyncio.Task] = set()
 
     while not _shutdown_event.is_set():
@@ -178,7 +181,8 @@ async def job_processor() -> None:
             logger.exception("Unhandled error in job_processor event loop: %s", exc)
             await asyncio.sleep(_ERROR_BACKOFF)
 
-    # Graceful shutdown: wait for in-flight tasks to finish
+    # Graceful shutdown: cancel cleanup and wait for in-flight tasks
+    cleanup_task.cancel()
     if active_tasks:
         logger.info("Waiting for %d in-flight job(s) to complete...", len(active_tasks))
         try:
@@ -227,7 +231,7 @@ async def _process_job(job) -> None:
                 user_id=user_id,
                 notebook_id=notebook_id,
             )
-        elif source_type in ("url", "youtube"):
+        elif source_type in ("url", "web", "youtube"):
             url: str | None = payload.get("url")
             if not url:
                 raise ValueError("Missing url for url source_type")
@@ -253,7 +257,7 @@ async def _process_job(job) -> None:
         else:
             raise ValueError(f"Unknown source_type: {source_type}")
         job_processing_time = (time.perf_counter() - _t_job) * 1000
-        await get_prisma().backgroundjob.update(
+        await prisma.backgroundjob.update(
             where={"id": job.id},
             data={"status": "completed"},
         )
@@ -277,7 +281,7 @@ async def _process_job(job) -> None:
 async def _fail_job(job_id: str, error: str) -> None:
     """Update job to ``failed`` status with the error message."""
     try:
-        await get_prisma().backgroundjob.update(
+        await prisma.backgroundjob.update(
             where={"id": job_id},
             data={"status": "failed", "error": error},
         )
@@ -300,7 +304,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         return
 
     try:
-        notebook = await get_prisma().notebook.find_unique(where={"id": notebook_id})
+        notebook = await prisma.notebook.find_unique(where={"id": notebook_id})
         if notebook is None:
             return
 
@@ -313,6 +317,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         # Load the extracted text saved by the processing pipeline
         loop = asyncio.get_running_loop()
         from functools import partial
+        from app.services.storage_service import load_material_text
         text: str = await loop.run_in_executor(
             None, partial(load_material_text, material_id)
         ) or ""
@@ -327,7 +332,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         if not new_name or len(new_name) < 3 or new_name == current_name:
             return
 
-        await get_prisma().notebook.update(
+        await prisma.notebook.update(
             where={"id": notebook_id},
             data={"name": new_name},
         )
@@ -343,3 +348,41 @@ async def graceful_shutdown() -> None:
     """Signal the worker to stop accepting new jobs and wait for in-flight tasks."""
     _shutdown_event.set()
     logger.info("Worker shutdown signal sent — waiting up to %.0fs for in-flight jobs", _SHUTDOWN_TIMEOUT)
+
+
+# ── Periodic Job Cleanup Cron ─────────────────────────────────
+
+_CLEANUP_INTERVAL_HOURS: int = 24
+_CLEANUP_RETENTION_DAYS: int = 30
+
+
+async def _cleanup_old_jobs() -> None:
+    """Periodically delete completed/failed BackgroundJob records older than 30 days.
+
+    Runs on a 24-hour loop alongside the main ``job_processor``.  All errors
+    are caught so the task never dies.
+    """
+    while not _shutdown_event.is_set():
+        try:
+            await asyncio.sleep(_CLEANUP_INTERVAL_HOURS * 3600)
+        except asyncio.CancelledError:
+            return
+
+        if _shutdown_event.is_set():
+            return
+
+        try:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=_CLEANUP_RETENTION_DAYS)
+            deleted = await prisma.backgroundjob.delete_many(
+                where={
+                    "status": {"in": ["completed", "failed"]},
+                    "createdAt": {"lt": cutoff},
+                },
+            )
+            if deleted:
+                logger.info(
+                    "[WORKER] Cleaned up %d old job record(s) (older than %d days)",
+                    deleted, _CLEANUP_RETENTION_DAYS,
+                )
+        except Exception as exc:
+            logger.warning("[WORKER] Job cleanup cron failed (non-fatal): %s", exc)

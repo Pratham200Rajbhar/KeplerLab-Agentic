@@ -1,11 +1,14 @@
 """Agent graph — LangGraph state machine wiring all agent nodes.
 
 Builds a compiled StateGraph:
-  intent_detection → planner → tool_router → reflection ─┐
-                                     ↑                       │
-                                     └── (continue) ────────┘
-                                                    │
-                                               (respond) → response_generator
+  tool_router → reflection ─┐
+       ↑                     │
+       └── (continue) ──────┘
+                    │
+               (respond) → response_generator
+
+Note: intent detection and planning are handled by the new agentic_loop.py.
+This graph remains for backward-compatible use by existing tool-routing.
 """
 
 from __future__ import annotations
@@ -16,25 +19,43 @@ import time
 from typing import Any, AsyncIterator, Dict
 
 from app.services.agent.state import AgentState, MAX_AGENT_ITERATIONS, TOKEN_BUDGET
-from app.services.agent.intent import detect_intent
-from app.services.agent.planner import plan_execution
 from app.services.agent.router import route_and_execute
 from app.services.agent.reflection import reflect, should_continue
 
 logger = logging.getLogger(__name__)
 
 
-# ── Combined Intent + Plan Node ───────────────────────────────
+# ── Combined Intent + Plan Node (DEPRECATED) ──────────────────
+# Intent detection is now handled by direct routing in routes/chat.py.
+# Planning is handled by planner_node in agentic_loop.py.
+# This stub remains for backward compatibility with existing graph wiring.
 
 
 async def intent_and_plan(state: AgentState) -> AgentState:
-    """Merged intent detection + planning in a single graph node.
+    """Pass-through node — intent and plan are set externally.
 
-    Saves one graph transition. When keyword intent confidence >= 0.85,
-    planning is purely static and no LLM call is made at all.
+    The frontend sets ``intent_override`` via slash commands, and the
+    agentic_loop handles planning.  This node exists only to keep the
+    existing graph structure functional.
     """
-    state = await detect_intent(state)
-    state = await plan_execution(state)
+    if not state.get("intent"):
+        state["intent"] = state.get("intent_override", "QUESTION")
+    if not state.get("plan"):
+        # Default single-step plan using the appropriate tool
+        intent = state.get("intent", "QUESTION")
+        tool_map = {
+            "QUESTION": "rag_tool",
+            "DATA_ANALYSIS": "python_tool",
+            "CODE_EXECUTION": "python_tool",
+            "RESEARCH": "research_tool",
+            "WEB_RESEARCH": "web_research_tool",
+            "CODE_GENERATION": "code_generation_tool",
+            "AGENT_TASK": "agent_task_tool",
+            "CONTENT_GENERATION": "rag_tool",
+        }
+        tool = tool_map.get(intent, "rag_tool")
+        state["plan"] = [{"tool": tool, "description": f"Execute {intent} intent"}]
+        state["current_step"] = 0
     return state
 
 

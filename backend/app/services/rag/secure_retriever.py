@@ -509,17 +509,13 @@ def secure_similarity_search_enhanced(
     # ── Step 2: Apply MMR for diversity ───────────────────────
     if use_mmr and len(documents) > settings.MMR_K and len(embeddings) > 0:
         try:
-            # Get query embedding
-            query_results = collection.query(
-                query_texts=[query],
-                n_results=1,
-                include=['embeddings']
-            )
-            # query_results["embeddings"] is [ [vec_for_result_0, ...] ] per query.
-            # We want the single query vector (first result's embedding).
-            raw_embs = query_results.get("embeddings", [[]])[0]
-            # Use len() instead of truthiness check — numpy arrays raise on `if array`
-            query_embedding = raw_embs[0] if (raw_embs is not None and len(raw_embs) > 0) else []
+            # Embed the query using the same EF used for indexing.
+            # NOTE: collection.query() returns *document* embeddings, not the
+            # query vector — using it here was a bug that caused MMR to compute
+            # diversity against the top-1 document instead of the query.
+            from app.db.chroma import _get_ef
+            ef = _get_ef()
+            query_embedding = [float(x) for x in ef([query])[0]]
 
             if query_embedding:
                 mmr_indices = _apply_mmr(

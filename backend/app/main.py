@@ -40,6 +40,7 @@ from app.db.prisma_client import connect_db, disconnect_db
 from app.routes.auth import router as auth_router
 from app.routes.notebook import router as notebook_router
 from app.routes.upload import router as upload_router
+from app.routes.materials import router as materials_router
 from app.routes.flashcard import router as flashcard_router
 from app.routes.quiz import router as quiz_router
 from app.routes.chat import router as chat_router
@@ -123,6 +124,16 @@ async def lifespan(app: FastAPI):
         os.makedirs(_dir, exist_ok=True)
     logger.info("Output directories ensured.")
 
+    # 6. Purge expired refresh tokens left over from previous sessions.
+    #    Keeps the auth table clean and avoids stale records accumulating.
+    try:
+        from app.services.auth.service import cleanup_expired_tokens
+        deleted = await cleanup_expired_tokens()
+        if deleted:
+            logger.info("Purged %d expired refresh token(s) on startup.", deleted)
+    except Exception as exc:
+        logger.warning("Expired token cleanup failed (non-fatal): %s", exc)
+
     yield
 
     # ── Shutdown ──────────────────────────────────────────
@@ -194,19 +205,7 @@ if settings.ENVIRONMENT == "production":
     )
 
 
-# Request body size limiter (100 MB default)
-_MAX_BODY_SIZE = 100 * 1024 * 1024
-
-
-@app.middleware("http")
-async def limit_request_body(request, call_next):
-    content_length = request.headers.get("content-length")
-    try:
-        if content_length and int(content_length) > _MAX_BODY_SIZE:
-            return JSONResponse(status_code=413, content={"detail": "Request body too large"})
-    except (ValueError, TypeError):
-        return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length header"})
-    return await call_next(request)
+# Request body size limit removed — no upload size restrictions
 
 
 # ── Error handlers ────────────────────────────────────────
@@ -244,26 +243,28 @@ async def global_exception_handler(request, exc):
 
 
 # ── Routes ────────────────────────────────────────────────
+# Prefix and tags are set on each APIRouter instance directly.
 
 # Public
-app.include_router(health_router, tags=["health"])
-app.include_router(auth_router, tags=["auth"])
-app.include_router(models_router, tags=["models"])
+app.include_router(health_router)
+app.include_router(auth_router)
+app.include_router(models_router)
 
 # Protected
-app.include_router(notebook_router, tags=["notebooks"])
-app.include_router(upload_router, tags=["upload"])
-app.include_router(flashcard_router, tags=["flashcard"])
-app.include_router(quiz_router, tags=["quiz"])
-app.include_router(chat_router, tags=["chat"])
-app.include_router(jobs_router, tags=["jobs"])
-app.include_router(ppt_router, tags=["presentation"])
-app.include_router(mindmap_router, tags=["mindmap"])
-app.include_router(agent_router, tags=["agent"])
-app.include_router(search_router, prefix="/search", tags=["search"])
-app.include_router(proxy_router, prefix="/api/v1", tags=["proxy"])
-app.include_router(explainer_router, tags=["explainer"])
-app.include_router(podcast_live_router, tags=["podcast"])
+app.include_router(notebook_router)
+app.include_router(upload_router)
+app.include_router(materials_router)
+app.include_router(flashcard_router)
+app.include_router(quiz_router)
+app.include_router(chat_router)
+app.include_router(jobs_router)
+app.include_router(ppt_router)
+app.include_router(mindmap_router)
+app.include_router(agent_router)
+app.include_router(search_router)
+app.include_router(proxy_router)
+app.include_router(explainer_router)
+app.include_router(podcast_live_router)
 
 # WebSocket channels (no REST replacement — live state push only)
 app.include_router(ws_router)

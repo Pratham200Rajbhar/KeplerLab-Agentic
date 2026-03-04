@@ -51,20 +51,28 @@ const usePodcastStore = create((set, get) => ({
   error: null,
   loading: false,
 
-  // ── Audio refs (not serialized) ──
-  _audioEl: typeof window !== 'undefined' ? new Audio() : null,
-  _audioCache: new Map(),
-  _eventsBound: false,
+  // ── Audio refs removed — managed via useRef in usePodcastPlayer.js ──
+  // External refs: audioElRef, audioCacheRef are passed to playback actions
+
+  // ── Audio ref holders (set by usePodcastPlayer hook) ──
+  _audioElRef: { current: null },
+  _audioCacheRef: { current: new Map() },
+
+  setAudioRefs: (audioElRef, audioCacheRef) => {
+    set({ _audioElRef: audioElRef, _audioCacheRef: audioCacheRef });
+  },
 
   // ── Cleanup ──
   resetPodcast: () => {
-    const { _audioEl, _audioCache } = get();
-    if (_audioEl) {
-      _audioEl.pause();
-      _audioEl.src = '';
+    const { _audioElRef, _audioCacheRef } = get();
+    if (_audioElRef.current) {
+      _audioElRef.current.pause();
+      _audioElRef.current.src = '';
     }
-    _audioCache.forEach(url => URL.revokeObjectURL(url));
-    _audioCache.clear();
+    if (_audioCacheRef.current) {
+      _audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      _audioCacheRef.current.clear();
+    }
     set({
       session: null,
       sessions: [],
@@ -162,24 +170,27 @@ const usePodcastStore = create((set, get) => ({
 
   // ── Playback ──
   playSegment: async (index) => {
-    const { segments, playbackSpeed, _audioEl, _audioCache } = get();
+    const { segments, playbackSpeed, _audioElRef, _audioCacheRef } = get();
     if (!segments[index]) return;
     const seg = segments[index];
     if (!seg.audioPath) return;
+    const audioEl = _audioElRef.current;
+    const audioCache = _audioCacheRef.current;
+    if (!audioEl) return;
 
     set({ currentSegmentIndex: index, currentTime: 0 });
 
     try {
-      let blobUrl = _audioCache.get(seg.audioPath);
+      let blobUrl = audioCache.get(seg.audioPath);
       if (!blobUrl) {
         blobUrl = await fetchAudioObjectUrl(seg.audioPath);
-        _audioCache.set(seg.audioPath, blobUrl);
+        audioCache.set(seg.audioPath, blobUrl);
       }
 
-      _audioEl.pause();
-      _audioEl.src = blobUrl;
-      _audioEl.playbackRate = playbackSpeed;
-      await _audioEl.play();
+      audioEl.pause();
+      audioEl.src = blobUrl;
+      audioEl.playbackRate = playbackSpeed;
+      await audioEl.play();
       set({ isPlaying: true });
     } catch (err) {
       console.error('Failed to play segment', index, err);
@@ -188,28 +199,30 @@ const usePodcastStore = create((set, get) => ({
   },
 
   prefetchSegment: async (index) => {
-    const { segments, _audioCache } = get();
+    const { segments, _audioCacheRef } = get();
     if (!segments[index]) return;
     const seg = segments[index];
-    if (!seg.audioPath || _audioCache.has(seg.audioPath)) return;
+    const audioCache = _audioCacheRef.current;
+    if (!seg.audioPath || !audioCache || audioCache.has(seg.audioPath)) return;
     try {
       const blobUrl = await fetchAudioObjectUrl(seg.audioPath);
-      _audioCache.set(seg.audioPath, blobUrl);
+      audioCache.set(seg.audioPath, blobUrl);
     } catch { /* non-fatal */ }
   },
 
   pause: () => {
-    get()._audioEl?.pause();
+    get()._audioElRef.current?.pause();
     set({ isPlaying: false });
   },
 
   resume: () => {
-    const { _audioEl, currentSegmentIndex, playSegment } = get();
-    if (!_audioEl?.src || _audioEl.src === window.location.href) {
+    const { _audioElRef, currentSegmentIndex, playSegment } = get();
+    const audioEl = _audioElRef.current;
+    if (!audioEl?.src || audioEl.src === window.location.href) {
       playSegment(currentSegmentIndex);
       return;
     }
-    _audioEl.play().catch(() => {});
+    audioEl.play().catch(() => {});
     set({ isPlaying: true });
   },
 
@@ -234,8 +247,8 @@ const usePodcastStore = create((set, get) => ({
 
   changeSpeed: (speed) => {
     set({ playbackSpeed: speed });
-    const { _audioEl } = get();
-    if (_audioEl) _audioEl.playbackRate = speed;
+    const { _audioElRef } = get();
+    if (_audioElRef.current) _audioElRef.current.playbackRate = speed;
   },
 
   // ── Q&A ──

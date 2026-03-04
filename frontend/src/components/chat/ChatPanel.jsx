@@ -2,16 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import {
-  Clock,
-  Plus,
-  Square,
-  Send,
-  X,
-  Lightbulb,
-  Sparkles,
-  FlaskConical,
-} from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
 
 import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
@@ -19,81 +10,24 @@ import {
   streamChat,
   getChatHistory,
   streamResearch,
-  getSuggestions,
   getChatSessions,
   createChatSession,
   deleteChatSession,
 } from '@/lib/api/chat';
 import { readSSEStream } from '@/lib/utils/helpers';
-import { RESEARCH_STEPS_TEMPLATE, TIMERS } from '@/lib/utils/constants';
+import { RESEARCH_STEPS_TEMPLATE } from '@/lib/utils/constants';
 
-import ChatMessage from './ChatMessage';
-import MarkdownRenderer, { sanitizeStreamingMarkdown } from './MarkdownRenderer';
-import SuggestionDropdown from './SuggestionDropdown';
-import ResearchProgress from './ResearchProgress';
-import AgentThinkingBar from './AgentThinkingBar';
-import AgentActionBlock from './AgentActionBlock';
-import CodeReviewBlock from './CodeReviewBlock';
-import SlashCommandPills from './SlashCommandPills';
-import SlashCommandDropdown from './SlashCommandDropdown';
-import CommandBadge from './CommandBadge';
-import { parseSlashCommand } from './slashCommands';
+import ChatMessageList from './ChatMessageList';
+import ChatInputArea from './ChatInputArea';
 import ChatHistoryModal from './ChatHistoryModal';
 import ChatEmptyState from './ChatEmptyState';
+import ArtifactPanel from './ArtifactPanel';
 
-const LIVE_TOOL_LABELS = {
-  rag_tool:             'Searching your materials',
-  research_tool:        'Researching the web',
-  python_tool:          'Running code',
-  data_profiler:        'Analyzing data',
-  quiz_tool:            'Generating quiz',
-  flashcard_tool:       'Creating flashcards',
-  ppt_tool:             'Building slides',
-  code_repair:          'Fixing error',
-  // New slash-command tools
-  agent_task_tool:      'Executing task…',
-  web_research_tool:    'Researching (structured)…',
-  code_generation_tool: 'Generating code…',
-};
-
-function getLiveLabel(tool = '') {
-  const key = Object.keys(LIVE_TOOL_LABELS).find(k => tool.toLowerCase().includes(k));
-  return key ? LIVE_TOOL_LABELS[key] : (tool || 'Processing');
-}
-
-function LiveStepText({ steps }) {
-  const latest = steps[steps.length - 1];
-  const label = getLiveLabel(latest?.tool || '');
-  return (
-    <div className="flex items-center gap-1.5 mb-2 animate-fade-in">
-      <span className="flex gap-0.5 items-end h-3 shrink-0">
-        <span className="w-0.5 h-1.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
-        <span className="w-0.5 h-2.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '150ms' }} />
-        <span className="w-0.5 h-1.5 rounded-full bg-accent/60 animate-[bounce_1s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
-      </span>
-      <span className="text-xs text-text-muted">{label}…</span>
-    </div>
-  );
-}
-
-export default function ChatPanel() {
-  /* ── Store selectors ── */
-  const currentMaterial = useAppStore((s) => s.currentMaterial);
-  const currentNotebook = useAppStore((s) => s.currentNotebook);
-  const messages = useAppStore((s) => s.messages);
-  const setMessages = useAppStore((s) => s.setMessages);
-  const addMessage = useAppStore((s) => s.addMessage);
-  const loading = useAppStore((s) => s.loading);
-  const setLoadingState = useAppStore((s) => s.setLoadingState);
-  const draftMode = useAppStore((s) => s.draftMode);
-  const selectedSources = useAppStore((s) => s.selectedSources);
-  const materials = useAppStore((s) => s.materials);
-  const pendingChatMessage = useAppStore((s) => s.pendingChatMessage);
-  const setPendingChatMessage = useAppStore((s) => s.setPendingChatMessage);
-
-  const toast = useToast();
-
-  /* ── Next.js routing ── */
+/**
+ * Thin wrapper that isolates useSearchParams so URL changes
+ * don't trigger a full ChatPanel re-render (PERF 3).
+ */
+export default function ChatPanelWithParams() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -109,20 +43,43 @@ export default function ChatPanel() {
     [searchParams, router, pathname],
   );
 
+  return (
+    <ChatPanel
+      currentSessionId={currentSessionId}
+      setCurrentSessionId={setCurrentSessionId}
+    />
+  );
+}
+
+function ChatPanel({ currentSessionId, setCurrentSessionId }) {
+  /* ── Store selectors ── */
+  const currentNotebook = useAppStore((s) => s.currentNotebook);
+  const messages = useAppStore((s) => s.messages);
+  const setMessages = useAppStore((s) => s.setMessages);
+  const addMessage = useAppStore((s) => s.addMessage);
+  const loading = useAppStore((s) => s.loading);
+  const setLoadingState = useAppStore((s) => s.setLoadingState);
+  const draftMode = useAppStore((s) => s.draftMode);
+  const selectedSources = useAppStore((s) => s.selectedSources);
+  const materials = useAppStore((s) => s.materials);
+  const pendingChatMessage = useAppStore((s) => s.pendingChatMessage);
+  const setPendingChatMessage = useAppStore((s) => s.setPendingChatMessage);
+
+  const toast = useToast();
+
   /* ── Derived state ── */
   const effectiveIds = useMemo(
     () =>
-      Array.from(selectedSources).filter((id) => {
+      selectedSources.filter((id) => {
         const mat = materials.find((m) => m.id === id);
         return mat && mat.status === 'completed';
       }),
     [selectedSources, materials],
   );
   const hasSource = effectiveIds.length > 0;
-  const isSourceProcessing = !hasSource && selectedSources.size > 0;
+  const isSourceProcessing = !hasSource && selectedSources.length > 0;
 
   /* ── Local state ── */
-  const [inputValue, setInputValue] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
   const [agentStepLabel, setAgentStepLabel] = useState('');
   const [mindMapBanner, setMindMapBanner] = useState(null);
@@ -136,26 +93,17 @@ export default function ChatPanel() {
   const [isRepair, setIsRepair] = useState(false);
   const [repairCount, setRepairCount] = useState(0);
 
-  // Suggestions
-  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-
-  // Slash commands
-  const [activeCommand, setActiveCommand] = useState(null);
-  const [showSlashDropdown, setShowSlashDropdown] = useState(false);
-  const [slashFilter, setSlashFilter] = useState('');
-  const [isInputFocused, setIsInputFocused] = useState(false);
-
   // Streaming step log
   const [liveStepLog, setLiveStepLog] = useState([]);
 
-  // /code slash command — generated code pending user approval
+  // Per-command state
   const [codeForReview, setCodeForReview] = useState(null);
-  // /agent slash command — ReAct step cards
   const [agentTaskSteps, setAgentTaskSteps] = useState([]);
-  // /web slash command — research phase progress (1-5)
   const [webResearchPhase, setWebResearchPhase] = useState(null);
+
+  // Artifact panel state
+  const [artifacts, setArtifacts] = useState({});
+  const [artifactPanelOpen, setArtifactPanelOpen] = useState(false);
 
   // Sessions
   const [sessions, setSessions] = useState([]);
@@ -168,8 +116,6 @@ export default function ChatPanel() {
   const [researchQuery, setResearchQuery] = useState('');
 
   /* ── Refs ── */
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
   const isChattingRef = useRef(false);
   const abortControllerRef = useRef(null);
 
@@ -181,9 +127,7 @@ export default function ChatPanel() {
   // Mind map → chat bridge
   useEffect(() => {
     if (pendingChatMessage?.source === 'mindmap') {
-      setInputValue(pendingChatMessage.text);
       setMindMapBanner(pendingChatMessage.nodeLabel);
-      textareaRef.current?.focus();
       setPendingChatMessage(null);
     }
   }, [pendingChatMessage, setPendingChatMessage]);
@@ -200,8 +144,7 @@ export default function ChatPanel() {
           const sessionsData = await getChatSessions(currentNotebook.id);
           const newSessions = sessionsData.sessions || [];
           setSessions(newSessions);
-          const urlSession = searchParams.get('session');
-          const isValid = urlSession && newSessions.some((s) => s.id === urlSession);
+          const isValid = currentSessionId && newSessions.some((s) => s.id === currentSessionId);
           if (!isValid && newSessions.length > 0) setCurrentSessionId(newSessions[0].id);
           else if (!isValid) setCurrentSessionId(null);
         } catch (error) {
@@ -250,32 +193,11 @@ export default function ChatPanel() {
       }
     };
     loadMessages();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [currentNotebook?.id, currentNotebook?.isDraft, currentSessionId, draftMode, setMessages]);
 
-  // Auto-scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-  }, [inputValue]);
-
-  // Reset suggestions on input change
-  useEffect(() => {
-    setShowSuggestions(false);
-    setSuggestions([]);
-  }, [inputValue]);
-
   /* ── Session handlers ── */
-  const handleCreateSession = async () => {
+  const handleCreateSession = useCallback(async () => {
     if (!currentNotebook?.id) return;
     try {
       const res = await createChatSession(currentNotebook.id, 'New Chat');
@@ -289,9 +211,9 @@ export default function ChatPanel() {
       console.error('Failed to create session', e);
       toast.error('Failed to create chat session');
     }
-  };
+  }, [currentNotebook?.id, setCurrentSessionId, setMessages, toast]);
 
-  const handleDeleteSession = async (e, sessionId) => {
+  const handleDeleteSession = useCallback(async (e, sessionId) => {
     e.stopPropagation();
     try {
       await deleteChatSession(sessionId);
@@ -305,43 +227,23 @@ export default function ChatPanel() {
       console.error('Failed to delete', err);
       toast.error('Failed to delete session');
     }
-  };
+  }, [currentNotebook?.id, currentSessionId, setCurrentSessionId, toast]);
 
-  const handleSelectSession = (sessionId) => {
+  const handleSelectSession = useCallback((sessionId) => {
     setCurrentSessionId(sessionId);
     setIsHistoryModalOpen(false);
-  };
+  }, [setCurrentSessionId]);
 
-  const handleCreateChatClick = () => {
+  const handleCreateChatClick = useCallback(() => {
     handleCreateSession();
     setIsHistoryModalOpen(false);
-  };
+  }, [handleCreateSession]);
 
   const handleStop = useCallback(() => abortControllerRef.current?.abort(), []);
 
   /* ── Main send handler ── */
-  const handleSend = async (message = inputValue) => {
-    if (!message.trim() || !hasSource || !currentNotebook?.id || currentNotebook.isDraft) return;
-
-    let userMessage = message.trim();
-    let intentOverride = null;
-    let commandForMessage = activeCommand;
-
-    if (!commandForMessage) {
-      const parsed = parseSlashCommand(userMessage);
-      if (parsed) {
-        commandForMessage = parsed.command;
-        intentOverride = parsed.command.intent;
-        userMessage = parsed.remainingMessage || commandForMessage.label;
-      }
-    } else {
-      intentOverride = commandForMessage.intent;
-    }
-
-    setActiveCommand(null);
-    setShowSlashDropdown(false);
-    setSlashFilter('');
-    setInputValue('');
+  const handleSend = useCallback(async (userMessage, intentOverride, commandForMessage) => {
+    if (!userMessage?.trim() || !hasSource || !currentNotebook?.id || currentNotebook.isDraft) return;
 
     addMessage('user', userMessage, { slashCommand: commandForMessage || undefined });
     setLoadingState('chat', true);
@@ -355,7 +257,6 @@ export default function ChatPanel() {
     setPendingFiles([]);
     setIsRepair(false);
     setRepairCount(0);
-    // Reset per-command state
     setCodeForReview(null);
     setAgentTaskSteps([]);
     setWebResearchPhase(null);
@@ -370,6 +271,20 @@ export default function ChatPanel() {
     let localStepLog = [];
     let localPendingFiles = [];
 
+    const TOOL_STEP_LABELS = {
+      rag_tool:             'Searching materials…',
+      research_tool:        'Researching online…',
+      python_tool:          'Running Python…',
+      data_profiler:        'Profiling dataset…',
+      quiz_tool:            'Generating quiz…',
+      flashcard_tool:       'Creating flashcards…',
+      ppt_tool:             'Building slides…',
+      file_generator:       'Generating file…',
+      agent_task_tool:      'Executing task…',
+      web_research_tool:    'Deep-searching…',
+      code_generation_tool: 'Generating code…',
+    };
+
     try {
       let sessionIdToUse = currentSessionId;
       if (!sessionIdToUse) {
@@ -382,51 +297,24 @@ export default function ChatPanel() {
       }
 
       const response = await streamChat(
-        null,
-        userMessage,
-        currentNotebook.id,
-        effectiveIds,
-        sessionIdToUse,
-        ac.signal,
-        intentOverride,
+        null, userMessage, currentNotebook.id, effectiveIds, sessionIdToUse, ac.signal, intentOverride,
       );
 
       await readSSEStream(response.body, {
-        token: (payload) => {
-          accumulated += payload.content || '';
-          setStreamingContent(accumulated);
-        },
-        step: (payload) => {
-          const TOOL_STEP_LABELS = {
-            rag_tool:             'Searching materials…',
-            research_tool:        'Researching online…',
-            python_tool:          'Running Python…',
-            data_profiler:        'Profiling dataset…',
-            quiz_tool:            'Generating quiz…',
-            flashcard_tool:       'Creating flashcards…',
-            ppt_tool:             'Building slides…',
-            file_generator:       'Generating file…',
-            agent_task_tool:      'Executing task…',
-            web_research_tool:    'Deep-searching…',
-            code_generation_tool: 'Generating code…',
-          };
-          const raw = payload.tool || payload.label || '';
-          const label = TOOL_STEP_LABELS[raw] || payload.label || raw || 'Thinking…';
+        token: (p) => { accumulated += p.content || ''; setStreamingContent(accumulated); },
+        step: (p) => {
+          const raw = p.tool || p.label || '';
+          const label = TOOL_STEP_LABELS[raw] || p.label || raw || 'Thinking…';
           setAgentStepLabel(label);
           setThinkingStep(label);
           setCurrentStepNum((prev) => prev + 1);
           setLiveStepLog((prev) => {
-            const updated = prev.map((s) =>
-              s.status === 'running' ? { ...s, status: 'success' } : s,
-            );
-            return [
-              ...updated,
-              { tool: raw, label: TOOL_STEP_LABELS[raw] || raw, status: 'running' },
-            ];
+            const updated = prev.map((s) => s.status === 'running' ? { ...s, status: 'success' } : s);
+            return [...updated, { tool: raw, label: TOOL_STEP_LABELS[raw] || raw, status: 'running' }];
           });
         },
-        step_done: (payload) => {
-          const stepEntry = payload.step || { tool: payload.tool, status: payload.status };
+        step_done: (p) => {
+          const stepEntry = p.step || { tool: p.tool, status: p.status };
           localStepLog.push(stepEntry);
           setStepLog((prev) => [...prev, stepEntry]);
           setLiveStepLog((prev) => {
@@ -434,255 +322,150 @@ export default function ChatPanel() {
             if (lastRunningIdx === -1) return [...prev, stepEntry];
             const updated = [...prev];
             const liveStep = updated[lastRunningIdx];
-            updated[lastRunningIdx] = {
-              ...stepEntry,
-              code: stepEntry.code || liveStep.code || '',
-              stdout: stepEntry.stdout || liveStep.stdout || '',
-            };
+            updated[lastRunningIdx] = { ...stepEntry, code: stepEntry.code || liveStep.code || '', stdout: stepEntry.stdout || liveStep.stdout || '' };
             return updated;
           });
-          setLiveStepLog((prev) => {
-            const last = prev[prev.length - 1];
-            if (last && last.code && localStepLog.length > 0) {
-              localStepLog[localStepLog.length - 1].code = last.code;
-            }
-            if (
-              last &&
-              last.stdout &&
-              localStepLog.length > 0 &&
-              !localStepLog[localStepLog.length - 1].stdout
-            ) {
-              localStepLog[localStepLog.length - 1].stdout = last.stdout;
-            }
-            return prev;
-          });
         },
-        code_written: (payload) => {
+        code_written: (p) => {
           setLiveStepLog((prev) => {
-            if (prev.length === 0) return prev;
+            if (!prev.length) return prev;
             const updated = [...prev];
-            const runningIdx = updated.findLastIndex((s) => s.status === 'running');
-            const targetIdx = runningIdx !== -1 ? runningIdx : updated.length - 1;
-            updated[targetIdx] = { ...updated[targetIdx], code: payload.code };
+            const idx = updated.findLastIndex((s) => s.status === 'running');
+            const ti = idx !== -1 ? idx : updated.length - 1;
+            updated[ti] = { ...updated[ti], code: p.code };
             return updated;
           });
         },
         code_generating: () => {
           setThinkingStep('Generating code…');
           setLiveStepLog((prev) => {
-            if (prev.length === 0) return prev;
+            if (!prev.length) return prev;
             const updated = [...prev];
-            const runningIdx = updated.findLastIndex((s) => s.status === 'running');
-            if (runningIdx !== -1) {
-              updated[runningIdx] = { ...updated[runningIdx], label: 'Generating code…' };
-            }
+            const idx = updated.findLastIndex((s) => s.status === 'running');
+            if (idx !== -1) updated[idx] = { ...updated[idx], label: 'Generating code…' };
             return updated;
           });
         },
-        code_stdout: (payload) => {
-          const line = payload.line || '';
+        code_stdout: (p) => {
+          const line = p.line || '';
           setLiveStepLog((prev) => {
-            if (prev.length === 0) return prev;
+            if (!prev.length) return prev;
             const updated = [...prev];
-            const runningIdx = updated.findLastIndex((s) => s.status === 'running');
-            const targetIdx = runningIdx !== -1 ? runningIdx : updated.length - 1;
-            const existing = updated[targetIdx].stdout || '';
-            updated[targetIdx] = {
-              ...updated[targetIdx],
-              stdout: existing ? existing + '\n' + line : line,
-              label: 'Running Python…',
-            };
+            const idx = updated.findLastIndex((s) => s.status === 'running');
+            const ti = idx !== -1 ? idx : updated.length - 1;
+            const existing = updated[ti].stdout || '';
+            updated[ti] = { ...updated[ti], stdout: existing ? existing + '\n' + line : line, label: 'Running Python…' };
             return updated;
           });
         },
-        stdout: (payload) => {
-          const output = payload.output || '';
+        stdout: (p) => {
+          const output = p.output || '';
           if (output) {
             setLiveStepLog((prev) => {
-              if (prev.length === 0) return prev;
+              if (!prev.length) return prev;
               const updated = [...prev];
               const lastIdx = updated.length - 1;
-              if (!updated[lastIdx].stdout) {
-                updated[lastIdx] = { ...updated[lastIdx], stdout: output };
-              }
+              if (!updated[lastIdx].stdout) updated[lastIdx] = { ...updated[lastIdx], stdout: output };
               return updated;
             });
           }
         },
-        // ── /agent step cards (plan → act → observe → decide) ──
-        agent_step: (payload) => {
-          setAgentTaskSteps((prev) => [...prev, payload]);
-          const labels = {
-            plan:    'Planning task…',
-            act:     payload.action ? `Acting: ${payload.action.slice(0, 50)}` : 'Executing step…',
-            observe: 'Observing result…',
-          };
-          setThinkingStep(labels[payload.phase] || 'Thinking…');
+        agent_step: (p) => {
+          setAgentTaskSteps((prev) => [...prev, p]);
+          const labels = { plan: 'Planning task…', act: p.action ? `Acting: ${p.action.slice(0, 50)}` : 'Executing step…', observe: 'Observing result…' };
+          setThinkingStep(labels[p.phase] || 'Thinking…');
         },
-        // ── /web research phase progress ─────────────────────────
-        web_research_phase: (payload) => {
-          setWebResearchPhase(payload);
-          setThinkingStep(payload.label || `Research phase ${payload.phase}/5`);
-        },
-        // ── /code — generated code awaiting user approval ─────────
-        code_for_review: (payload) => {
-          setCodeForReview({
-            code: payload.code || '',
-            language: payload.language || 'python',
-            explanation: payload.explanation || '',
-            dependencies: payload.dependencies || [],
-          });
+        web_research_phase: (p) => { setWebResearchPhase(p); setThinkingStep(p.label || `Research phase ${p.phase}/5`); },
+        code_for_review: (p) => {
+          setCodeForReview({ code: p.code || '', language: p.language || 'python', explanation: p.explanation || '', dependencies: p.dependencies || [] });
           setThinkingStep('Code ready — review below');
         },
-        repair_attempt: (payload) => {
-          const count = payload.attempt || 1;
-          setIsRepair(true);
-          setRepairCount(count);
-          setThinkingStep(`Fixing error — attempt ${count}`);
+        repair_attempt: (p) => { setIsRepair(true); setRepairCount(p.attempt || 1); setThinkingStep(`Fixing error — attempt ${p.attempt || 1}`); },
+        repair_success: () => { setIsRepair(false); setThinkingStep('Fix applied, re-running…'); },
+        file_ready: (p) => { localPendingFiles.push(p); setPendingFiles((prev) => [...prev, p]); },
+        artifact: (p) => {
+          const type = p.type || 'files'; // charts | files | tables | code
+          setArtifacts((prev) => ({
+            ...prev,
+            [type]: [...(prev[type] || []), p],
+          }));
+          setArtifactPanelOpen(true);
         },
-        repair_success: () => {
-          setIsRepair(false);
-          setThinkingStep('Fix applied, re-running…');
-        },
-        file_ready: (payload) => {
-          localPendingFiles.push(payload);
-          setPendingFiles((prev) => [...prev, payload]);
-        },
-        meta: (payload) => {
-          agentMeta = payload;
-        },
-        blocks: (payload) => {
-          messageBlocks = payload.blocks || [];
-        },
-        done: (payload) => {
-          const finalContent = accumulated || (agentMeta && agentMeta.response) || '';
-          const elapsedTime = payload.elapsed || 0;
+        meta: (p) => { agentMeta = p; },
+        blocks: (p) => { messageBlocks = p.blocks || []; },
+        done: (p) => {
+          const finalContent = accumulated || agentMeta?.response || '';
           if (finalContent) {
             const newMsg = {
-              id: `ai-${Date.now()}`,
-              role: 'assistant',
-              content: finalContent,
-              agentMeta: {
-                ...(agentMeta || {}),
-                step_log:
-                  localStepLog.length > 0 ? localStepLog : agentMeta?.step_log || [],
-                generated_files:
-                  localPendingFiles.length > 0
-                    ? localPendingFiles
-                    : agentMeta?.generated_files || [],
-                total_time: elapsedTime,
-              },
+              id: `ai-${Date.now()}`, role: 'assistant', content: finalContent,
+              agentMeta: { ...(agentMeta || {}), step_log: localStepLog.length > 0 ? localStepLog : agentMeta?.step_log || [], generated_files: localPendingFiles.length > 0 ? localPendingFiles : agentMeta?.generated_files || [], total_time: p.elapsed || 0 },
               blocks: messageBlocks,
             };
             setMessages((prev) => [...prev, newMsg]);
             committedMsgId = newMsg.id;
           }
-          setStreamingContent('');
-          setIsThinking(false);
-          setLiveStepLog([]);
-          accumulated = '';
+          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]); accumulated = '';
         },
-        error: (payload) => {
-          addMessage(
-            'assistant',
-            `I encountered an error: ${payload.error || 'Streaming error'}`,
-          );
-          setStreamingContent('');
-          setIsThinking(false);
-          setLiveStepLog([]);
-          accumulated = '';
+        error: (p) => {
+          addMessage('assistant', `I encountered an error: ${p.error || 'Streaming error'}`);
+          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]); accumulated = '';
         },
       });
 
       if (accumulated && !committedMsgId) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `ai-${Date.now()}`,
-            role: 'assistant',
-            content: accumulated,
-            agentMeta,
-            blocks: messageBlocks,
-          },
-        ]);
+        setMessages((prev) => [...prev, { id: `ai-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta, blocks: messageBlocks }]);
         setStreamingContent('');
       }
     } catch (error) {
       if (error.name === 'AbortError') {
         if (accumulated && !committedMsgId) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `ai-${Date.now()}`,
-              role: 'assistant',
-              content: accumulated,
-              agentMeta,
-              blocks: messageBlocks,
-            },
-          ]);
+          setMessages((prev) => [...prev, { id: `ai-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta, blocks: messageBlocks }]);
         }
       } else {
         addMessage('assistant', `I encountered an error: ${error.message}`);
       }
-      setStreamingContent('');
-      setLiveStepLog([]);
+      setStreamingContent(''); setLiveStepLog([]);
     } finally {
-      setLoadingState('chat', false);
-      setAgentStepLabel('');
-      setIsThinking(false);
-      setIsRepair(false);
-      setRepairCount(0);
-      abortControllerRef.current = null;
+      setLoadingState('chat', false); setAgentStepLabel(''); setIsThinking(false);
+      setIsRepair(false); setRepairCount(0); abortControllerRef.current = null;
     }
-  };
+  }, [hasSource, currentNotebook, currentSessionId, effectiveIds, addMessage, setLoadingState, setMessages, setCurrentSessionId]);
 
-  /* ── Message actions (delete / retry / edit) ── */
+  /* ── Message actions ── */
   const handleDeleteMessage = useCallback((messageId) => {
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
   }, [setMessages]);
 
   const handleRetryMessage = useCallback((message) => {
-    const msgList = messages;
-    const idx = msgList.findIndex((m) => m.id === message.id);
+    const idx = messages.findIndex((m) => m.id === message.id);
     if (idx === -1) return;
     let userMsg = null;
     for (let i = idx - 1; i >= 0; i--) {
-      if (msgList[i].role === 'user') { userMsg = msgList[i]; break; }
+      if (messages[i].role === 'user') { userMsg = messages[i]; break; }
     }
     if (!userMsg) return;
     setMessages((prev) => prev.slice(0, idx));
-    handleSend(userMsg.content);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, setMessages]);
+    handleSend(userMsg.content, null, null);
+  }, [messages, setMessages, handleSend]);
 
   const handleEditMessage = useCallback((messageId, newContent) => {
     const idx = messages.findIndex((m) => m.id === messageId);
     if (idx === -1) return;
     setMessages((prev) => prev.slice(0, idx));
-    handleSend(newContent);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, setMessages]);
+    handleSend(newContent, null, null);
+  }, [messages, setMessages, handleSend]);
 
   /* ── Research handler ── */
-  const handleResearch = async () => {
-    const query = inputValue.trim();
+  const handleResearch = useCallback(async (query) => {
     if (!query || !hasSource || !currentNotebook?.id || loading.chat) return;
 
-    setInputValue('');
     addMessage('user', query);
     setLoadingState('chat', true);
     setResearchMode(true);
     setResearchQuery(query);
     setResearchSteps(RESEARCH_STEPS_TEMPLATE.map((s) => ({ ...s })));
 
-    const stepMap = {
-      research_planner: 0,
-      search_executor: 1,
-      content_extractor: 2,
-      theme_clusterer: 3,
-      synthesis_engine: 4,
-    };
-
+    const stepMap = { research_planner: 0, search_executor: 1, content_extractor: 2, theme_clusterer: 3, synthesis_engine: 4 };
     const ac = new AbortController();
     abortControllerRef.current = ac;
     let accumulated = '';
@@ -691,155 +474,49 @@ export default function ChatPanel() {
     const advanceStep = (toolName) => {
       const idx = stepMap[toolName] ?? -1;
       if (idx < 0) return;
-      setResearchSteps((prev) =>
-        prev.map((s, i) => ({
-          ...s,
-          status: i < idx ? 'done' : i === idx ? 'active' : s.status,
-        })),
-      );
+      setResearchSteps((prev) => prev.map((s, i) => ({ ...s, status: i < idx ? 'done' : i === idx ? 'active' : s.status })));
     };
 
     try {
-      const response = await streamResearch(
-        query,
-        currentNotebook.id,
-        effectiveIds,
-        ac.signal,
-      );
-
+      const response = await streamResearch(query, currentNotebook.id, effectiveIds, ac.signal);
       await readSSEStream(response.body, {
-        step: (payload) => advanceStep(payload.tool || ''),
-        token: (payload) => {
-          accumulated += payload.content || '';
-        },
-        meta: (payload) => {
-          agentMeta = payload;
-          setResearchSteps((prev) => prev.map((s) => ({ ...s, status: 'done' })));
-        },
+        step: (p) => advanceStep(p.tool || ''),
+        token: (p) => { accumulated += p.content || ''; },
+        meta: (p) => { agentMeta = p; setResearchSteps((prev) => prev.map((s) => ({ ...s, status: 'done' }))); },
         done: () => {
           setResearchMode(false);
           if (accumulated) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `ai-research-${Date.now()}`,
-                role: 'assistant',
-                content: accumulated,
-                agentMeta,
-                blocks: [],
-              },
-            ]);
+            setMessages((prev) => [...prev, { id: `ai-research-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta, blocks: [] }]);
           }
         },
-        error: (payload) => {
-          setResearchMode(false);
-          addMessage('assistant', `Research failed: ${payload.error || 'Unknown error'}`);
-        },
+        error: (p) => { setResearchMode(false); addMessage('assistant', `Research failed: ${p.error || 'Unknown error'}`); },
       });
     } catch (err) {
       setResearchMode(false);
       if (err.name === 'AbortError') {
         if (accumulated) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `ai-research-${Date.now()}`,
-              role: 'assistant',
-              content: accumulated,
-              agentMeta,
-              blocks: [],
-            },
-          ]);
+          setMessages((prev) => [...prev, { id: `ai-research-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta, blocks: [] }]);
         }
       } else {
         addMessage('assistant', `Research failed: ${err.message}`);
       }
     } finally {
-      setLoadingState('chat', false);
-      setResearchMode(false);
-      abortControllerRef.current = null;
+      setLoadingState('chat', false); setResearchMode(false); abortControllerRef.current = null;
     }
-  };
+  }, [hasSource, currentNotebook?.id, loading.chat, effectiveIds, addMessage, setLoadingState, setMessages]);
 
-  /* ── Input handlers ── */
-  const handleKeyDown = (e) => {
-    if (showSlashDropdown) return;
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleInputChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setInputValue(val);
-      if (!activeCommand) {
-        if (val === '/') {
-          setShowSlashDropdown(true);
-          setSlashFilter('');
-        } else if (val.startsWith('/') && !val.includes(' ')) {
-          setShowSlashDropdown(true);
-          setSlashFilter(val.slice(1));
-        } else {
-          setShowSlashDropdown(false);
-          setSlashFilter('');
-        }
-      } else {
-        setShowSlashDropdown(false);
-      }
-    },
-    [activeCommand],
-  );
-
-  const handleSlashSelect = useCallback((cmd) => {
-    setActiveCommand(cmd);
-    setShowSlashDropdown(false);
-    setSlashFilter('');
-    setInputValue('');
-    textareaRef.current?.focus();
-  }, []);
-
-  const handleRemoveCommand = useCallback(() => {
-    setActiveCommand(null);
-    textareaRef.current?.focus();
-  }, []);
-
-  const handleQuickAction = (action) => {
+  /* ── Quick actions ── */
+  const handleQuickAction = useCallback((action) => {
     const prompts = {
       summarize: 'Summarize the main points from this document',
       explain: 'Explain the key concepts in simple terms',
       keypoints: 'What are the most important takeaways?',
       studyguide: 'Create a study guide from this content',
     };
-    handleSend(prompts[action.id] || action.label);
-  };
-
-  const handleGetSuggestions = async () => {
-    if (!inputValue.trim() || !hasSource || !currentNotebook?.id) return;
-    setIsFetchingSuggestions(true);
-    setShowSuggestions(true);
-    try {
-      const data = await getSuggestions(inputValue, currentNotebook.id);
-      setSuggestions(data?.suggestions || []);
-    } catch (err) {
-      console.error(err);
-      setSuggestions([]);
-    } finally {
-      setIsFetchingSuggestions(false);
-    }
-  };
-
-  const handleSuggestionSelect = (suggestion) => {
-    setShowSuggestions(false);
-    setSuggestions([]);
-    setInputValue(suggestion);
-    handleSend(suggestion);
-  };
+    handleSend(prompts[action.id] || action.label, null, null);
+  }, [handleSend]);
 
   const isLoading = loading.chat;
-  const showTypingIndicator =
-    isLoading && !streamingContent && !researchMode && liveStepLog.length === 0;
 
   /* ── Render ── */
   return (
@@ -867,14 +544,11 @@ export default function ChatPanel() {
             </span>
           )}
         </div>
-
         <div className="flex items-center gap-1.5 shrink-0">
           {hasSource && (
             <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-success/10 text-success">
               <span className="w-1.5 h-1.5 rounded-full bg-success" />
-              {selectedSources.size > 1
-                ? `${selectedSources.size} sources`
-                : '1 source'}
+              {selectedSources.length > 1 ? `${selectedSources.length} sources` : '1 source'}
             </div>
           )}
           {isSourceProcessing && (
@@ -883,21 +557,11 @@ export default function ChatPanel() {
               Indexing…
             </div>
           )}
-          <button
-            onClick={() => setIsHistoryModalOpen(true)}
-            className="btn-secondary py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
-            title="Chat history"
-            aria-label="Open chat history"
-          >
+          <button onClick={() => setIsHistoryModalOpen(true)} className="btn-secondary py-1.5 px-2.5 flex items-center gap-1.5 text-xs" title="Chat history" aria-label="Open chat history">
             <Clock className="w-3.5 h-3.5 text-text-muted" />
             History
           </button>
-          <button
-            onClick={handleCreateChatClick}
-            className="btn-icon p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted transition-all"
-            title="New Chat"
-            aria-label="Start new chat"
-          >
+          <button onClick={handleCreateChatClick} className="btn-icon p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted transition-all" title="New Chat" aria-label="Start new chat">
             <Plus className="w-4 h-4" />
           </button>
         </div>
@@ -914,298 +578,53 @@ export default function ChatPanel() {
             onQuickAction={handleQuickAction}
           />
         ) : (
-          <div className="max-w-4xl w-full mx-auto px-4 py-8 sm:px-6 md:px-8">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                notebookId={currentNotebook?.id}
-                onRetry={msg.role === 'assistant' ? handleRetryMessage : undefined}
-                onEdit={msg.role === 'user' ? handleEditMessage : undefined}
-                onDelete={handleDeleteMessage}
-              />
-            ))}
-
-            {/* Research progress */}
-            {researchMode && (
-              <div className="message flex w-full justify-start message-ai">
-                <div className="message-content w-full">
-                  <ResearchProgress steps={researchSteps} query={researchQuery} />
-                </div>
-              </div>
-            )}
-
-            {/* Live streaming bubble */}
-            {(streamingContent || codeForReview || (isThinking && liveStepLog.length > 0)) && (
-              <div className="chat-msg chat-msg-ai group py-5">
-                <div className="flex gap-3 w-full">
-                  <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
-                    <Lightbulb className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {/* /web phase progress */}
-                    {webResearchPhase && !streamingContent && (
-                      <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-                        <span className="text-blue-400">🔬</span>
-                        <span>Phase {webResearchPhase.phase}/5 — {webResearchPhase.label}</span>
-                      </div>
-                    )}
-                    {/* /agent ReAct step cards (in-progress) */}
-                    {agentTaskSteps.length > 0 && !streamingContent && (
-                      <div className="space-y-1.5 mb-2">
-                        {agentTaskSteps.slice(-3).map((step, idx) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-text-muted bg-surface-overlay/40 rounded-lg px-3 py-1.5"
-                          >
-                            {step.phase === 'plan' && (
-                              <><span className="text-orange-400">📋 Plan</span> {step.action}</>)}
-                            {step.phase === 'act' && (
-                              <><span className="text-yellow-400">⚡ Act</span> {step.action}</>)}
-                            {step.phase === 'observe' && (
-                              <><span className="text-green-400">🔎 Observe</span> {step.observation?.slice(0, 120)}…</>)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {liveStepLog.length > 0 && !streamingContent && !codeForReview && (
-                      <LiveStepText steps={liveStepLog} />
-                    )}
-                    {/* /code — code review block */}
-                    {codeForReview && (
-                      <CodeReviewBlock
-                        code={codeForReview.code}
-                        language={codeForReview.language}
-                        explanation={codeForReview.explanation}
-                        dependencies={codeForReview.dependencies}
-                        notebookId={currentNotebook?.id}
-                        sessionId={currentSessionId}
-                      />
-                    )}
-                    {streamingContent && (
-                      <div className="markdown-content">
-                        <MarkdownRenderer
-                          content={sanitizeStreamingMarkdown(streamingContent)}
-                        />
-                        <span className="streaming-cursor" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Typing indicator */}
-            {showTypingIndicator && (
-              <div className="chat-msg chat-msg-ai py-5 animate-fade-in">
-                <div className="flex gap-3 w-full">
-                  <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
-                    <Lightbulb className="w-4 h-4" />
-                  </div>
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="typing-indicator">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                    {agentStepLabel && (
-                      <span className="text-xs text-text-muted">{agentStepLabel}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+          <ChatMessageList
+            messages={messages}
+            notebookId={currentNotebook?.id}
+            currentSessionId={currentSessionId}
+            onRetry={handleRetryMessage}
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
+            streamingContent={streamingContent}
+            liveStepLog={liveStepLog}
+            isThinking={isThinking}
+            researchMode={researchMode}
+            researchSteps={researchSteps}
+            researchQuery={researchQuery}
+            codeForReview={codeForReview}
+            agentTaskSteps={agentTaskSteps}
+            webResearchPhase={webResearchPhase}
+            agentStepLabel={agentStepLabel}
+            isLoading={isLoading}
+          />
         )}
       </div>
 
       {/* Input Area */}
-      <div className="p-4 sm:p-6 flex justify-center w-full z-10 sticky bottom-0 bg-linear-to-t from-surface-100 via-surface-100 to-transparent pt-12">
-        <div className="max-w-4xl w-full relative">
-          {/* Agent Thinking Bar */}
-          {isThinking && (
-            <AgentThinkingBar
-              isActive={isThinking}
-              currentStep={thinkingStep}
-              stepNumber={currentStepNum}
-              totalSteps={0}
-              isRepair={isRepair}
-              repairCount={repairCount}
-            />
-          )}
+      <ChatInputArea
+        onSend={handleSend}
+        onResearch={handleResearch}
+        disabled={!currentNotebook?.id || !!currentNotebook?.isDraft}
+        isStreaming={isLoading}
+        onStop={handleStop}
+        hasSource={hasSource}
+        isSourceProcessing={isSourceProcessing}
+        notebookId={currentNotebook?.id}
+        isThinking={isThinking}
+        thinkingStep={thinkingStep}
+        currentStepNum={currentStepNum}
+        isRepair={isRepair}
+        repairCount={repairCount}
+        mindMapBanner={mindMapBanner}
+        onDismissBanner={() => setMindMapBanner(null)}
+      />
 
-          {/* Suggestion Dropdown */}
-          {hasSource &&
-            currentNotebook?.id &&
-            !currentNotebook.isDraft &&
-            showSuggestions && (
-              <SuggestionDropdown
-                suggestions={suggestions}
-                loading={isFetchingSuggestions}
-                onSelect={handleSuggestionSelect}
-                onClose={() => setShowSuggestions(false)}
-              />
-            )}
-
-          {/* Mind Map banner */}
-          {mindMapBanner && (
-            <div className="border-l-[3px] border-accent-light bg-surface-raised px-3 py-1.5 mb-2 rounded-r-md flex items-center justify-between">
-              <span className="text-xs text-text-secondary">
-                Asking about:{' '}
-                <strong className="text-text-primary">{mindMapBanner}</strong>
-              </span>
-              <button
-                onClick={() => setMindMapBanner(null)}
-                className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
-                aria-label="Dismiss mind map context"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Slash Command Suggestion Pills */}
-          <SlashCommandPills
-            visible={
-              isInputFocused && !activeCommand && !inputValue && hasSource && !isLoading
-            }
-            onSelect={handleSlashSelect}
-          />
-
-          {/* Slash Command Dropdown */}
-          <SlashCommandDropdown
-            visible={showSlashDropdown && !activeCommand}
-            filter={slashFilter}
-            onSelect={handleSlashSelect}
-            onClose={() => {
-              setShowSlashDropdown(false);
-              setSlashFilter('');
-            }}
-          />
-
-          <div className="chat-input-container rounded-2xl shadow-lg transition-all transform-gpu">
-            <div className="flex items-center flex-1 min-w-0">
-              {activeCommand && (
-                <div className="pl-3 shrink-0">
-                  <CommandBadge command={activeCommand} onRemove={handleRemoveCommand} />
-                </div>
-              )}
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setTimeout(() => setIsInputFocused(false), 150)}
-                placeholder={
-                  activeCommand
-                    ? `Type your ${activeCommand.label.toLowerCase()} prompt…`
-                    : hasSource
-                      ? isLoading
-                        ? 'AI is thinking…'
-                        : selectedSources.size > 1
-                          ? `Ask about ${selectedSources.size} sources…`
-                          : 'Ask anything about your source… (type / for commands)'
-                      : isSourceProcessing
-                        ? 'Processing source, please wait…'
-                        : 'Select a source to start…'
-                }
-                disabled={!hasSource || isLoading}
-                className="flex-1 bg-transparent text-[15px] sm:text-base text-text-primary placeholder-text-muted resize-none outline-none min-h-[48px] max-h-[200px] py-3.5 px-4 leading-relaxed"
-                rows={1}
-                aria-label="Chat message input"
-              />
-            </div>
-            <div className="flex items-end pb-2.5 pr-2.5 gap-1">
-              {/* Suggest button */}
-              {inputValue.trim().length > 0 && (
-                <button
-                  onClick={handleGetSuggestions}
-                  disabled={!hasSource || isLoading || isFetchingSuggestions}
-                  className="btn-icon text-accent hover:bg-accent/10 disabled:opacity-30 rounded-[10px] w-9 h-9 flex items-center justify-center transition-all"
-                  title="Get prompt suggestions"
-                  aria-label="Get prompt suggestions"
-                >
-                  {isFetchingSuggestions ? (
-                    <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                </button>
-              )}
-
-              {/* Research button */}
-              {!isLoading && (
-                <button
-                  onClick={handleResearch}
-                  disabled={!inputValue.trim() || !hasSource || isLoading}
-                  className="btn-icon text-text-muted disabled:opacity-30 rounded-[10px] w-9 h-9 flex items-center justify-center transition-all research-btn"
-                  title="Deep Research — searches the web and synthesizes a report"
-                  aria-label="Deep Research"
-                >
-                  <FlaskConical className="w-4 h-4" />
-                </button>
-              )}
-
-              {/* Stop / Send button */}
-              {isLoading ? (
-                <button
-                  onClick={handleStop}
-                  className="btn-icon bg-danger-subtle text-danger hover:bg-danger-subtle rounded-[10px] w-9 h-9 flex items-center justify-center transition-all ml-1"
-                  title="Stop generation"
-                  aria-label="Stop generation"
-                >
-                  <Square className="w-4 h-4" fill="currentColor" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleSend()}
-                  disabled={
-                    !inputValue.trim() ||
-                    !hasSource ||
-                    isLoading ||
-                    !currentNotebook?.id ||
-                    !!currentNotebook?.isDraft
-                  }
-                  className="btn-icon bg-accent text-white disabled:opacity-40 disabled:bg-surface-overlay disabled:text-text-muted rounded-[10px] w-9 h-9 flex items-center justify-center transition-all ml-1"
-                  aria-label="Send message"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Footer hint */}
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <p className="text-xs text-text-muted">
-              <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay/60 font-mono text-[10px]">
-                Enter
-              </kbd>{' '}
-              send &nbsp;·&nbsp;
-              <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay/60 font-mono text-[10px]">
-                ⇧ Enter
-              </kbd>{' '}
-              new line &nbsp;·&nbsp;
-              <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay/60 font-mono text-[10px]">
-                /
-              </kbd>{' '}
-              commands
-            </p>
-            {inputValue.length > 0 && (
-              <span
-                className={`text-xs tabular-nums ${inputValue.length > TIMERS.INPUT_LENGTH_WARNING
-                  ? 'text-status-error'
-                  : 'text-text-muted'
-                  }`}
-              >
-                {inputValue.length}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Artifact Panel */}
+      <ArtifactPanel
+        isOpen={artifactPanelOpen}
+        onClose={() => setArtifactPanelOpen(false)}
+        artifacts={artifacts}
+      />
     </main>
   );
 }

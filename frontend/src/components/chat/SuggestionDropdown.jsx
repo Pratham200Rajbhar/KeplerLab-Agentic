@@ -34,7 +34,7 @@ export default function SuggestionDropdown({ suggestions, loading, onSelect, onC
           </li>
         )}
         {suggestions.map((item, idx) => (
-          <li key={idx} className={`suggestion-item ${idx === activeIndex ? 'suggestion-item-active' : ''}`}
+          <li key={item.suggestion} className={`suggestion-item ${idx === activeIndex ? 'suggestion-item-active' : ''}`}
             onMouseEnter={() => setActiveIndex(idx)} onClick={() => onSelect(item.suggestion)}>
             <span className="suggestion-text">{item.suggestion}</span>
             <div className="confidence-bar-wrapper">

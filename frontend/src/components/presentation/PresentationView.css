@@ -4,10 +4,11 @@
   position: relative;
 }
 
+/* The iframe is positioned absolutely inside the aspect-ratio wrapper
+   and scaled via an inline transform — no additional CSS needed here
+   for the transform itself. The origin must stay top-left. */
 .presentation-viewer iframe {
   transform-origin: top left;
-  background: white;
-  border-radius: 0;
 }
 
 /* Fullscreen overrides */
@@ -17,6 +18,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  background: #000;
 }
 
 .presentation-viewer:fullscreen .controls-bar {
@@ -30,9 +32,10 @@
   z-index: 10;
 }
 
-/* Slide transition */
-.presentation-viewer .slide-container {
-  transition: opacity 0.2s ease;
+/* In fullscreen the aspect-ratio wrapper should fill the available space */
+.presentation-viewer:fullscreen .slide-container {
+  width: 100%;
+  max-width: calc(100vh * (1920 / 1080));
 }
 
 /* Overview grid hover effect */

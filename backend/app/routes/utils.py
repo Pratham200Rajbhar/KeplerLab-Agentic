@@ -84,7 +84,10 @@ async def require_material_text(material_id: str, user_id) -> str:
 async def require_materials_text(
     material_ids: list[str], user_id, *, separator: str = "\n\n---\n\n"
 ) -> str:
-    """Fetch and combine text from multiple materials.
+    """Fetch and combine text from multiple materials in parallel.
+
+    Missing or inaccessible materials are silently skipped.  Only raises
+    404 when *no* material yields text.
 
     Args:
         material_ids: List of material UUID strings.
@@ -92,13 +95,21 @@ async def require_materials_text(
         separator: Text separator between materials.
 
     Returns:
-        Combined text from all materials.
+        Combined text from all accessible materials.
     """
-    parts: list[str] = []
-    for mid in material_ids:
-        text = await require_material_text(mid, user_id)
-        parts.append(text)
-    return separator.join(parts)
+    import asyncio
+
+    async def _try_fetch(mid: str) -> str:
+        try:
+            return await require_material_text(mid, user_id)
+        except HTTPException:
+            return ""
+
+    texts = await asyncio.gather(*[_try_fetch(mid) for mid in material_ids])
+    valid = [t for t in texts if t]
+    if not valid:
+        raise HTTPException(status_code=404, detail="No accessible material text found")
+    return separator.join(valid)
 
 
 # ── File-Token Helpers ────────────────────────────────────────

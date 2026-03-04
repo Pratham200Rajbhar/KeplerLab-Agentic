@@ -410,64 +410,6 @@ async def _process_material(
 # ── Public ingestion API ──────────────────────────────────────
 
 
-async def process_material(
-    file_path: str,
-    filename: str,
-    user_id,
-    notebook_id=None,
-):
-    """Process an uploaded file.
-
-    Never raises — on failure the material record is marked ``failed``
-    with the error persisted in the database.
-    """
-    uid, nid = str(user_id), str(notebook_id) if notebook_id else None
-
-    data: dict = {"filename": filename, "userId": uid, "status": "pending"}
-    if nid:
-        data["notebookId"] = nid
-    material = await prisma.material.create(data=data)
-
-    try:
-        await _set_status(material.id, "processing")
-
-        from app.services.text_processing.extractor import EnhancedTextExtractor
-        from app.services.text_processing.file_detector import FileTypeDetector
-
-        # Determine granular status based on file category
-        file_info = FileTypeDetector.detect_file_type(file_path)
-        category = file_info.get("category", "document")
-        if category == "image":
-            await _set_status(material.id, "ocr_running")
-        elif category in ("audio", "video"):
-            await _set_status(material.id, "transcribing")
-
-        result = EnhancedTextExtractor().extract_text(file_path, source_type="file")
-        if result["status"] != "success":
-            error_msg = result.get("error", "unknown extraction error")
-            await _fail_material(material.id, f"Extraction failed: {error_msg}")
-            return material
-
-        # Extract metadata from result
-        extraction_metadata = result.get("metadata", {})
-        extraction_metadata["upload_path"] = file_path
-        
-        return await _process_material(
-            material.id,
-            result["text"],
-            uid,
-            nid,
-            filename=filename,
-            extraction_metadata=extraction_metadata,
-            source_type=result.get("source_type") or extraction_metadata.get("source_type", "prose"),
-        ) or material
-
-    except Exception as exc:
-        tb = traceback.format_exc()
-        await _fail_material(material.id, f"{exc}\n{tb}")
-        return material
-
-
 async def create_material_record(
     filename: str,
     user_id,
@@ -656,29 +598,6 @@ async def process_url_material_by_id(
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
 
 
-async def process_url_material(
-    url: str,
-    user_id,
-    notebook_id=None,
-    source_type: str = "auto",
-):
-    """Process content from a URL (Legacy sync wrapper)."""
-    uid, nid = str(user_id), str(notebook_id) if notebook_id and notebook_id != "draft" else None
-
-    data: dict = {
-        "filename": url,
-        "userId": uid,
-        "status": "pending",
-        "sourceType": source_type,
-    }
-    if nid:
-        data["notebookId"] = nid
-    material = await prisma.material.create(data=data)
-
-    await process_url_material_by_id(material.id, url, uid, nid, source_type)
-    return await prisma.material.find_unique(where={"id": material.id})
-
-
 async def process_text_material_by_id(
     material_id: str,
     text_content: str,
@@ -695,30 +614,6 @@ async def process_text_material_by_id(
     except Exception as exc:
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
-
-
-async def process_text_material(
-    text_content: str,
-    title: str,
-    user_id,
-    notebook_id=None,
-):
-    """Process direct text input (Legacy sync wrapper)."""
-    uid, nid = str(user_id), str(notebook_id) if notebook_id and notebook_id != "draft" else None
-
-    data: dict = {
-        "filename": title,
-        "title": title,
-        "userId": uid,
-        "status": "pending",
-        "sourceType": "text",
-    }
-    if nid:
-        data["notebookId"] = nid
-    material = await prisma.material.create(data=data)
-
-    await process_text_material_by_id(material.id, text_content, title, uid, nid)
-    return await prisma.material.find_unique(where={"id": material.id})
 
 
 # ── Query helpers ─────────────────────────────────────────────
@@ -798,51 +693,77 @@ async def update_material(
 async def delete_material(material_id: str, user_id) -> bool:
     """Delete material record and clean up ALL associated storage.
 
-    Cleanup order: ChromaDB vectors → file storage → upload file → DB record.
-    Storage is cleaned BEFORE the DB record is deleted so that on partial
-    failure the reference is still intact and cleanup can be retried.
+    Atomic 3-step cleanup with reverse compensation on failure:
+      Step 1: ChromaDB vectors (thread pool)
+      Step 2: File from disk (text + upload)
+      Step 3: DB record
+    On any step failure: log the exact step, attempt compensation, return error.
     """
     material = await get_material_for_user(material_id, user_id)
     if not material:
         return False
 
     loop = asyncio.get_running_loop()
+    step_completed = {"chroma": False, "files": False, "db": False}
 
-    # 1. Delete ChromaDB embeddings (sync → thread pool)
     try:
-        from app.db.chroma import get_collection
-        collection = get_collection()
-        await loop.run_in_executor(
-            None, lambda: collection.delete(where={"material_id": str(material_id)})
+        # Step 1: Delete ChromaDB embeddings
+        try:
+            from app.db.chroma import get_collection
+            collection = get_collection()
+            await loop.run_in_executor(
+                None, lambda: collection.delete(where={"material_id": str(material_id)})
+            )
+            step_completed["chroma"] = True
+            logger.info("Deleted ChromaDB embeddings for material %s", material_id)
+        except Exception as e:
+            logger.error("Step 1 FAILED (ChromaDB delete) for material %s: %s", material_id, e)
+            raise RuntimeError(f"ChromaDB delete failed: {e}") from e
+
+        # Step 2: Delete files from disk
+        try:
+            await loop.run_in_executor(None, delete_material_text, material_id)
+            if material.filename:
+                import glob
+                upload_dir = os.path.join(settings.UPLOAD_DIR, str(user_id))
+                for pattern in (
+                    os.path.join(upload_dir, f"*_{material.filename}"),
+                    os.path.join(upload_dir, f"{material_id}_*"),
+                ):
+                    for fpath in glob.glob(pattern):
+                        if os.path.isfile(fpath):
+                            os.remove(fpath)
+                            logger.info("Deleted upload file: %s", fpath)
+            step_completed["files"] = True
+            logger.info("Deleted file storage for material %s", material_id)
+        except Exception as e:
+            logger.error("Step 2 FAILED (file delete) for material %s: %s", material_id, e)
+            raise RuntimeError(f"File delete failed: {e}") from e
+
+        # Step 3: Delete DB record
+        try:
+            await prisma.material.delete(where={"id": material.id})
+            step_completed["db"] = True
+            logger.info("Deleted material record %s", material_id)
+        except Exception as e:
+            logger.error("Step 3 FAILED (DB delete) for material %s: %s", material_id, e)
+            raise RuntimeError(f"DB delete failed: {e}") from e
+
+        return True
+
+    except RuntimeError as exc:
+        # ── Reverse compensation: attempt to restore consistency ──
+        logger.error(
+            "Material delete partial failure for %s — completed steps: %s — error: %s",
+            material_id, step_completed, exc,
         )
-        logger.info("Deleted ChromaDB embeddings for material %s", material_id)
-    except Exception as e:
-        logger.warning("Failed to delete ChromaDB embeddings for material %s: %s", material_id, e)
-
-    # 2. Delete extracted text file (sync → thread pool)
-    try:
-        await loop.run_in_executor(None, delete_material_text, material_id)
-        logger.info("Deleted text storage for material %s", material_id)
-    except Exception as e:
-        logger.warning("Failed to delete text storage for material %s: %s", material_id, e)
-
-    # 3. Delete original uploaded file on disk
-    try:
-        if material.filename:
-            import glob
-            upload_dir = os.path.join(settings.UPLOAD_DIR, str(user_id))
-            pattern = os.path.join(upload_dir, f"*_{material.filename}")
-            # Also try exact match with material_id prefix
-            pattern2 = os.path.join(upload_dir, f"{material_id}_*")
-            for p in (pattern, pattern2):
-                for fpath in glob.glob(p):
-                    if os.path.isfile(fpath):
-                        os.remove(fpath)
-                        logger.info("Deleted upload file: %s", fpath)
-    except Exception as e:
-        logger.warning("Failed to delete upload file for material %s: %s", material_id, e)
-
-    # 4. Delete from database LAST (so reference exists for retry on earlier failures)
-    await prisma.material.delete(where={"id": material.id})
-    logger.info("Deleted material record %s", material_id)
-    return True
+        # If ChromaDB was deleted but DB wasn't, mark material as failed
+        if step_completed["chroma"] and not step_completed["db"]:
+            try:
+                await prisma.material.update(
+                    where={"id": material.id},
+                    data={"status": "failed", "error": f"Partial delete: {exc}"},
+                )
+            except Exception:
+                pass
+        return False

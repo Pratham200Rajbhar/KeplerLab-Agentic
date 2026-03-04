@@ -109,7 +109,7 @@ def get_slide_content_prompt(
 
 def get_mindmap_prompt(material_text: str) -> str:
     return _render("mindmap_prompt.txt", {
-        "{material_text}": material_text,
+        "{{MATERIAL_TEXT}}": material_text,
     })
 
 
@@ -126,4 +126,52 @@ def get_ppt_prompt(
         "{{SLIDE_COUNT}}": str(slide_count),
         "{{THEME_INSTRUCTIONS}}": theme_instructions,
         "{{ADDITIONAL_INSTRUCTIONS}}": additional,
+    })
+
+
+def get_code_repair_prompt(broken_code: str, stderr: str) -> str:
+    """Load and render the code repair prompt template."""
+    return _render("code_repair_prompt.txt", {
+        "{{BROKEN_CODE}}": broken_code,
+        "{{STDERR}}": stderr,
+    })
+
+
+def get_podcast_qa_prompt(language: str, context: str, question: str) -> str:
+    """Load and render the podcast Q&A answer prompt."""
+    return _render("podcast_qa_prompt.txt", {
+        "{{LANGUAGE}}": language,
+        "{{CONTEXT}}": context,
+        "{{QUESTION}}": question,
+    })
+
+
+def get_podcast_script_prompt(language: str, mode_instruction: str, context: str) -> str:
+    """Load and render the podcast script generation prompt."""
+    return _render("podcast_script_prompt.txt", {
+        "{{LANGUAGE}}": language,
+        "{{MODE_INSTRUCTION}}": mode_instruction,
+        "{{CONTEXT}}": context,
+    })
+
+
+def get_code_generation_prompt(user_request: str) -> str:
+    """Load and render the code generation prompt template."""
+    return _render("code_generation_prompt.txt", {
+        "{{USER_REQUEST}}": user_request,
+    })
+
+
+def get_data_analysis_prompt(
+    filename: str, shape: str, columns: str,
+    dtypes: str, describe: str, user_request: str,
+) -> str:
+    """Load and render the data analysis prompt template."""
+    return _render("data_analysis_prompt.txt", {
+        "{{FILENAME}}": filename,
+        "{{SHAPE}}": shape,
+        "{{COLUMNS}}": columns,
+        "{{DTYPES}}": dtypes,
+        "{{DESCRIBE}}": describe,
+        "{{USER_REQUEST}}": user_request,
     })

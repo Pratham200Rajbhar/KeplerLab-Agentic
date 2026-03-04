@@ -388,7 +388,6 @@ async def clear_chat_history(notebook_id: str, user_id: str, session_id: str = N
         # Delete response blocks first (child records) to avoid orphans
         messages = await prisma.chatmessage.find_many(
             where=where_clause,
-            select={"id": True},
         )
         if messages:
             msg_ids = [str(m.id) for m in messages]
@@ -459,7 +458,6 @@ async def delete_chat_session(session_id: str, user_id: str) -> bool:
         # First delete response blocks for all messages in this session
         messages = await prisma.chatmessage.find_many(
             where={"chatSessionId": session_id, "userId": user_id},
-            select={"id": True},
         )
         if messages:
             msg_ids = [str(m.id) for m in messages]

@@ -1,54 +1,74 @@
 """Embedding and batch storage into ChromaDB.
 
-ChromaDB uses its own built-in ONNX embedding model (all-MiniLM-L6-v2, 384-dim)
-to generate vectors from text.  All uploads and queries go through ChromaDB's
-internal embedding pipeline — keeping add() and query() consistent without
-requiring an external embedding server.
+All text goes through the shared BAAI/bge-m3 EF (1024-dim) that ChromaDB
+uses natively — ensuring upsert() and query() operate in the same vector space.
 
-``warm_up_embeddings()`` should be called during application startup to preload
-the ONNX model and avoid cold-start latency on the first upload.
-
-``embed_and_store()`` uses UPSERT semantics (via collection.upsert) so that
-re-processing the same material is idempotent.
+Key design choices
+------------------
+* ``embed_and_store``  — UPSERT semantics (idempotent re-processing).
+* Batch size 200        — well below ChromaDB's 256-item hard limit.
+* Retries (3×)          — for transient I/O errors only.
+* Dimension errors       — permanent, never retried; version marker is
+                           invalidated and singletons are reset so the next
+                           server startup triggers a clean bootstrap.
 """
 
-from typing import List, Optional
+from __future__ import annotations
+
 import logging
-import time
 import threading
+from pathlib import Path
+from typing import List, Optional
 
 from app.core.config import settings
-from app.db.chroma import get_collection
+from app.db.chroma import get_collection, reset_singletons
 
 logger = logging.getLogger(__name__)
 
-_BATCH_SIZE = 200     # ChromaDB safe batch size (leaves headroom below 256-item limit)
-_MAX_RETRIES = 3      # Per-batch retry attempts
+_BATCH_SIZE  = 200
+_MAX_RETRIES = 3
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Warm-up
+# ─────────────────────────────────────────────────────────────────────────────
 
 def warm_up_embeddings() -> None:
-    """Eagerly warm the ChromaDB SentenceTransformer EF at startup.
+    """Pre-load the EF model at startup.
 
-    Uses collection.count() to verify connectivity (safe on empty collections)
-    and then calls the embedding function directly to pre-load the model into
-    memory — avoids cold-start latency on the first real upload.
-
-    Safe to call multiple times — subsequent calls are cheap (< 1 ms).
+    get_collection() already runs a dimension probe during bootstrap, so by
+    the time warm_up is called the model is loaded and the collection is
+    verified.  This just adds a direct EF call to ensure the model weights
+    are fully resident in memory (avoids cold-start on first upload).
     """
     try:
         from app.db.chroma import _get_ef
-        col = get_collection()
-        # count() does NOT touch the HNSW segment, so it works on empty collections
-        # without triggering the dimensionality code path.
-        _ = col.count()
-        # Warm up the embedding function by encoding a dummy string directly.
-        # This forces the SentenceTransformer model into memory.
-        ef = _get_ef()
-        ef(["warm-up"])
-        logger.info("Embedding model warm-up complete (%d existing chunks).", _)
+        col = get_collection()          # triggers bootstrap + dimension probe
+        count = col.count()
+        _get_ef()(["warm-up"])          # force weight load into RAM
+        logger.info("Embedding model warm-up complete (%d existing chunks).", count)
     except Exception as exc:
         logger.warning("Embedding warm-up failed (non-fatal): %s", exc)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _invalidate_version_marker() -> None:
+    """Delete the version-marker sidecar so the next startup does a clean wipe."""
+    try:
+        p = Path(settings.CHROMA_DIR) / ".embedding_version"
+        if p.exists():
+            p.unlink()
+            logger.info("Version marker deleted — next restart will rebuild collection.")
+    except Exception as exc:
+        logger.warning("Could not delete version marker: %s", exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main API
+# ─────────────────────────────────────────────────────────────────────────────
 
 def embed_and_store(
     chunks: List[dict],
@@ -57,71 +77,65 @@ def embed_and_store(
     notebook_id: Optional[str] = None,
     filename: Optional[str] = None,
 ) -> None:
-    """UPSERT text chunks into the shared ChromaDB collection.
+    """UPSERT text chunks into the shared ChromaDB 'chapters' collection.
 
-    Each chunk dict must contain ``id`` and ``text`` keys.
-    Tenant metadata (material_id, user_id, notebook_id) is attached for
-    per-user filtering at query time.
-    
-    user_id is REQUIRED — embeddings without user_id break tenant isolation.
+    Each chunk dict must contain at minimum ``id`` and ``text`` keys.
+    Optional per-chunk keys: ``section_title``, ``chunk_index``,
+    ``chunk_type``, ``_raw_file_path``.
 
-    Behaviour:
-    - Uses ``collection.upsert()`` (idempotent) instead of ``add()`` so that
-      re-processing the same material does not raise duplicate-ID errors.
-    - Processes in batches of ``_BATCH_SIZE`` to stay within ChromaDB limits.
-    - Each batch is retried up to ``_MAX_RETRIES`` times on transient errors.
-    - A single bad batch is logged and skipped; other batches proceed.
+    ``user_id`` is REQUIRED — embeddings without it break tenant isolation.
+
+    On permanent errors (e.g. dimension mismatch that somehow survived
+    bootstrap) the version marker is invalidated and singletons reset so the
+    problem is auto-healed on the next server restart without manual
+    intervention.
     """
     if not chunks:
         return
-    
+
     if not user_id:
-        logger.error("embed_and_store called without user_id — skipping to prevent tenant isolation breach")
+        logger.error(
+            "embed_and_store called without user_id — skipping to prevent "
+            "tenant isolation breach  material=%s", material_id,
+        )
         return
 
     collection = get_collection()
 
-    # Build base metadata template
+    # Build base metadata shared across all chunks in this call.
     base_meta: dict = {
         "source": "chapter",
         "embedding_version": settings.EMBEDDING_VERSION,
+        "user_id": user_id,
     }
     if material_id:
         base_meta["material_id"] = material_id
-    if user_id:
-        base_meta["user_id"] = user_id
     if notebook_id:
         base_meta["notebook_id"] = notebook_id
     if filename:
-        # Truncate long filenames to avoid ChromaDB metadata size limits
         base_meta["filename"] = filename[:200]
 
     stored = 0
     failed_batches = 0
 
     for start in range(0, len(chunks), _BATCH_SIZE):
-        batch = chunks[start : start + _BATCH_SIZE]
-        ids   = [c["id"]   for c in batch]
-        docs  = [c["text"] for c in batch]
-        metas = [base_meta.copy() for _ in batch]
+        batch  = chunks[start : start + _BATCH_SIZE]
+        ids    = [c["id"]   for c in batch]
+        docs   = [c["text"] for c in batch]
+        metas  = [base_meta.copy() for _ in batch]
 
-        # Attach any per-chunk section metadata
+        # Attach per-chunk optional metadata.
         for i, chunk in enumerate(batch):
             if "section_title" in chunk:
                 metas[i]["section_title"] = str(chunk["section_title"])[:200]
             if "chunk_index" in chunk:
                 metas[i]["chunk_index"] = str(chunk["chunk_index"])
-            # Structured data: embed only the summary but tag so the retriever
-            # can swap in the full dataset at query time.
             if chunk.get("chunk_type") == "structured_summary":
                 metas[i]["is_structured"] = "true"
-            if "_raw_file_path" in chunk and chunk["_raw_file_path"]:
+            if chunk.get("_raw_file_path"):
                 metas[i]["raw_file_path"] = str(chunk["_raw_file_path"])[:500]
 
-        # Retry loop for transient ChromaDB / ONNX errors
-        # Note: time.sleep() is acceptable here because embed_and_store is called
-        # via run_in_executor from async code (worker.py), so it runs in a thread.
-        last_exc = None
+        last_exc: Exception | None = None
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
                 collection.upsert(ids=ids, documents=docs, metadatas=metas)
@@ -129,17 +143,30 @@ def embed_and_store(
                 break
             except Exception as exc:
                 last_exc = exc
+                # Dimension errors are permanent — never retried.
+                if "dimension" in str(exc).lower() or "dimensionality" in str(exc).lower():
+                    logger.error(
+                        "Dimension mismatch during upsert  material=%s  start=%d: %s\n"
+                        "Invalidating version marker and resetting singletons. "
+                        "Restart the server — the collection will be auto-rebuilt.",
+                        material_id, start, exc,
+                    )
+                    _invalidate_version_marker()
+                    reset_singletons()
+                    raise RuntimeError(
+                        f"Embedding dimension mismatch for material {material_id}. "
+                        "Restart the server — auto-rebuild will kick in on startup."
+                    ) from exc
                 wait = 0.5 * attempt
                 logger.warning(
-                    "Batch upsert attempt %d/%d failed (start=%d): %s — retrying in %.1fs",
-                    attempt, _MAX_RETRIES, start, exc, wait,
+                    "Upsert attempt %d/%d failed  start=%d  material=%s: %s — retry in %.1fs",
+                    attempt, _MAX_RETRIES, start, material_id, exc, wait,
                 )
-                # Use threading.Event for interruptible sleep
                 threading.Event().wait(timeout=wait)
         else:
             failed_batches += 1
             logger.error(
-                "Batch upsert permanently failed (start=%d, size=%d, material=%s): %s",
+                "Batch permanently failed  start=%d  size=%d  material=%s: %s",
                 start, len(batch), material_id, last_exc,
             )
 
@@ -154,31 +181,28 @@ def embed_and_store(
             )
     else:
         logger.info(
-            "Stored %d chunks successfully  material=%s  user=%s",
-            stored, material_id, user_id,
+            "Stored %d/%d chunks  material=%s  user=%s",
+            stored, len(chunks), material_id, user_id,
         )
 
 
 def delete_material_embeddings(material_id: str, user_id: str) -> int:
-    """Remove all ChromaDB chunks belonging to *material_id* / *user_id*.
+    """Delete all ChromaDB chunks for *material_id* / *user_id*.
 
-    Returns the number of chunks deleted.  Safe to call if material has no
-    chunks stored (returns 0).
-    
-    Raises:
-        RuntimeError: If the deletion fails (callers should handle this).
+    Returns the number of deleted chunks.  Returns 0 if no chunks exist.
+    Raises RuntimeError on unexpected failure.
     """
     try:
         collection = get_collection()
         results = collection.get(
             where={"$and": [{"material_id": material_id}, {"user_id": user_id}]},
-            include=[],  # IDs only
+            include=[],   # IDs only
         )
         ids_to_delete = results.get("ids", [])
         if ids_to_delete:
             collection.delete(ids=ids_to_delete)
             logger.info(
-                "Deleted %d chunks for material=%s user=%s",
+                "Deleted %d chunks  material=%s  user=%s",
                 len(ids_to_delete), material_id, user_id,
             )
         return len(ids_to_delete)

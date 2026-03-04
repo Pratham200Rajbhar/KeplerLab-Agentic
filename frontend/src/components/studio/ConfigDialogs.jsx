@@ -24,7 +24,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
       <form onSubmit={handleSubmit}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <h3 className="text-base font-semibold text-[var(--text-primary)]">Flashcard Settings</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close flashcard settings">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
@@ -150,7 +150,7 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
       <form onSubmit={handleSubmit}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <h3 className="text-base font-semibold text-[var(--text-primary)]">Quiz Settings</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close quiz settings">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>

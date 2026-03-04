@@ -2,24 +2,18 @@
 
 import asyncio
 import logging
-from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+from app.models.shared_enums import DifficultyLevel
 from app.services.quiz.generator import generate_quiz
 from app.services.auth import get_current_user
 from .utils import require_material_text, require_materials_text
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
-
-
-class DifficultyLevel(str, Enum):
-    easy = "easy"
-    medium = "medium"
-    hard = "hard"
+router = APIRouter(prefix="/quiz", tags=["quiz"])
 
 
 class QuizRequest(BaseModel):
@@ -31,7 +25,7 @@ class QuizRequest(BaseModel):
     additional_instructions: Optional[str] = Field(None, max_length=2000)
 
 
-@router.post("/quiz")
+@router.post("")
 async def create_quiz(
     request: QuizRequest,
     current_user=Depends(get_current_user),

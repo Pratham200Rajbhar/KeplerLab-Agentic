@@ -23,11 +23,6 @@ prisma = Prisma()
 _MAX_CONNECT_RETRIES = 3
 _RETRY_DELAY_SECONDS = 2.0
 
-# ── Export function for compatibility ──────────────────────────────
-def get_prisma() -> Prisma:
-    """Get the Prisma client instance."""
-    return prisma
-
 
 async def connect_db() -> None:
     """Connect the Prisma client to the database with retry logic.

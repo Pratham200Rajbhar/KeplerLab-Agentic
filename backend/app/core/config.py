@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # ── File Storage ──────────────────────────────────────
     UPLOAD_DIR: str = "./data/uploads"
-    MAX_UPLOAD_SIZE_MB: int = 25
+    MAX_UPLOAD_SIZE_MB: int = 10240  # 10 GB — effectively unlimited
 
     # ── Output Directories ────────────────────────────────
     PRESENTATIONS_OUTPUT_DIR: str = "output/presentations"

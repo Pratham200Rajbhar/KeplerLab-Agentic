@@ -1,21 +1,45 @@
-"""ChromaDB client and collection management — thread-safe singleton pattern."""
+"""ChromaDB client and collection management — thread-safe singleton pattern.
+
+Design
+------
+Single embedding model throughout: BAAI/bge-m3 (1024-dim).
+Used for both upsert (ingest) and query (retrieval) — consistent vector space.
+
+Startup sequence (get_collection)
+----------------------------------
+1. Create PersistentClient.
+2. Version-marker check: compare <CHROMA_DIR>/.embedding_version against
+   settings.EMBEDDING_VERSION.  If mismatch or file absent → physically wipe
+   CHROMA_DIR so no stale HNSW segment or SQLite catalog survives.
+3. get_or_create_collection with the bge-m3 EF.
+4. Dimension probe: embed a real string with our EF and do a real upsert.
+   Only if this succeeds do we write the version marker.
+   If probe fails (wrong-dim HNSW somehow survived) → wipe CHROMA_DIR and
+   retry once.  If it fails twice → RuntimeError (fundamental misconfiguration).
+5. Delete the probe document.  Collection is ready.
+
+This design guarantees the version marker is written ONLY after a confirmed
+correct-dimension upsert, eliminating the race condition where the marker was
+written before the physical data was fully cleaned up.
+"""
 
 from __future__ import annotations
 
-import os
 import logging
+import os
+import shutil
 import threading
+from pathlib import Path
 
-# ── Disable ALL Chroma / posthog telemetry before importing chromadb ──────────
+# ── Silence all Chroma / posthog telemetry before importing chromadb ─────────
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.environ["CHROMA_TELEMETRY"] = "False"
-
 logging.getLogger("chromadb").setLevel(logging.ERROR)
 logging.getLogger("posthog").setLevel(logging.CRITICAL)
 
 try:
     import posthog  # type: ignore
-    posthog.capture = lambda *args, **kwargs: None  # type: ignore[attr-defined]
+    posthog.capture = lambda *a, **kw: None  # type: ignore[attr-defined]
     posthog.disabled = True
     posthog.Posthog.disabled = True  # type: ignore[attr-defined]
 except Exception:
@@ -24,187 +48,343 @@ except Exception:
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
 from app.core.config import settings
 from app.models.model_schemas import get_local_model_path
 
-# Point sentence-transformers cache to our managed models directory so that
-# models downloaded by download_models.py are reused here too.
+# Use the managed models directory for sentence-transformers cache.
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(
-    os.path.join(os.path.dirname(settings.CHROMA_DIR), "models")
+    Path(settings.CHROMA_DIR).parent / "models"
 )
 
 logger = logging.getLogger(__name__)
 
+# ── Module-level singletons ───────────────────────────────────────────────────
 _client: chromadb.PersistentClient | None = None
 _collection: chromadb.Collection | None = None
 _ef: SentenceTransformerEmbeddingFunction | None = None
-_lock = threading.RLock()  # RLock: get_collection() → get_client() re-enters the lock
+
+# RLock: get_client() is called inside get_collection() — both hold the lock.
+_lock = threading.RLock()
+
+# Constants
+_EF_MODEL        = settings.EMBEDDING_MODEL       # "BAAI/bge-m3"
+_EF_DIM          = settings.EMBEDDING_DIMENSION   # 1024
+_COLLECTION_NAME = "chapters"
+_VERSION_MARKER  = ".embedding_version"            # sidecar file in CHROMA_DIR
+_PROBE_DOC_ID    = "__dim_probe__"                 # ephemeral document ID
 
 
-def _purge_stale_segments() -> None:
-    """Remove HNSW segment folders whose index_metadata.pickle was written by
-    an incompatible older chromadb version.
-
-    Symptom: pickle.load() returns a plain dict instead of PersistentData,
-    so accessing .dimensionality raises AttributeError.  This happens after
-    upgrading chromadb (e.g. 0.5.5 → 0.5.20) when the old pickle is still
-    on disk.
-
-    Only the binary HNSW files are removed — the SQLite catalog is left intact
-    so chromadb can recreate the segment cleanly on next startup.
-    """
-    import pickle
-    import shutil
-    from pathlib import Path
-
-    chroma_dir = Path(settings.CHROMA_DIR)
-    if not chroma_dir.is_dir():
-        return
-
-    for pickle_file in chroma_dir.rglob("index_metadata.pickle"):
-        try:
-            data = pickle.load(open(pickle_file, "rb"))
-            if not hasattr(data, "dimensionality"):
-                segment_dir = pickle_file.parent
-                logger.warning(
-                    "Stale HNSW segment detected (chromadb version mismatch) — "
-                    "removing %s and letting chromadb recreate it.",
-                    segment_dir,
-                )
-                shutil.rmtree(segment_dir)
-        except Exception as exc:
-            logger.warning("Could not inspect %s: %s — leaving as-is", pickle_file, exc)
-
-
-_CHROMA_EF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Embedding function
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _get_ef() -> SentenceTransformerEmbeddingFunction:
-    """Lazily create a singleton SentenceTransformer EF (CPU, avoids VRAM contention).
+    """Return (or lazily create) the singleton SentenceTransformer EF.
 
-    Prefers the locally saved copy in data/models/ (pre-seeded by
-    ``python -m cli.download_models``) over downloading from HuggingFace hub.
-
-    Path resolution priority:
-    1. Direct save path:  data/models/sentence-transformers--all-MiniLM-L6-v2/
-       (created by ``model.save()`` in download_models.py)
-    2. HuggingFace hub name — sentence-transformers uses SENTENCE_TRANSFORMERS_HOME
-       to cache at data/models/models--sentence-transformers--all-MiniLM-L6-v2/
+    Runs on CPU to avoid VRAM contention with the GPU-resident reranker.
+    Prefers the locally downloaded model in data/models/.
     """
     global _ef
     if _ef is None:
-        direct = get_local_model_path(_CHROMA_EF_MODEL)
-        if direct.is_dir() and any(direct.iterdir()):
-            # Use explicit local directory — fully offline
-            model_path = str(direct)
+        local_path = get_local_model_path(_EF_MODEL)
+        if local_path.is_dir() and any(local_path.iterdir()):
+            model_path = str(local_path)
             source = "local"
         else:
-            # Fall through to HuggingFace (SENTENCE_TRANSFORMERS_HOME cache applies)
-            model_path = _CHROMA_EF_MODEL
+            model_path = _EF_MODEL
             source = "HuggingFace hub"
-        logger.info("ChromaDB EF: loading %s (source: %s)", _CHROMA_EF_MODEL, source)
+        logger.info("ChromaDB EF: loading %s (source: %s)", _EF_MODEL, source)
         _ef = SentenceTransformerEmbeddingFunction(
             model_name=model_path,
-            device="cpu",  # Keep separate from GPU-resident reranker
+            device="cpu",
         )
     return _ef
 
 
-def get_client() -> chromadb.PersistentClient:
-    """Thread-safe lazily initialised singleton ChromaDB client.
+# ─────────────────────────────────────────────────────────────────────────────
+# Data-directory helpers
+# ─────────────────────────────────────────────────────────────────────────────
 
-    Calls _purge_stale_segments() once before the first initialisation to
-    remove any HNSW pickle files that are incompatible with the current
-    chromadb version (avoids 'dict has no attribute dimensionality' crashes).
+def _wipe_chroma_dir() -> None:
+    """Physically delete and recreate the ChromaDB data directory.
+
+    Guarantees no old HNSW segments or stale SQLite catalog survive.
+    Called both on version mismatch and on dimension-probe failure.
+
+    IMPORTANT: Also clears the ChromaDB SharedSystemClient singleton cache.
+    Without this, ChromaDB reuses the stale System whose SQLite connection
+    points to the deleted file, causing "no such table: tenants" on the very
+    next PersistentClient() call.
     """
-    global _client
-    if _client is None:
-        with _lock:
-            if _client is None:
-                _purge_stale_segments()
-                try:
-                    _client = chromadb.PersistentClient(
-                        path=settings.CHROMA_DIR,
-                        settings=ChromaSettings(anonymized_telemetry=False),
-                    )
-                    logger.info("ChromaDB client initialised at %s", settings.CHROMA_DIR)
-                except Exception:
-                    logger.exception("Failed to initialise ChromaDB client")
-                    raise
-    return _client
+    chroma_dir = Path(settings.CHROMA_DIR)
+    if chroma_dir.exists():
+        shutil.rmtree(chroma_dir)
+        logger.warning("ChromaDB data directory wiped: %s", chroma_dir)
+    chroma_dir.mkdir(parents=True, exist_ok=True)
 
+    # Also reset the module-level singletons so the NEXT get_collection() call
+    # triggers a fresh _bootstrap_collection() instead of returning the stale
+    # references that were valid before the wipe.
+    global _client, _collection
+    _client = None
+    _collection = None
+
+    # Clear the ChromaDB client-system singleton so the next PersistentClient()
+    # call creates a brand-new System (and proper SQLite schema) from scratch.
+    try:
+        from chromadb.api.shared_system_client import (
+            SharedSystemClient as _ChromaSSC,
+        )
+        removed = _ChromaSSC._identifier_to_system.pop(settings.CHROMA_DIR, None)
+        if removed is not None:
+            logger.debug(
+                "ChromaDB system-cache entry cleared for '%s'", settings.CHROMA_DIR
+            )
+    except Exception as _cache_exc:
+        logger.warning(
+            "Could not clear ChromaDB system cache (non-fatal): %s", _cache_exc
+        )
+
+
+def _read_version_marker() -> str | None:
+    """Return stored embedding version string, or None if absent/unreadable."""
+    try:
+        p = Path(settings.CHROMA_DIR) / _VERSION_MARKER
+        return p.read_text().strip() if p.exists() else None
+    except Exception as exc:
+        logger.warning("Could not read version marker: %s", exc)
+        return None
+
+
+def _write_version_marker() -> None:
+    """Write settings.EMBEDDING_VERSION to the sidecar file.
+
+    Called ONLY after a successful dimension probe — never speculatively.
+    """
+    try:
+        p = Path(settings.CHROMA_DIR) / _VERSION_MARKER
+        p.write_text(settings.EMBEDDING_VERSION)
+        logger.info("Version marker written: %s = '%s'", p, settings.EMBEDDING_VERSION)
+    except Exception as exc:
+        logger.warning("Could not write version marker: %s", exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Collection bootstrap
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _probe_dimension(collection: chromadb.Collection) -> bool:
+    """Verify the collection accepts our %d-dim vectors via a real upsert+delete.
+
+    Returns True on success.  Returns False if a dimension error is raised so
+    the caller can wipe and retry.  Any other exception is re-raised.
+    """
+    ef = _get_ef()
+    try:
+        vec = [float(x) for x in ef([_PROBE_DOC_ID])[0]]
+        collection.upsert(
+            ids=[_PROBE_DOC_ID],
+            embeddings=[vec],
+            documents=[_PROBE_DOC_ID],
+            metadatas=[{"probe": "true"}],
+        )
+        # Clean up immediately.
+        try:
+            collection.delete(ids=[_PROBE_DOC_ID])
+        except Exception:
+            pass
+        logger.debug("Dimension probe passed (%d-dim OK).", len(vec))
+        return True
+    except Exception as exc:
+        if "dimension" in str(exc).lower() or "dimensionality" in str(exc).lower():
+            logger.error(
+                "Dimension probe FAILED — collection has wrong dimensionality. "
+                "Expected %d-dim (%s). Raw error: %s",
+                _EF_DIM, _EF_MODEL, exc,
+            )
+            return False
+        raise
+
+
+def _bootstrap_collection(
+    attempt: int = 1,
+) -> tuple[chromadb.PersistentClient, chromadb.Collection]:
+    """Build a fully verified client+collection pair.
+
+    Attempt 1 — normal path:
+      a. Version-marker check.  Mismatch/absent → wipe CHROMA_DIR.
+      b. Create client + get_or_create_collection.
+      c. Dimension probe.
+         Pass  → write marker, return.
+         Fail  → wipe + recurse(attempt=2).
+
+    Attempt 2 — recovery:
+      Skip version check (we know data is bad), always wipe, rebuild.
+      If probe fails again → raise RuntimeError.
+    """
+    if attempt > 2:
+        raise RuntimeError(
+            f"ChromaDB '{_COLLECTION_NAME}' cannot be verified as {_EF_DIM}-dim "
+            f"after two full rebuild attempts. "
+            f"Check EMBEDDING_MODEL='{_EF_MODEL}' and EMBEDDING_DIMENSION={_EF_DIM} "
+            "in your .env file."
+        )
+
+    current_version = settings.EMBEDDING_VERSION
+
+    # -- Step 1: version-marker check (attempt 1 only) --------
+    if attempt == 1:
+        stored = _read_version_marker()
+        if stored != current_version:
+            msg = (
+                f"No version marker — wiping data dir to ensure {_EF_DIM}-dim collection."
+                if stored is None
+                else (
+                    f"Embedding version changed '{stored}' → '{current_version}' "
+                    f"(model={_EF_MODEL}, dim={_EF_DIM}). Wiping data dir. "
+                    "Re-index via: python -m cli.reindex --include-failed"
+                )
+            )
+            logger.warning(msg)
+            _wipe_chroma_dir()
+        else:
+            logger.debug("Version marker matches '%s' — proceeding.", current_version)
+    else:
+        logger.warning("Recovery attempt %d: wiping ChromaDB data and rebuilding.", attempt)
+        _wipe_chroma_dir()
+
+    # -- Step 2: create client + collection -------------------
+    Path(settings.CHROMA_DIR).mkdir(parents=True, exist_ok=True)
+
+    # ChromaDB 0.5.x has a known race-condition where PersistentClient's
+    # _validate_tenant_database() fires before the internal SQLite schema
+    # (including the `tenants` table) is written.  Retry a few times with a
+    # brief sleep to let the background initialisation complete.
+    import time as _time
+    _MAX_CHROMA_INIT_RETRIES = 5
+    _client_exc: Exception | None = None
+    client: chromadb.PersistentClient | None = None
+    for _retry in range(_MAX_CHROMA_INIT_RETRIES):
+        try:
+            client = chromadb.PersistentClient(
+                path=settings.CHROMA_DIR,
+                settings=ChromaSettings(anonymized_telemetry=False),
+            )
+            _client_exc = None
+            break  # success
+        except (ValueError, Exception) as _exc:
+            _client_exc = _exc
+            _hint = str(_exc).lower()
+            if "tenant" in _hint or "no such table" in _hint or "default_tenant" in _hint:
+                logger.warning(
+                    "ChromaDB init attempt %d/%d failed ('%s') — "
+                    "wiping & retrying in 0.5 s …",
+                    _retry + 1, _MAX_CHROMA_INIT_RETRIES, _exc,
+                )
+                _wipe_chroma_dir()
+                _time.sleep(0.5)
+            else:
+                raise  # non-retryable error
+
+    if client is None:
+        raise RuntimeError(
+            f"ChromaDB PersistentClient failed to initialise after "
+            f"{_MAX_CHROMA_INIT_RETRIES} attempts: {_client_exc}"
+        )
+
+    logger.info("ChromaDB client initialised at %s", settings.CHROMA_DIR)
+
+    collection = client.get_or_create_collection(
+        name=_COLLECTION_NAME,
+        embedding_function=_get_ef(),
+        metadata={"hnsw:space": "cosine"},
+    )
+    logger.info("ChromaDB collection '%s' obtained.", _COLLECTION_NAME)
+
+    # -- Step 3: dimension probe (the only source of truth) ---
+    if not _probe_dimension(collection):
+        # Stale HNSW survived despite the wipe — nuke and retry.
+        _wipe_chroma_dir()
+        return _bootstrap_collection(attempt=attempt + 1)
+
+    # -- Step 4: write marker ONLY after confirmed success ----
+    _write_version_marker()
+
+    return client, collection
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API
+# ─────────────────────────────────────────────────────────────────────────────
 
 def get_collection() -> chromadb.Collection:
-    """Thread-safe singleton shared collection."""
-    global _collection
+    """Return the singleton verified collection, bootstrapping on first call."""
+    global _client, _collection
     if _collection is None:
         with _lock:
             if _collection is None:
                 try:
-                    _collection = get_client().get_or_create_collection(
-                        name="chapters",
-                        embedding_function=_get_ef(),
-                        metadata={"hnsw:space": "cosine"},
+                    _client, _collection = _bootstrap_collection()
+                    logger.info(
+                        "ChromaDB collection '%s' ready (%d existing chunks).",
+                        _COLLECTION_NAME, _collection.count(),
                     )
-                    logger.info("ChromaDB collection 'chapters' ready")
                 except Exception:
-                    logger.exception("Failed to get/create ChromaDB collection")
+                    logger.exception("Failed to bootstrap ChromaDB collection")
                     raise
     return _collection
 
 
-def reset_client() -> None:
-    """Reset singletons — useful for reconnecting after ChromaDB failures."""
+def get_client() -> chromadb.PersistentClient:
+    """Return the singleton client, bootstrapping via get_collection if needed."""
+    global _client
+    if _client is None:
+        get_collection()  # bootstraps both _client and _collection
+    return _client  # type: ignore[return-value]
+
+
+def reset_singletons() -> None:
+    """Reset singletons, forcing a full re-bootstrap on next access.
+
+    Call this after a ChromaDB mid-request failure to force reconnection.
+    Aliased as reset_client() for backwards compatibility.
+    """
     global _client, _collection
     with _lock:
         _client = None
         _collection = None
-        logger.info("ChromaDB client and collection reset")
+    logger.info("ChromaDB singletons reset — will re-bootstrap on next access.")
 
 
-def backup_chroma(backup_dir: str | None = None) -> str:
-    """Create a backup of the ChromaDB data directory.
-
-    Copies the entire CHROMA_DIR to a timestamped subdirectory.
-    Returns the path to the backup directory.
-
-    Args:
-        backup_dir: Parent directory for backups. Defaults to
-                    ``{CHROMA_DIR}/../chroma_backups/``.
-
-    Returns:
-        Absolute path of the created backup.
-    """
-    import shutil
-    from datetime import datetime
-
-    source = settings.CHROMA_DIR
-    if backup_dir is None:
-        backup_dir = os.path.join(os.path.dirname(source), "chroma_backups")
-
-    os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    dest = os.path.join(backup_dir, f"chroma_backup_{timestamp}")
-
-    shutil.copytree(source, dest)
-    logger.info("ChromaDB backup created: %s", dest)
-    return dest
+# Backwards-compat alias used by some existing callers.
+reset_client = reset_singletons
 
 
 def get_collection_stats() -> dict:
-    """Return basic statistics about the ChromaDB collection.
-
-    Returns:
-        Dict with count, name, and metadata.
-    """
+    """Return basic statistics about the ChromaDB collection."""
     try:
-        collection = get_collection()
-        count = collection.count()
+        col = get_collection()
         return {
-            "name": collection.name,
-            "count": count,
+            "name": col.name,
+            "count": col.count(),
             "chroma_dir": settings.CHROMA_DIR,
+            "embedding_model": _EF_MODEL,
+            "embedding_dim": _EF_DIM,
+            "embedding_version": settings.EMBEDDING_VERSION,
         }
-    except Exception as e:
-        logger.error("Failed to get ChromaDB stats: %s", e)
-        return {"error": str(e)}
+    except Exception as exc:
+        logger.error("Failed to get ChromaDB stats: %s", exc)
+        return {"error": str(exc)}
+
+
+def backup_chroma(backup_dir: str | None = None) -> str:
+    """Copy CHROMA_DIR to a timestamped backup directory; return the path."""
+    from datetime import datetime
+    source = settings.CHROMA_DIR
+    parent = str(Path(source).parent / "chroma_backups") if backup_dir is None else backup_dir
+    os.makedirs(parent, exist_ok=True)
+    dest = os.path.join(parent, f"chroma_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    shutil.copytree(source, dest)
+    logger.info("ChromaDB backup created: %s", dest)
+    return dest

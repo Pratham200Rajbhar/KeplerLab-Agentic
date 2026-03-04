@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, Optional
 
-from app.db.prisma_client import get_prisma
+from app.db.prisma_client import prisma
 from app.services.ws_manager import ws_manager
 from app.services.llm_service.llm import get_llm
 
@@ -30,7 +30,7 @@ async def create_export(
     format: str,  # "pdf" or "json"
 ) -> Dict:
     """Create an export job for a podcast session."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id},
         include={
@@ -70,7 +70,7 @@ async def _run_export(
     export_id: str, session, user_id: str, format: str
 ) -> None:
     """Execute the export (background task)."""
-    db = get_prisma()
+    db = prisma
     try:
         session_dir = os.path.join(_OUTPUT_BASE, session.id)
         os.makedirs(session_dir, exist_ok=True)
@@ -268,7 +268,7 @@ async def _export_pdf(session, session_dir: str) -> str:
 
 async def get_export(export_id: str) -> Optional[Dict]:
     """Get export record."""
-    db = get_prisma()
+    db = prisma
     export = await db.podcastexport.find_first(where={"id": export_id})
     if not export:
         return None
@@ -292,7 +292,7 @@ def get_export_file_path(session_id: str, filename: str) -> Optional[str]:
 
 async def generate_summary(session_id: str, user_id: str) -> str:
     """Generate a summary card for a completed podcast session."""
-    db = get_prisma()
+    db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id},
         include={

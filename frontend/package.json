@@ -9,11 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.33.0",
-    "@emotion/react": "^11.14.0",
     "@xyflow/react": "^12.10.1",
     "dagre": "^0.8.5",
-    "framer-motion": "^12.34.3",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.0",
     "katex": "^0.16.33",
@@ -24,6 +21,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
+    "react-window": "^2.2.7",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",

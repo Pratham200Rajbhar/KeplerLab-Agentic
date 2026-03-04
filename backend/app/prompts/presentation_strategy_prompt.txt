@@ -1,0 +1,35 @@
+You are a presentation architect. Create a detailed slide-by-slide strategy.
+
+## Intent Analysis
+{{INTENT_ANALYSIS}}
+
+## Knowledge Map
+{{KNOWLEDGE_MAP}}
+
+## Material Context
+{{MATERIAL_CONTEXT}}
+
+## Target Slide Count: {{SLIDE_COUNT}}
+
+## Task
+Design a slide-by-slide strategy. For each slide, produce:
+{
+  "slides": [
+    {
+      "slide_number": 1,
+      "title": "Slide Title",
+      "purpose": "What this slide achieves in the narrative",
+      "layout_type": "title|content|two-column|image-focus|data|quote|section-break|summary",
+      "primary_component": "The main content element",
+      "supporting_components": ["bullet points", "image description", "chart type"],
+      "information_density": "low|medium|high",
+      "narrative_position": "introduction|development|climax|conclusion",
+      "key_content_from_material": "Specific excerpt or data point to use",
+      "speaker_notes_hint": "What the presenter should say"
+    }
+  ],
+  "narrative_arc": "Description of the overall story flow",
+  "transition_strategy": "How slides connect to each other"
+}
+
+Return ONLY the JSON object, no additional text.

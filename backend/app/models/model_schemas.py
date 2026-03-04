@@ -69,13 +69,6 @@ class ModelConfig(BaseModel):
 #: All non-LLM models the application requires.
 #: model_manager iterates this dict to download / verify models on startup.
 REQUIRED_MODELS: Dict[str, ModelConfig] = {
-    # Used by ChromaDB's internal embedding function for upsert / query
-    "chroma_embedding": ModelConfig(
-        name="sentence-transformers/all-MiniLM-L6-v2",
-        type="sentence_transformer",
-        required=True,
-        description="Lightweight embedding model used by ChromaDB for indexing and retrieval (384-dim)",
-    ),
     "embedding": ModelConfig(
         name=settings.EMBEDDING_MODEL,
         type="sentence_transformer",

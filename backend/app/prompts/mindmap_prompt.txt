@@ -26,4 +26,4 @@ Structure:
 }
 
 Material text:
-{material_text}
+{{MATERIAL_TEXT}}
