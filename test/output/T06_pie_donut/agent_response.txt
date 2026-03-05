@@ -1,0 +1,25 @@
+✅ **Task Completed Successfully!**
+
+I've generated the requested visualization and saved it as **`pie_donut_charts.png`**.
+
+### What’s Included:
+- **Left Chart (Pie Chart)**:  
+  - Shows market share for 6 companies  
+  - Includes percentage labels on each slice  
+  - The largest slice (Company A at 32%) is slightly *exploded* for emphasis  
+
+- **Right Chart (Donut Chart)**:  
+  - Displays the same market share data  
+  - Features a clean center with a total label: **"Total: 100%"**  
+
+### Key Data Used:
+| Company | Market Share |
+|---------|--------------|
+| A       | 32%          |
+| B       | 22%          |
+| C       | 18%          |
+| D       | 15%          |
+| E       | 10%          |
+| F       | 3%           |
+
+The chart is ready for use—feel free to open `pie_donut_charts.png` to view it! 📊

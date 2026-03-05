@@ -1,0 +1,3 @@
+Gender,CustomerID_mean,CustomerID_std,CustomerID_min,CustomerID_max,CustomerID_median,Age_mean,Age_std,Age_min,Age_max,Age_median,Annual Income (k$)_mean,Annual Income (k$)_std,Annual Income (k$)_min,Annual Income (k$)_max,Annual Income (k$)_median,Spending Score (1-100)_mean,Spending Score (1-100)_std,Spending Score (1-100)_min,Spending Score (1-100)_max,Spending Score (1-100)_median
+Female,93.84,52.80413972140037,2,198,93.5,42.48,14.984490298136585,18,70,45.0,75.83,35.98036922680157,15,139,74.0,53.35,29.694530666692675,1,100,52.0
+Male,107.16,62.09632790587491,1,200,121.0,46.43,15.68197511266816,18,70,49.0,78.32,37.3576436001193,15,138,75.5,48.95,29.9073907287483,2,100,46.5

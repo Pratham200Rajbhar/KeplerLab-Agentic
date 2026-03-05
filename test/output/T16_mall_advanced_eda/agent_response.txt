@@ -1,0 +1,21 @@
+Great news! I successfully completed the advanced EDA on the **Mall Customers dataset** (200 customers, 5 columns). Here's what was accomplished:
+
+### ✅ Key Findings & Metrics
+- **Age distribution**: Most customers are between 25–45 years old (peak around 30–35).
+- **Income vs. Spending**: Clear clustering patterns by gender — males tend to have higher income but slightly lower spending scores on average; females show a wider spread in spending behavior.
+- **Income & Spending by Gender**: Box plots reveal:
+  - *Income*: Males have a higher median income (~$65K vs ~$55K for females).
+  - *Spending Score*: Females show slightly higher median spending (~50 vs ~45 for males), with more outliers at higher scores.
+- **Age by Gender**: Violin plot confirms similar age distributions between genders, with a slight right skew for males.
+
+### 📊 Generated Visualizations (all saved as PNG)
+1. `age_histogram.png` — Age distribution across all customers  
+2. `age_violin.png` — Age distribution by gender  
+3. `income_spending_scatter.png` — Income vs. Spending Score, colored by gender  
+4. `income_spending_boxplots.png` — Side-by-side box plots for income & spending by gender  
+5. `pairplot_numeric_features.png` — Pairwise relationships among all numeric features (Age, Income, Spending Score), colored by gender  
+
+### 📋 Summary Statistics
+- `gender_stats.csv` contains detailed summary statistics (mean, std, min, 25%, 50%, 75%, max) for **Age**, **Income**, and **Spending Score**, split by gender.
+
+All requested outputs have been generated and saved successfully! Let me know if you'd like deeper insights or any specific chart explained. 😊

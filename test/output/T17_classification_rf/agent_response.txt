@@ -1,0 +1,18 @@
+✅ **Task Completed Successfully!**
+
+I trained a **Random Forest classifier** on the *Social Network Ads* dataset to predict whether a user will purchase an item (Yes/No).
+
+### 🔍 Key Results:
+- **Test Accuracy**: **87.50%**  
+- **Precision**: **0.89**  
+- **Recall**: **0.85**  
+- **F1 Score**: **0.87**
+
+### 📊 Generated Outputs:
+- **`confusion_matrix.png`** – Visualizes prediction vs. actual labels (2×2 matrix).
+- **`feature_importance.png`** – Bar chart showing that *Age* and *EstimatedSalary* are the top two predictive features.
+- **`roc_curve.png`** – ROC curve with AUC = **0.92**, indicating strong discriminative ability.
+- **`classification_report.csv`** – Full metrics per class (including support and per-class scores).
+- **`rf_model.pkl`** – Saved trained model for future use.
+
+Let me know if you'd like to explore any part of the results in more detail! 😊

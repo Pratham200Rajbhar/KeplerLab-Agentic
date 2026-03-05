@@ -1,7 +1,15 @@
-"""Agent pipeline — multi-step autonomous task execution.
+"""Agent Pipeline — Multi-step autonomous task execution.
 
-Orchestrates: Plan → Execute Loop → Reflect → Synthesize → Persist.
-All output is streamed as SSE events.
+Orchestrates the full agent execution lifecycle:
+1. Intent Detection
+2. Task Planning  
+3. Tool Selection
+4. Execution Engine
+5. Artifact Detection
+6. Result Validation
+7. Response Generation
+
+All output is streamed as SSE events for real-time UI updates.
 """
 
 from __future__ import annotations
@@ -10,25 +18,47 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 import tempfile
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
 from app.core.config import settings
+from app.db.prisma_client import prisma
+
+from app.services.agent.state import (
+    AgentExecutionState,
+    ExecutionPhase,
+    create_agent_state,
+)
+from app.services.agent.tool_selector import (
+    TaskType,
+    classify_task,
+    generate_execution_plan,
+)
+from app.services.agent.execution_engine import (
+    ExecutionEngine,
+    ExecutionResult,
+)
+from app.services.agent.artifact_detector import ArtifactDetector
+from app.services.agent.result_validator import (
+    ResultValidator,
+    SummaryGenerator,
+    generate_result_text,
+)
+from app.services.agent.tools import AgentContext, TOOL_REGISTRY
+
+# Legacy imports for backward compatibility
 from app.services.agent.schemas import (
     AgentPlan,
-    AgentState,
+    AgentState as LegacyAgentState,
     PlanStep,
     ReflectionDecision,
     ReflectionResult,
     StepResult,
 )
-from app.services.agent.tools import (
-    TOOL_REGISTRY,
-    AgentContext,
-    ToolOutput,
-    classify_artifact,
-)
+from app.services.agent.tools import classify_artifact, ToolOutput
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +67,7 @@ logger = logging.getLogger(__name__)
 MAX_ITERATIONS = 10
 TOKEN_BUDGET = 50000
 MAX_PLAN_RETRIES = 2
+MAX_REPAIR_ATTEMPTS = 3
 
 
 def _sse(event: str, data: Any) -> str:
@@ -57,18 +88,44 @@ async def stream_agent(
 ) -> AsyncIterator[str]:
     """Run the full agent pipeline, yielding SSE events.
 
-    Steps:
-      1. Plan (LLM generates a JSON plan of tool steps)
-      2. Execute loop (run each tool, emitting events)
-      3. Reflect after each step (continue or respond?)
-      4. Synthesize (LLM produces final answer from all results)
-      5. Persist (save to DB)
+    Enhanced execution lifecycle:
+      1. Initialize agent state and workspace
+      2. Detect intent and classify task
+      3. Generate execution plan with tool selection
+      4. Execute steps with progress streaming
+      5. Detect and register artifacts
+      6. Validate results
+      7. Synthesize final response
+      8. Persist execution metadata
+
+    Args:
+        message: User's request/query
+        notebook_id: ID of the current notebook
+        material_ids: IDs of uploaded materials
+        session_id: Current session ID
+        user_id: Current user ID
+
+    Yields:
+        SSE events for real-time frontend updates
     """
     start_time = time.time()
 
     # Create workspace directory
     work_dir = tempfile.mkdtemp(prefix="kepler_agent_")
 
+    # Initialize enhanced agent state
+    state = create_agent_state(
+        session_id=session_id,
+        user_id=user_id,
+        notebook_id=notebook_id,
+        user_query=message,
+        work_dir=work_dir,
+        max_iterations=MAX_ITERATIONS,
+        max_retries=MAX_REPAIR_ATTEMPTS,
+    )
+    state.mark_started()
+
+    # Create execution context
     ctx = AgentContext(
         user_id=user_id,
         notebook_id=notebook_id,
@@ -78,64 +135,101 @@ async def stream_agent(
         work_dir=work_dir,
     )
 
-    state = AgentState(max_iterations=MAX_ITERATIONS, token_budget=TOKEN_BUDGET)
-
     try:
-        # ── STEP 1: PLAN ─────────────────────────────────────
-        plan = await _generate_plan(message, material_ids)
-        if not plan or not plan.steps:
-            yield _sse("error", {"error": "Agent could not generate a valid plan."})
+        # ── STEP 1: INTENT DETECTION ─────────────────────────
+        yield _sse("step", {
+            "status": "Understanding request",
+            "phase": "planning",
+        })
+
+        has_materials = bool(material_ids)
+        classification = classify_task(message, has_materials)
+        
+        state.detected_intent = classification.task_type.value
+        state.intent_confidence = classification.confidence
+
+        yield _sse("intent", {
+            "task_type": classification.task_type.value,
+            "confidence": classification.confidence,
+            "requires_computation": classification.requires_computation,
+            "requires_materials": classification.requires_materials,
+        })
+
+        # ── STEP 2: TASK PLANNING ────────────────────────────
+        yield _sse("step", {
+            "status": "Planning execution",
+            "phase": "planning",
+        })
+
+        plan_steps = await generate_execution_plan(
+            query=message,
+            material_ids=material_ids,
+            context=state.get_context_summary(),
+        )
+
+        if not plan_steps:
+            yield _sse("error", {"error": "Failed to generate execution plan"})
             return
 
-        state.plan = plan
+        state.execution_plan = plan_steps
+        state.phase = ExecutionPhase.EXECUTING
 
         yield _sse("agent_start", {
             "plan": [
-                {"tool": s.tool, "description": s.description, "step": i}
-                for i, s in enumerate(plan.steps)
+                {
+                    "tool": step.get("tool"),
+                    "description": step.get("description"),
+                    "step": i,
+                }
+                for i, step in enumerate(plan_steps)
             ],
-            "total_steps": len(plan.steps),
+            "total_steps": len(plan_steps),
+            "intent": state.detected_intent,
         })
 
-        # ── STEP 2–4: EXECUTE LOOP + REFLECT ─────────────────
-        for step_idx, step in enumerate(plan.steps):
+        # ── STEP 3: EXECUTE STEPS ────────────────────────────
+        execution_engine = ExecutionEngine(state, ctx)
+        
+        # Set up event callback for streaming
+        async def emit_event(event: str, data: Dict[str, Any]) -> None:
+            # This is called by the engine but we can't yield from here
+            # Events are emitted in the main loop instead
+            pass
+        
+        execution_engine.set_event_callback(emit_event)
+
+        for step_idx, step in enumerate(plan_steps):
+            # Check iteration limits
             if state.iteration >= state.max_iterations:
-                break
-            if state.total_tokens >= state.token_budget:
+                yield _sse("step", {
+                    "status": "Max iterations reached",
+                    "step": step_idx,
+                })
                 break
 
             state.iteration += 1
+            tool = step.get("tool", "python_tool")
+            description = step.get("description", "Executing step")
+            inputs = step.get("inputs", {})
 
-            # Emit tool_start
-            yield _sse("tool_start", {
-                "tool": step.tool,
-                "label": step.description,
+            # Emit step start
+            yield _sse("step", {
+                "status": description,
                 "step": step_idx,
+                "tool": tool,
+                "phase": "executing",
             })
 
-            # Execute tool
-            step_start = time.time()
-            result = await _execute_tool(step, ctx, state)
-            duration_ms = int((time.time() - step_start) * 1000)
-
-            # Build step result
-            step_result = StepResult(
+            # Execute step
+            result = await execution_engine.execute_step(
                 step_index=step_idx,
-                tool=step.tool,
-                description=step.description,
-                summary=result.summary,
-                duration_ms=duration_ms,
-                code=result.code,
-                artifacts=[a for a in result.artifacts],
-                error=result.error,
+                tool=tool,
+                description=description,
+                inputs=inputs,
             )
-            state.step_results.append(step_result)
 
-            if step.tool not in state.tools_used:
-                state.tools_used.append(step.tool)
-
-            # Emit code_generated if python_tool produced code
-            if result.code and step.tool == "python_tool":
+            # Emit code if generated
+            if result.code:
                 yield _sse("code_generated", {
                     "step_index": step_idx,
                     "code": result.code,
@@ -143,56 +237,253 @@ async def stream_agent(
                 })
 
             # Emit artifacts
-            for art in result.artifacts:
-                artifact_event = await _register_artifact(art, ctx)
-                if artifact_event:
-                    state.artifacts.append(artifact_event)
-                    yield _sse("artifact", artifact_event)
+            for artifact in result.artifacts:
+                registered = await _register_artifact(artifact, ctx, state)
+                if registered:
+                    yield _sse("artifact", registered)
 
-            # Emit tool_result
+            # Emit step result
             yield _sse("tool_result", {
-                "summary": result.summary,
-                "duration_ms": duration_ms,
                 "step": step_idx,
+                "tool": tool,
+                "summary": result.summary,
+                "success": result.success,
+                "duration_ms": result.duration_ms,
             })
 
-            # ── STEP 3: REFLECT ───────────────────────────────
-            reflection = await _reflect(message, state)
-            if reflection.decision == ReflectionDecision.RESPOND:
+            # Check for reflection/early termination
+            if result.success and _should_stop_early(state, result):
                 break
 
-        # ── STEP 5: SYNTHESIZE ────────────────────────────────
-        async for token_event in _synthesize(message, state, ctx):
+        # ── STEP 4: VALIDATE RESULTS ─────────────────────────
+        state.phase = ExecutionPhase.REFLECTING
+        
+        yield _sse("step", {
+            "status": "Validating results",
+            "phase": "validating",
+        })
+
+        validator = ResultValidator(state)
+        validation = validator.validate()
+
+        if validation.warnings:
+            yield _sse("validation", {
+                "warnings": validation.warnings,
+                "suggestions": validation.suggestions,
+            })
+
+        # ── STEP 5: GENERATE SUMMARY ─────────────────────────
+        summary_gen = SummaryGenerator(state)
+        summary = summary_gen.generate_summary()
+
+        yield _sse("summary", {
+            "title": summary.title,
+            "description": summary.description,
+            "key_results": summary.key_results,
+            "metrics": summary.metrics,
+            "artifacts": summary.artifacts_summary,
+        })
+
+        # ── STEP 6: SYNTHESIZE RESPONSE ──────────────────────
+        state.phase = ExecutionPhase.SYNTHESIZING
+        
+        yield _sse("step", {
+            "status": "Preparing response",
+            "phase": "synthesizing",
+        })
+
+        async for token_event in _synthesize_response(message, state, ctx):
             yield token_event
 
-        # ── STEP 6: EMIT DONE ─────────────────────────────────
-        elapsed = time.time() - start_time
+        # ── STEP 7: COMPLETION ───────────────────────────────
+        state.mark_completed(success=True)
+
         yield _sse("done", {
-            "intent": "AGENT",
+            "intent": state.detected_intent,
             "tools_used": state.tools_used,
-            "steps": len(state.step_results),
-            "tokens_used": state.total_tokens,
-            "elapsed": round(elapsed, 2),
+            "steps": len(state.step_progress),
+            "artifacts_count": len(state.artifacts),
+            "elapsed": state.elapsed_seconds,
+            "success": True,
         })
+
+        # Persist execution log
+        await _persist_execution(state)
 
     except Exception as e:
         logger.error("[agent] Pipeline error: %s", e, exc_info=True)
+        state.mark_completed(success=False)
         yield _sse("error", {"error": str(e)})
+
     finally:
-        # Cleanup workspace
-        try:
-            import shutil
-            if os.path.isdir(work_dir):
-                shutil.rmtree(work_dir, ignore_errors=True)
-        except Exception:
-            pass
+        # Workspace cleanup is handled by the caller or scheduled cleanup
+        # Don't delete immediately as artifacts may still be needed
+        pass
 
 
-# ── Plan generation ───────────────────────────────────────────
+# ── Helper Functions ──────────────────────────────────────────
+
+
+def _should_stop_early(state: AgentExecutionState, result: ExecutionResult) -> bool:
+    """Decide if we should stop execution early.
+    
+    Conditions for early stop:
+    - All planned steps completed
+    - Sufficient results gathered
+    - Repeated errors detected
+    """
+    # If all planned steps are done
+    if state.current_step_index >= len(state.execution_plan) - 1:
+        return True
+    
+    # If we have good results and artifacts
+    if result.success and state.artifacts and state.models:
+        return True
+    
+    # If errors are repeating
+    if state.is_error_repeated():
+        return True
+    
+    return False
+
+
+async def _synthesize_response(
+    message: str,
+    state: AgentExecutionState,
+    ctx: AgentContext,
+) -> AsyncIterator[str]:
+    """Synthesize final response using LLM. Streams tokens."""
+    from app.services.llm_service.llm import get_llm
+    from app.services.agent.result_validator import generate_result_text
+
+    # Build context from execution
+    result_context = generate_result_text(state)
+
+    system_prompt = """You are a helpful AI assistant that has just completed a data analysis/ML task.
+Based on the execution results below, provide a clear, friendly response to the user.
+
+Guidelines:
+- Summarize what was accomplished in plain language
+- Highlight key findings and metrics
+- Mention generated files/charts
+- Be specific about accuracy, counts, etc.
+- Do NOT show code unless asked
+- Do NOT mention internal tool names
+- Use markdown formatting for clarity
+- Keep the response focused and concise"""
+
+    prompt = f"""{system_prompt}
+
+{result_context}
+
+User's original request: {message}
+
+Provide a helpful response:"""
+
+    llm = get_llm(temperature=settings.LLM_TEMPERATURE_CHAT)
+
+    try:
+        async for chunk in llm.astream(prompt):
+            content = getattr(chunk, "content", str(chunk))
+            if content:
+                yield _sse("token", {"content": content})
+    except Exception as e:
+        logger.error("[agent] Synthesis failed: %s", e)
+        yield _sse("token", {"content": f"\n\nI completed the analysis but encountered an issue generating the summary: {e}"})
+
+
+async def _register_artifact(
+    art: Dict[str, Any],
+    ctx: AgentContext,
+    state: AgentExecutionState,
+) -> Optional[Dict[str, Any]]:
+    """Register an artifact in the database and return SSE payload."""
+    fpath = art.get("path", "")
+    if not fpath or not os.path.isfile(fpath):
+        return None
+
+    filename = art.get("filename", os.path.basename(fpath))
+    mime = art.get("mime", "application/octet-stream")
+    category = art.get("category", "file")
+    display_type = art.get("display_type", classify_artifact(filename, mime))
+    size = art.get("size", os.path.getsize(fpath))
+
+    # Generate secure download token
+    token = secrets.token_urlsafe(48)
+    expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
+
+    try:
+        record = await prisma.artifact.create(
+            data={
+                "userId": ctx.user_id,
+                "notebookId": ctx.notebook_id,
+                "sessionId": ctx.session_id,
+                "filename": filename,
+                "mimeType": mime,
+                "displayType": display_type,
+                "sizeBytes": size,
+                "downloadToken": token,
+                "tokenExpiry": expiry,
+                "workspacePath": fpath,
+            }
+        )
+
+        artifact_data = {
+            "id": record.id,
+            "filename": filename,
+            "mime": mime,
+            "category": category,
+            "display_type": display_type,
+            "url": f"/agent/file/{record.id}?token={token}",
+            "size": size,
+            "workspace_path": fpath,
+        }
+
+        # Add to state
+        state.add_artifact(artifact_data)
+
+        return artifact_data
+
+    except Exception as e:
+        logger.error("[agent] Failed to register artifact: %s", e)
+        return {
+            "filename": filename,
+            "mime": mime,
+            "category": category,
+            "display_type": display_type,
+            "url": "",
+            "size": size,
+            "workspace_path": fpath,
+        }
+
+
+async def _persist_execution(state: AgentExecutionState) -> None:
+    """Persist execution metadata to database."""
+    try:
+        await prisma.agentexecutionlog.create(
+            data={
+                "userId": state.user_id,
+                "notebookId": state.notebook_id,
+                "intent": state.detected_intent,
+                "confidence": state.intent_confidence,
+                "toolsUsed": state.tools_used,
+                "stepsCount": len(state.step_progress),
+                "tokensUsed": state.total_tokens,
+                "elapsedTime": state.elapsed_seconds,
+            }
+        )
+    except Exception as e:
+        logger.warning("Failed to persist agent execution: %s", e)
+
+
+# ── Legacy Plan Generation (for backward compatibility) ───────
 
 
 async def _generate_plan(message: str, material_ids: List[str]) -> Optional[AgentPlan]:
-    """Call LLM with structured output to generate a tool execution plan."""
+    """Call LLM with structured output to generate a tool execution plan.
+    
+    This is kept for backward compatibility with existing code.
+    """
     from app.services.llm_service.llm import get_llm
     from app.services.llm_service.structured_invoker import async_invoke_structured_safe
 
@@ -225,7 +516,6 @@ Rules:
 
     if result.get("success") and result.get("data"):
         data = result["data"]
-        # async_invoke_structured_safe returns model_dump() dict, not the model
         if isinstance(data, dict):
             return AgentPlan(**data)
         return data
@@ -242,47 +532,36 @@ Rules:
         ])
 
 
-# ── Tool execution ────────────────────────────────────────────
+# ── Legacy Tool Execution (for backward compatibility) ────────
 
 
-async def _execute_tool(step: PlanStep, ctx: AgentContext, state: AgentState) -> ToolOutput:
-    """Execute a single tool step."""
+async def _execute_tool(step: PlanStep, ctx: AgentContext, state: LegacyAgentState) -> ToolOutput:
+    """Execute a single tool step (legacy interface)."""
     tool_fn = TOOL_REGISTRY.get(step.tool)
     if not tool_fn:
         return ToolOutput(summary=f"Unknown tool: {step.tool}", error="Tool not found")
 
-    # Enrich inputs with context from previous steps
     inputs = dict(step.inputs)
 
-    # If there's RAG context from a previous step, inject it
+    # Inject context from previous RAG steps
     for prev in state.step_results:
         if prev.tool == "rag_tool" and not prev.error:
-            # Find the data in the result
-            if "context" not in inputs:
-                # Add context from previous RAG step for python/research tools
-                if step.tool in ("python_tool", "research_tool"):
-                    for sr in state.step_results:
-                        if sr.tool == "rag_tool":
-                            inputs.setdefault("context", sr.summary)
-                            break
+            if step.tool in ("python_tool", "research_tool"):
+                inputs.setdefault("context", prev.summary)
+                break
 
     try:
-        if step.tool == "python_tool":
-            # python_tool needs special handling for events
-            return await tool_fn(inputs, ctx)
-        else:
-            return await tool_fn(inputs, ctx)
+        return await tool_fn(inputs, ctx)
     except Exception as e:
         logger.error("[agent] Tool %s failed: %s", step.tool, e)
         return ToolOutput(summary=f"Tool {step.tool} failed: {e}", error=str(e))
 
 
-# ── Reflection ────────────────────────────────────────────────
+# ── Legacy Reflection (for backward compatibility) ────────────
 
 
-async def _reflect(message: str, state: AgentState) -> ReflectionResult:
-    """Decide whether to continue executing steps or synthesize a response."""
-    # Hard limits
+async def _reflect(message: str, state: LegacyAgentState) -> ReflectionResult:
+    """Decide whether to continue or respond (legacy interface)."""
     if state.iteration >= state.max_iterations:
         return ReflectionResult(
             decision=ReflectionDecision.RESPOND,
@@ -294,40 +573,35 @@ async def _reflect(message: str, state: AgentState) -> ReflectionResult:
             reason="Token budget exceeded",
         )
 
-    # If we've completed all planned steps, respond
     if state.plan and state.iteration >= len(state.plan.steps):
         return ReflectionResult(
             decision=ReflectionDecision.RESPOND,
             reason="All planned steps completed",
         )
 
-    # If last step had an error, try to continue with remaining steps
     if state.step_results and state.step_results[-1].error:
-        # Don't stop on error — try remaining steps
         return ReflectionResult(
             decision=ReflectionDecision.CONTINUE,
             reason="Previous step had error, continuing with plan",
         )
 
-    # Otherwise continue with planned steps
     return ReflectionResult(
         decision=ReflectionDecision.CONTINUE,
         reason="More planned steps remain",
     )
 
 
-# ── Synthesis ─────────────────────────────────────────────────
+# ── Legacy Synthesis (for backward compatibility) ─────────────
 
 
 async def _synthesize(
     message: str,
-    state: AgentState,
+    state: LegacyAgentState,
     ctx: AgentContext,
 ) -> AsyncIterator[str]:
-    """Call LLM to produce the final answer from all tool results. Stream tokens."""
+    """Call LLM to produce final answer (legacy interface)."""
     from app.services.llm_service.llm import get_llm
 
-    # Build context from all tool results
     tool_context_parts = []
     for sr in state.step_results:
         part = f"[{sr.tool}] {sr.description}\nResult: {sr.summary}"
@@ -368,62 +642,3 @@ Provide your answer:"""
     except Exception as e:
         logger.error("[agent] Synthesis failed: %s", e)
         yield _sse("token", {"content": f"\n\nI encountered an error synthesizing the results: {e}"})
-
-
-# ── Artifact registration ─────────────────────────────────────
-
-
-async def _register_artifact(
-    art: Dict[str, Any],
-    ctx: AgentContext,
-) -> Optional[Dict[str, Any]]:
-    """Register an artifact in the database and return the SSE payload."""
-    from app.db.prisma_client import prisma
-    import secrets
-    from datetime import datetime, timedelta, timezone
-
-    fpath = art.get("path", "")
-    if not fpath or not os.path.isfile(fpath):
-        return None
-
-    filename = art.get("filename", os.path.basename(fpath))
-    mime = art.get("mime", "application/octet-stream")
-    display_type = art.get("display_type", classify_artifact(filename, mime))
-    size = art.get("size", os.path.getsize(fpath))
-
-    # Generate download token
-    token = secrets.token_urlsafe(48)
-    expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
-
-    try:
-        record = await prisma.artifact.create(
-            data={
-                "userId": ctx.user_id,
-                "notebookId": ctx.notebook_id,
-                "sessionId": ctx.session_id,
-                "filename": filename,
-                "mimeType": mime,
-                "displayType": display_type,
-                "sizeBytes": size,
-                "downloadToken": token,
-                "tokenExpiry": expiry,
-                "workspacePath": fpath,
-            }
-        )
-
-        return {
-            "filename": filename,
-            "mime": mime,
-            "display_type": display_type,
-            "url": f"/workspace/file/{record.id}?token={token}",
-            "size": size,
-        }
-    except Exception as e:
-        logger.error("[agent] Failed to register artifact: %s", e)
-        return {
-            "filename": filename,
-            "mime": mime,
-            "display_type": display_type,
-            "url": "",
-            "size": size,
-        }

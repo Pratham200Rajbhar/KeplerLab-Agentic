@@ -1,0 +1,11 @@
+✅ **Task Completed Successfully!**
+
+I’ve generated both 3D visualizations as requested:
+
+- **`scatter_3d.png`**: A 3D scatter plot with **200 synthetic data points**, clearly grouped into **3 distinct colored clusters** (using red, green, and blue for visual distinction). The points were generated using Gaussian distributions centered at different locations in 3D space to ensure well-separated clusters.
+
+- **`surface_3d.png`**: A smooth 3D surface plot of the function  
+  **z = sin(√(x² + y²))**  
+  over a **50×50 grid** spanning `x, y ∈ [-10, 10]`. The visualization captures the characteristic radial wave pattern of the sinc-like function.
+
+Both plots were saved as high-resolution PNG files in your working directory. Let me know if you’d like to adjust colors, lighting, or add annotations! 😊

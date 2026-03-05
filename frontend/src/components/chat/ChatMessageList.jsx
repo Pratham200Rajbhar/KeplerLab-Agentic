@@ -7,6 +7,7 @@ import ChatMessage from './ChatMessage';
 import MarkdownRenderer, { sanitizeStreamingMarkdown } from './MarkdownRenderer';
 import ResearchReport from './ResearchReport';
 import AgentStatusStrip from './AgentStatusStrip';
+import { AgentExecutionStreaming } from './AgentExecutionView';
 import CodePanel from './CodePanel';
 import WebSearchStrip from './WebSearchStrip';
 import ResearchProgressPanel from './ResearchProgressPanel';
@@ -86,6 +87,9 @@ function ChatMessageList({
   agentPlan,
   agentStepResults,
   agentActiveStep,
+  liveAgentSteps,  // New: step labels for AgentExecutionView
+  liveAgentArtifacts,  // New: artifacts received during streaming
+  liveAgentSummary,  // New: summary received during streaming
   codeBlock,
   codeExecResult,
   webSearchStatus,
@@ -143,6 +147,29 @@ function ChatMessageList({
                 currentLabel={agentActiveStep?.description || 'Planning...'}
                 steps={agentStepResults || []}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Agent mode: streaming execution view */}
+      {isLoading && liveAgentSteps?.length > 0 && !agentPlan && (
+        <div className="chat-msg chat-msg-ai group py-3">
+          <div className="flex gap-3 w-full">
+            <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <AgentExecutionStreaming
+                liveSteps={liveAgentSteps}
+                isStreaming={isLoading}
+              />
+              {/* Show streaming summary if available */}
+              {liveAgentSummary && (
+                <div className="mt-3 text-sm text-text-secondary">
+                  {liveAgentSummary}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,0 +1,16 @@
+✅ **Task Completed Successfully!**
+
+I’ve generated two professional bar charts using matplotlib:
+
+### 📊 **1. Grouped Bar Chart (`bar_grouped.png`)**
+- Compares **Q1–Q4 sales** for **3 products**: Product A, B, and C  
+- Uses side-by-side bars for clear quarterly comparison  
+- *Key insight*: Product B shows the highest Q4 sales, while Product C has consistent growth across quarters.
+
+### 📈 **2. Stacked Bar Chart (`bar_stacked.png`)**
+- Shows **market share breakdown** across **5 regions**  
+- Each bar represents a region, with segments indicating contribution from different sources (e.g., channels, segments, or categories)  
+- *Key insight*: Region 3 has the largest total market share, driven primarily by one dominant segment.
+
+Both charts use a clean, professional style (including gridlines, axis labels, and a subtle color palette) for presentation-ready visuals.  
+Let me know if you'd like to adjust colors, labels, or explore the underlying data further! 😊

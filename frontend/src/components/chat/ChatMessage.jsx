@@ -11,9 +11,14 @@ import OutputRenderer from './OutputRenderer';
 import BlockHoverMenu from './BlockHoverMenu';
 import CommandBadge from './CommandBadge';
 import AgentStatusStrip from './AgentStatusStrip';
+import AgentExecutionView from './AgentExecutionView';
+import ArtifactGallery from './ArtifactGallery';
+import ResultSummary from './ResultSummary';
+import TechnicalDetails from './TechnicalDetails';
 import CodePanel from './CodePanel';
 import WebSources from './WebSources';
 import WebSearchStrip from './WebSearchStrip';
+import { downloadArtifactSecure } from '@/lib/api/agent';
 
 const TOOL_BADGE = {
   rag_tool:       { Icon: Search,        label: 'RAG Search' },
@@ -193,6 +198,24 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
     );
   };
 
+  // Handle artifact download - must be before early return for user messages
+  const handleArtifactDownload = useCallback(async (artifact) => {
+    try {
+      await downloadArtifactSecure(artifact);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Fallback to direct download
+      if (artifact.downloadUrl) {
+        const link = document.createElement('a');
+        link.href = artifact.downloadUrl;
+        link.download = artifact.filename || 'download';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  }, []);
+
   if (isUser) {
     return (
       <div className="chat-msg chat-msg-user group flex justify-end py-3 px-1">
@@ -256,6 +279,25 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
   // Build step results for AgentStatusStrip from persisted step_results or step_log
   const agentStepResults = agentMeta?.step_results || [];
   const agentPlan = agentMeta?.plan || null;
+  
+  // Extract agent-specific data
+  const agentSteps = agentMeta?.steps || agentMeta?.step_log || [];
+  const agentSummary = agentMeta?.summary || null;
+  const agentCode = agentMeta?.code_block || agentMeta?.generated_code || null;
+  const agentLogs = agentMeta?.logs || [];
+  const agentToolOutputs = agentMeta?.tool_outputs || [];
+  const totalTime = agentMeta?.total_time || 0;
+
+  // Normalize artifacts for the gallery
+  const normalizedArtifacts = allArtifacts.map((art, idx) => ({
+    id: art.artifact_id || art.id || `artifact-${message.id}-${idx}`,
+    filename: art.filename || art.name || 'file',
+    mimeType: art.mime || art.mimeType || '',
+    displayType: art.display_type || art.displayType || 'file_card',
+    category: art.category || null,
+    downloadUrl: art.url || art.download_url || art.downloadUrl || '',
+    size: art.size_bytes || art.sizeBytes || art.size || 0,
+  }));
 
   return (
     <div className="chat-msg chat-msg-ai group py-5">
@@ -269,6 +311,23 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
               currentLabel="Agent execution"
               steps={agentStepResults}
             />
+          )}
+
+          {/* ── New Agent mode: execution view with steps ── */}
+          {intent === 'AGENT' && agentSteps.length > 0 && agentStepResults.length === 0 && (
+            <AgentExecutionView
+              steps={agentSteps.map((step, idx) => ({
+                id: step.id || `step-${idx}`,
+                label: step.label || step.tool || step,
+                status: step.status || 'completed',
+              }))}
+              isExecuting={!totalTime}
+            />
+          )}
+
+          {/* ── Agent mode: result summary ── */}
+          {intent === 'AGENT' && agentSummary && (
+            <ResultSummary summary={agentSummary} totalTime={totalTime} />
           )}
 
           {/* ── Code mode: code block ── */}
@@ -285,13 +344,30 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
           {/* ── Generic content ── */}
           {renderAIContent()}
 
-          {/* Inline artifacts rendered by display_type */}
-          {allArtifacts.length > 0 && (
+          {/* ── Agent mode: Artifact gallery with grouping ── */}
+          {intent === 'AGENT' && normalizedArtifacts.length > 0 && (
+            <ArtifactGallery
+              artifacts={normalizedArtifacts}
+              onDownload={handleArtifactDownload}
+            />
+          )}
+
+          {/* ── Non-agent mode: Inline artifacts rendered by display_type ── */}
+          {intent !== 'AGENT' && allArtifacts.length > 0 && (
             <div className="mt-4 space-y-3">
               {allArtifacts.map((art, idx) => (
                 <OutputRenderer key={art.artifact_id || idx} artifact={art} />
               ))}
             </div>
+          )}
+
+          {/* ── Agent mode: Technical details (collapsed) ── */}
+          {intent === 'AGENT' && (agentCode || agentLogs.length > 0 || agentToolOutputs.length > 0) && (
+            <TechnicalDetails
+              code={agentCode}
+              logs={agentLogs}
+              toolOutputs={agentToolOutputs}
+            />
           )}
 
           {/* ── Web search mode: sources ── */}

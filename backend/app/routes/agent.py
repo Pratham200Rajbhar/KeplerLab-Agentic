@@ -1,7 +1,9 @@
 """Agent route — endpoints for /agent, /code execute, /web, /research modes.
 
+POST /agent/execute       — Full agent pipeline execution (SSE)
 POST /agent/execute-code  — Phase 2 code execution (user clicks Run)
-GET  /workspace/file/{id}  — Serve artifact files with token auth
+GET  /agent/file/{id}     — Serve artifact files with token auth
+POST /agent/refresh-token — Refresh artifact download token
 """
 
 import json
@@ -29,6 +31,14 @@ _SSE_HEADERS = {
 
 # ── Schemas ───────────────────────────────────────────────────
 
+class AgentExecuteRequest(BaseModel):
+    """Request schema for agent execution."""
+    message: str = Field(..., min_length=1, max_length=10000, description="User message/request")
+    notebook_id: str = Field(..., description="Notebook ID")
+    material_ids: List[str] = Field(default_factory=list, description="IDs of materials to use")
+    session_id: Optional[str] = Field(None, description="Session ID for context")
+
+
 class ExecuteCodeRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=100000)
     notebook_id: str
@@ -42,6 +52,65 @@ class RunGeneratedCodeRequest(BaseModel):
     notebook_id: str
     session_id: Optional[str] = None
     timeout: int = Field(default=30, ge=5, le=120)
+
+
+class RefreshTokenRequest(BaseModel):
+    artifact_id: str
+
+
+# ── POST /agent/execute — Full agent pipeline ────────────────
+
+
+@router.post("/execute")
+async def execute_agent(
+    request: AgentExecuteRequest,
+    current_user=Depends(get_current_user),
+):
+    """Execute the full agent pipeline. Returns SSE stream.
+    
+    This is the main endpoint for agent execution. It:
+    1. Analyzes the user request
+    2. Plans execution steps
+    3. Executes tools (RAG, Python sandbox, web search, etc.)
+    4. Generates artifacts (charts, models, reports)
+    5. Returns structured results with streaming progress
+    
+    Events emitted:
+    - step: Current execution step/status
+    - intent: Detected task type and confidence  
+    - agent_start: Execution plan
+    - code_generated: Generated Python code
+    - artifact: Generated file info
+    - tool_result: Tool execution result
+    - summary: Execution summary
+    - token: Response text tokens
+    - done: Completion with metadata
+    - error: Error information
+    """
+    from app.services.agent.pipeline import stream_agent
+    import uuid
+
+    session_id = request.session_id or str(uuid.uuid4())
+
+    async def generate():
+        try:
+            async for event in stream_agent(
+                message=request.message,
+                notebook_id=request.notebook_id,
+                material_ids=request.material_ids,
+                session_id=session_id,
+                user_id=str(current_user.id),
+            ):
+                yield event
+        except Exception as e:
+            logger.error("Agent execution failed: %s", e, exc_info=True)
+            yield _sse_event("error", {"error": str(e)})
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers=_SSE_HEADERS,
+    )
 
 
 # ── POST /agent/execute-code — Phase 2 code execution ────────
@@ -251,6 +320,170 @@ async def serve_artifact(
         filename=record.filename,
         media_type=record.mimeType,
     )
+
+
+# ── POST /agent/refresh-token — Refresh artifact download token
+
+
+@router.post("/refresh-token")
+async def refresh_artifact_token(
+    request: RefreshTokenRequest,
+    current_user=Depends(get_current_user),
+):
+    """Refresh download token for an artifact.
+    
+    Use this when a token has expired but the artifact is still needed.
+    """
+    import secrets
+    from datetime import datetime, timedelta, timezone
+
+    record = await prisma.artifact.find_unique(where={"id": request.artifact_id})
+    
+    if not record:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    
+    # Verify ownership
+    if record.userId != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Generate new token
+    new_token = secrets.token_urlsafe(48)
+    new_expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
+    
+    await prisma.artifact.update(
+        where={"id": request.artifact_id},
+        data={
+            "downloadToken": new_token,
+            "tokenExpiry": new_expiry,
+        }
+    )
+    
+    return {
+        "artifact_id": request.artifact_id,
+        "url": f"/agent/file/{request.artifact_id}?token={new_token}",
+        "expires_at": new_expiry.isoformat(),
+    }
+
+
+# ── GET /agent/artifacts — List user's artifacts ─────────────
+
+
+@router.get("/artifacts")
+async def list_artifacts(
+    notebook_id: Optional[str] = Query(None, description="Filter by notebook"),
+    session_id: Optional[str] = Query(None, description="Filter by session"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    limit: int = Query(50, ge=1, le=200, description="Max results"),
+    current_user=Depends(get_current_user),
+):
+    """List artifacts for the current user.
+    
+    Artifacts can be filtered by notebook, session, or category.
+    """
+    from datetime import datetime, timezone
+
+    where_clause = {"userId": str(current_user.id)}
+    
+    if notebook_id:
+        where_clause["notebookId"] = notebook_id
+    if session_id:
+        where_clause["sessionId"] = session_id
+    if category:
+        where_clause["displayType"] = category
+
+    artifacts = await prisma.artifact.find_many(
+        where=where_clause,
+        order={"createdAt": "desc"},
+        take=limit,
+    )
+    
+    now = datetime.now(timezone.utc)
+    
+    result = []
+    for art in artifacts:
+        is_expired = art.tokenExpiry < now
+        result.append({
+            "id": art.id,
+            "filename": art.filename,
+            "mime": art.mimeType,
+            "display_type": art.displayType,
+            "size": art.sizeBytes,
+            "url": f"/agent/file/{art.id}?token={art.downloadToken}" if not is_expired else None,
+            "is_expired": is_expired,
+            "created_at": art.createdAt.isoformat(),
+            "notebook_id": art.notebookId,
+            "session_id": art.sessionId,
+        })
+    
+    return {"artifacts": result, "count": len(result)}
+
+
+# ── GET /agent/artifacts/by-category — Group artifacts by category
+
+
+@router.get("/artifacts/by-category")
+async def get_artifacts_by_category(
+    notebook_id: Optional[str] = Query(None, description="Filter by notebook"),
+    session_id: Optional[str] = Query(None, description="Filter by session"),
+    current_user=Depends(get_current_user),
+):
+    """Get artifacts grouped by category.
+    
+    Categories: chart, table, model, report, dataset, file
+    """
+    from datetime import datetime, timezone
+    from collections import defaultdict
+
+    where_clause = {"userId": str(current_user.id)}
+    
+    if notebook_id:
+        where_clause["notebookId"] = notebook_id
+    if session_id:
+        where_clause["sessionId"] = session_id
+
+    artifacts = await prisma.artifact.find_many(
+        where=where_clause,
+        order={"createdAt": "desc"},
+    )
+    
+    now = datetime.now(timezone.utc)
+    grouped = defaultdict(list)
+    
+    # Category mapping based on display type
+    category_map = {
+        "image": "charts",
+        "csv_table": "tables",
+        "model_card": "models",
+        "pdf_embed": "reports",
+        "text_preview": "files",
+        "json_tree": "files",
+        "file_card": "files",
+    }
+    
+    for art in artifacts:
+        is_expired = art.tokenExpiry < now
+        category = category_map.get(art.displayType, "files")
+        
+        grouped[category].append({
+            "id": art.id,
+            "filename": art.filename,
+            "mime": art.mimeType,
+            "display_type": art.displayType,
+            "size": art.sizeBytes,
+            "url": f"/agent/file/{art.id}?token={art.downloadToken}" if not is_expired else None,
+            "is_expired": is_expired,
+            "created_at": art.createdAt.isoformat(),
+        })
+    
+    return {
+        "charts": grouped.get("charts", []),
+        "tables": grouped.get("tables", []),
+        "models": grouped.get("models", []),
+        "reports": grouped.get("reports", []),
+        "datasets": grouped.get("datasets", []),
+        "files": grouped.get("files", []),
+        "total_count": len(artifacts),
+    }
 
 
 # ── Helpers ───────────────────────────────────────────────────

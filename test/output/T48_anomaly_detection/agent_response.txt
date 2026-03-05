@@ -1,0 +1,23 @@
+Great! Here's a summary of what was accomplished:
+
+✅ **Dataset Created**  
+- Synthetic sensor data with **500 rows** and **3 features**  
+- **~5% anomalies injected** (25 anomalies, as expected)
+
+✅ **Anomaly Detection Applied**  
+- **Isolation Forest** and **Local Outlier Factor (LOF)** were trained and used to detect anomalies  
+- Both models identified outliers based on their respective scoring mechanisms
+
+✅ **Key Results**  
+- **Isolation Forest** flagged **27 anomalies**  
+- **LOF** flagged **24 anomalies**  
+- **Agreement between methods**: 18 points were flagged as anomalies by *both* models (70.4% overlap among LOF detections, 66.7% among Isolation Forest detections)
+
+✅ **Generated Files**  
+- 📄 `anomaly_predictions.csv` — Contains original data plus predicted labels (`isolation_forest_label`, `lof_label`) and anomaly scores  
+- 📊 `anomaly_scatter_plots.png` — Side-by-side scatter plots (using first two features) showing normal (blue) and anomalous (red) points for each method  
+- 📊 `anomaly_score_distributions.png` — Histograms of anomaly scores for both models  
+- 📊 `agreement_heatmap.png` — Heatmap visualizing overlap between the two methods  
+- 🧠 `isolation_forest_model.pkl` and `lof_model.pkl` — Saved trained models for future use
+
+Let me know if you'd like to explore any specific results or adjust parameters! 😊
