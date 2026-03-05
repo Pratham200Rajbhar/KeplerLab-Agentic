@@ -49,12 +49,12 @@ from app.routes.jobs import router as jobs_router
 from app.routes.ppt import router as ppt_router
 from app.routes.mindmap import router as mindmap_router
 from app.routes.health import router as health_router
-from app.routes.agent import router as agent_router
 from app.routes.websocket_router import router as ws_router
 from app.routes.search import router as search_router
 from app.routes.proxy import router as proxy_router
 from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
+from app.routes.agent import router as agent_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -260,11 +260,11 @@ app.include_router(chat_router)
 app.include_router(jobs_router)
 app.include_router(ppt_router)
 app.include_router(mindmap_router)
-app.include_router(agent_router)
 app.include_router(search_router)
 app.include_router(proxy_router)
 app.include_router(explainer_router)
 app.include_router(podcast_live_router)
+app.include_router(agent_router)
 
 # WebSocket channels (no REST replacement — live state push only)
 app.include_router(ws_router)

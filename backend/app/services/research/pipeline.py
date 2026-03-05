@@ -1,15 +1,18 @@
-"""Deep Web Research Pipeline — 5-step structured research.
+"""Deep Web Research Pipeline — iterative multi-pass structured research.
 
 Triggered ONLY when ``intent_override = "WEB_RESEARCH"`` (from /research slash
 command).  This is a dedicated pipeline, NOT the agent loop.
 
-Steps
------
-1. Query Decomposer — break user query into 4-6 sub-questions
-2. Parallel Web Search — concurrent search for all sub-questions
-3. Parallel Content Fetching — fetch top URLs, extract text
-4. Synthesizer — LLM cross-references all sources into structured JSON
-5. Report Formatter — convert JSON → markdown with streaming + citations
+Iterative approach (3 passes):
+1. Decompose query into sub-questions
+2. For each iteration:
+   a. Search web for current queries
+   b. Fetch content from top URLs
+   c. Partial synthesis + gap analysis → generate follow-up queries
+3. Final synthesis → markdown report with citations
+
+SSE events emitted: research_start, research_phase, research_source, token,
+citations, done, error.
 """
 
 from __future__ import annotations
@@ -22,7 +25,6 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 import httpx
-from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.services.llm_service.llm import get_llm
@@ -35,6 +37,7 @@ _FETCH_TIMEOUT = 10  # seconds per URL
 _MAX_URLS_PER_SUBQ = 3
 _MAX_TOTAL_URLS = 15
 _SEARCH_RESULTS_PER_SUBQ = 5
+_MAX_ITERATIONS = 3  # research passes
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -45,53 +48,59 @@ def _sse(event_type: str, data: Any) -> str:
 
 
 async def _web_search(query: str, n: int = _SEARCH_RESULTS_PER_SUBQ) -> List[Dict[str, str]]:
-    """Search the web using the existing research graph helpers or DuckDuckGo.
+    """Search the web via external search service.
 
     Returns list of {title, url, snippet}.
     """
-    try:
-        from app.services.agent.subgraphs.research_graph import _execute_searches, _generate_queries
-        urls = await _execute_searches([query], time.time())
-        return [{"title": "", "url": u, "snippet": ""} for u in urls[:n]]
-    except Exception:
-        pass
+    from app.core.config import settings
 
-    # Fallback: DuckDuckGo lite
     try:
-        from duckduckgo_search import DDGS
-        results = []
-        with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=n):
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.post(
+                f"{settings.SEARCH_SERVICE_URL}/api/search",
+                json={"query": query, "engine": "duckduckgo"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for r in data.get("organic_results", [])[:n]:
                 results.append({
                     "title": r.get("title", ""),
-                    "url": r.get("href", r.get("link", "")),
-                    "snippet": r.get("body", ""),
+                    "url": r.get("link", ""),
+                    "snippet": r.get("snippet", ""),
                 })
-        return results
+            return results
     except Exception as exc:
         logger.warning("[research] Web search failed: %s", exc)
         return []
 
 
 async def _fetch_url(url: str) -> Optional[Dict[str, str]]:
-    """Fetch a URL and extract text content. Returns None on failure."""
+    """Fetch a URL via external scrape service. Returns None on failure."""
+    from app.core.config import settings
+    from urllib.parse import urlparse
+
     try:
         async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT, follow_redirects=True) as client:
-            resp = await client.get(url, headers={"User-Agent": "KeplerLab/1.0 Research Bot"})
+            resp = await client.post(
+                f"{settings.SEARCH_SERVICE_URL}/api/scrape",
+                json={"url": url},
+            )
             resp.raise_for_status()
-            html = resp.text
+            scrape_data = resp.json()
 
-        soup = BeautifulSoup(html, "html.parser")
-        # Remove nav, footer, script, style
-        for tag in soup(["nav", "footer", "script", "style", "header", "aside"]):
-            tag.decompose()
-
-        title = soup.title.string.strip() if soup.title and soup.title.string else ""
-        body = soup.get_text(separator="\n", strip=True)
-
-        # Trim to reasonable size
-        body = body[:6000]
-        from urllib.parse import urlparse
+        # Scrape API returns {"content": {"url", "title", "content": [paragraphs]}}
+        inner = scrape_data.get("content", scrape_data)
+        if isinstance(inner, dict):
+            title = inner.get("title", "")
+            raw_content = inner.get("content", "")
+            if isinstance(raw_content, list):
+                body = " ".join(raw_content)[:6000]
+            else:
+                body = str(raw_content)[:6000]
+        else:
+            title = scrape_data.get("title", "")
+            body = str(inner)[:6000]
         domain = urlparse(url).netloc
 
         return {
@@ -288,6 +297,44 @@ def _format_report(synthesis: Dict[str, Any], sources: List[Dict[str, str]]) -> 
     return "\n".join(parts)
 
 
+# ── Gap Analysis (for iterative research) ─────────────────────
+
+async def _identify_gaps(
+    query: str,
+    synthesis: Dict[str, Any],
+    previous_queries: List[str],
+) -> List[Dict[str, str]]:
+    """Analyze synthesis for gaps and generate follow-up queries."""
+    llm = get_llm(temperature=0.3)
+
+    findings_summary = json.dumps(synthesis.get("key_findings", [])[:5], default=str)
+    conflicts_summary = json.dumps(synthesis.get("conflicting_information", [])[:3], default=str)
+
+    prompt = (
+        "You are a research gap analyst. Based on the original query and findings so far, "
+        "identify 2-3 information gaps or areas needing deeper investigation.\n\n"
+        f"Original query: {query}\n\n"
+        f"Key findings so far:\n{findings_summary}\n\n"
+        f"Conflicting information:\n{conflicts_summary}\n\n"
+        f"Previous search queries (avoid repeating):\n{json.dumps(previous_queries)}\n\n"
+        "Return ONLY a JSON array of follow-up queries:\n"
+        '[{"sub_question": "...", "search_query": "...", "reason": "..."}]\n\n'
+        'If the research is sufficiently complete, return an empty array: []'
+    )
+
+    resp = await llm.ainvoke(prompt)
+    raw = getattr(resp, "content", str(resp)).strip()
+
+    import re
+    try:
+        m = re.search(r"\[.*\]", raw, re.DOTALL)
+        items = json.loads(m.group()) if m else []
+    except Exception:
+        items = []
+
+    return items
+
+
 # ── Public Streaming Entry Point ──────────────────────────────
 
 async def stream_research(
@@ -296,83 +343,155 @@ async def stream_research(
     notebook_id: str,
     session_id: str,
 ) -> AsyncIterator[str]:
-    """Run the 5-step research pipeline and stream SSE events.
+    """Run the iterative multi-pass research pipeline and stream SSE events.
 
-    Yields SSE events: research_phase, research_source, token, citations, done.
+    Yields SSE events: research_start, research_phase, research_source, token,
+    citations, done, error.
     """
     start_time = time.time()
+    all_sources: List[Dict[str, str]] = []
+    all_queries_used: List[str] = []
+    seen_urls: set = set()
 
     try:
-        # Step 1: Decompose
+        # Emit research_start
+        yield _sse("research_start", {
+            "max_iterations": _MAX_ITERATIONS,
+        })
+
+        # ── Initial Decomposition ──
         yield _sse("research_phase", {
-            "phase": "decomposing",
-            "detail": "Breaking query into sub-questions",
+            "iteration": 0,
+            "phase": "searching",
+            "label": "Breaking query into sub-questions",
         })
         sub_questions = await _decompose_query(query)
+        current_queries = sub_questions
+        all_queries_used.extend([sq["search_query"] for sq in sub_questions])
+
         yield _sse("research_phase", {
-            "phase": "decomposing",
-            "detail": f"Generated {len(sub_questions)} sub-questions",
+            "iteration": 0,
+            "phase": "searching",
+            "label": f"Generated {len(sub_questions)} sub-questions",
+            "queries": [sq["search_query"] for sq in sub_questions],
         })
 
-        # Step 2: Parallel Search
-        yield _sse("research_phase", {
-            "phase": "searching",
-            "detail": f"Running {len(sub_questions)} parallel searches",
-        })
-        search_results = await _parallel_search(sub_questions)
-        yield _sse("research_phase", {
-            "phase": "searching",
-            "detail": f"Found {len(search_results)} unique URLs",
-        })
+        synthesis = None
 
-        if not search_results:
-            yield _sse("token", {
-                "content": "No search results found. Try rephrasing your query.",
+        for iteration in range(1, _MAX_ITERATIONS + 1):
+            # ── Search ──
+            yield _sse("research_phase", {
+                "iteration": iteration,
+                "phase": "searching",
+                "label": f"Iteration {iteration}: searching {len(current_queries)} queries",
+                "queries": [sq["search_query"] for sq in current_queries],
             })
-            yield _sse("done", {})
-            return
+            search_results = await _parallel_search(current_queries)
 
-        # Step 3: Parallel Fetch
-        yield _sse("research_phase", {
-            "phase": "fetching",
-            "detail": f"Fetching content from {min(len(search_results), _MAX_TOTAL_URLS)} sources",
-        })
-        sources = await _parallel_fetch(search_results)
-        yield _sse("research_phase", {
-            "phase": "fetching",
-            "detail": f"Successfully fetched {len(sources)} sources",
-        })
+            # Deduplicate vs. previously seen
+            new_results = []
+            for r in search_results:
+                url = r.get("url", "")
+                if url and url not in seen_urls:
+                    seen_urls.add(url)
+                    new_results.append(r)
 
-        # Emit individual source events
-        for i, s in enumerate(sources):
-            yield _sse("research_source", {
-                "source": {
-                    "index": i + 1,
+            if not new_results and not all_sources:
+                yield _sse("token", {
+                    "content": "No search results found. Try rephrasing your query.",
+                })
+                yield _sse("done", {})
+                return
+
+            if not new_results:
+                yield _sse("research_phase", {
+                    "iteration": iteration,
+                    "phase": "searching",
+                    "label": "No new results found, skipping to synthesis",
+                })
+                break
+
+            # ── Fetch ──
+            yield _sse("research_phase", {
+                "iteration": iteration,
+                "phase": "reading",
+                "label": f"Fetching content from {min(len(new_results), _MAX_TOTAL_URLS)} sources",
+            })
+            sources = await _parallel_fetch(new_results)
+
+            # Emit individual source events
+            for s in sources:
+                yield _sse("research_source", {
+                    "index": len(all_sources) + 1,
                     "title": s.get("title", ""),
                     "url": s.get("url", ""),
                     "domain": s.get("domain", ""),
                     "snippet": s.get("text", "")[:200],
-                    "relevance_score": 0.0,  # Set by synthesizer
-                },
+                    "iteration_found": iteration,
+                })
+
+            all_sources.extend(sources)
+
+            yield _sse("research_phase", {
+                "iteration": iteration,
+                "phase": "reading",
+                "label": f"Fetched {len(sources)} sources (total: {len(all_sources)})",
             })
 
-        if not sources:
-            yield _sse("token", {
-                "content": "Could not fetch content from any sources. Try a different query.",
+            if not all_sources:
+                yield _sse("token", {
+                    "content": "Could not fetch content from any sources. Try a different query.",
+                })
+                yield _sse("done", {})
+                return
+
+            # ── Partial Synthesis ──
+            yield _sse("research_phase", {
+                "iteration": iteration,
+                "phase": "analyzing",
+                "label": f"Cross-referencing {len(all_sources)} sources",
             })
+            synthesis = await _synthesize(query, all_sources)
+
+            # ── Gap Analysis (skip on last iteration) ──
+            if iteration < _MAX_ITERATIONS:
+                yield _sse("research_phase", {
+                    "iteration": iteration,
+                    "phase": "analyzing",
+                    "label": "Identifying research gaps...",
+                })
+                follow_ups = await _identify_gaps(query, synthesis, all_queries_used)
+
+                if not follow_ups:
+                    yield _sse("research_phase", {
+                        "iteration": iteration,
+                        "phase": "analyzing",
+                        "label": "Research is sufficiently complete",
+                    })
+                    break
+
+                current_queries = follow_ups
+                all_queries_used.extend([fq["search_query"] for fq in follow_ups])
+
+                yield _sse("research_phase", {
+                    "iteration": iteration,
+                    "phase": "analyzing",
+                    "label": f"Found {len(follow_ups)} follow-up queries",
+                    "queries": [fq["search_query"] for fq in follow_ups],
+                })
+
+        # ── Final Report ──
+        if synthesis is None:
+            yield _sse("error", {"error": "No synthesis produced"})
             yield _sse("done", {})
             return
 
-        # Step 4: Synthesize
         yield _sse("research_phase", {
-            "phase": "synthesizing",
-            "detail": f"Cross-referencing {len(sources)} sources",
+            "status": "synthesizing",
+            "phase": "writing",
+            "label": "Writing research report...",
         })
-        synthesis = await _synthesize(query, sources)
-
-        # Step 5: Format & Stream Report
-        yield _sse("research_phase", {"phase": "formatting"})
-        report = _format_report(synthesis, sources)
+        report = _format_report(synthesis, all_sources)
 
         # Stream as token events
         CHUNK = 80
@@ -381,7 +500,7 @@ async def stream_research(
 
         # Final events
         citations = []
-        for i, s in enumerate(sources):
+        for i, s in enumerate(all_sources):
             citations.append({
                 "index": i + 1,
                 "title": s.get("title", ""),
@@ -403,10 +522,10 @@ async def stream_research(
                 "notebookId": notebook_id,
                 "query": query,
                 "report": report,
-                "sourcesCount": len(sources),
-                "queriesCount": len(sub_questions),
+                "sourcesCount": len(all_sources),
+                "queriesCount": len(all_queries_used),
                 "elapsedTime": elapsed,
-                "sourceUrls": [s.get("url", "") for s in sources],
+                "sourceUrls": [s.get("url", "") for s in all_sources],
             })
         except Exception as exc:
             logger.warning("[research] DB persist failed (non-fatal): %s", exc)

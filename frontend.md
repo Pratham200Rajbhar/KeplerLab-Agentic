@@ -1,1406 +1,1728 @@
 # KeplerLab Frontend — Complete Technical Documentation
 
+> **Application:** KeplerLab AI Learning Platform Frontend  
+> **Framework:** Next.js 16.1.6 + React 19.2.3  
+> **Styling:** Tailwind CSS 3.4  
+> **State Management:** Zustand 5  
+> **Last Updated:** March 2026
+
 ---
 
 ## Table of Contents
 
 1. [Overview](#1-overview)
-2. [Technology Stack](#2-technology-stack)
-3. [Project Structure](#3-project-structure)
-4. [Configuration & Environment](#4-configuration--environment)
-5. [Routing (Next.js App Router)](#5-routing-nextjs-app-router)
-6. [Middleware & Authentication Guard](#6-middleware--authentication-guard)
-7. [Global Providers & Theme](#7-global-providers--theme)
-8. [State Management (Zustand)](#8-state-management-zustand)
-    - [useAppStore](#useappstore)
-    - [useAuthStore](#useauthstore)
-    - [useChatStore](#usechatstore)
-    - [useMaterialStore](#usematerialstore)
-    - [useNotebookStore](#usenotebookstore)
-    - [useUIStore](#useuistore)
-    - [usePodcastStore](#usepodcaststore)
-    - [useToastStore](#usetoaststore)
-    - [useConfirmStore](#useconfirmstore)
-9. [API Layer](#9-api-layer)
-    - [Authentication & Token Management](#authentication--token-management)
-    - [API Modules](#api-modules)
-10. [Pages](#10-pages)
-    - [Home / Dashboard](#home--dashboard)
-    - [Auth Page](#auth-page)
-    - [Notebook Page](#notebook-page)
-    - [View Page](#view-page)
-11. [Components](#11-components)
-    - [Layout](#layout)
-    - [Chat Components](#chat-components)
-    - [Studio Components](#studio-components)
-    - [Mind Map Components](#mind-map-components)
-    - [Podcast Components](#podcast-components)
-    - [Presentation Components](#presentation-components)
-    - [Notebook Components](#notebook-components)
-    - [UI Components](#ui-components)
-    - [Viewer Components](#viewer-components)
-12. [Custom Hooks](#12-custom-hooks)
-13. [Slash Commands System](#13-slash-commands-system)
-14. [SSE (Server-Sent Events) Streaming](#14-sse-server-sent-events-streaming)
+2. [Project Directory Structure](#2-project-directory-structure)
+3. [Technology Stack & Dependencies](#3-technology-stack--dependencies)
+4. [Routing Architecture (Next.js App Router)](#4-routing-architecture)
+5. [Application Entry Points](#5-application-entry-points)
+6. [State Management — Zustand Stores](#6-state-management)
+7. [API Client Layer](#7-api-client-layer)
+8. [Authentication Flow](#8-authentication-flow)
+9. [Notebook Workspace Page](#9-notebook-workspace-page)
+10. [Components — Complete Reference](#10-components)
+    - 10.1 [Layout Components](#101-layout-components)
+    - 10.2 [Chat Components](#102-chat-components)
+    - 10.3 [Studio Components](#103-studio-components)
+    - 10.4 [Podcast Components](#104-podcast-components)
+    - 10.5 [MindMap Components](#105-mindmap-components)
+    - 10.6 [Presentation Components](#106-presentation-components)
+    - 10.7 [Notebook Components](#107-notebook-components)
+    - 10.8 [Viewer Components](#108-viewer-components)
+    - 10.9 [UI / Common Components](#109-ui--common-components)
+11. [Custom Hooks](#11-custom-hooks)
+12. [Slash Command System](#12-slash-command-system)
+13. [Feature Flows — End to End](#13-feature-flows)
+    - 13.1 [Auth Flow](#131-auth-flow)
+    - 13.2 [Material Upload](#132-material-upload)
+    - 13.3 [Chat (RAG + Intents)](#133-chat-rag--intents)
+    - 13.4 [Flashcard Generation](#134-flashcard-generation)
+    - 13.5 [Quiz Generation](#135-quiz-generation)
+    - 13.6 [Presentation Generation](#136-presentation-generation)
+    - 13.7 [Mind Map Generation](#137-mind-map-generation)
+    - 13.8 [Podcast Feature](#138-podcast-feature)
+    - 13.9 [Explainer Video](#139-explainer-video)
+    - 13.10 [Code Mode](#1310-code-mode)
+    - 13.11 [Research Mode](#1311-research-mode)
+    - 13.12 [Agent Mode](#1312-agent-mode)
+14. [Streaming (SSE) Implementation](#14-streaming-sse-implementation)
 15. [WebSocket Integration](#15-websocket-integration)
-16. [Styling](#16-styling)
-17. [Build & Deployment](#17-build--deployment)
-18. [End-to-End User Flows](#18-end-to-end-user-flows)
+16. [Theme & Styling System](#16-theme--styling-system)
+17. [Next.js Configuration](#17-nextjs-configuration)
+18. [Middleware](#18-middleware)
+19. [Error Handling](#19-error-handling)
+20. [Build & Deployment](#20-build--deployment)
 
 ---
 
 ## 1. Overview
 
-The KeplerLab frontend is a **Next.js 16 (App Router)** application built with **React 19** and styled with **Tailwind CSS**. It provides:
+KeplerLab frontend is a **Next.js 16 App Router** single-page application providing an AI-powered learning workspace. It features:
 
-- A **notebook-centric interface**: users create notebooks, upload source materials, and interact with AI tools
-- A **real-time chat interface** with SSE streaming, slash commands for intent routing, and rich response rendering
-- A **Studio panel** for generating flashcards, quizzes, presentations, mind maps, explainer videos, and podcasts
-- A **Podcast Studio** with audio playback, doubts, bookmarks, annotations, and export
-- A **Mind Map Canvas** powered by React Flow (`@xyflow/react`)
-- **Code execution REPL** with chart rendering
-- **Research mode** with progress tracking and source citations
-- Full **dark/light theme** support via `next-themes`
+- **Notebook management** — create and switch between named learning notebooks
+- **Material management** — upload PDFs, URLs, YouTube, text; view real-time processing status via WebSocket
+- **Multi-mode AI chat** — RAG, Agent, Code, Web Search, Research (via slash commands)
+- **Content generation panels** — Flashcards, Quiz, Presentation (PPT), MindMap
+- **AI Podcast** — generate and play host/guest podcast from materials with Q&A interruption
+- **Explainer Videos** — AI-narrated slide-by-slide video from presentations
+- **Dark mode** — default dark theme with light mode toggle
+- **Streaming UI** — all AI responses streamed token-by-token via SSE
 
----
-
-## 2. Technology Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16.1.6 (App Router) |
-| React | React 19.2.3 |
-| Styling | Tailwind CSS 3.4.17 |
-| State Management | Zustand 5.0.11 |
-| Charts / Graphs | @xyflow/react 12.10.1 (React Flow), dagre 0.8.5 |
-| Markdown | react-markdown 10.1.0 + remark-gfm + remark-math + rehype-katex + rehype-raw |
-| Math | KaTeX 0.16.33 |
-| Code Highlight | react-syntax-highlighter 16.1.1 |
-| PDF Export | jspdf 4.2.0 |
-| Image Export | html-to-image 1.11.13 |
-| Virtual List | react-window 2.2.7 |
-| Icons | lucide-react 0.576.0 |
-| Theme | next-themes 0.4.6 |
-| Linting | ESLint 9 + eslint-config-next |
-| Build | PostCSS, Autoprefixer |
+### Architecture Pattern
+```
+App Router Page → Zustand Store ↔ API Client → FastAPI Backend
+                     ↕
+               React Components
+```
 
 ---
 
-## 3. Project Structure
+## 2. Project Directory Structure
 
 ```
 frontend/
-├── Dockerfile
-├── eslint.config.mjs
-├── jsconfig.json               # Path aliases: @/ → src/
-├── next.config.mjs             # API proxy rewrites, standalone output
-├── package.json
+├── src/
+│   ├── app/                            # Next.js App Router
+│   │   ├── layout.jsx                  # Root layout (Inter + JetBrains fonts, metadata)
+│   │   ├── page.jsx                    # Home / notebook list dashboard
+│   │   ├── providers.jsx               # Theme + Auth initializer + Toast + Confirm
+│   │   ├── loading.jsx                 # Global loading state
+│   │   ├── error.jsx                   # Global error boundary
+│   │   ├── global-error.jsx            # Global error (layout-level)
+│   │   ├── not-found.jsx               # 404 page
+│   │   ├── auth/
+│   │   │   ├── layout.jsx              # Auth layout (centered card)
+│   │   │   └── page.jsx                # Login / Signup page
+│   │   ├── notebook/
+│   │   │   └── [id]/
+│   │   │       ├── layout.jsx          # Notebook layout wrapper
+│   │   │       └── page.jsx            # Main notebook workspace
+│   │   └── view/
+│   │       └── page.jsx                # Standalone viewer route (PPT/files)
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── Header.jsx              # Top navigation bar
+│   │   │   └── Sidebar.jsx             # Left material sidebar
+│   │   ├── chat/
+│   │   │   ├── ChatPanel.jsx           # Main chat container
+│   │   │   ├── ChatInputArea.jsx       # Message input + slash command UI
+│   │   │   ├── ChatMessage.jsx         # Individual message renderer
+│   │   │   ├── ChatMessageList.jsx     # Virtualized message list
+│   │   │   ├── ChatEmptyState.jsx      # Empty chat placeholder
+│   │   │   ├── ChatHistoryModal.jsx    # Session history selector
+│   │   │   ├── MarkdownRenderer.jsx    # Markdown + KaTeX + GFM renderer
+│   │   │   ├── OutputRenderer.jsx      # Code/table/chart output renderer
+│   │   │   ├── CodePanel.jsx           # Generated code viewer + run button
+│   │   │   ├── CopyButton.jsx          # Copy-to-clipboard button
+│   │   │   ├── BlockHoverMenu.jsx      # Per-paragraph hover actions
+│   │   │   ├── CommandBadge.jsx        # Active slash command badge in input
+│   │   │   ├── SlashCommandDropdown.jsx # Slash command suggestion popup
+│   │   │   ├── SlashCommandPills.jsx   # Row of commands below input
+│   │   │   ├── SuggestionDropdown.jsx  # Input suggestions dropdown
+│   │   │   ├── WebSources.jsx          # Web search source links
+│   │   │   ├── WebSearchStrip.jsx      # Animated search progress strip
+│   │   │   ├── ResearchProgress.jsx    # Research mode progress bar
+│   │   │   ├── ResearchProgressPanel.jsx # Detailed research status
+│   │   │   ├── ResearchReport.jsx      # Rendered research report with citations
+│   │   │   ├── AgentStatusStrip.jsx    # Agent mode step tracker
+│   │   │   ├── MiniBlockChat.jsx       # Mini chat for block follow-ups
+│   │   │   ├── DocumentPreview.jsx     # Inline document preview
+│   │   │   └── slashCommands.js        # Slash command definitions & parsers
+│   │   ├── studio/
+│   │   │   ├── StudioPanel.jsx         # Right panel container (tabbed)
+│   │   │   ├── FeatureCard.jsx         # Feature selection card
+│   │   │   ├── ConfigDialogs.jsx       # Config modals (flashcard/quiz/PPT/mindmap)
+│   │   │   ├── ContentHistory.jsx      # Saved content history
+│   │   │   ├── HistoryRenameModal.jsx  # Rename saved content
+│   │   │   ├── InlineFlashcardsView.jsx # Flashcard flipper UI
+│   │   │   ├── InlineQuizView.jsx      # Interactive quiz UI
+│   │   │   ├── InlineExplainerView.jsx # Explainer video player
+│   │   │   ├── ExplainerDialog.jsx     # Explainer generation config dialog
+│   │   │   └── index.js               # Studio exports
+│   │   ├── podcast/
+│   │   │   ├── PodcastStudio.jsx       # Full podcast workspace
+│   │   │   ├── PodcastConfigDialog.jsx # Podcast configuration (mode, voices)
+│   │   │   ├── PodcastSessionLibrary.jsx # List of podcast sessions
+│   │   │   ├── PodcastModeSelector.jsx # Mode picker (overview/debate/etc.)
+│   │   │   ├── PodcastPlayer.jsx       # Playback controls + waveform
+│   │   │   ├── PodcastMiniPlayer.jsx   # Compact player (bottom bar)
+│   │   │   ├── PodcastTranscript.jsx   # Scrollable transcript view
+│   │   │   ├── PodcastChapterBar.jsx   # Chapter navigation bar
+│   │   │   ├── PodcastDoubtHistory.jsx # Q&A history list
+│   │   │   ├── PodcastInterruptDrawer.jsx # Slide-up interrupt Q&A drawer
+│   │   │   ├── PodcastGenerating.jsx   # Generation progress screen
+│   │   │   ├── PodcastExportBar.jsx    # Export (PDF/JSON) controls
+│   │   │   ├── VoicePicker.jsx         # Voice selection with preview
+│   │   │   └── index.js               # Podcast exports
+│   │   ├── mindmap/
+│   │   │   ├── MindMapCanvas.jsx       # React Flow canvas wrapper
+│   │   │   ├── MindMapView.jsx         # Full mindmap view with controls
+│   │   │   └── MindMapNode.jsx         # Custom node renderer
+│   │   ├── presentation/
+│   │   │   └── PresentationView.jsx    # HTML slide renderer + fullscreen
+│   │   ├── notebook/
+│   │   │   ├── UploadDialog.jsx        # Upload flow modal (file/url/youtube/text)
+│   │   │   ├── SourceItem.jsx          # Material list item component
+│   │   │   └── WebSearchDialog.jsx     # Web source search dialog
+│   │   ├── viewer/
+│   │   │   └── FileViewerContent.jsx   # File viewing (PDF, PPT, etc.)
+│   │   └── ui/
+│   │       ├── Modal.jsx               # Generic modal wrapper
+│   │       ├── ToastContainer.jsx      # Toast notification container
+│   │       ├── ConfirmDialog.jsx       # Confirmation dialog (Zustand-driven)
+│   │       └── ErrorBoundary.jsx       # React error boundary for panels
+│   │
+│   ├── hooks/
+│   │   ├── useChatStream.js            # SSE streaming for chat responses
+│   │   ├── useMaterialUpdates.js       # WebSocket material status updates
+│   │   ├── useMicInput.js              # Microphone input for voice questions
+│   │   ├── useMindMap.js               # Mind map data + React Flow state
+│   │   ├── usePodcast.js               # Podcast session management
+│   │   ├── usePodcastPlayer.js         # Audio playback engine
+│   │   ├── usePodcastWebSocket.js      # Podcast real-time updates
+│   │   └── useResizablePanel.js        # Drag-to-resize panel divider
+│   │
+│   ├── stores/
+│   │   ├── useAppStore.js              # Main workspace store (master store)
+│   │   ├── useAuthStore.js             # Authentication + token management
+│   │   ├── useChatStore.js             # Chat messages + session
+│   │   ├── useMaterialStore.js         # Materials + source selection
+│   │   ├── useNotebookStore.js         # Current notebook state
+│   │   ├── useUIStore.js               # Loading states + active panel
+│   │   ├── usePodcastStore.js          # Podcast session store
+│   │   ├── useToastStore.js            # Toast notification queue
+│   │   └── useConfirmStore.js          # Confirm dialog state
+│   │
+│   ├── lib/
+│   │   ├── api/                        # Backend API client modules
+│   │   │   ├── config.js               # Axios/fetch config, token injection
+│   │   │   ├── auth.js                 # Auth endpoints
+│   │   │   ├── notebooks.js            # Notebook CRUD
+│   │   │   ├── materials.js            # Materials API
+│   │   │   ├── chat.js                 # Chat + sessions
+│   │   │   ├── generation.js           # Flashcard/Quiz/PPT/MindMap
+│   │   │   ├── mindmap.js              # MindMap endpoints
+│   │   │   ├── podcast.js              # Podcast API
+│   │   │   ├── explainer.js            # Explainer video API
+│   │   │   ├── agent.js                # Agent/code execution
+│   │   │   └── jobs.js                 # Job polling
+│   │   └── utils/
+│   │       ├── helpers.js              # generateId(), formatDate(), etc.
+│   │       └── constants.js            # TIMERS, limits, string constants
+│   │
+│   ├── styles/
+│   │   └── globals.css                 # Global styles + Tailwind directives
+│   │
+│   └── middleware.js                   # Next.js middleware (auth route guard)
+│
+├── public/
+│   └── favicon.ico
+│
+├── next.config.mjs                     # Next.js config + API rewrites
+├── tailwind.config.js                  # Tailwind theme config
 ├── postcss.config.mjs
-├── tailwind.config.js
-├── public/                     # Static assets
-└── src/
-    ├── middleware.js            # Edge middleware — auth cookie guard
-    ├── app/
-    │   ├── layout.jsx           # Root layout (fonts, providers, theme)
-    │   ├── page.jsx             # Home / Dashboard
-    │   ├── loading.jsx          # Global suspense loading UI
-    │   ├── error.jsx            # Global error boundary
-    │   ├── global-error.jsx     # Root-level error (replaces layout)
-    │   ├── not-found.jsx        # 404 page
-    │   ├── providers.jsx        # React context providers wrapper
-    │   ├── auth/
-    │   │   ├── layout.jsx       # Auth layout (centered card)
-    │   │   └── page.jsx         # Login / Signup page
-    │   ├── notebook/
-    │   │   └── [id]/
-    │   │       ├── layout.jsx   # Notebook layout
-    │   │       └── page.jsx     # Main notebook workspace
-    │   └── view/
-    │       └── page.jsx         # Public file viewer
-    ├── components/
-    │   ├── chat/                # All chat-related components
-    │   ├── layout/              # Header, Sidebar
-    │   ├── mindmap/             # Mind map canvas + nodes
-    │   ├── notebook/            # Source item, upload dialog, web search
-    │   ├── podcast/             # Full podcast studio UI
-    │   ├── presentation/        # Presentation viewer
-    │   ├── studio/              # Content generation panel
-    │   ├── ui/                  # Generic UI (Modal, Toast, Confirm, ErrorBoundary)
-    │   └── viewer/              # File viewer content
-    ├── hooks/
-    │   ├── useChatStream.js     # SSE stream handler
-    │   ├── useMaterialUpdates.js # WebSocket material status updates
-    │   ├── useMicInput.js       # Microphone input for voice
-    │   ├── useMindMap.js        # Mind map state + actions
-    │   ├── usePodcast.js        # Podcast lifecycle
-    │   ├── usePodcastPlayer.js  # Audio playback state machine
-    │   ├── usePodcastWebSocket.js # Podcast WS events
-    │   └── useResizablePanel.js # Panel resize handle
-    ├── lib/
-    │   ├── api/
-    │   │   ├── config.js        # apiFetch, apiJson, token management
-    │   │   ├── auth.js          # Auth API calls
-    │   │   ├── agent.js         # Agent/code execution API
-    │   │   ├── chat.js          # Chat + session API
-    │   │   ├── explainer.js     # Explainer video API
-    │   │   ├── generation.js    # Flashcards, quiz, presentation
-    │   │   ├── jobs.js          # Background jobs API
-    │   │   ├── materials.js     # Materials CRUD API
-    │   │   ├── mindmap.js       # Mind map API
-    │   │   ├── notebooks.js     # Notebooks CRUD API
-    │   │   └── podcast.js       # Podcast sessions API
-    │   └── utils/
-    │       ├── constants.js     # App-wide constants
-    │       └── helpers.js       # Utility functions (SSE reader, formatters, etc.)
-    ├── stores/
-    │   ├── useAppStore.js       # Global app state (re-exports focused stores)
-    │   ├── useAuthStore.js      # Auth state + token lifecycle
-    │   ├── useChatStore.js      # Chat messages + response state
-    │   ├── useConfirmStore.js   # Confirmation dialog state
-    │   ├── useMaterialStore.js  # Material list + selection state
-    │   ├── useNotebookStore.js  # Notebook list state
-    │   ├── usePodcastStore.js   # Podcast session state
-    │   ├── useToastStore.js     # Toast notification queue
-    │   └── useUIStore.js        # UI panel visibility state
-    └── styles/
-        └── globals.css          # Tailwind base + custom CSS variables
+├── eslint.config.mjs
+├── jsconfig.json                       # Path aliases (@/...)
+├── package.json
+└── Dockerfile                          # Production container
 ```
 
 ---
 
-## 4. Configuration & Environment
+## 3. Technology Stack & Dependencies
 
-### Environment Variables
+### Core
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `next` | 16.1.6 | React framework (App Router, SSR, API rewrites) |
+| `react` | 19.2.3 | UI framework |
+| `react-dom` | 19.2.3 | DOM renderer |
+| `zustand` | ^5.0.11 | State management |
+| `next-themes` | ^0.4.6 | Dark/light mode |
 
-| Variable | Default | Description |
-|---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Backend API URL |
-| `NEXT_PUBLIC_API_PROTOCOL` | `http` | Backend protocol (for Next.js Image) |
-| `NEXT_PUBLIC_API_HOST` | `localhost` | Backend hostname |
-| `NEXT_PUBLIC_API_PORT` | `8000` | Backend port |
+### Rendering
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `react-markdown` | ^10.1.0 | Markdown rendering |
+| `remark-gfm` | ^4.0.1 | GitHub Flavored Markdown |
+| `remark-math` | ^6.0.0 | Math expressions in markdown |
+| `rehype-katex` | ^7.0.1 | KaTeX math rendering |
+| `rehype-raw` | ^7.0.0 | Raw HTML in markdown |
+| `katex` | ^0.16.33 | Math equation rendering |
+| `react-syntax-highlighter` | ^16.1.1 | Code block syntax highlighting |
 
-### Path Aliases (`jsconfig.json`)
+### Data Visualization & Flow
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@xyflow/react` | ^12.10.1 | ReactFlow for mind maps |
+| `dagre` | ^0.8.5 | Automatic graph layout for mind maps |
 
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
+### Export & Utilities
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `html-to-image` | ^1.11.13 | Export mind maps to PNG |
+| `jspdf` | ^4.2.0 | Client-side PDF export |
+| `react-window` | ^2.2.7 | Virtualized lists (large message lists) |
+| `lucide-react` | ^0.576.0 | Icon library |
+
+### Dev Dependencies
+| Package | Purpose |
+|---------|---------|
+| `tailwindcss` ^3.4.17 | Utility CSS framework |
+| `autoprefixer` | Vendor prefix addition |
+| `postcss` | CSS processing |
+| `eslint` ^9 | Linting |
+| `eslint-config-next` | Next.js ESLint rules |
+
+### Path Aliases
+All imports use `@/` prefix mapping to `src/` (configured in `jsconfig.json`):
+```js
+import ChatPanel from '@/components/chat/ChatPanel';
+import useAppStore from '@/stores/useAppStore';
+import { chatAPI } from '@/lib/api/chat';
+```
+
+---
+
+## 4. Routing Architecture
+
+Next.js 15+ App Router with file-based routing:
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `app/page.jsx` | Home — notebook list dashboard |
+| `/auth` | `app/auth/page.jsx` | Login / Signup |
+| `/notebook/[id]` | `app/notebook/[id]/page.jsx` | Main workspace |
+| `/view` | `app/view/page.jsx` | Standalone content viewer |
+
+### Route Guards
+`src/middleware.js` — Next.js Edge Middleware:
+- Runs on all routes except `/auth` and static files
+- Reads `refresh_token` cookie (HttpOnly, set by backend)
+- If no cookie → redirect to `/auth`
+- If on `/auth` with valid cookie → redirect to `/`
+
+### Dynamic Route — `/notebook/[id]`
+- `[id]` = notebook UUID from DB, or `"draft"` for unsaved notebooks
+- `draft` mode creates a temporary workspace without a DB notebook
+- When first material uploaded in draft → auto-creates notebook
+
+---
+
+## 5. Application Entry Points
+
+### `app/layout.jsx` — Root Layout
+```jsx
+// Fonts: Inter (body) + JetBrains Mono (code)
+// CSS variables: --font-inter, --font-jetbrains
+// Metadata: title "KeplerLab — AI Learning Platform"
+// Wraps everything in <Providers>
+```
+
+### `app/providers.jsx` — Provider Tree
+```jsx
+<ThemeProvider attribute="class" defaultTheme="dark" storageKey="kepler-theme">
+  <AuthInitializer>         // Calls initAuth() on mount
+    {children}
+    <ToastContainer />      // Global toast notifications
+    <ConfirmDialog />       // Global confirm dialog
+  </AuthInitializer>
+</ThemeProvider>
+```
+
+**AuthInitializer**: Calls `useAuthStore.initAuth()` once on app mount. This calls `POST /auth/refresh` to restore session from the HttpOnly cookie.
+
+---
+
+## 6. State Management
+
+All state managed with **Zustand 5** (no Redux, no React Context for global state).
+
+### Store Architecture
+
+```
+useAppStore (master)
+  ├── notebook state (currentNotebook, draftMode)
+  ├── material state (materials[], currentMaterial, selectedSources[])
+  ├── chat state (messages[], sessionId)
+  ├── generated content (flashcards, quiz, notes[])
+  └── UI state (loading{}, error, activePanel)
+
+useAuthStore (auth)
+  ├── user, isAuthenticated, isLoading
+  ├── access token management (module-level ref, not in state)
+  └── scheduleRefresh (auto-refresh timer)
+
+useChatStore (focused chat)
+  ├── messages[], sessionId
+  ├── isStreaming, abortController
+  └── pendingChatMessage
+
+useMaterialStore (focused materials)
+  ├── materials[], currentMaterial
+  └── selectedSources[]
+
+useNotebookStore (focused notebook)
+  ├── currentNotebook
+  └── draftMode
+
+useUIStore (focused UI)
+  ├── loading{}
+  └── activePanel
+
+usePodcastStore (podcast)
+  ├── sessions[], currentSession
+  ├── segments[], currentSegment
+  └── doubts[], bookmarks[]
+
+useToastStore
+  ├── toasts[] 
+  └── add/remove actions
+
+useConfirmStore
+  ├── isOpen, message, onConfirm
+  └── trigger/resolve actions
+```
+
+### Key Design Patterns
+
+**Token Management:**
+Access token stored in module-level ref (`_accessTokenRef`), NOT in Zustand state. This prevents unnecessary re-renders on token refresh.
+
+**Auto Token Refresh:**
+`scheduleRefresh()` schedules a `setTimeout` 14 minutes after login (1 min before 15-min expiry). Retries 3 times with exponential backoff (2s, 4s, 8s) before forcing logout. On logout: `window.location.href = '/auth?reason=expired'`.
+
+**Source Selection:**
+`selectedSources[]` in `useMaterialStore` is an array of material IDs. All AI operations use `selectedSources` as the `material_ids[]` parameter to the backend. Users can toggle, select-all, or deselect-all.
+
+**Notebook Switch Cleanup:**
+`resetForNotebookSwitch()` clears all transient state (materials, messages, studio content, selections) when the user navigates to a different notebook.
+
+---
+
+## 7. API Client Layer
+
+`src/lib/api/`
+
+### `config.js` — API Configuration
+- Base URL from `NEXT_PUBLIC_API_BASE_URL` env var (default: `http://localhost:8000`)
+- `setAccessToken(token)` — module-level token store for injection
+- `onSessionExpired(handler)` — callback registration for 401 handling
+- `apiFetch(path, options)` — base fetch wrapper:
+  - Injects `Authorization: Bearer {token}` header automatically
+  - Handles 401 → calls `onSessionExpired` callback if registered
+  - Returns parsed JSON or throws error
+- `apiStream(path, options)` — returns raw `Response` for SSE streaming
+
+### API Modules
+
+#### `auth.js`
+```js
+login({ email, password })          → POST /auth/login
+signup({ email, username, password }) → POST /auth/signup
+refreshToken()                      → POST /auth/refresh
+getCurrentUser()                    → GET /auth/me
+logout()                            → POST /auth/logout
+```
+
+#### `notebooks.js`
+```js
+getNotebooks()                      → GET /notebooks
+getNotebook(id)                     → GET /notebooks/{id}
+createNotebook({ name, description }) → POST /notebooks
+updateNotebook(id, data)            → PATCH /notebooks/{id}
+deleteNotebook(id)                  → DELETE /notebooks/{id}
+saveNotebookContent(id, data)       → POST /notebooks/{id}/content
+getNotebookContent(id)              → GET /notebooks/{id}/content
+deleteNotebookContent(id, contentId) → DELETE /notebooks/{id}/content/{contentId}
+```
+
+#### `materials.js`
+```js
+getMaterials(notebookId?)           → GET /materials?notebook_id=
+uploadFile(formData)                → POST /upload (multipart)
+uploadUrl(url, notebookId, title?)  → POST /upload/url
+uploadYouTube(url, notebookId)      → POST /upload/youtube
+uploadText(text, title, notebookId) → POST /upload/text
+deleteMaterial(id)                  → DELETE /materials/{id}
+updateMaterial(id, data)            → PATCH /materials/{id}
+getMaterialText(id)                 → GET /materials/{id}/text
+```
+
+#### `chat.js`
+```js
+sendMessage(data)                   → POST /chat (returns Response for SSE)
+getSessions(notebookId)             → GET /chat/sessions?notebook_id=
+createSession(notebookId, title)    → POST /chat/sessions
+deleteSession(id)                   → DELETE /chat/sessions/{id}
+getSessionMessages(sessionId)       → GET /chat/sessions/{id}/messages
+getSuggestions(partial, notebookId) → POST /chat/suggestions
+blockFollowup(data)                 → POST /chat/block-followup
+```
+
+#### `generation.js`
+```js
+generateFlashcards(data)            → POST /flashcard
+generateQuiz(data)                  → POST /quiz
+generatePresentation(data)          → POST /presentation
+generateMindmap(data)               → POST /mindmap
+getMindmap(notebookId)              → GET /mindmap/{notebookId}
+deleteMindmap(id)                   → DELETE /mindmap/{id}
+```
+
+#### `podcast.js`
+```js
+createSession(data)                 → POST /podcast/session
+startGeneration(id)                 → POST /podcast/session/{id}/generate
+getSession(id)                      → GET /podcast/session/{id}
+getSessions()                       → GET /podcast/sessions
+updateSession(id, data)             → PATCH /podcast/session/{id}
+deleteSession(id)                   → DELETE /podcast/session/{id}
+getSegments(id)                     → GET /podcast/session/{id}/segments
+getAudioUrl(sessionId, index)       → URL /podcast/audio/{sessionId}/{index}
+submitDoubt(id, data)               → POST /podcast/session/{id}/doubt
+getDoubts(id)                       → GET /podcast/session/{id}/doubts
+addBookmark(id, data)               → POST /podcast/session/{id}/bookmark
+addAnnotation(id, data)             → POST /podcast/session/{id}/annotation
+exportSession(id, format)           → POST /podcast/session/{id}/export
+getVoices(language?)                → GET /podcast/voices
+previewVoice(voiceId, text)         → POST /podcast/voices/preview
+```
+
+#### `explainer.js`
+```js
+checkPresentations(data)            → POST /explainer/check-presentations
+generateExplainer(data)             → POST /explainer/generate
+getStatus(id)                       → GET /explainer/{id}/status
+getVideoUrl(id)                     → URL /explainer/{id}/video
+```
+
+#### `agent.js`
+```js
+executeCode(data)                   → POST /agent/execute-code (returns Response for SSE)
+getArtifactUrl(id, token)           → URL /workspace/file/{id}?token=
+```
+
+#### `jobs.js`
+```js
+getJob(id)                          → GET /jobs/{id}
+pollJob(id, intervalMs, maxWait)    → polls until completed/failed
+```
+
+---
+
+## 8. Authentication Flow
+
+### Login Flow
+```
+User visits / → middleware.js → no cookie → redirect /auth
+
+AuthPage renders login/signup form
+
+[Login]
+  1. User submits email + password
+  2. apiLogin() → POST /auth/login
+  3. Backend sets HttpOnly refresh_token cookie
+  4. Returns access_token
+  5. useAuthStore._syncToken(access_token) → stored in module ref
+  6. Calls GET /auth/me → sets user in store
+  7. useAuthStore.scheduleRefresh() starts 14-min timer
+  8. router.push('/') → home page
+
+[Signup]
+  Same flow with POST /auth/signup first, then auto-login
+```
+
+### Session Restore (Page Refresh)
+```
+providers.jsx mounts → AuthInitializer calls initAuth()
+1. POST /auth/refresh (cookie sent automatically)
+2. Returns new access_token
+3. Store token in module ref
+4. GET /auth/me → restore user state
+5. scheduleRefresh() 
+```
+
+### Token Refresh
+Auto-scheduled 14 minutes after successful login:
+```
+scheduleRefresh():
+  setTimeout(14 min):
+    for attempt in 1..3:
+      try: POST /auth/refresh → update token
+           scheduleRefresh()  → reschedule
+           return
+      catch: wait 2^attempt seconds
+    → all retries failed
+    → clear user state
+    → window.location.href = '/auth?reason=expired'
+```
+
+### Logout
+```
+POST /auth/logout → backend revokes all tokens, clears cookie
+useAuthStore reset → user=null, isAuthenticated=false
+Clear module-level token ref
+router.push('/auth')
+```
+
+---
+
+## 9. Notebook Workspace Page
+
+`app/notebook/[id]/page.jsx` — Main application workspace
+
+### Layout
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Header (top bar)                                             │
+├─────────────┬──────────────────────┬─────────────────────────┤
+│ Sidebar     │  ChatPanel           │   StudioPanel           │
+│ (materials  │  (left center)       │   (right panel)         │
+│  + upload)  │                      │                         │
+│             │  [active slash cmd]  │   [tabs: features,      │
+│             │  [messages stream]   │    flashcard, quiz,      │
+│             │  [input area]        │    mindmap, podcast,     │
+│             │                      │    explainer]           │
+└─────────────┴──────────────────────┴─────────────────────────┘
+```
+
+### Panel System
+- Three-panel layout: Sidebar + ChatPanel + StudioPanel
+- Panels are **lazy-loaded** with `dynamic(() => import(...), { ssr: false })`
+- `useResizablePanel` hook allows drag-to-resize between Chat and Studio
+- On mobile: sidebar slides in/out with hamburger button
+- `ErrorBoundary` wraps each panel (`PanelErrorBoundary`)
+
+### Page Load Sequence
+```
+1. Get notebook ID from URL params
+2. If id === 'draft' → create draft workspace (no API call)
+3. Else → GET /notebooks/{id}
+4. If not found → router.replace('/')
+5. Load materials → GET /materials?notebook_id={id}
+6. Set selectedSources = all completed material IDs
+7. Render panels
+```
+
+---
+
+## 10. Components
+
+### 10.1 Layout Components
+
+#### `Header.jsx`
+- App logo + KeplerLab branding
+- Current notebook name (editable inline)
+- Theme toggle (dark/light)
+- User menu (username, logout)
+- Navigation to home
+
+#### `Sidebar.jsx`
+- **Material list** with `SourceItem` for each material
+- Status indicators per material: `pending` (spinner), `completed` (green), `failed` (red)
+- Checkbox selection for multi-material AI operations
+- **Select All / Deselect All** toggle
+- Upload button → opens `UploadDialog`
+- Material rename (inline edit)
+- Material delete (with confirm)
+- Material text preview (via `GET /materials/{id}/text`)
+- WebSearch button → opens `WebSearchDialog`
+- Notebook switcher at bottom
+
+---
+
+### 10.2 Chat Components
+
+#### `ChatPanel.jsx`
+Main chat container orchestrating:
+- Session management (create, load, switch)
+- Message sending via `useChatStream`
+- Active slash command state
+- Streaming response assembly
+- Suggestion fetching on typing
+
+#### `ChatInputArea.jsx`
+- Multiline textarea with auto-resize
+- Slash command detection: typing `/` opens `SlashCommandDropdown`
+- Active command displayed as `CommandBadge` above input
+- `SlashCommandPills` row below input (quick-access)
+- Send button (keyboard: Enter, shift+Enter for newline)
+- Stop button while streaming
+- Suggestion dropdown from backend (`POST /chat/suggestions`)
+
+#### `ChatMessage.jsx`
+Renders a single message:
+- **User messages**: plain text with command badge
+- **Assistant messages**: `MarkdownRenderer`
+- **Artifacts**: image/chart/CSV rendered via `OutputRenderer`
+- **Web sources**: `WebSources` component with collapsible link list
+- **Research reports**: `ResearchReport` with citation footnotes
+- **Agent steps**: `AgentStatusStrip` with tool call log
+- **Code blocks**: `CodePanel` with run button
+- Per-paragraph hover: `BlockHoverMenu` (ask, simplify, translate)
+
+#### `ChatMessageList.jsx`
+- Virtualized scroll using `react-window`
+- Auto-scroll to bottom on new messages
+- Loading indicator while streaming
+
+#### `MarkdownRenderer.jsx`
+Renders AI markdown responses with:
+- **remark-gfm**: tables, strikethrough, task lists, links
+- **remark-math + rehype-katex**: inline `$...$` and block `$$...$$` LaTeX
+- **rehype-raw**: HTML in markdown (for explainer notes)
+- **react-syntax-highlighter**: code blocks with language detection
+- `CopyButton` on every code block
+
+#### `CodePanel.jsx`
+- Displays LLM-generated Python code in a read-only code view
+- **Edit** button → makes code editable
+- **Run** button → calls `POST /agent/execute-code` with SSE stream
+- Progress indicator during execution
+- Displays stdout, stderr, charts (image), tables (CSV) inline
+
+#### `OutputRenderer.jsx`
+Detects and renders agent/code artifacts:
+- `displayType === 'chart'` → `<img>` from base64 or artifact URL
+- `displayType === 'table'` → HTML table render
+- `displayType === 'csv'` → tabular preview
+- Generic files → download link
+
+#### `SlashCommandDropdown.jsx`
+Popup menu when user types `/`:
+- Shows all 4 commands: `/agent`, `/research`, `/code`, `/web`
+- Keyboard navigation (↑↓ arrows, Enter to select)
+- Click to activate
+
+#### `CommandBadge.jsx`
+Inline badge showing active command:
+- Colored per command (amber=agent, blue=research, purple=code, green=web)
+- Click × to dismiss
+
+#### `ResearchReport.jsx`
+- Full research report with sections
+- Inline `[n]` citations linked to source URLs
+- Source list at bottom
+- Copy report button
+
+#### `AgentStatusStrip.jsx`
+- Collapsible tool call timeline
+- Shows each step: tool name → input → output summary
+- Icons per tool type
+
+#### `MiniBlockChat.jsx`
+Mini chat modal opened from `BlockHoverMenu`:
+- Allows follow-up questions on a specific paragraph
+- Uses `POST /chat/block-followup`
+
+---
+
+### 10.3 Studio Components
+
+#### `StudioPanel.jsx`
+Right panel with tabs:
+- **Features** — feature card grid
+- **Flashcards** — `InlineFlashcardsView`
+- **Quiz** — `InlineQuizView`
+- **Mind Map** — `MindMapView`
+- **Podcast** — `PodcastStudio`
+- **Explainer** — `InlineExplainerView`
+- **History** — `ContentHistory`
+
+#### `FeatureCard.jsx`
+Grid of AI feature cards:
+- Flashcards, Quiz, Presentation, Mind Map, Podcast, Explainer Video
+- Click → opens config dialog
+
+#### `ConfigDialogs.jsx`
+Feature-specific configuration modals:
+
+**Flashcard Config:**
+- Topic (optional)
+- Card count (1-150)
+- Difficulty (easy/medium/hard)
+- Additional instructions
+
+**Quiz Config:**
+- Topic (optional)
+- Question count (1-150)
+- Difficulty
+- Additional instructions
+
+**Presentation Config:**
+- Max slides (3-60)
+- Theme (text description)
+- Additional instructions
+
+**Mind Map Config:**
+- Source selection (uses selectedSources)
+- Confirm button only
+
+#### `InlineFlashcardsView.jsx`
+- Card flip animation (front/back)
+- Progress bar (current/total)
+- Previous/Next navigation
+- Shuffle button
+- Mark as known/unknown
+- Save to notebook button
+
+#### `InlineQuizView.jsx`
+- MCQ rendered with A/B/C/D options
+- Submit → reveals correct answer + explanation
+- Score tracker
+- Review mode after completion
+- Save to notebook button
+
+#### `ContentHistory.jsx`
+Displays saved content from notebook:
+- Lists all saved flashcard sets, quizzes, presentations, mindmaps
+- Load/delete per item
+- `HistoryRenameModal` for renaming
+
+#### `ExplainerDialog.jsx`
+- Select or create presentation
+- Language selection (PPT + narration)
+- Voice gender toggle
+- Start generation → shows progress
+- Links to `InlineExplainerView` when done
+
+#### `InlineExplainerView.jsx`
+- Embeds generated MP4 video
+- Chapter navigation
+- Download button
+
+---
+
+### 10.4 Podcast Components
+
+#### `PodcastStudio.jsx`
+Master podcast component:
+- Shows `PodcastSessionLibrary` or active player
+- Manages `usePodcast` hook state
+
+#### `PodcastConfigDialog.jsx`
+Session creation form:
+- Mode selector (`PodcastModeSelector`): overview/deep-dive/debate/q-and-a/full/topic
+- Topic input (required for topic/deep-dive)
+- Language selector
+- Host + Guest voice pickers (`VoicePicker`)
+- Material selection (from notebook)
+
+#### `VoicePicker.jsx`
+- Language-aware voice list from `GET /podcast/voices`
+- Voice preview button → plays sample via `POST /podcast/voices/preview`
+- Search/filter by voice name
+
+#### `PodcastGenerating.jsx`
+Progress screen during generation:
+- Status text: "Generating script…" / "Generating audio…"
+- Animated progress bar
+- Cancel button
+
+#### `PodcastPlayer.jsx`
+Full podcast playback UI:
+- Play/Pause/Stop controls
+- Seek bar + current time / total duration
+- Volume control
+- Speed control (0.75x / 1x / 1.25x / 1.5x / 2x)
+- Auto-advance to next segment
+- Click transcript line to jump to segment
+- **Interrupt button** → opens `PodcastInterruptDrawer`
+- Mini player fallback (persists across navigation)
+
+#### `PodcastTranscript.jsx`
+- Full scrollable transcript
+- Auto-scroll to current segment
+- Click any line → jump to that audio position
+- Host/guest speaker labels with color coding
+- Chapter dividers
+
+#### `PodcastChapterBar.jsx`
+- Chapter list as clickable segments
+- Visual progress indicator
+
+#### `PodcastInterruptDrawer.jsx`
+Slide-up drawer for Q&A:
+- Text input or microphone (`useMicInput`)
+- Submit question → shows loading
+- Displays AI answer with audio playback
+- Q&A added to session history
+
+#### `PodcastDoubtHistory.jsx`
+- List of all Q&As from the session
+- Replay answer audio
+- Timestamp + segment context
+
+#### `PodcastExportBar.jsx`
+- PDF export button
+- JSON export button
+- Download links after generation
+
+#### `PodcastSessionLibrary.jsx`
+- Table of all past podcast sessions
+- Status badges (ready/playing/failed)
+- Load/delete/play actions
+- Search + filter
+
+---
+
+### 10.5 MindMap Components
+
+#### `MindMapView.jsx`
+- Toolbar: generate, refresh, download (PNG), zoom controls
+- Container for `MindMapCanvas`
+- Loading and error states
+- **Chat bridge**: clicking a node sends the node label as a chat question
+
+#### `MindMapCanvas.jsx`
+- Wraps `@xyflow/react` ReactFlow component
+- `dagre` auto-layout for hierarchical graph
+- Custom edge types
+- Configures node types → `MindMapNode`
+- Pan + zoom controls
+- `html-to-image` for PNG export
+
+#### `MindMapNode.jsx`
+- Custom node renderer per node type:
+  - `root` — large center circle, primary color
+  - `branch` — medium rounded rect, secondary color  
+  - `leaf` — small rounded rect, muted color
+- Hover tooltip with full label
+- Click → triggers chat message via `setPendingChatMessage`
+
+---
+
+### 10.6 Presentation Components
+
+#### `PresentationView.jsx`
+- Renders HTML presentation in iframe or direct DOM injection
+- Navigation: Previous/Next slide buttons
+- Slide number indicator
+- Fullscreen toggle
+- Download HTML button
+- Keyboard arrow key navigation
+- Accessible slide labels
+
+---
+
+### 10.7 Notebook Components
+
+#### `UploadDialog.jsx`
+Multi-mode upload modal:
+
+**File Upload tab:**
+- Drag-and-drop zone
+- File type filter display
+- Multiple file support (queued)
+- Progress per file
+- Error display per file
+
+**URL tab:**
+- URL input with validation
+- Optional custom title
+- Fetches and adds web content
+
+**YouTube tab:**
+- YouTube URL input
+- Video title preview (yt-dlp metadata)
+- Automatic transcript extraction
+
+**Text tab:**
+- Title input
+- Large text area
+- Paste or type content directly
+
+All tabs → calls appropriate upload API → creates Material in pending state → WebSocket subscription for real-time status.
+
+#### `SourceItem.jsx`
+Material list item:
+- Checkbox for multi-select
+- Material icon (PDF/URL/YouTube/Text)
+- Filename/title (truncated)
+- Status badge: pending (spinner), processing (animated), completed, failed (with error tooltip)
+- Chunk count when completed
+- Action menu: rename, view text, delete
+
+#### `WebSearchDialog.jsx`
+- Search input
+- Search results list
+- Add selected URLs as materials button
+
+---
+
+### 10.8 Viewer Components
+
+#### `FileViewerContent.jsx`
+- Renders uploaded file content inline
+- PDF: `<embed>` or iframe
+- Text: `<pre>` formatted
+- Used in standalone `/view` route for sharing
+
+---
+
+### 10.9 UI / Common Components
+
+#### `Modal.jsx`
+Generic modal with:
+- Backdrop click to close
+- Escape key close
+- Focus trap
+- Animated enter/exit
+- Customizable width
+
+#### `ToastContainer.jsx`
+Driven by `useToastStore`:
+- Toasts stack in top-right corner
+- Types: success (green), error (red), warning (amber), info (blue)
+- Auto-dismiss after 3s (configurable)
+- Manual dismiss button
+- Max 5 visible at once
+
+#### `ConfirmDialog.jsx`
+Driven by `useConfirmStore`:
+```js
+useConfirmStore.trigger({
+  message: "Delete this notebook?",
+  onConfirm: () => deleteNotebook(id)
+})
+```
+- Modal with Cancel + Confirm buttons
+- Resolves the stored `onConfirm` callback
+
+#### `ErrorBoundary.jsx`
+`PanelErrorBoundary` — wraps each major panel:
+- Catches render errors
+- Shows error message + retry button
+- Does not crash entire page
+
+---
+
+## 11. Custom Hooks
+
+### `useChatStream.js`
+Core hook for SSE chat streaming:
+
+```js
+const { sendMessage, isStreaming, abort } = useChatStream();
+```
+
+**Internal flow:**
+```
+sendMessage(text, options):
+1. Add user message to store
+2. Add empty assistant message placeholder
+3. Create AbortController
+4. POST /chat → returns Response (fetch SSE)
+5. reader = response.body.getReader()
+6. Read chunks:
+   SSE event types:
+   "token"      → append to last message content
+   "citations"  → attach citations array to last message  
+   "code"       → store as CodePanel artifact
+   "chart"      → store as chart artifact
+   "agent_step" → append to agentSteps array
+   "web_sources"→ attach web sources
+   "research"   → update research report
+   "error"      → show error toast
+   "done"       → finalize, set isStreaming=false
+7. On abort → add partial message with [stopped] marker
+```
+
+### `useMaterialUpdates.js`
+WebSocket hook for material processing status:
+
+```js
+useMaterialUpdates(materialId, onUpdate)
+```
+
+```
+1. Connect: WS /ws/materials/{materialId}?token={accessToken}
+2. On message:
+   - Parse JSON event
+   - If status_update → call onUpdate({status, chunkCount})
+   - Update useMaterialStore.updateMaterial(id, { status, chunkCount })
+3. On disconnect → reconnect with exponential backoff
+4. Cleanup on unmount
+```
+
+### `useMicInput.js`
+Microphone for podcast Q&A:
+```
+1. navigator.mediaDevices.getUserMedia({ audio: true })
+2. MediaRecorder → collect audio chunks
+3. Stop → combine to Blob → base64 encode
+4. Returns audioBlob, isRecording, start(), stop()
+```
+
+### `useMindMap.js`
+Mind map data management:
+```
+1. fetchMindmap(notebookId) → GET /mindmap/{notebookId}
+2. generateMindmap(materialIds, notebookId) → POST /mindmap
+3. Transform nodes/edges for ReactFlow format
+4. Apply dagre layout algorithm
+5. Returns nodes, edges, loading, error, generate, refresh
+```
+
+### `usePodcast.js`
+Podcast session lifecycle:
+```
+1. fetchSessions() → GET /podcast/sessions
+2. createSession(config) → POST /podcast/session
+3. startGeneration(id) → POST /podcast/session/{id}/generate
+4. deleteSession(id) → DELETE /podcast/session/{id}
+5. updateSession(id, patch) → PATCH /podcast/session/{id}
+6. submitDoubt(id, q) → POST /podcast/session/{id}/doubt
+7. Manages loading states in useUIStore
+```
+
+### `usePodcastPlayer.js`
+Audio playback engine:
+```
+1. Uses HTML5 Audio API
+2. Preload next segment while current plays
+3. onEnded → advance to next segment
+4. Sends PATCH /podcast/session/{id} to sync currentSegment
+5. Returns: play, pause, seek, currentTime, duration, isPlaying
+```
+
+### `usePodcastWebSocket.js`
+Real-time podcast updates:
+```
+1. Connect WS to podcast events channel
+2. On "segment_ready" → update segments in store
+3. On "status_update" → update session status
+4. Used during generation progress polling
+```
+
+### `useResizablePanel.js`
+Drag handle for Chat/Studio resize:
+```
+1. MouseDown → start tracking
+2. MouseMove → calculate new width ratio
+3. MouseUp → finalize
+4. Returns: ref, width, isDragging
+```
+
+---
+
+## 12. Slash Command System
+
+`src/components/chat/slashCommands.js`
+
+### Commands
+
+| Command | Intent | Color | Description |
+|---------|--------|-------|-------------|
+| `/agent` | `AGENT` | Amber | Multi-step autonomous task execution |
+| `/research` | `WEB_RESEARCH` | Blue | Deep research with citations |
+| `/code` | `CODE_EXECUTION` | Purple | Generate + run Python code |
+| `/web` | `WEB_SEARCH` | Green | Quick web search |
+| _(none)_ | _(RAG default)_ | — | Standard RAG chat over materials |
+
+### Design Contract
+> **Slash commands are the ONLY way intent is communicated to the backend.**  
+> **The backend NEVER infers or guesses intent.**
+
+When a slash command is active:
+- `intent_override: command.intent` is added to the `/chat` request body
+- `CommandBadge` displayed above input
+- Placeholder text changes to command-specific hint
+
+When no slash command:
+- `intent_override` field is **omitted** from request body
+- Backend defaults to RAG pipeline
+
+### Helper Functions
+```js
+getSlashCommand('/agent')     // → command object
+getSlashCommandByIntent('AGENT') // → command object  
+parseSlashCommand('/code analyze this data') // → { command, remainingMessage: 'analyze this data' }
+```
+
+---
+
+## 13. Feature Flows
+
+### 13.1 Auth Flow
+
+```
+Home (/) → middleware reads cookie → no cookie → /auth
+
+AuthPage:
+  Default: Login form
+  Toggle to: Signup form
+
+[Login]
+  form submit → apiLogin → store token → load user → /
+
+[Signup]
+  form submit → apiSignup → auto-login → /
+
+[Auto-refresh]
+  providers.jsx → initAuth() → refreshToken → getCurrentUser → start refresh timer
+```
+
+---
+
+### 13.2 Material Upload
+
+```
+Sidebar → Upload button → UploadDialog
+
+[File drop/select]
+  FileReader validates size client-side
+  POST /upload (multipart: file, notebook_id)
+  → Material created with status=pending
+  → WebSocket opened: WS /ws/materials/{id}
+  → SourceItem shows spinner
+
+[Real-time updates]
+  useMaterialUpdates hook receives:
+  { status: "processing" }   → spinner
+  { status: "embedding" }    → spinner  
+  { status: "completed", 
+    chunkCount: 142 }        → green check + chunk count
+  { status: "failed",
+    error: "OCR timeout" }   → red badge + tooltip
+
+[Selected sources]
+  Completed material → auto-added to selectedSources[]
+  Failed material → not selectable
+```
+
+---
+
+### 13.3 Chat (RAG + Intents)
+
+```
+ChatInputArea → user types message → Enter
+
+[No slash command — RAG]
+  1. POST /chat { message, material_ids: selectedSources, notebook_id, stream: true }
+  2. useChatStream reads SSE:
+     token events → streaming text in assistant message bubble
+     citations → [1], [2] markers rendered with tooltips
+     done → finalize
+
+[/research → WEB_RESEARCH]
+  Same POST + intent_override: "WEB_RESEARCH"
+  SSE: research_progress → ResearchProgressPanel updates
+       research_complete → ResearchReport rendered
+
+[/code → CODE_EXECUTION]  
+  Phase 1 — POST /chat + intent_override: "CODE_EXECUTION"
+  SSE: code event → CodePanel shows code
+       (no execution yet)
+  User reviews code → clicks Run
+  Phase 2 — POST /agent/execute-code
+  SSE: execution_start, stdout, stderr, chart, done
+
+[/web → WEB_SEARCH]
+  POST /chat + intent_override: "WEB_SEARCH"
+  SSE: web_sources → WebSources component
+       tokens → summary text
+
+[/agent → AGENT]
+  POST /chat + intent_override: "AGENT"
+  SSE: agent_step events → AgentStatusStrip log
+       token events → final answer text
+       artifacts → download links
+```
+
+---
+
+### 13.4 Flashcard Generation
+
+```
+StudioPanel → Flashcards card → click
+
+ConfigDialog:
+  topic, card_count (default 20), difficulty, instructions
+  → Generate button
+
+POST /flashcard { material_ids, topic, card_count, difficulty }
+
+Loading indicator in StudioPanel
+
+Response: { flashcards: [{ front, back }] }
+→ setFlashcards(result)
+→ Switch to Flashcards tab
+→ InlineFlashcardsView renders
+
+[Interaction]
+  Click card → flip (front ↔ back)
+  Next/Prev → navigate cards
+  Shuffle → randomize order
+  ✓ Known / ✗ Unknown → filter remaining
+
+[Save]
+  POST /notebooks/{id}/content { type: 'flashcard', data: flashcards }
+  Appears in ContentHistory
+```
+
+---
+
+### 13.5 Quiz Generation
+
+```
+Click Quiz card → ConfigDialog (topic, count, difficulty)
+
+POST /quiz { material_ids, topic, mcq_count, difficulty }
+
+→ InlineQuizView renders
+
+[Interaction]
+  Question displayed with 4 options (A-D)
+  Select option → Submit
+  → Shows: correct/incorrect indicator + explanation
+  Next question
+  Final score displayed
+  Review mode available
+
+[Save] same as flashcards
+```
+
+---
+
+### 13.6 Presentation Generation
+
+```
+Click Presentation card → ConfigDialog (slides, theme, instructions)
+
+POST /presentation → synchronous (can take 30-90s)
+Loading overlay shown
+
+Response: { title, slide_count, html, slides[] }
+→ PresentationView renders HTML
+→ Slide navigation (prev/next, fullscreen)
+→ Download HTML button
+
+[Explainer Video path]
+  Click "Create Explainer Video" (ExplainerDialog)
+  POST /explainer/generate
+  Background processing (job polling with /jobs/{id})
+  When complete → InlineExplainerView shows video player
+```
+
+---
+
+### 13.7 Mind Map Generation
+
+```
+Click Mind Map card → confirm selected materials
+
+POST /mindmap { material_ids, notebook_id }
+
+useMindMap generates ReactFlow nodes + dagre layout
+
+MindMapCanvas renders:
+  Root node (center) + branch nodes + leaf nodes
+  Connected by edges
+
+[Controls]
+  Zoom in/out/fit
+  Pan (drag)
+  Click node → sends node text as chat message in ChatPanel
+  Download PNG → html-to-image export
+
+[Refresh] re-generates from same materials
+[Delete] DELETE /mindmap/{id}
+```
+
+---
+
+### 13.8 Podcast Feature
+
+```
+Click Podcast card → PodcastConfigDialog
+
+Config:
+  Mode: overview | deep-dive | debate | q-and-a | full | topic
+  Topic: if mode is topic/deep-dive
+  Language: dropdown (20+ languages supported)
+  Host Voice: VoicePicker (with preview)
+  Guest Voice: VoicePicker (with preview)
+  Materials: from selectedSources
+
+POST /podcast/session → creates session
+POST /podcast/session/{id}/generate → starts pipeline
+
+PodcastGenerating screen:
+  "Generating script..." → "Generating audio..."
+  WebSocket updates via usePodcastWebSocket
+
+When ready → PodcastPlayer:
+  Full transcript sidebar
+  Audio controls (play/pause/seek/speed)
+  Chapter navigation bar
+
+[Interrupt / Q&A]
+  Interrupt button → PodcastInterruptDrawer
+  Type or speak question
+  POST /podcast/session/{id}/doubt
+  → AI answer text + audio plays immediately
+  → Added to Q&A history
+
+[Export]
+  PodcastExportBar → PDF transcript or JSON data
+  POST /podcast/session/{id}/export
+  Download link appears
+
+[Session Library]
+  All past sessions listed
+  Reload any session
+  Delete sessions
+```
+
+---
+
+### 13.9 Explainer Video
+
+```
+StudioPanel or Chat → ExplainerDialog
+
+1. checkPresentations → POST /explainer/check-presentations
+   → shows existing presentations for reuse
+
+2. Configure:
+   PPT language, narration language, voice gender
+   (optionally reuse existing PPT or create new)
+
+3. POST /explainer/generate → creates ExplainerVideo record
+
+4. Poll GET /explainer/{id}/status every 3s
+   Progress: "Generating presentation" → "Generating scripts" →
+             "Synthesizing audio" → "Composing video"
+
+5. When status=completed:
+   InlineExplainerView → <video> player with MP4
+   Chapter list
+   Download button (GET /explainer/{id}/video)
+```
+
+---
+
+### 13.10 Code Mode
+
+```
+/code slash command → ChatInputArea changes placeholder
+
+User: "/code analyze sales trends over time"
+
+Phase 1 — Generation:
+  POST /chat { intent_override: "CODE_EXECUTION", message }
+  SSE returns code event with Python code
+  CodePanel renders with:
+  - Syntax highlighted code
+  - Edit toggle (make editable)
+  - Run button (disabled until reviewed)
+
+User reviews/edits code → clicks Run
+
+Phase 2 — Execution:
+  POST /agent/execute-code { code, notebook_id }
+  SSE events:
+    execution_start    → spinner
+    install_progress   → "Installing seaborn..."
+    stdout            → print statements shown
+    chart             → matplotlib PNG rendered inline
+    stderr            → error shown in red
+    repair_attempt    → "Auto-repairing (1/3)..."
+    done              → execution complete
+
+Artifacts registered → download tokens → download links
+CodeExecutionSession saved to DB
+```
+
+---
+
+### 13.11 Research Mode
+
+```
+/research slash command
+
+User: "/research latest advances in transformer attention mechanisms"
+
+POST /chat { intent_override: "WEB_RESEARCH", message }
+
+SSE events during research:
+  query_decomposed   → sub-questions shown
+  search_progress    → "Searching: sub-question N"
+  sources_found      → N sources fetched
+  synthesizing       → "Building report..."
+  token events       → final report text streaming
+
+ResearchProgressPanel shows:
+  - Sub-question list with checkmarks
+  - Source count
+  - Progress percentage
+
+ResearchReport renders:
+  - Titled sections
+  - Inline [n] citations
+  - Sources list at bottom with URLs
+
+ResearchSession saved to DB (report, sourcesCount, sourceUrls)
+```
+
+---
+
+### 13.12 Agent Mode
+
+```
+/agent slash command
+
+User: "/agent create a comprehensive analysis dashboard for my CSV data"
+
+POST /chat { intent_override: "AGENT", message }
+
+AgentStatusStrip renders tool steps:
+  Step 1: rag_search → "Found 8 relevant chunks about dataset"
+  Step 2: run_code   → "Executed analysis script"
+  Step 3: create_chart → "Generated bar chart"
+  Step 4: final_answer → "Here's your dashboard..."
+
+Tool outputs visible in collapsed/expanded view
+Final answer text streamed as normal chat response
+Artifacts (charts, CSVs) shown inline with download links
+AgentExecutionLog saved to DB
+```
+
+---
+
+## 14. Streaming (SSE) Implementation
+
+### Backend → Frontend SSE Format
+```
+data: {"type": "token", "content": "Hello"}
+data: {"type": "citations", "citations": [...]}
+data: {"type": "code", "content": "import pandas..."}
+data: {"type": "chart", "url": "...", "token": "..."}
+data: {"type": "web_sources", "sources": [...]}
+data: {"type": "agent_step", "tool": "rag_search", "input": "...", "output": "..."}
+data: {"type": "research_progress", "stage": "searching", "count": 5}
+data: {"type": "error", "message": "..."}
+data: {"type": "done"}
+```
+
+### Frontend SSE Reader (`useChatStream.js`)
+```js
+const response = await apiStream('/chat', { method: 'POST', body: JSON.stringify(payload) });
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
+  
+  for (const line of lines) {
+    if (!line.startsWith('data: ')) continue;
+    const event = JSON.parse(line.slice(6));
+    
+    switch (event.type) {
+      case 'token': appendToLastMessage(event.content); break;
+      case 'citations': setLastMessageCitations(event.citations); break;
+      case 'code': setCodePanelContent(event.content); break;
+      // ... etc
     }
   }
 }
 ```
 
-All imports inside `src/` use `@/` prefix to reference from `src/`.
-
-### Next.js Config (`next.config.mjs`)
-
-- **API Proxy**: `/api/:path*` → `http://localhost:8000/:path*` (development only);
-  `/api/presentation/slides/:path*` also proxied
-- **Output**: `standalone` (optimized for Docker deployment)
-- **React Strict Mode**: enabled
-- **Remote Images**: configured for backend image serving
-
----
-
-## 5. Routing (Next.js App Router)
-
-Next.js 16 App Router with file-system-based routing:
-
-| Route | Page | Description |
-|---|---|---|
-| `/` | `app/page.jsx` | Home / Dashboard — lists all notebooks |
-| `/auth` | `app/auth/page.jsx` | Login and Signup |
-| `/notebook/[id]` | `app/notebook/[id]/page.jsx` | Notebook workspace |
-| `/notebook/draft` | Same page, special case | New unsaved notebook |
-| `/view` | `app/view/page.jsx` | Public file viewer (no auth required) |
-
-### Not Found & Error Pages
-
-- `app/not-found.jsx` — Custom 404 UI
-- `app/error.jsx` — Page-level error boundary with retry button
-- `app/global-error.jsx` — Root layout error (replaces shell entirely)
-- `app/loading.jsx` — Global suspense skeleton
-
----
-
-## 6. Middleware & Authentication Guard
-
-**File**: `src/middleware.js` (Next.js Edge Middleware)
-
-Runs at the edge on every request before page rendering.
-
-**Logic**:
-1. Allow public paths without auth: `/auth`, `/view`, `/api`
-2. Allow Next.js internals: `/_next`, `/favicon`, static file extensions
-3. Check for `refresh_token` cookie (HttpOnly, set by backend)
-4. If cookie missing → redirect to `/auth?redirect=<original_path>`
-
-```javascript
-const PUBLIC_PREFIXES = ['/auth', '/view', '/api'];
-// Cookie name: 'refresh_token' (HttpOnly, matches backend setting)
+### Abort Controller
+User can click "Stop" during streaming:
+```js
+const controller = new AbortController();
+setAbortController(controller);
+// fetch called with: signal: controller.signal
+// On stop: controller.abort()
+// → adds "[stopped]" indicator to partial message
 ```
-
-> The middleware only checks for the **cookie's presence**, not validity. Actual token validation happens on the first API call (`initAuth`).
-
-**Matcher**: All routes except `_next/static`, `_next/image`, `favicon.ico`.
-
----
-
-## 7. Global Providers & Theme
-
-**File**: `src/app/providers.jsx`
-
-Wraps the app with:
-- `ThemeProvider` (next-themes, `defaultTheme: "dark"`, attribute: `"class"`)
-- Toast container
-- Confirm dialog
-- Auth initialization effect
-
-**Root Layout** (`src/app/layout.jsx`):
-- Sets HTML font families
-- Applies Tailwind base styles
-- Wraps children in `<Providers>`
-
-### Theme
-
-- Dark and light themes available
-- CSS class toggling on `<html>` root
-- Toggle available on Home dashboard and notebook header
-- Uses `useTheme()` hook from `next-themes`
-
----
-
-## 8. State Management (Zustand)
-
-All application state is managed with **Zustand** stores (no Redux, no Context for most state).
-
-### useAppStore
-
-**File**: `src/stores/useAppStore.js`
-
-Main aggregator store. Also re-exports `useChatStore`, `useMaterialStore`, `useNotebookStore`, `useUIStore` for gradual migration.
-
-**State**:
-
-| Key | Type | Description |
-|---|---|---|
-| `currentNotebook` | Object? | Currently active notebook |
-| `draftMode` | Boolean | Whether the notebook is unsaved draft |
-| `currentMaterial` | Object? | Currently selected material |
-| `materials` | Array | All materials for current notebook |
-| `selectedSources` | Array\<ID\> | IDs of checked source materials |
-| `sessionId` | String? | Current chat session ID |
-| `messages` | Array | Chat messages for current session |
-| `flashcards` | Object? | Last generated flashcards |
-| `quiz` | Object? | Last generated quiz |
-| `notes` | Array | Notebook notes |
-| `pendingChatMessage` | String? | Bridge: mind map → chat |
-| `loading` | Object | Per-feature loading flags |
-| `error` | String? | Global error |
-| `activePanel` | String | `'chat'` or `'studio'` |
-| `podcastWsHandlerRef` | Ref | WebSocket handler reference |
-
-**Key actions**:
-- `setCurrentNotebook(notebook)` — switches active notebook
-- `setMaterials(materials)` — replaces full material list
-- `addMaterial(material)` — appends material, sets as current
-- `setSelectedSources(ids)` — set selected source IDs
-- `toggleSourceSelection(id)` — toggle one source in/out
-- `selectAllSources()` / `deselectAllSources()`
-- `setLoadingState(key, bool)` — per-feature loading flag
-- `resetForNotebookSwitch()` — clear all transient state
-
----
-
-### useAuthStore
-
-**File**: `src/stores/useAuthStore.js`
-
-Handles JWT lifecycle: init, login, refresh, logout.
-
-**State**:
-
-| Key | Description |
-|---|---|
-| `user` | Current user object (id, email, username, role) |
-| `isLoading` | True during initial auth check |
-| `isAuthenticated` | Boolean |
-| `error` | Auth error message |
-
-**Key actions**:
-
-| Action | Description |
-|---|---|
-| `initAuth()` | Called once on app mount — calls `POST /auth/refresh`, then `GET /auth/me` |
-| `login(email, password)` | Calls API, syncs access token, schedules refresh |
-| `signup(email, username, password)` | Register + auto-login |
-| `logout()` | Calls `POST /auth/logout`, clears token + user |
-| `scheduleRefresh()` | Sets timer to refresh access token before expiry |
-
-**Token refresh strategy**:
-- Access token refreshed with `setTimeout` before its 15-min expiry
-- On failure: 3 retries with exponential backoff (2s, 4s, 8s)
-- If all retries fail → redirect to `/auth?reason=expired`
-- Token stored in **module-level ref** (not in Zustand state) to avoid serialization issues
-- `setAccessToken()` syncs token to the `lib/api/config.js` module
-
----
-
-### useChatStore
-
-**File**: `src/stores/useChatStore.js`
-
-Chat-specific state for the active session.
-
-**State**:
-- `messages` — array of chat message objects
-- `isStreaming` / `streamingContent` — current streaming response
-- `sessionId` — active session ID
-- `sessions` — list of all sessions for current notebook
-
----
-
-### useMaterialStore
-
-**File**: `src/stores/useMaterialStore.js`
-
-Material list + WebSocket-driven status updates.
-
-**State**:
-- `materials` — array of material objects
-- Status updates merged in real-time via WebSocket
-
----
-
-### useNotebookStore
-
-**File**: `src/stores/useNotebookStore.js`
-
-Notebook list management for the dashboard.
-
----
-
-### useUIStore
-
-**File**: `src/stores/useUIStore.js`
-
-Panel visibility and UI flags.
-
----
-
-### usePodcastStore
-
-**File**: `src/stores/usePodcastStore.js`
-
-Podcast session state: current session, segments, playback position, doubts, bookmarks.
-
----
-
-### useToastStore
-
-**File**: `src/stores/useToastStore.js`
-
-Toast notification queue (success, error, warning, info).
-
-Usage:
-```javascript
-const toast = useToast();
-toast.success('Action completed!');
-toast.error('Something went wrong');
-```
-
----
-
-### useConfirmStore
-
-**File**: `src/stores/useConfirmStore.js`
-
-Global confirmation dialog state.
-
-Usage:
-```javascript
-const { confirm } = useConfirm();
-const yes = await confirm({ title: 'Delete?', message: 'Are you sure?', confirmText: 'Delete', danger: true });
-```
-
----
-
-## 9. API Layer
-
-### Authentication & Token Management
-
-**File**: `src/lib/api/config.js`
-
-Central fetch utilities with:
-- **In-memory access token** (`_accessToken`) — never stored in localStorage
-- **Auto-refresh on 401** — deduplicates concurrent refresh calls
-- **Session expiry callback** — soft redirect to `/auth`
-
-**Core functions**:
-
-| Function | Description |
-|---|---|
-| `setAccessToken(token)` | Store access token in memory |
-| `getAccessToken()` | Read current access token |
-| `onSessionExpired(callback)` | Register session expiry handler |
-| `apiFetch(path, options)` | Authenticated fetch with auto-retry on 401 |
-| `apiJson(path, options)` | apiFetch + JSON parse |
-| `apiStream(path, options)` | Returns raw Response for SSE streaming |
-
-**Retry logic**:
-1. Add `Authorization: Bearer <token>` header
-2. If response is `401` → call `_refreshTokenOnce()` (deduplicated)
-3. If refresh succeeds → retry original request once
-4. If refresh fails → call `_handleSessionExpiry()` → redirect to `/auth`
-
----
-
-### API Modules
-
-#### `lib/api/auth.js`
-
-| Function | Method | Endpoint |
-|---|---|---|
-| `login(email, password)` | POST | `/auth/login` |
-| `signup(email, username, password)` | POST | `/auth/signup` |
-| `logout()` | POST | `/auth/logout` |
-| `getCurrentUser()` | GET | `/auth/me` |
-| `refreshToken()` | POST | `/auth/refresh` (raw fetch, bypasses apiFetch) |
-
----
-
-#### `lib/api/notebooks.js`
-
-| Function | Method | Endpoint |
-|---|---|---|
-| `getNotebooks()` | GET | `/notebooks` |
-| `getNotebook(id)` | GET | `/notebooks/{id}` |
-| `createNotebook(name, description)` | POST | `/notebooks` |
-| `updateNotebook(id, data)` | PATCH | `/notebooks/{id}` |
-| `deleteNotebook(id)` | DELETE | `/notebooks/{id}` |
-| `saveGeneratedContent(notebookId, data)` | POST | `/notebooks/{id}/content` |
-| `getGeneratedContent(notebookId, type?)` | GET | `/notebooks/{id}/content` |
-| `deleteGeneratedContent(notebookId, contentId)` | DELETE | `/notebooks/{id}/content/{contentId}` |
-| `updateGeneratedContent(notebookId, contentId, data)` | PATCH | `/notebooks/{id}/content/{contentId}` |
-| `updateGeneratedContentTitle(notebookId, contentId, title)` | PATCH | `/notebooks/{id}/content/{contentId}/title` |
-
----
-
-#### `lib/api/materials.js`
-
-| Function | Endpoint |
-|---|---|
-| `getMaterials(notebookId?)` | GET `/materials` |
-| `uploadFile(file, notebookId)` | POST `/upload/file` (FormData) |
-| `uploadUrl(url, notebookId)` | POST `/upload/url` |
-| `uploadYouTube(url, notebookId)` | POST `/upload/youtube` |
-| `uploadText(text, title, notebookId)` | POST `/upload/text` |
-| `deleteMaterial(id)` | DELETE `/materials/{id}` |
-| `updateMaterial(id, data)` | PATCH `/materials/{id}` |
-| `getMaterialText(id)` | GET `/materials/{id}/text` |
-
----
-
-#### `lib/api/chat.js`
-
-| Function | Description |
-|---|---|
-| `streamChat(materialId, message, notebookId, materialIds, sessionId, signal, intentOverride)` | POST `/chat` — returns raw Response for SSE |
-| `getChatHistory(notebookId, sessionId?)` | GET `/chat/history` |
-| `createChatSession(notebookId, title)` | POST `/chat/sessions` |
-| `getChatSessions(notebookId)` | GET `/chat/sessions` |
-| `deleteChatSession(sessionId)` | DELETE `/chat/sessions/{id}` |
-
----
-
-#### `lib/api/generation.js`
-
-| Function | Endpoint |
-|---|---|
-| `generateFlashcards(materialId, options)` | POST `/flashcard` |
-| `generateQuiz(materialId, options)` | POST `/quiz` |
-| `generatePresentation(materialId, options)` | POST `/presentation/async` (polls for completion) |
-| `downloadBlob(blob, filename)` | Local utility (creates download link) |
-
-**Presentation polling**: polls `GET /jobs/{jobId}` every 3 seconds, max 10 minutes.
-
----
-
-#### `lib/api/mindmap.js`
-
-| Function | Endpoint |
-|---|---|
-| `generateMindMap(materialIds, notebookId)` | POST `/mindmap` |
-| `getMindMap(notebookId)` | GET `/mindmap/{notebookId}` |
-| `deleteMindMap(id)` | DELETE `/mindmap/{id}` |
-
----
-
-#### `lib/api/agent.js`
-
-| Function | Endpoint |
-|---|---|
-| `executeCode(code, notebookId, timeout, signal)` | POST `/agent/execute` (SSE stream) |
-| `analyzeData(query, notebookId, materialIds, signal)` | POST `/agent/analyze` (SSE stream) |
-| `runResearch(query, notebookId, materialIds, signal)` | POST `/agent/research` (SSE stream) |
-| `runGeneratedCode(code, language, notebookId, sessionId, timeout)` | POST `/agent/run-generated` |
-| `getAgentStatus(jobId)` | GET `/agent/status/{jobId}` |
-| `getGeneratedFileUrl(filename, token)` | GET `/agent/file/{filename}?token=` |
-
----
-
-#### `lib/api/explainer.js`
-
-| Function | Endpoint |
-|---|---|
-| `checkExistingPresentations(materialIds, notebookId)` | POST `/explainer/check-presentations` |
-| `generateExplainerVideo(data)` | POST `/explainer/generate` |
-| `getExplainerStatus(id)` | GET `/explainer/{id}/status` |
-| `getExplainerVideoUrl(id)` | GET `/explainer/{id}/video` |
-
----
-
-#### `lib/api/podcast.js`
-
-| Function | Endpoint |
-|---|---|
-| `createPodcastSession(data)` | POST `/podcast/session` |
-| `getPodcastSessions()` | GET `/podcast/sessions` |
-| `getPodcastSession(id)` | GET `/podcast/session/{id}` |
-| `updatePodcastSession(id, data)` | PATCH `/podcast/session/{id}` |
-| `deletePodcastSession(id)` | DELETE `/podcast/session/{id}` |
-| `startPodcastGeneration(id)` | POST `/podcast/session/{id}/generate` |
-| `getSegmentAudioUrl(sessionId, index)` | GET `/podcast/session/{id}/audio/{index}` |
-| `askPodcastDoubt(sessionId, data)` | POST `/podcast/session/{id}/question` |
-| `getPodcastDoubts(sessionId)` | GET `/podcast/session/{id}/doubts` |
-| `addBookmark(sessionId, data)` | POST `/podcast/session/{id}/bookmark` |
-| `getBookmarks(sessionId)` | GET `/podcast/session/{id}/bookmarks` |
-| `addAnnotation(sessionId, data)` | POST `/podcast/session/{id}/annotation` |
-| `exportPodcast(sessionId, format)` | POST `/podcast/session/{id}/export` |
-| `getVoices(language?)` | GET `/podcast/voices` |
-| `getVoicePreview(voice, text)` | GET `/podcast/voice-preview` |
-
----
-
-#### `lib/api/jobs.js`
-
-| Function | Endpoint |
-|---|---|
-| `getJobs()` | GET `/jobs` |
-| `getJob(jobId)` | GET `/jobs/{jobId}` |
-
----
-
-## 10. Pages
-
-### Home / Dashboard
-
-**File**: `src/app/page.jsx`
-
-The main landing page for authenticated users.
-
-**Features**:
-- List all notebooks (loaded via `GET /notebooks`)
-- Create new notebook (opens inline form or navigates to `/notebook/draft`)
-- Rename notebook (inline edit)
-- Delete notebook (confirmation dialog)
-- Dark/light theme toggle
-- User menu (logout)
-- Navigate to notebook workspace
-
-**State**: Local React state (no Zustand needed — single-page data).
-
----
-
-### Auth Page
-
-**File**: `src/app/auth/page.jsx`
-
-Tabbed login / signup form.
-
-**Features**:
-- Login tab: email + password
-- Signup tab: email + username + password
-- Client-side validation mirroring backend rules
-- Post-auth redirect: reads `?redirect=` param, navigates to original destination
-- Shows errors inline
-
----
-
-### Notebook Page
-
-**File**: `src/app/notebook/[id]/page.jsx`
-
-The core workspace. Layout: `Header` + `Sidebar` + `ChatPanel` + `StudioPanel`.
-
-**Behaviour**:
-- `id === 'draft'` → sets draftMode, notebook is created on first material upload
-- Loads notebook from `GET /notebooks/{id}` on first visit
-- Lazy-loads `Sidebar`, `ChatPanel`, `StudioPanel` with `dynamic()` (no SSR)
-- Mobile: slide-in sidebar via hamburger menu
-
----
-
-### View Page
-
-**File**: `src/app/view/page.jsx`
-
-Public file viewer (no auth required).
-- Reads `?url=` query param
-- Renders file content using `FileViewerContent` component
-
----
-
-## 11. Components
-
-### Layout
-
-#### `components/layout/Header.jsx`
-- Navigation bar for notebook workspace
-- Shows notebook name (editable inline)
-- Panel toggle buttons (Chat / Studio)
-- Theme toggle
-- Back to dashboard button
-
-#### `components/layout/Sidebar.jsx`
-- Left sidebar in the notebook workspace
-- Lists all materials (source documents)
-- Upload dialog trigger
-- Web search dialog trigger
-- Material status indicators (processing, completed, failed)
-- Checkbox-based multi-source selection for RAG
-
----
-
-### Chat Components
-
-#### `ChatPanel.jsx`
-Main chat UI container. Orchestrates:
-- `ChatMessageList` (scrollable message history)
-- `ChatInputArea` (text input + slash commands)
-- `SlashCommandDropdown` (command picker overlay)
-- Agent step panel, artifact panel, execution panel
-
-#### `ChatMessage.jsx`
-Renders a single message (user or assistant):
-- `MarkdownRenderer` for rich text
-- Code blocks with syntax highlighting
-- Agent metadata display (intent, tools, steps)
-- Source citations
-
-#### `ChatMessageList.jsx`
-Virtualized or standard list of `ChatMessage` components with auto-scroll.
-
-#### `ChatInputArea.jsx`
-Multi-line textarea with:
-- Slash command activation (`/agent`, `/research`, `/code`, `/web`)
-- Active command pill display
-- Source selection indicator
-- Submit / stop streaming buttons
-- Microphone input button
-
-#### `SlashCommandDropdown.jsx`
-Overlay showing available slash commands filtered by typed prefix.
-
-#### `SlashCommandPills.jsx`
-Horizontal pills displaying active slash command context.
-
-#### `MarkdownRenderer.jsx`
-Full-featured Markdown renderer:
-- `react-markdown` + `remark-gfm` + `remark-math` + `rehype-katex` + `rehype-raw`
-- Syntax highlighting via `react-syntax-highlighter`
-- Table rendering with GFM
-- Math equations (KaTeX)
-- Raw HTML support
-
-#### `ChartRenderer.jsx`
-Renders matplotlib-generated charts (base64 PNG data URIs) returned by the Python sandbox.
-
-#### `CodeReviewBlock.jsx`
-Displays LLM-generated code before user executes it:
-- Shows code with syntax highlighting
-- "Run" button triggers `POST /agent/run-generated`
-- Shows output (stdout / chart) after execution
-
-#### `AgentStepsPanel.jsx`
-Collapsible panel showing agent step-by-step execution log.
-
-#### `AgentActionBlock.jsx`
-Individual agent action display: tool name, input, output.
-
-#### `AgentThinkingBar.jsx`
-Animated thinking indicator while agent is processing.
-
-#### `AgentReflectionChip.jsx`
-Shows agent's self-reflection reasoning.
-
-#### `ArtifactPanel.jsx`
-Side panel that shows generated artifacts (files, charts).
-
-#### `ExecutionPanel.jsx`
-Code execution output panel (stdout, stderr, exit code, chart).
-
-#### `ResearchProgress.jsx`
-Live progress tracker for web research:
-- Phase indicators (search → scrape → synthesize)
-- Source URLs loading in real-time
-
-#### `ResearchReport.jsx`
-Final rendered research report with inline citations.
-
-#### `GeneratedFileCard.jsx`
-Card showing a downloadable file generated by the agent.
-
-#### `DocumentPreview.jsx`
-Inline preview of uploaded document content.
-
-#### `BlockHoverMenu.jsx`
-Context menu on chat response blocks: simplify, translate, explain, copy.
-
-#### `MiniBlockChat.jsx`
-Inline follow-up chat within a response block.
-
-#### `ChatHistoryModal.jsx`
-Modal showing all chat sessions for the current notebook.
-
-#### `ChatEmptyState.jsx`
-Empty state when no messages exist yet.
-
-#### `CopyButton.jsx`
-One-click copy button for code blocks and text.
-
-#### `CommandBadge.jsx`
-Small badge showing which slash command was used for a message.
-
-#### `SuggestionDropdown.jsx`
-Autocomplete suggestions fetched from `POST /chat/suggest`.
-
----
-
-### Studio Components
-
-#### `StudioPanel.jsx`
-The right-side content generation panel. Tabs / feature cards:
-
-| Feature | Icon | Action |
-|---|---|---|
-| Flashcards | ClipboardCheck | Generate + view inline |
-| Quiz | FlaskConical | Generate + take quiz inline |
-| Presentation | Monitor | Generate PPT, view, download |
-| Explainer Video | Video | Generate video, watch |
-| Podcast | Mic | Open Podcast Studio |
-| Mind Map | Network | Generate + view interactive map |
-
-Also manages:
-- **Content history**: saved flashcards, quizzes, presentations, mind maps per notebook
-- **Config dialogs**: per-feature configuration (card count, difficulty, theme, etc.)
-- Lazy-loaded heavy components
-
-#### `FeatureCard.jsx`
-Individual feature card with icon, title, description, and generate button.
-
-#### `InlineFlashcardsView.jsx`
-Interactive flashcard deck within the studio panel:
-- Card flip animation
-- Navigation (prev/next)
-- Progress indicator
-- Keyboard shortcuts
-
-#### `InlineQuizView.jsx`
-MCQ quiz interface:
-- Question display
-- Option selection
-- Submit + show correct answer
-- Score summary
-
-#### `InlineExplainerView.jsx`
-Video player for explainer videos:
-- Play/pause, seek
-- Chapter navigation
-
-#### `ConfigDialogs.jsx`
-Modal dialogs for each feature's generation settings:
-- `FlashcardConfigDialog`: card count, difficulty, topic, additional instructions
-- `QuizConfigDialog`: question count, difficulty, topic, additional instructions
-
-#### `ExplainerDialog.jsx`
-Configuration for explainer video generation:
-- PPT selection (reuse existing or generate new)
-- Language selection (PPT content + narration)
-- Voice gender selection
-
-#### `ContentHistory.jsx`
-Scrollable history of all previously generated content for the notebook.
-
-#### `HistoryRenameModal.jsx`
-Rename modal for saved content entries.
-
----
-
-### Mind Map Components
-
-#### `MindMapCanvas.jsx`
-Interactive mind map using `@xyflow/react` (React Flow):
-- Hierarchical node layout via `dagre` graph algorithm
-- Pan + zoom
-- Node click → opens chat with the node topic
-- Export as PNG (html-to-image)
-- Export as PDF (jspdf)
-- Node expand on click (loads sub-topics)
-
-#### `MindMapNode.jsx`
-Custom React Flow node component:
-- Styled card with topic text
-- Color-coded by depth level
-- Click handler for chat bridge
-
-#### `MindMapView.jsx`
-Wrapper that manages mind map data loading, generation trigger, and rendering.
-
----
-
-### Podcast Components
-
-#### `PodcastStudio.jsx`
-Top-level podcast UI container:
-- Shows session library or active session player
-- Manages mode selection, generation, playback
-
-#### `PodcastConfigDialog.jsx`
-Session setup wizard:
-- Mode selection (overview, deep-dive, debate, q-and-a, topic)
-- Topic input (for topic/deep-dive modes)
-- Language selection
-- Voice selection (host + guest)
-- Material selection
-
-#### `PodcastPlayer.jsx`
-Full podcast player:
-- Segment-by-segment audio playback
-- Play/pause/seek controls
-- Current segment text display
-- Chapter navigation
-- Doubt (question) interruption button
-
-#### `PodcastMiniPlayer.jsx`
-Sticky mini player bar shown when podcast is playing.
-
-#### `PodcastTranscript.jsx`
-Full transcript view with highlighted current segment.
-
-#### `PodcastChapterBar.jsx`
-Chapter timeline navigation.
-
-#### `PodcastModeSelector.jsx`
-Mode selection cards (overview, deep-dive, etc.).
-
-#### `PodcastGenerating.jsx`
-Loading screen during script + audio generation with progress.
-
-#### `PodcastInterruptDrawer.jsx`
-Drawer for asking doubts during playback.
-
-#### `PodcastDoubtHistory.jsx`
-List of all Q&A doubts and answers for the session.
-
-#### `PodcastExportBar.jsx`
-Export controls (PDF transcript / JSON).
-
-#### `PodcastSessionLibrary.jsx`
-Grid of all saved podcast sessions with resume/delete actions.
-
-#### `VoicePicker.jsx`
-Voice selection component with preview audio playback.
-
----
-
-### Presentation Components
-
-#### `PresentationView.jsx`
-Full HTML presentation renderer:
-- Renders LLM-generated HTML slides
-- Slide navigation (prev/next, keyboard arrows)
-- Fullscreen mode
-- Export as HTML file
-- `PresentationConfigDialog` embedded here
-
----
-
-### Notebook Components
-
-#### `UploadDialog.jsx`
-Material upload modal:
-- File upload (drag & drop + file picker)
-- URL ingestion input
-- YouTube URL input
-- Plain text input
-- Progress indication during upload
-
-#### `SourceItem.jsx`
-Individual material row in the sidebar:
-- Status icon (pending → processing → completed/failed)
-- Filename / title display
-- Checkbox for source selection
-- Context menu: rename, delete, view
-
-#### `WebSearchDialog.jsx`
-Quick web search UI:
-- Query input
-- Results list
-- Option to add result URL as a material
-
----
-
-### UI Components
-
-#### `Modal.jsx`
-Generic accessible modal with backdrop and close button.
-
-#### `ToastContainer.jsx`
-Fixed-position toast notification stack (success, error, warning, info) with auto-dismiss.
-
-#### `ConfirmDialog.jsx`
-Accessible confirmation modal with "confirm" + "cancel" buttons.
-Can be configured as destructive (red confirm button).
-
-#### `ErrorBoundary.jsx`
-React error boundary for panels:
-```jsx
-<PanelErrorBoundary fallback="Panel failed to load">
-  <ChatPanel />
-</PanelErrorBoundary>
-```
-
----
-
-### Viewer Components
-
-#### `FileViewerContent.jsx`
-Content area for the `/view` page.
-Renders documents from a URL (PDF iframe, text, etc.).
-
----
-
-## 12. Custom Hooks
-
-### `useChatStream`
-
-**File**: `src/hooks/useChatStream.js`
-
-Owns all SSE event processing. Called by `ChatPanel`.
-
-**Input callbacks** (called per SSE event type):
-
-| Callback | SSE Event | Description |
-|---|---|---|
-| `onToken` | `token` | Streaming text chunk |
-| `onStep` | `step` | Agent step started |
-| `onStepDone` | `step_done` | Agent step completed |
-| `onCodeWritten` | `code_written` | LLM produced code |
-| `onCodeGenerating` | `code_generating` | Code generation in progress |
-| `onCodeStdout` | `code_stdout` | Sandbox stdout chunk |
-| `onStdout` | `stdout` | General stdout |
-| `onAgentStep` | `agent_step` | Agent framework step |
-| `onAgentStart` | `agent_start` | Agent loop started |
-| `onAgentReflection` | `agent_reflection` | Agent self-reflection |
-| `onWebResearchPhase` | `web_research_phase` | Research phase update |
-| `onCodeForReview` | `code_for_review` | Generated code ready for user approval |
-| `onRepairAttempt` | `repair_attempt` | Code repair attempt N |
-| `onRepairSuccess` | `repair_success` | Code repair succeeded |
-| `onFileReady` | `file_ready` | Downloadable file ready |
-| `onMeta` | `meta` | Message metadata (token count, latency) |
-| `onBlocks` | `blocks` | Paragraph response blocks |
-| `onArtifact` | `artifact` | Artifact (chart, file) ready |
-| `onResearchPhase` | `research_phase` | Deep research phase |
-| `onResearchSource` | `research_source` | New source discovered |
-| `onCitations` | `citations` | Source citation map |
-| `onDone` | `done` | Stream complete |
-| `onError` | `error` | Server error |
-
-**Returns**: `{ startStream, stopStream, isStreaming }`
-
----
-
-### `useMaterialUpdates`
-
-**File**: `src/hooks/useMaterialUpdates.js`
-
-Establishes WebSocket connection to `/ws/jobs/{userId}?token=<jwt>`.
-
-- Receives `material_update` events → updates material status in store
-- Receives `podcast_event` → routes to podcast WS handler
-- Auto-reconnect on disconnect
-- Sends periodic pings
-
----
-
-### `useMicInput`
-
-**File**: `src/hooks/useMicInput.js`
-
-Microphone input for voice-to-text:
-- Uses `MediaRecorder` API
-- Sends audio to backend for Whisper transcription (or uses browser speech if available)
-
----
-
-### `useMindMap`
-
-**File**: `src/hooks/useMindMap.js`
-
-Mind map state + actions:
-- Generates mind map via `POST /mindmap`
-- Loads saved mind map via `GET /mindmap/{notebookId}`
-- Node expansion
-- Export (PNG, PDF)
-- Chat bridge: sets `pendingChatMessage` on node click
-
----
-
-### `usePodcast`
-
-**File**: `src/hooks/usePodcast.js`
-
-High-level podcast lifecycle:
-- Create / load sessions
-- Start generation
-- Session CRUD
-
----
-
-### `usePodcastPlayer`
-
-**File**: `src/hooks/usePodcastPlayer.js`
-
-Audio playback state machine:
-- Loads segment audio URLs
-- Play/pause/seek
-- Auto-advance to next segment
-- Tracks current segment index
-- Communicates with `PodcastPlayer` component
-
----
-
-### `usePodcastWebSocket`
-
-**File**: `src/hooks/usePodcastWebSocket.js`
-
-Listens for `podcast_event` WebSocket messages:
-- Generation progress updates
-- Segment-ready notifications
-
----
-
-### `useResizablePanel`
-
-**File**: `src/hooks/useResizablePanel.js`
-
-Drag-to-resize panel handle between `ChatPanel` and `StudioPanel`.
-
----
-
-## 13. Slash Commands System
-
-**File**: `src/components/chat/slashCommands.js`
-
-The slash command system is the **only** way intent is communicated to the backend. The frontend never guesses intent.
-
-### Available Commands
-
-| Command | Intent | Backend behavior |
-|---|---|---|
-| `/agent` | `AGENT` | Full LangGraph agentic loop |
-| `/research` | `WEB_RESEARCH` | Deep multi-iteration web research |
-| `/code` | `CODE_EXECUTION` | NL → Python code → sandbox execute |
-| `/web` | `WEB_SEARCH` | Quick DuckDuckGo + LLM summarize |
-| _(none)_ | _(omitted)_ | RAG pipeline (default) |
-
-### How Commands Work
-
-1. User types `/agent analyze this data` in the chat input
-2. `parseSlashCommand(message)` detects the command
-3. Input area shows active command pill (colored badge)
-4. Remaining message text (`"analyze this data"`) is sent as the actual message
-5. `intent_override: "AGENT"` is included in the `POST /chat` request body
-
-### Helper Functions
-
-```javascript
-getSlashCommand(command)        // Look up by "/agent" string
-getSlashCommandByIntent(intent) // Look up by "AGENT" string
-parseSlashCommand(message)      // Parse input, extract command + rest
-```
-
----
-
-## 14. SSE (Server-Sent Events) Streaming
-
-Chat responses are streamed via **Server-Sent Events (SSE)**.
-
-**Utility**: `src/lib/utils/helpers.js` → `readSSEStream(response, callbacks)`
-
-### Stream Event Format
-
-Each event from the backend is:
-```
-data: {"type": "token", "content": "Hello"}
-data: {"type": "done", "session_id": "..."}
-```
-
-### Event Types Handled
-
-| Type | Data | Frontend Action |
-|---|---|---|
-| `token` | `{content: "..."}` | Append to streaming text |
-| `step` | `{step: N, tool: "..."}` | Show agent step indicator |
-| `step_done` | `{step: N, result: "..."}` | Complete step column |
-| `code_written` | `{code: "..."}` | Show code block |
-| `code_generating` | — | Show "generating code..." indicator |
-| `code_stdout` | `{content: "..."}` | Append to stdout panel |
-| `agent_start` | `{plan: [...]}` | Show plan preview |
-| `agent_step` | `{step, tool, input}` | Append to steps panel |
-| `agent_reflection` | `{reasoning: "..."}` | Show reflection chip |
-| `web_research_phase` | `{phase: "..."}` | Update research progress |
-| `code_for_review` | `{code, language}` | Show `CodeReviewBlock` |
-| `repair_attempt` | `{attempt: N, error: "..."}` | Show repair status |
-| `repair_success` | `{code: "..."}` | Show repaired code |
-| `file_ready` | `{filename, url, token}` | Show download card |
-| `artifact` | `{type, data}` | Render chart or artifact |
-| `blocks` | `{blocks: [...]}` | Replace streaming text with blocks |
-| `citations` | `{map: {...}}` | Link source citations |
-| `research_source` | `{url, title}` | Add to research source list |
-| `meta` | `{tokens, latency, model}` | Show message metadata footer |
-| `done` | `{session_id, ...}` | Finalize message, save session |
-| `error` | `{message: "..."}` | Show error in chat |
 
 ---
 
 ## 15. WebSocket Integration
 
-**Hook**: `src/hooks/useMaterialUpdates.js`
+### Material Status Updates (`useMaterialUpdates.js`)
+```
+On material upload:
+1. Connect: new WebSocket(`ws://api/ws/materials/{id}?token={accessToken}`)
+2. onmessage: parse event → updateMaterial(id, { status, chunkCount })
+3. onclose: reconnect with backoff (1s, 2s, 4s, maxRetries=5)
+4. Cleanup: ws.close() on component unmount
+```
 
-**Connection**: `ws://{apiHost}/ws/jobs/{userId}?token={accessToken}`
-
-### Message Types Received
-
-| Type | Action |
-|---|---|
-| `material_update` | Update material status in store (`pending` → `processing` → `completed`/`failed`) |
-| `ping` | Keepalive (no-op on client) |
-| `podcast_event` | Route to podcast WS handler (`usePodcastWebSocket`) |
-
-### Reconnect Behavior
-
-- Auto-reconnect with delay on unexpected disconnect
-- Re-authenticates with fresh access token on reconnect
+### Podcast WebSocket (`usePodcastWebSocket.js`)
+Used during podcast generation:
+```
+1. Subscribe to session updates
+2. On "segment_ready": add segment to store, enable player
+3. On "generation_complete": set session status to ready
+4. On error: show toast notification
+```
 
 ---
 
-## 16. Styling
+## 16. Theme & Styling System
 
-### Tailwind CSS
+### Dark Mode
+- Default theme: **dark** (stored in `localStorage` as `kepler-theme`)
+- Toggle in Header component
+- `next-themes` with `attribute="class"` — adds `class="dark"` to `<html>`
+- All Tailwind classes use `dark:` variant for dark styles
 
-**Config**: `tailwind.config.js`
+### Tailwind Configuration (`tailwind.config.js`)
+- Content paths: `./src/**/*.{js,jsx}`
+- Dark mode: `class` strategy
+- Custom colors, fonts, animations defined as needed
 
-Custom CSS variables defined in `src/styles/globals.css`:
-- `--color-surface` — main background
-- `--color-card` — card background
-- `--color-border` — border colors
-- `--color-text-primary` / `--color-text-secondary`
-- `--color-accent` — brand accent color
-- Loading spinner animation
-
-### Dark / Light Theme
-
-- Managed by `next-themes` with class strategy
-- `dark:` Tailwind variants throughout components
-- CSS variables toggle between dark/light values
+### Global Styles (`styles/globals.css`)
+- `@tailwind base/components/utilities`
+- Custom CSS variables (colors, spacing)
+- Scrollbar styling for dark theme
+- Code block overrides
 
 ### Typography
-
-- `react-markdown` + KaTeX for rich text and math equations
-- Code blocks: `react-syntax-highlighter` (GitHub Dark theme)
-- Monospace font for code, sans-serif for UI
+- **Inter**: body text, UI elements (variable font)
+- **JetBrains Mono**: code blocks, monospace contexts
 
 ---
 
-## 17. Build & Deployment
+## 17. Next.js Configuration
+
+`next.config.mjs`:
+
+### API Rewrites (Development Proxy)
+```js
+rewrites: [
+  { source: '/api/presentation/slides/:path*', destination: `${backendUrl}/presentation/slides/:path*` },
+  { source: '/api/:path*', destination: `${backendUrl}/:path*` }
+]
+```
+All `/api/*` calls proxied to backend (default: `http://localhost:8000`).
+
+### Output
+```js
+output: 'standalone'  // Optimized Docker builds
+```
+
+### React Strict Mode
+```js
+reactStrictMode: true  // Catches side effects in development
+```
+
+### Image Domains
+Configured to allow backend server hostnames for `next/image`:
+```js
+images: { remotePatterns: [{ protocol, hostname, port }] }
+```
+
+---
+
+## 18. Middleware
+
+`src/middleware.js` — Next.js Edge Middleware:
+
+```js
+// Runs on: all routes except /auth/* and _next/static/*
+export function middleware(request) {
+  const token = request.cookies.get('refresh_token');
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
+  
+  if (!token && !isAuthRoute) {
+    return NextResponse.redirect('/auth');
+  }
+  
+  if (token && isAuthRoute) {
+    return NextResponse.redirect('/');  // Already logged in
+  }
+  
+  return NextResponse.next();
+}
+```
+
+The middleware only checks for the **existence** of the cookie (not validity). Actual token validation is done in the auth service on API calls.
+
+---
+
+## 19. Error Handling
+
+### Global Error Boundaries
+- `app/error.jsx` — catches page-level render errors
+- `app/global-error.jsx` — catches layout-level errors
+- `PanelErrorBoundary` — per-panel boundary (Chat, Studio, Sidebar)
+
+### API Error Handling
+`lib/api/config.js`:
+```js
+if (response.status === 401) {
+  onSessionExpired();  // Triggers re-auth flow
+  throw new UnauthorizedError();
+}
+if (!response.ok) {
+  const error = await response.json();
+  throw new ApiError(error.detail, response.status);
+}
+```
+
+### Toast Notifications
+`useToastStore` used throughout:
+```js
+useToastStore.getState().add({ type: 'error', message: 'Failed to generate flashcards' });
+useToastStore.getState().add({ type: 'success', message: 'Flashcards saved!' });
+```
+
+### Loading States
+`useUIStore.setLoadingState(key, true/false)`:
+- Per-feature loading keys: `'flashcards'`, `'quiz'`, `'presentation'`, `'mindmap'`
+- Used to show spinners/overlays in StudioPanel
+
+---
+
+## 20. Build & Deployment
 
 ### Development
-
 ```bash
 cd frontend
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # Next.js dev server on :3000
 ```
 
-### Production Build
+### Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Backend API base URL |
+| `NEXT_PUBLIC_API_HOST` | `localhost` | For image domain config |
+| `NEXT_PUBLIC_API_PORT` | `8000` | Backend port |
+| `NEXT_PUBLIC_API_PROTOCOL` | `http` | http or https |
 
+### Production Build
 ```bash
-npm run build      # Outputs to .next/
-npm run start      # Serve production build
+npm run build      # Creates .next/standalone
+npm start          # Production server
 ```
 
 ### Docker
-
+`Dockerfile` (standalone output):
 ```dockerfile
-# Dockerfile included
-# Uses standalone output mode
-# Copies .next/standalone + .next/static + public/
+FROM node:20-alpine
+COPY .next/standalone ./
+COPY .next/static ./.next/static
+COPY public ./public
+CMD ["node", "server.js"]
 ```
 
-### Environment
-
-Set `NEXT_PUBLIC_API_BASE_URL` to the backend URL:
-```bash
-NEXT_PUBLIC_API_BASE_URL=https://api.keplerlab.example.com npm run build
-```
+### Deployment Notes
+- Set `NEXT_PUBLIC_API_BASE_URL` to production backend URL
+- Backend must have frontend origin in `CORS_ORIGINS`
+- Cookies require `COOKIE_SECURE=true` and `COOKIE_SAMESITE=none` for cross-domain (or same-domain for lax)
+- `output: 'standalone'` reduces Docker image size significantly
 
 ---
 
-## 18. End-to-End User Flows
-
-### Flow 1: First Use — Signup & Create Notebook
-
-```
-User visits /
-Middleware checks refresh_token cookie → missing → redirect to /auth
-/auth page: user fills signup form
-POST /auth/signup → returns user object
-POST /auth/login → sets refresh cookie + returns access token
-initAuth() runs → access token stored in memory
-scheduleRefresh() sets timer
-User lands on / (dashboard)
-  ↓
-User clicks "New Notebook"
-POST /notebooks → notebook created
-Navigate to /notebook/{id}
-```
-
----
-
-### Flow 2: Upload Material & Chat
-
-```
-/notebook/{id} loads
-Sidebar shows empty state
-User clicks "Upload" → UploadDialog opens
-User selects PDF file
-POST /upload/file → Material record created (status: pending)
-WebSocket receives: {type: "material_update", status: "processing"}
-  UI: source item shows spinner
-WebSocket receives: {type: "material_update", status: "completed"}
-  UI: green checkmark, chunk_count shown
-
-User selects source (checkbox in sidebar)
-User types question in chat input
-"No slash command" → intent omitted in request
-POST /chat {message, material_ids, notebook_id}
-  ↓
-Backend: RAG retrieval → LLM → SSE stream
-Frontend: useChatStream handles events
-  token events → text appears token by token
-  done event → message finalized, session_id set
-  blocks event → response rendered as rich Markdown blocks
-```
-
----
-
-### Flow 3: Generate Flashcards
-
-```
-User selects sources (sidebar checkboxes)
-User opens Studio panel           
-User clicks "Flashcards" feature card
-FlashcardConfigDialog opens:
-  - Card count: 20
-  - Difficulty: Medium
-  - Topic: "Chapter 3"
-User clicks Generate
-  ↓
-POST /flashcard {material_ids, card_count: 20, difficulty: "medium", topic: "Chapter 3"}
-Backend generates flashcards (LLM call in thread pool)
-  ↓
-Response: {flashcards: [{question, answer}, ...]}
-InlineFlashcardsView renders flip cards
-User can save to notebook history
-  ↓
-POST /notebooks/{id}/content {contentType: "flashcard", data: {...}}
-```
-
----
-
-### Flow 4: Agent Code Execution
-
-```
-User types in chat: "/code plot a bar chart of the CSV data"
-SlashCommandDropdown shows /code command
-User selects it → pill shows "Code 💻"
-User submits message
-  ↓
-POST /chat {message: "plot a bar chart...", intent_override: "CODE_EXECUTION", material_ids: [...]}
-Backend:
-  → agentic loop (CODE_EXECUTION)
-  → LLM generates Python code
-  → SSE: {type: "code_for_review", code: "import pandas..."}
-Frontend: CodeReviewBlock rendered
-User clicks "Run"
-  ↓
-POST /agent/run-generated {code, notebook_id}
-Backend sandbox executes code → detects matplotlib output
-SSE: {type: "stdout", content: "..."} 
-SSE: {type: "artifact", type: "chart", data: "data:image/png;base64,..."}
-Frontend: ChartRenderer shows the bar chart inline
-```
-
----
-
-### Flow 5: Podcast
-
-```
-User selects sources, opens Studio → Podcast
-PodcastConfigDialog:
-  - Mode: "overview"
-  - Language: English
-  - Host: "en-US-GuyNeural"
-  - Guest: "en-US-JennyNeural"
-User clicks Create
-  ↓
-POST /podcast/session {notebook_id, mode, language, host_voice, guest_voice, material_ids}
-POST /podcast/session/{id}/generate
-Backend: generates script via LLM → TTS each segment
-WebSocket: podcast_event → segment-ready signals
-  ↓
-PodcastPlayer: streams audio segment by segment
- GET /podcast/session/{id}/audio/0
- GET /podcast/session/{id}/audio/1 ...
-User pauses at segment 3, asks doubt
-POST /podcast/session/{id}/question {question_text, paused_at_segment: 3}
-Backend LLM answers question → TTS → audio URL returned
-Doubt answer plays inline
-User exports: POST /podcast/session/{id}/export {format: "pdf"}
-GET /podcast/export/{export_id}/file → downloads transcript PDF
-```
-
----
-
-### Flow 6: Mind Map
-
-```
-User opens Studio → Mind Map
-MindMapView: checks for saved mind map
-GET /mindmap/{notebookId} → 404 (none exists)
-User clicks Generate (sources selected)
-  ↓
-POST /mindmap {material_ids, notebook_id}
-Backend: LLM generates hierarchical graph JSON
-Response: {nodes: [...], edges: [...]}
-Saved to GeneratedContent (contentType = "mindmap")
-  ↓
-Frontend: MindMapCanvas renders with React Flow + dagre layout
-User clicks a node (e.g. "Photosynthesis")
-pendingChatMessage = "Tell me more about Photosynthesis"
-Chat panel activates with pre-filled message
-User sends → RAG response about that topic
-```
+*Generated from full codebase analysis — March 2026*

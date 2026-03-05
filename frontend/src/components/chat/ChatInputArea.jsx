@@ -14,7 +14,6 @@ import SlashCommandPills from './SlashCommandPills';
 import SlashCommandDropdown from './SlashCommandDropdown';
 import CommandBadge from './CommandBadge';
 import SuggestionDropdown from './SuggestionDropdown';
-import AgentThinkingBar from './AgentThinkingBar';
 import { parseSlashCommand } from './slashCommands';
 import { getSuggestions } from '@/lib/api/chat';
 
@@ -31,7 +30,6 @@ import { getSuggestions } from '@/lib/api/chat';
  *   hasSource — whether any source is selected
  *   isSourceProcessing — sources are indexing
  *   notebookId — current notebook id
- *   isThinking / thinkingStep / currentStepNum / isRepair / repairCount — thinking bar state
  *   mindMapBanner / onDismissBanner — mind map context banner
  */
 function ChatInputArea({
@@ -43,11 +41,6 @@ function ChatInputArea({
   hasSource,
   isSourceProcessing,
   notebookId,
-  isThinking,
-  thinkingStep,
-  currentStepNum,
-  isRepair,
-  repairCount,
   mindMapBanner,
   onDismissBanner,
 }) {
@@ -186,18 +179,6 @@ function ChatInputArea({
   return (
     <div className="p-4 sm:p-6 flex justify-center w-full z-10 sticky bottom-0 bg-linear-to-t from-surface-100 via-surface-100 to-transparent pt-12">
       <div className="max-w-4xl w-full relative">
-        {/* Agent Thinking Bar */}
-        {isThinking && (
-          <AgentThinkingBar
-            isActive={isThinking}
-            currentStep={thinkingStep}
-            stepNumber={currentStepNum}
-            totalSteps={0}
-            isRepair={isRepair}
-            repairCount={repairCount}
-          />
-        )}
-
         {/* Suggestion Dropdown */}
         {hasSource && notebookId && showSuggestions && (
           <SuggestionDropdown

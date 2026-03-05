@@ -8,10 +8,15 @@ import { readSSEStream } from '@/lib/utils/helpers';
  * useChatStream — owns all SSE event processing logic extracted from ChatPanel.
  *
  * Handles event types: token, step, step_done, code_written, code_generating,
- * code_stdout, stdout, agent_step, agent_start, agent_reflection,
- * web_research_phase, code_for_review, repair_attempt, repair_success,
- * file_ready, meta, blocks, artifact, research_phase, research_source,
- * citations, done, error
+ * code_stdout, stdout, web_research_phase, code_for_review, repair_attempt,
+ * repair_success, file_ready, meta, blocks, artifact, research_phase,
+ * research_source, citations, installing, installed, install_failed, pivot,
+ * step_timing, done, error,
+ * agent_start, tool_start, tool_result, code_generated,
+ * code_block, done_generation,
+ * web_start, web_scraping, web_sources,
+ * research_start, execution_start, execution_done, execution_blocked,
+ * install_progress, repair_suggestion
  */
 export default function useChatStream() {
   const abortControllerRef = useRef(null);
@@ -31,9 +36,6 @@ export default function useChatStream() {
     onCodeGenerating,
     onCodeStdout,
     onStdout,
-    onAgentStep,
-    onAgentStart,
-    onAgentReflection,
     onWebResearchPhase,
     onCodeForReview,
     onRepairAttempt,
@@ -45,6 +47,29 @@ export default function useChatStream() {
     onResearchPhase,
     onResearchSource,
     onCitations,
+    // ── Self-healing events ──
+    onInstalling,
+    onInstalled,
+    onInstallFailed,
+    onPivot,
+    onStepTiming,
+    // ── Agentic pipeline events ──
+    onAgentStart,
+    onToolStart,
+    onToolResult,
+    onCodeGenerated,
+    onCodeBlock,
+    onDoneGeneration,
+    onWebStart,
+    onWebScraping,
+    onWebSources,
+    onResearchStart,
+    onExecutionStart,
+    onExecutionDone,
+    onExecutionBlocked,
+    onInstallProgress,
+    onRepairSuggestion,
+    // ── Lifecycle ──
     onDone,
     onError,
     onStreamEnd,
@@ -88,7 +113,6 @@ export default function useChatStream() {
         flashcard_tool:       'Creating flashcards…',
         ppt_tool:             'Building slides…',
         file_generator:       'Generating file…',
-        agent_task_tool:      'Executing task…',
         web_research_tool:    'Deep-searching…',
         code_generation_tool: 'Generating code…',
       };
@@ -119,15 +143,6 @@ export default function useChatStream() {
         },
         stdout: (payload) => {
           onStdout?.(payload);
-        },
-        agent_step: (payload) => {
-          onAgentStep?.(payload);
-        },
-        agent_start: (payload) => {
-          onAgentStart?.(payload);
-        },
-        agent_reflection: (payload) => {
-          onAgentReflection?.(payload);
         },
         web_research_phase: (payload) => {
           onWebResearchPhase?.(payload);
@@ -164,6 +179,71 @@ export default function useChatStream() {
         },
         citations: (payload) => {
           onCitations?.(payload);
+        },
+        // ── New 3-stage self-healing events ──
+        installing: (payload) => {
+          onInstalling?.(payload);
+        },
+        installed: (payload) => {
+          onInstalled?.(payload);
+        },
+        install_failed: (payload) => {
+          onInstallFailed?.(payload);
+        },
+        pivot: (payload) => {
+          onPivot?.(payload);
+        },
+        step_timing: (payload) => {
+          onStepTiming?.(payload);
+        },
+        repairattempt: (payload) => {
+          onRepairAttempt?.(payload);
+        },
+        // ── Agentic pipeline events ──
+        agent_start: (payload) => {
+          onAgentStart?.(payload);
+        },
+        tool_start: (payload) => {
+          onToolStart?.(payload);
+        },
+        tool_result: (payload) => {
+          onToolResult?.(payload);
+        },
+        code_generated: (payload) => {
+          onCodeGenerated?.(payload);
+        },
+        code_block: (payload) => {
+          onCodeBlock?.(payload);
+        },
+        done_generation: (payload) => {
+          onDoneGeneration?.(payload);
+        },
+        web_start: (payload) => {
+          onWebStart?.(payload);
+        },
+        web_scraping: (payload) => {
+          onWebScraping?.(payload);
+        },
+        web_sources: (payload) => {
+          onWebSources?.(payload);
+        },
+        research_start: (payload) => {
+          onResearchStart?.(payload);
+        },
+        execution_start: (payload) => {
+          onExecutionStart?.(payload);
+        },
+        execution_done: (payload) => {
+          onExecutionDone?.(payload);
+        },
+        execution_blocked: (payload) => {
+          onExecutionBlocked?.(payload);
+        },
+        install_progress: (payload) => {
+          onInstallProgress?.(payload);
+        },
+        repair_suggestion: (payload) => {
+          onRepairSuggestion?.(payload);
         },
         done: (payload) => {
           onDone?.({

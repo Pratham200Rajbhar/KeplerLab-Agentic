@@ -44,6 +44,23 @@ class Settings(BaseSettings):
     MAX_CODE_REPAIR_ATTEMPTS: int = 3
     CODE_EXECUTION_TIMEOUT: int = 15
 
+    # ── Workspace / Agent Sandbox ─────────────────────────
+    WORKSPACE_BASE_DIR: str = "./data/workspaces"
+    WORKSPACE_CONTAINER_IMAGE: str = "kepler-sandbox:latest"
+    WORKSPACE_IDLE_TTL_MINUTES: int = 30
+    WORKSPACE_MEMORY_MB: int = 512
+    WORKSPACE_CPU: float = 1.0
+    ARTIFACT_TOKEN_EXPIRY_HOURS: int = 24
+    INSTALL_TIMEOUT_SECONDS: int = 30
+    APPROVED_ON_DEMAND: dict = {
+        "seaborn": "0.13.2",
+        "wordcloud": "1.9.3",
+        "missingno": "0.5.2",
+        "folium": "0.15.1",
+        "altair": "5.2.0",
+        "pyvis": "0.3.2",
+    }
+
     # ── JWT / Auth ────────────────────────────────────────
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
@@ -158,7 +175,8 @@ class Settings(BaseSettings):
         """Resolve relative paths to absolute & cross-validate provider keys."""
         # Resolve relative paths against project root
         for attr in ("CHROMA_DIR", "UPLOAD_DIR", "MODELS_DIR", "TEMPLATES_DIR",
-                     "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR"):
+                     "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR",
+                     "WORKSPACE_BASE_DIR"):
             val = getattr(self, attr)
             if val and not os.path.isabs(val):
                 object.__setattr__(self, attr, os.path.join(_PROJECT_ROOT, val))

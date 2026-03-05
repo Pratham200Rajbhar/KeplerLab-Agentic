@@ -4,8 +4,7 @@ Routing is ALWAYS set explicitly by the frontend slash command.
 The backend NEVER calls an LLM to guess or classify intent.
 
 Routing logic (strict, no inference):
-  - intent_override == "AGENT"          → agentic loop (Section 5)
-  - intent_override == "WEB_RESEARCH"   → deep research pipeline (Section 6)
+  - intent_override == "WEB_RESEARCH"   → deep research pipeline
   - intent_override == "CODE_EXECUTION" → python sandbox directly
   - intent_override == "WEB_SEARCH"     → quick web search + LLM summarize
   - No intent_override                  → RAG pipeline (default, fastest path)
@@ -169,46 +168,71 @@ async def _persist_and_finalize(
 # ── ROUTE: AGENT (intent_override == "AGENT") ────────────────
 
 async def _route_agent(request, ids, session_id, current_user, start_time):
-    """Fully agentic open-loop system via LangGraph."""
-    from app.services.agent.agentic_loop import stream_agentic_loop
+    """Multi-step autonomous agent pipeline."""
+    from app.services.agent.pipeline import stream_agent
 
     async def generate():
         try:
             full_response = []
-            agent_meta = {}
-            async for event in stream_agentic_loop(
-                query=request.message,
-                material_ids=ids,
+            tools_used = []
+            steps_count = 0
+
+            async for event in stream_agent(
+                message=request.message,
                 notebook_id=request.notebook_id,
-                user_id=str(current_user.id),
+                material_ids=ids,
                 session_id=session_id,
+                user_id=str(current_user.id),
             ):
                 yield event
-                if event.startswith("data: "):
-                    data_str = event[len("data: "):].strip()
-                    try:
-                        payload = json.loads(data_str)
-                        event_type = payload.get("type", "")
-                        if event_type == "token":
-                            full_response.append(payload.get("content", ""))
-                        elif event_type == "done":
-                            agent_meta = payload
-                    except json.JSONDecodeError:
-                        pass
+                # Capture tokens for persistence
+                if event.startswith("event: token\n"):
+                    for line in event.split("\n"):
+                        if line.startswith("data: "):
+                            try:
+                                payload = json.loads(line[len("data: "):])
+                                full_response.append(payload.get("content", ""))
+                            except json.JSONDecodeError:
+                                pass
+                elif event.startswith("event: done\n"):
+                    for line in event.split("\n"):
+                        if line.startswith("data: "):
+                            try:
+                                payload = json.loads(line[len("data: "):])
+                                tools_used = payload.get("tools_used", [])
+                                steps_count = payload.get("steps", 0)
+                            except json.JSONDecodeError:
+                                pass
 
-            complete = "".join(full_response) or agent_meta.get("response", "")
+            complete = "".join(full_response)
             if complete:
-                meta = {**agent_meta, "intent": "AGENT"}
+                meta = {
+                    "intent": "AGENT",
+                    "tools_used": tools_used,
+                    "steps_count": steps_count,
+                }
                 msg_id, blocks = await _persist_and_finalize(
                     request, session_id, current_user, start_time, complete, meta
                 )
                 if blocks:
                     yield f"event: blocks\ndata: {json.dumps({'blocks': blocks})}\n\n"
         except Exception as e:
-            logger.error("Agent streaming failed: %s", e)
+            logger.error("Agent pipeline failed: %s", e)
             yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers=_SSE_HEADERS)
+    blocks = []
+    if msg_id:
+        blocks = await chat_service.save_response_blocks(msg_id, answer)
+    if agent_meta:
+        elapsed = time.time() - start_time
+        await chat_service.log_agent_execution(
+            user_id=str(current_user.id),
+            notebook_id=request.notebook_id,
+            meta=agent_meta,
+            elapsed=elapsed,
+        )
+    return msg_id, blocks
 
 
 # ── ROUTE: WEB_RESEARCH (intent_override == "WEB_RESEARCH") ──
@@ -260,16 +284,35 @@ async def _route_web_research(request, ids, session_id, current_user, start_time
 # ── ROUTE: CODE_EXECUTION (intent_override == "CODE_EXECUTION") ──
 
 async def _route_code_execution(request, ids, session_id, current_user, start_time):
-    """Direct Python sandbox execution."""
-    from app.services.code_execution.sandbox import run_in_sandbox
+    """Two-phase code mode: Phase 1 = generate code only, Phase 2 = user clicks Run."""
     from app.services.llm_service.llm import get_llm
     from app.prompts import get_code_generation_prompt
+    from app.services.rag.secure_retriever import secure_similarity_search_enhanced
+    from app.services.rag.context_builder import build_context
 
     async def generate():
         try:
-            # Generate code from user request
-            llm = get_llm(temperature=0.1)
+            # Phase 1: Optional RAG for context
+            rag_context = ""
+            if ids:
+                try:
+                    chunks = await secure_similarity_search_enhanced(
+                        query=request.message,
+                        material_ids=ids,
+                        user_id=str(current_user.id),
+                        k=settings.INITIAL_VECTOR_K,
+                    )
+                    if chunks:
+                        rag_context = build_context(chunks, max_tokens=settings.MAX_CONTEXT_TOKENS)
+                except Exception:
+                    pass
+
+            # Phase 1: LLM generates code
+            llm = get_llm(temperature=settings.LLM_TEMPERATURE_CODE)
             prompt = get_code_generation_prompt(request.message)
+            if rag_context:
+                prompt = f"{prompt}\n\nAvailable context from uploaded materials:\n{rag_context}"
+
             code_response = await llm.ainvoke(prompt)
             code = getattr(code_response, "content", str(code_response)).strip()
 
@@ -281,37 +324,23 @@ async def _route_code_execution(request, ids, session_id, current_user, start_ti
             if code.endswith("```"):
                 code = code[:-3].strip()
 
-            yield f"event: code_generating\ndata: {json.dumps({'code': code})}\n\n"
+            # Emit code_block (the generated code for user review)
+            yield f"event: code_block\ndata: {json.dumps({'code': code, 'language': 'python', 'session_id': session_id})}\n\n"
 
-            # Execute (run_in_sandbox is async)
-            result = await run_in_sandbox(code)
+            # Emit done_generation (Phase 1 complete — waiting for user action)
+            yield f"event: done_generation\ndata: {json.dumps({'message': 'Code ready. Review and run.'})}\n\n"
 
-            result_dict = {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "exit_code": result.exit_code,
-                "timed_out": result.timed_out,
-                "error": result.error,
-                "elapsed_seconds": result.elapsed_seconds,
-            }
-            yield f"event: code_result\ndata: {json.dumps(result_dict)}\n\n"
-
-            answer = f"```python\n{code}\n```\n\n**Output:**\n```\n{result.stdout}\n```"
-            if result.error:
-                answer += f"\n\n**Error:**\n```\n{result.error}\n```"
-
-            meta = {"intent": "CODE_EXECUTION", "has_error": bool(result.error)}
+            # Save the initial code generation as a message
+            answer = f"Here is the code to accomplish your task:"
+            meta = {"intent": "CODE_EXECUTION", "original_code": code, "phase": "generated"}
             msg_id, blocks = await _persist_and_finalize(
                 request, session_id, current_user, start_time, answer, meta
             )
 
-            # Stream final response
-            for chunk in [answer[i:i+100] for i in range(0, len(answer), 100)]:
-                yield f"event: token\ndata: {json.dumps({'content': chunk})}\n\n"
-            yield f"event: done\ndata: {{}}\n\n"
+            yield f"event: done\ndata: {json.dumps({'intent': 'CODEEXECUTION', 'code': code})}\n\n"
 
         except Exception as e:
-            logger.error("Code execution failed: %s", e)
+            logger.error("Code generation failed: %s", e)
             yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers=_SSE_HEADERS)
@@ -320,50 +349,157 @@ async def _route_code_execution(request, ids, session_id, current_user, start_ti
 # ── ROUTE: WEB_SEARCH (intent_override == "WEB_SEARCH") ──────
 
 async def _route_web_search(request, ids, session_id, current_user, start_time):
-    """Quick web search + LLM summarize."""
+    """Multi-query web search + scrape + LLM synthesize with streaming."""
     from app.services.llm_service.llm import get_llm
 
     async def generate():
         try:
-            # Quick web search
-            try:
-                from app.services.agent.tools_registry import _web_search_impl
-                search_results = await _web_search_impl(request.message, n_results=5)
-            except Exception:
-                import httpx
-                async with httpx.AsyncClient(timeout=10) as client:
-                    resp = await client.get(
-                        f"{settings.SEARCH_SERVICE_URL}/search",
-                        params={"q": request.message, "n": 5},
-                    )
-                    search_results = resp.json().get("results", [])
-
-            yield f"event: search_results\ndata: {json.dumps({'results': search_results})}\n\n"
-
-            # LLM summarize search results
-            context = "\n\n".join(
-                f"[{i+1}] {r.get('title', '')}\n{r.get('snippet', '')}\nURL: {r.get('url', '')}"
-                for i, r in enumerate(search_results)
+            # Step 1: Query formulation — LLM generates 1-3 search queries
+            llm_planner = get_llm(temperature=0.1)
+            query_prompt = (
+                f"Generate 1-3 optimized web search queries to answer this question. "
+                f"Return ONLY a JSON array of strings, nothing else.\n\n"
+                f"Question: {request.message}\n\nQueries:"
             )
-            llm = get_llm(temperature=0.2)
-            prompt = (
-                f"Based on these web search results, answer the user's question.\n\n"
+            query_response = await llm_planner.ainvoke(query_prompt)
+            query_text = getattr(query_response, "content", str(query_response)).strip()
+
+            # Parse queries
+            queries = [request.message]  # fallback
+            try:
+                import json as _json
+                parsed = _json.loads(query_text.strip().strip("```json").strip("```"))
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    queries = [str(q) for q in parsed[:3]]
+            except Exception:
+                pass
+
+            yield f"event: web_start\ndata: {json.dumps({'queries': queries})}\n\n"
+
+            # Step 2: Search via external search service
+            import httpx
+            from urllib.parse import urlparse
+
+            all_results = []
+            seen_urls = set()
+
+            for q in queries:
+                try:
+                    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+                        resp = await client.post(
+                            f"{settings.SEARCH_SERVICE_URL}/api/search",
+                            json={"query": q, "engine": "duckduckgo"},
+                        )
+                        resp.raise_for_status()
+                        data = resp.json()
+                        for r in data.get("organic_results", []):
+                            url = r.get("link", "")
+                            if url and url not in seen_urls:
+                                seen_urls.add(url)
+                                all_results.append({
+                                    "title": r.get("title", ""),
+                                    "url": url,
+                                    "snippet": r.get("snippet", ""),
+                                })
+                except Exception:
+                    pass
+
+            # Step 3: Scrape top 5 via external scrape service
+            scraped = []
+            for r in all_results[:5]:
+                url = r["url"]
+                yield f"event: web_scraping\ndata: {json.dumps({'url': url, 'status': 'fetching'})}\n\n"
+                try:
+                    async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                        resp = await client.post(
+                            f"{settings.SEARCH_SERVICE_URL}/api/scrape",
+                            json={"url": url},
+                        )
+                        resp.raise_for_status()
+                        scrape_data = resp.json()
+                        # Scrape API: {"content": {"url", "title", "content": [paragraphs]}}
+                        inner = scrape_data.get("content", scrape_data)
+                        if isinstance(inner, dict):
+                            title = inner.get("title", r["title"])
+                            raw_content = inner.get("content", r["snippet"])
+                            body = (" ".join(raw_content) if isinstance(raw_content, list) else str(raw_content))[:4000]
+                        else:
+                            title = r["title"]
+                            body = str(inner)[:4000]
+                        domain = urlparse(url).netloc
+
+                        yield f"event: web_scraping\ndata: {json.dumps({'url': url, 'status': 'done'})}\n\n"
+                        scraped.append({
+                            "title": title, "url": url, "domain": domain,
+                            "content": body, "snippet": r["snippet"],
+                        })
+                except Exception:
+                    yield f"event: web_scraping\ndata: {json.dumps({'url': url, 'status': 'failed'})}\n\n"
+                    # Use snippet as fallback content
+                    scraped.append({
+                        "title": r["title"], "url": url,
+                        "domain": urlparse(url).netloc,
+                        "content": r["snippet"], "snippet": r["snippet"],
+                    })
+
+            # Step 4: Score and filter (keep top 5 by content length * relevance)
+            for s in scraped:
+                content_score = min(len(s.get("content", "")), 2000) / 2000
+                # Simple keyword overlap score
+                msg_words = set(request.message.lower().split())
+                content_words = set(s.get("content", "").lower().split()[:200])
+                overlap = len(msg_words & content_words)
+                s["_score"] = content_score * 0.5 + min(overlap / max(len(msg_words), 1), 1.0) * 0.5
+
+            scraped.sort(key=lambda x: x.get("_score", 0), reverse=True)
+            scraped = scraped[:5]
+
+            # Step 5: Synthesize with LLM — stream response
+            context = "\n\n".join(
+                f"[{i+1}] {s['title']}\nURL: {s['url']}\n{s['content'][:2000]}"
+                for i, s in enumerate(scraped)
+            )
+
+            llm = get_llm(temperature=0.3)
+            synth_prompt = (
+                f"Based on these web search results, answer the user's question. "
+                f"Cite sources inline with [1] [2] [3] format.\n\n"
                 f"Search Results:\n{context}\n\n"
                 f"User Question: {request.message}\n\n"
-                f"Provide a clear, concise answer with inline [n] citations."
+                f"Provide a clear, comprehensive answer with inline citations:"
             )
-            llm_response = await llm.ainvoke(prompt)
-            answer = getattr(llm_response, "content", str(llm_response))
 
-            meta = {"intent": "WEB_SEARCH", "results_count": len(search_results)}
+            answer_parts = []
+            async for chunk in llm.astream(synth_prompt):
+                content = getattr(chunk, "content", str(chunk))
+                if content:
+                    answer_parts.append(content)
+                    yield f"event: token\ndata: {json.dumps({'content': content})}\n\n"
+
+            # Step 6: Emit sources
+            sources = [
+                {"title": s["title"], "url": s["url"], "index": i + 1}
+                for i, s in enumerate(scraped)
+            ]
+            yield f"event: web_sources\ndata: {json.dumps({'sources': sources})}\n\n"
+
+            # Step 7: Persist
+            answer = "".join(answer_parts)
+            elapsed = time.time() - start_time
+            meta = {
+                "intent": "WEB_SEARCH",
+                "queries_used": queries,
+                "sources": sources,
+                "tokens_used": 0,
+                "elapsed": round(elapsed, 2),
+            }
             msg_id, blocks = await _persist_and_finalize(
                 request, session_id, current_user, start_time, answer, meta
             )
+            if blocks:
+                yield f"event: blocks\ndata: {json.dumps({'blocks': blocks})}\n\n"
 
-            # Stream answer
-            for chunk in [answer[i:i+100] for i in range(0, len(answer), 100)]:
-                yield f"event: token\ndata: {json.dumps({'content': chunk})}\n\n"
-            yield f"event: done\ndata: {{}}\n\n"
+            yield f"event: done\ndata: {json.dumps({'intent': 'WEBSEARCH', 'sources_count': len(sources), 'tokens_used': 0, 'elapsed': round(elapsed, 2)})}\n\n"
 
         except Exception as e:
             logger.error("Web search failed: %s", e)

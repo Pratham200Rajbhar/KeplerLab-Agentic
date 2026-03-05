@@ -1,95 +1,56 @@
-2026-03-04 21:20:21,067 app.db.prisma_client INFO Prisma client connected to database
-2026-03-04 21:20:21,068 main INFO Warming up embedding model (running in thread pool)…
-2026-03-04 21:20:21,356 app.db.chroma INFO ChromaDB client initialised at /disk1/New KeplerLab /backend/./data/chroma
-2026-03-04 21:20:21,357 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-04 21:20:25,487 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/New KeplerLab /backend/data/models/BAAI--bge-m3
-2026-03-04 21:20:26,564 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-04 21:20:26,776 app.db.chroma INFO Version marker written: /disk1/New KeplerLab /backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-04 21:20:26,778 app.db.chroma INFO ChromaDB collection 'chapters' ready (682 existing chunks).
-2026-03-04 21:20:26,910 app.services.rag.embedder INFO Embedding model warm-up complete (682 existing chunks).
-2026-03-04 21:20:26,911 main INFO Preloading reranker model (running in thread pool)…
-2026-03-04 21:20:27,060 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-04 21:20:28,983 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-04 21:20:28,983 app.services.rag.reranker INFO Reranker loaded successfully in 2.07s
-2026-03-04 21:20:28,984 main INFO Reranker preloaded.
-2026-03-04 21:20:28,985 main INFO Background job processor task created.
-2026-03-04 21:20:28,985 main INFO Ensuring sandbox packages are installed…
-2026-03-04 21:20:29,726 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-04 21:20:29,727 main INFO Output directories ensured.
-2026-03-04 21:20:29,728 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-04 21:20:36,138 main INFO POST /auth/refresh 200 0.03s [a4d40379]
-2026-03-04 21:20:36,146 performance INFO request_performance
-2026-03-04 21:20:36,147 main INFO GET /notebooks/23ab7cac-16dc-4a97-b472-bee5edf1004d 401 0.00s [6e922c47]
-2026-03-04 21:20:36,160 main INFO GET /auth/me 200 0.01s [2004afbe]
-2026-03-04 21:20:36,166 main INFO POST /auth/refresh 200 0.01s [65e5a9c3]
-2026-03-04 21:20:36,180 performance INFO request_performance
-2026-03-04 21:20:36,181 main INFO GET /notebooks/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.01s [25aa061b]
-2026-03-04 21:20:36,708 main INFO GET /materials 200 0.03s [e34ac484]
-2026-03-04 21:20:36,710 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd connected
-2026-03-04 21:20:36,715 performance INFO request_performance
-2026-03-04 21:20:36,716 main INFO GET /chat/history/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.03s [289584b9]
-2026-03-04 21:20:36,724 main INFO GET /materials 200 0.01s [38de2f15]
-2026-03-04 21:20:36,729 performance INFO request_performance
-2026-03-04 21:20:36,729 main INFO GET /chat/history/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.01s [da4b2a0b]
-2026-03-04 21:20:36,821 performance INFO request_performance
-2026-03-04 21:20:36,822 main INFO GET /podcast/sessions/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.14s [67fccb7d]
-2026-03-04 21:20:36,823 main INFO GET /chat/sessions/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.14s [58804986]
-2026-03-04 21:20:36,825 performance INFO request_performance
-2026-03-04 21:20:36,828 main INFO GET /notebooks/23ab7cac-16dc-4a97-b472-bee5edf1004d/content 200 0.14s [d18e3bc4]
-2026-03-04 21:20:36,839 performance INFO request_performance
-2026-03-04 21:20:36,839 main INFO GET /chat/sessions/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.01s [37aabbbb]
-2026-03-04 21:20:36,839 main INFO GET /podcast/sessions/23ab7cac-16dc-4a97-b472-bee5edf1004d 200 0.01s [51d7c414]
-2026-03-04 21:20:36,846 performance INFO request_performance
-2026-03-04 21:20:36,846 main INFO GET /notebooks/23ab7cac-16dc-4a97-b472-bee5edf1004d/content 200 0.02s [772e3639]
-2026-03-04 21:20:53,222 app.services.agent.agentic_loop INFO Agentic loop graph compiled
-2026-03-04 21:20:53,288 performance INFO request_performance
-2026-03-04 21:20:53,294 main INFO POST /chat 200 0.21s [1131434b]
-2026-03-04 21:25:11,278 app.services.agent.agentic_loop ERROR [stream_agentic_loop] Error: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
-For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/GRAPH_RECURSION_LIMIT
-Traceback (most recent call last):
-  File "/disk1/New KeplerLab /backend/app/services/agent/agentic_loop.py", line 541, in stream_agentic_loop
-    async for event in graph.astream_events(initial, version="v2"):
-  File "/disk1/New KeplerLab /.venv/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 1247, in astream_events
-    async for event in event_stream:
-  File "/disk1/New KeplerLab /.venv/lib/python3.11/site-packages/langchain_core/tracers/event_stream.py", line 1006, in _astream_events_implementation_v2
-    await task
-  File "/disk1/New KeplerLab /.venv/lib/python3.11/site-packages/langchain_core/tracers/event_stream.py", line 966, in consume_astream
-    async for _ in event_streamer.tap_output_aiter(run_id, stream):
-  File "/disk1/New KeplerLab /.venv/lib/python3.11/site-packages/langchain_core/tracers/event_stream.py", line 205, in tap_output_aiter
-    async for chunk in output:
-  File "/disk1/New KeplerLab /.venv/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2852, in astream
-    raise GraphRecursionError(msg)
-langgraph.errors.GraphRecursionError: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
-For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/GRAPH_RECURSION_LIMIT
-2026-03-04 21:33:36,208 main INFO POST /auth/refresh 200 0.02s [c466318c]
-2026-03-04 21:46:36,316 main INFO POST /auth/refresh 200 0.09s [3c6fae09]
-2026-03-04 21:46:59,989 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd disconnected
-2026-03-04 21:46:59,989 app.services.ws_manager INFO WS disconnect: user=0e19721a-80be-4df3-a665-a1af93ea8ccd  remaining=0
-2026-03-04 21:47:00,088 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
-2026-03-04 21:47:00,089 main INFO Background job processor stopped.
-2026-03-04 21:47:00,092 app.db.prisma_client INFO Prisma client disconnected from database
-2026-03-04 21:47:04,341 app.db.prisma_client INFO Prisma client connected to database
-2026-03-04 21:47:04,342 main INFO Warming up embedding model (running in thread pool)…
-2026-03-04 21:47:04,434 app.db.chroma INFO ChromaDB client initialised at /disk1/New KeplerLab /backend/./data/chroma
-2026-03-04 21:47:04,434 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-04 21:47:06,612 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/New KeplerLab /backend/data/models/BAAI--bge-m3
-2026-03-04 21:47:07,275 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-04 21:47:07,445 app.db.chroma INFO Version marker written: /disk1/New KeplerLab /backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-04 21:47:07,446 app.db.chroma INFO ChromaDB collection 'chapters' ready (682 existing chunks).
-2026-03-04 21:47:07,544 app.services.rag.embedder INFO Embedding model warm-up complete (682 existing chunks).
-2026-03-04 21:47:07,546 main INFO Preloading reranker model (running in thread pool)…
-2026-03-04 21:47:07,679 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-04 21:47:09,070 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-04 21:47:09,071 app.services.rag.reranker INFO Reranker loaded successfully in 1.52s
-2026-03-04 21:47:09,071 main INFO Reranker preloaded.
-2026-03-04 21:47:09,073 main INFO Background job processor task created.
-2026-03-04 21:47:09,073 main INFO Ensuring sandbox packages are installed…
-2026-03-04 21:47:09,527 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-04 21:47:09,528 main INFO Output directories ensured.
-2026-03-04 21:47:09,529 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-04 21:47:09,568 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd connected
-2026-03-04 21:59:36,376 main INFO POST /auth/refresh 200 0.04s [e42ca37c]
-2026-03-04 22:12:36,418 main INFO POST /auth/refresh 200 0.02s [9e53b812]
-2026-03-04 22:25:36,475 main INFO POST /auth/refresh 200 0.03s [52f81cc3]
-2026-03-04 22:38:36,523 main INFO POST /auth/refresh 200 0.03s [c29096b0]
-2026-03-04 22:51:36,548 main INFO POST /auth/refresh 200 0.02s [efa119ac]
+2026-03-05 18:59:37,457 app.db.prisma_client INFO Prisma client connected to database
+2026-03-05 18:59:37,461 main INFO Warming up embedding model (running in thread pool)…
+2026-03-05 18:59:37,576 app.db.chroma INFO ChromaDB client initialised at /disk1/New KeplerLab /backend/./data/chroma
+2026-03-05 18:59:37,576 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-05 18:59:40,125 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/New KeplerLab /backend/data/models/BAAI--bge-m3
+2026-03-05 18:59:40,787 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-05 18:59:40,964 app.db.chroma INFO Version marker written: /disk1/New KeplerLab /backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-05 18:59:40,967 app.db.chroma INFO ChromaDB collection 'chapters' ready (761 existing chunks).
+2026-03-05 18:59:41,054 app.services.rag.embedder INFO Embedding model warm-up complete (761 existing chunks).
+2026-03-05 18:59:41,054 main INFO Preloading reranker model (running in thread pool)…
+2026-03-05 18:59:41,186 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-05 18:59:45,539 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-05 18:59:45,543 app.services.rag.reranker INFO Reranker loaded successfully in 4.49s
+2026-03-05 18:59:45,547 main INFO Reranker preloaded.
+2026-03-05 18:59:45,552 main INFO Background job processor task created.
+2026-03-05 18:59:45,554 main INFO Ensuring sandbox packages are installed…
+2026-03-05 18:59:46,175 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-05 18:59:46,177 main INFO Output directories ensured.
+2026-03-05 18:59:46,179 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-05 18:59:58,631 main INFO POST /auth/refresh 200 0.02s [1ebecfd2]
+2026-03-05 18:59:58,653 main INFO GET /auth/me 200 0.00s [0ca2d1f6]
+2026-03-05 18:59:58,670 performance INFO request_performance
+2026-03-05 18:59:58,670 main INFO GET /notebooks 200 0.01s [8e1c2d6e]
+2026-03-05 19:00:02,403 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd connected
+2026-03-05 19:00:03,636 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd disconnected
+2026-03-05 19:00:03,636 app.services.ws_manager INFO WS disconnect: user=0e19721a-80be-4df3-a665-a1af93ea8ccd  remaining=0
+2026-03-05 19:00:03,643 performance INFO request_performance
+2026-03-05 19:00:03,643 main INFO GET /notebooks 200 0.01s [ff15faa3]
+2026-03-05 19:00:03,650 performance INFO request_performance
+2026-03-05 19:00:03,651 main INFO GET /notebooks 200 0.01s [610a697f]
+2026-03-05 19:00:04,224 performance INFO request_performance
+2026-03-05 19:00:04,224 main INFO GET /notebooks/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.01s [85f8bbe5]
+2026-03-05 19:00:04,230 performance INFO request_performance
+2026-03-05 19:00:04,231 main INFO GET /notebooks/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.00s [b517ebd4]
+2026-03-05 19:00:04,262 main INFO GET /materials 200 0.01s [1f33ede0]
+2026-03-05 19:00:04,272 performance INFO request_performance
+2026-03-05 19:00:04,274 main INFO GET /chat/sessions/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.02s [e0ae3a86]
+2026-03-05 19:00:04,281 performance INFO request_performance
+2026-03-05 19:00:04,283 main INFO GET /chat/history/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.02s [32256d2e]
+2026-03-05 19:00:04,284 performance INFO request_performance
+2026-03-05 19:00:04,284 main INFO GET /notebooks/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a/content 200 0.02s [3c71e373]
+2026-03-05 19:00:04,291 app.routes.websocket_router INFO WS /ws/jobs/0e19721a-80be-4df3-a665-a1af93ea8ccd connected
+2026-03-05 19:00:04,292 main INFO GET /materials 200 0.02s [76bc0b3b]
+2026-03-05 19:00:04,293 performance INFO request_performance
+2026-03-05 19:00:04,295 main INFO GET /chat/sessions/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.02s [0e93cced]
+2026-03-05 19:00:04,300 performance INFO request_performance
+2026-03-05 19:00:04,300 main INFO GET /chat/history/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.01s [71bcb211]
+2026-03-05 19:00:04,302 performance INFO request_performance
+2026-03-05 19:00:04,303 main INFO GET /notebooks/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a/content 200 0.02s [b83d2f89]
+2026-03-05 19:00:04,318 main INFO GET /podcast/sessions/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.05s [448cb9b3]
+2026-03-05 19:00:04,327 main INFO GET /podcast/sessions/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.01s [ed9fde16]
+2026-03-05 19:00:04,441 performance INFO request_performance
+2026-03-05 19:00:04,442 main INFO GET /chat/history/5f86819e-64fd-48fb-b5ff-d44ddaaa9c2a 200 0.01s [0b270a04]
+2026-03-05 19:12:58,670 main INFO POST /auth/refresh 200 0.01s [9e0f282f]
+2026-03-05 19:25:58,695 main INFO POST /auth/refresh 200 0.02s [eddf76d9]
+2026-03-05 19:38:58,721 main INFO POST /auth/refresh 200 0.02s [9a5cfa48]

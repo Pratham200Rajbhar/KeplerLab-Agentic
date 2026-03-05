@@ -61,6 +61,7 @@ model User {
   researchSessions ResearchSession[]
   explainerVideos  ExplainerVideo[]
   podcastSessions  PodcastSession[]
+  artifacts        Artifact[]
 
   @@map("users")
 }
@@ -84,6 +85,7 @@ model Notebook {
   codeExecutions   CodeExecutionSession[]
   researchSessions ResearchSession[]
   podcastSessions  PodcastSession[]
+  artifacts        Artifact[]
 
   @@index([userId])
   @@map("notebooks")
@@ -141,6 +143,7 @@ model ChatSession {
   notebook     Notebook      @relation(fields: [notebookId], references: [id], onDelete: Cascade)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   chatMessages ChatMessage[]
+  artifacts    Artifact[]
 
   @@index([notebookId])
   @@index([userId])
@@ -164,6 +167,7 @@ model ChatMessage {
   chatSession ChatSession? @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
 
   responseBlocks ResponseBlock[]
+  artifacts      Artifact[]
 
   @@index([chatSessionId])
   @@index([notebookId])
@@ -536,5 +540,35 @@ model PodcastAnnotation {
 
   @@index([sessionId])
   @@map("podcast_annotations")
+}
+
+// ─── Artifacts (workspace-produced files) ────────────────
+
+model Artifact {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  notebookId    String?  @map("notebook_id") @db.Uuid
+  sessionId     String?  @map("session_id") @db.Uuid
+  messageId     String?  @map("message_id") @db.Uuid
+  filename      String   @db.VarChar(255)
+  mimeType      String   @map("mime_type") @db.VarChar(128)
+  displayType   String?  @map("display_type") @db.VarChar(50)
+  sizeBytes     Int      @map("size_bytes")
+  downloadToken String   @unique @map("download_token") @db.VarChar(64)
+  tokenExpiry   DateTime @map("token_expiry")
+  workspacePath String   @map("workspace_path") @db.Text
+  sourceCode    String?  @map("source_code") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  owner    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook?    @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  message  ChatMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([notebookId])
+  @@index([sessionId])
+  @@index([downloadToken])
+  @@map("artifacts")
 }
 

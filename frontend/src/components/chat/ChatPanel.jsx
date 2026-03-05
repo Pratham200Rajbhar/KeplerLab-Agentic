@@ -21,7 +21,6 @@ import ChatMessageList from './ChatMessageList';
 import ChatInputArea from './ChatInputArea';
 import ChatHistoryModal from './ChatHistoryModal';
 import ChatEmptyState from './ChatEmptyState';
-import ArtifactPanel from './ArtifactPanel';
 
 /**
  * Thin wrapper that isolates useSearchParams so URL changes
@@ -81,29 +80,15 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
   /* ── Local state ── */
   const [streamingContent, setStreamingContent] = useState('');
-  const [agentStepLabel, setAgentStepLabel] = useState('');
   const [mindMapBanner, setMindMapBanner] = useState(null);
 
   // Agent thinking state
   const [isThinking, setIsThinking] = useState(false);
-  const [thinkingStep, setThinkingStep] = useState('');
   const [stepLog, setStepLog] = useState([]);
-  const [currentStepNum, setCurrentStepNum] = useState(0);
   const [pendingFiles, setPendingFiles] = useState([]);
-  const [isRepair, setIsRepair] = useState(false);
-  const [repairCount, setRepairCount] = useState(0);
 
   // Streaming step log
   const [liveStepLog, setLiveStepLog] = useState([]);
-
-  // Per-command state
-  const [codeForReview, setCodeForReview] = useState(null);
-  const [agentTaskSteps, setAgentTaskSteps] = useState([]);
-  const [webResearchPhase, setWebResearchPhase] = useState(null);
-
-  // Artifact panel state
-  const [artifacts, setArtifacts] = useState({});
-  const [artifactPanelOpen, setArtifactPanelOpen] = useState(false);
 
   // Sessions
   const [sessions, setSessions] = useState([]);
@@ -113,6 +98,27 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
   // Research
   const [researchMode, setResearchMode] = useState(false);
   const [researchSteps, setResearchSteps] = useState([]);
+
+  // ── Mode-specific live state (used during streaming, saved to agentMeta on done) ──
+  // Agent mode
+  const [agentPlan, setAgentPlan] = useState(null);        // { steps[], total_steps }
+  const [agentStepResults, setAgentStepResults] = useState([]); // StepResult[]
+  const [agentActiveStep, setAgentActiveStep] = useState(null); // { step_index, tool, description }
+  // Code mode
+  const [codeBlock, setCodeBlock] = useState(null);         // { code, language, packages }
+  const [codeExecResult, setCodeExecResult] = useState(null); // { stdout, stderr, exit_code }
+  // Web search mode
+  const [webSearchStatus, setWebSearchStatus] = useState('idle'); // idle | searching | scraping | synthesizing | done
+  const [webSources, setWebSources] = useState([]);
+  const [webQueries, setWebQueries] = useState([]);
+  // Research (deep) mode — enhanced
+  const [researchIteration, setResearchIteration] = useState(0);
+  const [researchTotalIterations, setResearchTotalIterations] = useState(5);
+  const [researchPhase, setResearchPhase] = useState('searching');
+  const [researchPhaseLabel, setResearchPhaseLabel] = useState('');
+  const [researchQueriesUsed, setResearchQueriesUsed] = useState([]);
+  const [researchSources, setResearchSources] = useState([]);
+  const [researchStatus, setResearchStatus] = useState('idle'); // idle | researching | synthesizing | done
   const [researchQuery, setResearchQuery] = useState('');
 
   /* ── Refs ── */
@@ -241,6 +247,15 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
   const handleStop = useCallback(() => abortControllerRef.current?.abort(), []);
 
+  /* ── Reset mode-specific state ── */
+  const resetModeState = useCallback(() => {
+    setAgentPlan(null); setAgentStepResults([]); setAgentActiveStep(null);
+    setCodeBlock(null); setCodeExecResult(null);
+    setWebSearchStatus('idle'); setWebSources([]); setWebQueries([]);
+    setResearchStatus('idle'); setResearchIteration(0); setResearchPhase('searching');
+    setResearchPhaseLabel(''); setResearchQueriesUsed([]); setResearchSources([]);
+  }, []);
+
   /* ── Main send handler ── */
   const handleSend = useCallback(async (userMessage, intentOverride, commandForMessage) => {
     if (!userMessage?.trim() || !hasSource || !currentNotebook?.id || currentNotebook.isDraft) return;
@@ -248,18 +263,11 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
     addMessage('user', userMessage, { slashCommand: commandForMessage || undefined });
     setLoadingState('chat', true);
     setStreamingContent('');
-    setAgentStepLabel('');
     setIsThinking(true);
-    setThinkingStep('');
     setStepLog([]);
     setLiveStepLog([]);
-    setCurrentStepNum(0);
     setPendingFiles([]);
-    setIsRepair(false);
-    setRepairCount(0);
-    setCodeForReview(null);
-    setAgentTaskSteps([]);
-    setWebResearchPhase(null);
+    resetModeState();
 
     const ac = new AbortController();
     abortControllerRef.current = ac;
@@ -270,20 +278,17 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
     let committedMsgId = null;
     let localStepLog = [];
     let localPendingFiles = [];
-
-    const TOOL_STEP_LABELS = {
-      rag_tool:             'Searching materials…',
-      research_tool:        'Researching online…',
-      python_tool:          'Running Python…',
-      data_profiler:        'Profiling dataset…',
-      quiz_tool:            'Generating quiz…',
-      flashcard_tool:       'Creating flashcards…',
-      ppt_tool:             'Building slides…',
-      file_generator:       'Generating file…',
-      agent_task_tool:      'Executing task…',
-      web_research_tool:    'Deep-searching…',
-      code_generation_tool: 'Generating code…',
-    };
+    let localArtifacts = [];
+    // Mode-specific accumulators
+    let localAgentPlan = null;
+    let localAgentStepResults = [];
+    let localCodeBlock = null;
+    let localCodeExecResult = null;
+    let localWebSources = [];
+    let localWebQueries = [];
+    let localResearchSources = [];
+    let localResearchQueriesUsed = [];
+    let detectedIntent = intentOverride || null;
 
     try {
       let sessionIdToUse = currentSessionId;
@@ -301,119 +306,157 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       );
 
       await readSSEStream(response.body, {
+        // ── Common events ──
         token: (p) => { accumulated += p.content || ''; setStreamingContent(accumulated); },
         step: (p) => {
-          const raw = p.tool || p.label || '';
-          const label = TOOL_STEP_LABELS[raw] || p.label || raw || 'Thinking…';
-          setAgentStepLabel(label);
-          setThinkingStep(label);
-          setCurrentStepNum((prev) => prev + 1);
-          setLiveStepLog((prev) => {
-            const updated = prev.map((s) => s.status === 'running' ? { ...s, status: 'success' } : s);
-            return [...updated, { tool: raw, label: TOOL_STEP_LABELS[raw] || raw, status: 'running' }];
-          });
+          const stepEntry = { tool: p.tool || p.label || '', status: 'running', label: p.label };
+          localStepLog.push(stepEntry);
+          setLiveStepLog([...localStepLog]);
         },
         step_done: (p) => {
           const stepEntry = p.step || { tool: p.tool, status: p.status };
           localStepLog.push(stepEntry);
           setStepLog((prev) => [...prev, stepEntry]);
-          setLiveStepLog((prev) => {
-            const lastRunningIdx = prev.findLastIndex((s) => s.status === 'running');
-            if (lastRunningIdx === -1) return [...prev, stepEntry];
-            const updated = [...prev];
-            const liveStep = updated[lastRunningIdx];
-            updated[lastRunningIdx] = { ...stepEntry, code: stepEntry.code || liveStep.code || '', stdout: stepEntry.stdout || liveStep.stdout || '' };
-            return updated;
-          });
         },
-        code_written: (p) => {
-          setLiveStepLog((prev) => {
-            if (!prev.length) return prev;
-            const updated = [...prev];
-            const idx = updated.findLastIndex((s) => s.status === 'running');
-            const ti = idx !== -1 ? idx : updated.length - 1;
-            updated[ti] = { ...updated[ti], code: p.code };
-            return updated;
-          });
-        },
-        code_generating: () => {
-          setThinkingStep('Generating code…');
-          setLiveStepLog((prev) => {
-            if (!prev.length) return prev;
-            const updated = [...prev];
-            const idx = updated.findLastIndex((s) => s.status === 'running');
-            if (idx !== -1) updated[idx] = { ...updated[idx], label: 'Generating code…' };
-            return updated;
-          });
-        },
-        code_stdout: (p) => {
-          const line = p.line || '';
-          setLiveStepLog((prev) => {
-            if (!prev.length) return prev;
-            const updated = [...prev];
-            const idx = updated.findLastIndex((s) => s.status === 'running');
-            const ti = idx !== -1 ? idx : updated.length - 1;
-            const existing = updated[ti].stdout || '';
-            updated[ti] = { ...updated[ti], stdout: existing ? existing + '\n' + line : line, label: 'Running Python…' };
-            return updated;
-          });
-        },
-        stdout: (p) => {
-          const output = p.output || '';
-          if (output) {
-            setLiveStepLog((prev) => {
-              if (!prev.length) return prev;
-              const updated = [...prev];
-              const lastIdx = updated.length - 1;
-              if (!updated[lastIdx].stdout) updated[lastIdx] = { ...updated[lastIdx], stdout: output };
-              return updated;
-            });
-          }
-        },
-        agent_step: (p) => {
-          setAgentTaskSteps((prev) => [...prev, p]);
-          const labels = { plan: 'Planning task…', act: p.action ? `Acting: ${p.action.slice(0, 50)}` : 'Executing step…', observe: 'Observing result…' };
-          setThinkingStep(labels[p.phase] || 'Thinking…');
-        },
-        web_research_phase: (p) => { setWebResearchPhase(p); setThinkingStep(p.label || `Research phase ${p.phase}/5`); },
-        code_for_review: (p) => {
-          setCodeForReview({ code: p.code || '', language: p.language || 'python', explanation: p.explanation || '', dependencies: p.dependencies || [] });
-          setThinkingStep('Code ready — review below');
-        },
-        repair_attempt: (p) => { setIsRepair(true); setRepairCount(p.attempt || 1); setThinkingStep(`Fixing error — attempt ${p.attempt || 1}`); },
-        repair_success: () => { setIsRepair(false); setThinkingStep('Fix applied, re-running…'); },
         file_ready: (p) => { localPendingFiles.push(p); setPendingFiles((prev) => [...prev, p]); },
         artifact: (p) => {
-          const type = p.type || 'files'; // charts | files | tables | code
-          setArtifacts((prev) => ({
-            ...prev,
-            [type]: [...(prev[type] || []), p],
-          }));
-          setArtifactPanelOpen(true);
+          const artifact = {
+            artifact_id: p.artifact_id || p.id || null,
+            filename: p.filename || p.name || 'file',
+            mime: p.mime || p.mimeType || '',
+            display_type: p.display_type || 'file_card',
+            url: p.url || p.download_url || p.downloadUrl || '',
+            size: p.size_bytes || p.sizeBytes || p.size || 0,
+          };
+          localArtifacts = [...localArtifacts, artifact];
         },
-        meta: (p) => { agentMeta = p; },
+        meta: (p) => { agentMeta = p; if (p.intent) detectedIntent = p.intent; },
         blocks: (p) => { messageBlocks = p.blocks || []; },
+
+        // ── Agent mode events ──
+        agent_start: (p) => {
+          detectedIntent = 'AGENT';
+          localAgentPlan = { steps: p.plan || [], total_steps: p.total_steps || 0 };
+          setAgentPlan(localAgentPlan);
+        },
+        tool_start: (p) => {
+          const step = { step_index: p.step_index, tool: p.tool, description: p.description, status: 'running' };
+          setAgentActiveStep(step);
+        },
+        tool_result: (p) => {
+          const result = {
+            step_index: p.step_index, tool: p.tool, description: p.description,
+            summary: p.summary, duration_ms: p.duration_ms,
+            artifacts: p.artifacts || [], code: p.code || null,
+            status: p.error ? 'error' : 'done', error: p.error || null,
+          };
+          localAgentStepResults = [...localAgentStepResults, result];
+          setAgentStepResults([...localAgentStepResults]);
+          setAgentActiveStep(null);
+        },
+        code_generated: (p) => {
+          // Agent mode: code generated by python_tool
+          localCodeBlock = { code: p.code, language: p.language || 'python', step_index: p.step_index };
+        },
+
+        // ── Code mode events ──
+        code_block: (p) => {
+          detectedIntent = detectedIntent || 'CODE_EXECUTION';
+          localCodeBlock = { code: p.code, language: p.language || 'python', packages: p.packages || [] };
+          setCodeBlock(localCodeBlock);
+        },
+        done_generation: (p) => {
+          // Code generation complete (Phase 1), user can now review + run
+          localCodeBlock = { code: p.code, language: p.language || 'python', packages: p.packages || [] };
+          setCodeBlock(localCodeBlock);
+        },
+
+        // ── Web search mode events ──
+        web_start: (p) => {
+          detectedIntent = detectedIntent || 'WEB_SEARCH';
+          localWebQueries = p.queries || [];
+          setWebQueries(localWebQueries);
+          setWebSearchStatus('searching');
+        },
+        web_scraping: (p) => {
+          setWebSearchStatus('scraping');
+        },
+        web_sources: (p) => {
+          localWebSources = p.sources || [];
+          setWebSources(localWebSources);
+          setWebSearchStatus('done');
+        },
+
+        // ── Research mode events ──
+        research_start: (p) => {
+          detectedIntent = detectedIntent || 'WEB_RESEARCH';
+          setResearchStatus('researching');
+          setResearchTotalIterations(p.max_iterations || 5);
+        },
+        research_phase: (p) => {
+          if (p.iteration !== undefined) setResearchIteration(p.iteration);
+          if (p.phase) setResearchPhase(p.phase);
+          if (p.label) setResearchPhaseLabel(p.label);
+          if (p.queries) {
+            localResearchQueriesUsed = [...localResearchQueriesUsed, ...p.queries];
+            setResearchQueriesUsed([...localResearchQueriesUsed]);
+          }
+          if (p.status === 'synthesizing') setResearchStatus('synthesizing');
+        },
+        research_source: (p) => {
+          localResearchSources = [...localResearchSources, p];
+          setResearchSources([...localResearchSources]);
+        },
+        citations: (p) => {
+          // Store citations to attach to the message
+          if (p.citations) {
+            agentMeta = { ...(agentMeta || {}), citations: p.citations };
+          }
+        },
+
+        // ── Lifecycle ──
         done: (p) => {
-          const finalContent = accumulated || agentMeta?.response || '';
-          if (finalContent) {
+          const finalContent = accumulated || agentMeta?.response || p.response || '';
+          if (finalContent || localCodeBlock || localArtifacts.length > 0) {
             const newMsg = {
               id: `ai-${Date.now()}`, role: 'assistant', content: finalContent,
-              agentMeta: { ...(agentMeta || {}), step_log: localStepLog.length > 0 ? localStepLog : agentMeta?.step_log || [], generated_files: localPendingFiles.length > 0 ? localPendingFiles : agentMeta?.generated_files || [], total_time: p.elapsed || 0 },
+              agentMeta: {
+                ...(agentMeta || {}),
+                intent: detectedIntent,
+                step_log: localStepLog.length > 0 ? localStepLog : agentMeta?.step_log || [],
+                generated_files: localPendingFiles.length > 0 ? localPendingFiles : agentMeta?.generated_files || [],
+                total_time: p.elapsed || 0,
+                // Agent mode
+                plan: localAgentPlan,
+                step_results: localAgentStepResults.length > 0 ? localAgentStepResults : undefined,
+                tools_used: p.tools_used || agentMeta?.tools_used || [],
+                // Code mode
+                code_block: localCodeBlock,
+                // Web search mode
+                web_sources: localWebSources.length > 0 ? localWebSources : undefined,
+                web_queries: localWebQueries.length > 0 ? localWebQueries : undefined,
+                // Research mode
+                research_sources: localResearchSources.length > 0 ? localResearchSources : undefined,
+                research_queries: localResearchQueriesUsed.length > 0 ? localResearchQueriesUsed : undefined,
+              },
               blocks: messageBlocks,
+              artifacts: localArtifacts,
             };
             setMessages((prev) => [...prev, newMsg]);
             committedMsgId = newMsg.id;
           }
-          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]); accumulated = '';
+          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]);
+          resetModeState(); accumulated = '';
         },
         error: (p) => {
           addMessage('assistant', `I encountered an error: ${p.error || 'Streaming error'}`);
-          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]); accumulated = '';
+          setStreamingContent(''); setIsThinking(false); setLiveStepLog([]);
+          resetModeState(); accumulated = '';
         },
       });
 
       if (accumulated && !committedMsgId) {
-        setMessages((prev) => [...prev, { id: `ai-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta, blocks: messageBlocks }]);
+        setMessages((prev) => [...prev, { id: `ai-${Date.now()}`, role: 'assistant', content: accumulated, agentMeta: { ...(agentMeta || {}), intent: detectedIntent }, blocks: messageBlocks }]);
         setStreamingContent('');
       }
     } catch (error) {
@@ -424,12 +467,12 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       } else {
         addMessage('assistant', `I encountered an error: ${error.message}`);
       }
-      setStreamingContent(''); setLiveStepLog([]);
+      setStreamingContent(''); setLiveStepLog([]); resetModeState();
     } finally {
-      setLoadingState('chat', false); setAgentStepLabel(''); setIsThinking(false);
-      setIsRepair(false); setRepairCount(0); abortControllerRef.current = null;
+      setLoadingState('chat', false); setIsThinking(false);
+      abortControllerRef.current = null;
     }
-  }, [hasSource, currentNotebook, currentSessionId, effectiveIds, addMessage, setLoadingState, setMessages, setCurrentSessionId]);
+  }, [hasSource, currentNotebook, currentSessionId, effectiveIds, addMessage, setLoadingState, setMessages, setCurrentSessionId, resetModeState]);
 
   /* ── Message actions ── */
   const handleDeleteMessage = useCallback((messageId) => {
@@ -578,25 +621,38 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
             onQuickAction={handleQuickAction}
           />
         ) : (
-          <ChatMessageList
-            messages={messages}
-            notebookId={currentNotebook?.id}
-            currentSessionId={currentSessionId}
-            onRetry={handleRetryMessage}
-            onEdit={handleEditMessage}
-            onDelete={handleDeleteMessage}
-            streamingContent={streamingContent}
-            liveStepLog={liveStepLog}
-            isThinking={isThinking}
-            researchMode={researchMode}
-            researchSteps={researchSteps}
-            researchQuery={researchQuery}
-            codeForReview={codeForReview}
-            agentTaskSteps={agentTaskSteps}
-            webResearchPhase={webResearchPhase}
-            agentStepLabel={agentStepLabel}
-            isLoading={isLoading}
-          />
+          <>
+            <ChatMessageList
+              messages={messages}
+              notebookId={currentNotebook?.id}
+              currentSessionId={currentSessionId}
+              onRetry={handleRetryMessage}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
+              streamingContent={streamingContent}
+              liveStepLog={liveStepLog}
+              isThinking={isThinking}
+              researchMode={researchMode}
+              researchSteps={researchSteps}
+              researchQuery={researchQuery}
+              isLoading={isLoading}
+              /* ── Mode-specific live state ── */
+              agentPlan={agentPlan}
+              agentStepResults={agentStepResults}
+              agentActiveStep={agentActiveStep}
+              codeBlock={codeBlock}
+              codeExecResult={codeExecResult}
+              webSearchStatus={webSearchStatus}
+              webSources={webSources}
+              researchStatus={researchStatus}
+              researchIteration={researchIteration}
+              researchTotalIterations={researchTotalIterations}
+              researchPhase={researchPhase}
+              researchPhaseLabel={researchPhaseLabel}
+              researchQueriesUsed={researchQueriesUsed}
+              researchSources={researchSources}
+            />
+          </>
         )}
       </div>
 
@@ -610,20 +666,8 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
         hasSource={hasSource}
         isSourceProcessing={isSourceProcessing}
         notebookId={currentNotebook?.id}
-        isThinking={isThinking}
-        thinkingStep={thinkingStep}
-        currentStepNum={currentStepNum}
-        isRepair={isRepair}
-        repairCount={repairCount}
         mindMapBanner={mindMapBanner}
         onDismissBanner={() => setMindMapBanner(null)}
-      />
-
-      {/* Artifact Panel */}
-      <ArtifactPanel
-        isOpen={artifactPanelOpen}
-        onClose={() => setArtifactPanelOpen(false)}
-        artifacts={artifacts}
       />
     </main>
   );

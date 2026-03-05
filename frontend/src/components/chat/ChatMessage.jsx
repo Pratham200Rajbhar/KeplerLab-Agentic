@@ -2,18 +2,18 @@
 
 import { useState, memo, useCallback } from 'react';
 import {
-  Check, Copy, ChevronRight, Lightbulb, ThumbsUp, ThumbsDown,
+  Check, Copy, Lightbulb, ThumbsUp, ThumbsDown,
   Search, Globe, Code2, Brain, ClipboardList, BookOpen, Monitor,
   Wrench, RotateCcw, Pencil, Trash2, X, SendHorizonal,
 } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
-import AgentStepsPanel from './AgentStepsPanel';
-import AgentActionBlock from './AgentActionBlock';
-import GeneratedFileCard from './GeneratedFileCard';
-import ExecutionPanel from './ExecutionPanel';
-import ChartRenderer from './ChartRenderer';
+import OutputRenderer from './OutputRenderer';
 import BlockHoverMenu from './BlockHoverMenu';
 import CommandBadge from './CommandBadge';
+import AgentStatusStrip from './AgentStatusStrip';
+import CodePanel from './CodePanel';
+import WebSources from './WebSources';
+import WebSearchStrip from './WebSearchStrip';
 
 const TOOL_BADGE = {
   rag_tool:       { Icon: Search,        label: 'RAG Search' },
@@ -32,7 +32,7 @@ function tryParseDataAnalysis(content) {
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
   try {
     const parsed = JSON.parse(trimmed);
-    if ('stdout' in parsed || 'base64_chart' in parsed || 'explanation' in parsed) return parsed;
+    if ('stdout' in parsed || 'explanation' in parsed) return parsed;
   } catch { /* skip */ }
   return null;
 }
@@ -83,12 +83,6 @@ function tryParseMultiSource(content) {
   return blocks.length > 0 ? blocks : null;
 }
 
-function extractPythonCode(content) {
-  if (!content) return null;
-  const match = content.match(/```python\n([\s\S]*?)```/);
-  return match ? match[1] : null;
-}
-
 function ActionButton({ icon, activeIcon, label, onClick, isActive = false }) {
   const [active, setActive] = useState(isActive);
   return (
@@ -112,12 +106,14 @@ function CopyActionButton({ content }) {
   );
 }
 
-export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit, onDelete }) {
+export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete }) {
   const isUser = message.role === 'user';
   const blocks = message.blocks || [];
   const agentMeta = message.agentMeta || null;
+  const isAgentMode = !!agentMeta;
   const stepLog = agentMeta?.step_log || message.stepLog || [];
-  const generatedFiles = agentMeta?.generated_files || message.generatedFiles || [];
+  // Unified artifacts from SSE or persisted in message
+  const allArtifacts = message.artifacts || [];
 
   /* ── User message edit state ── */
   const [isEditing, setIsEditing] = useState(false);
@@ -138,23 +134,15 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
   const dataAnalysis = !isUser ? tryParseDataAnalysis(message.content) : null;
   const multiSource = !isUser && !dataAnalysis ? tryParseMultiSource(message.content) : null;
   const researchMarkdown = !isUser && !dataAnalysis && !multiSource ? tryParseResearchJSON(message.content) : null;
-  const pythonCode = !isUser && !dataAnalysis && !multiSource && !researchMarkdown ? extractPythonCode(message.content) : null;
 
   const renderAIContent = () => {
     if (dataAnalysis) {
       return (
         <div className="markdown-content">
-          {dataAnalysis.base64_chart && <ChartRenderer base64Chart={dataAnalysis.base64_chart} explanation={dataAnalysis.explanation} title="Data Analysis Chart" />}
-          {!dataAnalysis.base64_chart && dataAnalysis.explanation && <MarkdownRenderer content={dataAnalysis.explanation} />}
-          {dataAnalysis.stdout && (
-            <details className="mt-3 group/raw" open={!dataAnalysis.explanation}>
-              <summary className="cursor-pointer text-xs text-text-muted hover:text-text-secondary select-none list-none flex items-center gap-1.5 py-1">
-                <ChevronRight className="w-3 h-3 transition-transform group-open/raw:rotate-90" />Raw output
-              </summary>
-              <pre className="mt-1.5 text-xs font-mono px-3 py-2.5 rounded-lg bg-surface-overlay border border-border/30 overflow-x-auto whitespace-pre-wrap text-text-secondary">{dataAnalysis.stdout}</pre>
-            </details>
+          {dataAnalysis.explanation && <MarkdownRenderer content={dataAnalysis.explanation} />}
+          {dataAnalysis.stdout && !dataAnalysis.explanation && (
+            <pre className="mt-1.5 text-xs font-mono px-3 py-2.5 rounded-lg bg-surface-overlay border border-border/30 overflow-x-auto whitespace-pre-wrap text-text-secondary">{dataAnalysis.stdout}</pre>
           )}
-          {message.generatedCode && <ExecutionPanel code={message.generatedCode} initialOutput={dataAnalysis.stdout || ''} initialExitCode={dataAnalysis.exit_code ?? null} />}
         </div>
       );
     }
@@ -164,11 +152,10 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
         <div className="space-y-4">
           {multiSource.map((block, i) => {
             const meta = block.tool ? TOOL_BADGE[block.tool] : null;
-            const analysis = block.json && ('stdout' in block.json || 'base64_chart' in block.json || 'explanation' in block.json) ? block.json : null;
+            const analysis = block.json && ('stdout' in block.json || 'explanation' in block.json) ? block.json : null;
             const researchMd = !analysis && block.json ? tryParseResearchJSON(block.raw) : null;
             return (
               <div key={`${block.tool || 'block'}-${i}`}>
-                {/* Tool badge — shown without source-N label */}
                 {meta && (
                   <div className="flex items-center gap-1.5 mb-2">
                     <meta.Icon className="w-3.5 h-3.5 text-text-muted" />
@@ -177,16 +164,7 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
                 )}
                 {analysis ? (
                   <div className="markdown-content">
-                    {analysis.base64_chart && <ChartRenderer base64Chart={analysis.base64_chart} explanation={analysis.explanation} title="Data Analysis Chart" />}
-                    {!analysis.base64_chart && analysis.explanation && <MarkdownRenderer content={analysis.explanation} />}
-                    {analysis.stdout && (
-                      <details className="mt-2 group/raw">
-                        <summary className="cursor-pointer text-xs text-text-muted hover:text-text-secondary select-none list-none flex items-center gap-1.5 py-1">
-                          <ChevronRight className="w-3 h-3 transition-transform group-open/raw:rotate-90" />Raw output
-                        </summary>
-                        <pre className="mt-1 text-xs font-mono px-3 py-2 rounded-lg bg-surface-overlay border border-border/30 overflow-x-auto whitespace-pre-wrap text-text-secondary">{analysis.stdout}</pre>
-                      </details>
-                    )}
+                    {analysis.explanation && <MarkdownRenderer content={analysis.explanation} />}
                   </div>
                 ) : researchMd ? (
                   <div className="markdown-content"><MarkdownRenderer content={researchMd} /></div>
@@ -205,15 +183,12 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
           {blocks.map(block => (
             <BlockHoverMenu key={block.id} blockId={block.id}><MarkdownRenderer content={block.text} /></BlockHoverMenu>
           ))}
-          {pythonCode && <ExecutionPanel code={pythonCode} />}
         </div>
       );
     }
     return (
       <div className="markdown-content">
         <MarkdownRenderer content={message.content} />
-        {pythonCode && <ExecutionPanel code={pythonCode} />}
-        {message.chartData?.base64_chart && <ChartRenderer base64Chart={message.chartData.base64_chart} explanation={message.chartData.explanation} title={message.chartData.title || 'Chart'} />}
       </div>
     );
   };
@@ -276,22 +251,75 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
     );
   }
 
+  const intent = agentMeta?.intent;
+
+  // Build step results for AgentStatusStrip from persisted step_results or step_log
+  const agentStepResults = agentMeta?.step_results || [];
+  const agentPlan = agentMeta?.plan || null;
+
   return (
     <div className="chat-msg chat-msg-ai group py-5">
       <div className="flex gap-3 w-full">
         <div className="ai-avatar shrink-0 mt-0.5"><Lightbulb className="w-4 h-4" strokeWidth={1.5} /></div>
         <div className="flex-1 min-w-0">
-          {stepLog.length > 0 && (
-            <AgentActionBlock stepLog={stepLog} toolsUsed={agentMeta?.tools_used || []} totalTime={agentMeta?.total_time || 0} isStreaming={false} />
+          {/* ── Agent mode: step timeline ── */}
+          {intent === 'AGENT' && agentStepResults.length > 0 && (
+            <AgentStatusStrip
+              status={agentMeta?.total_time ? 'done' : 'running'}
+              currentLabel="Agent execution"
+              steps={agentStepResults}
+            />
           )}
+
+          {/* ── Code mode: code block ── */}
+          {intent === 'CODE_EXECUTION' && agentMeta?.code_block && (
+            <CodePanel
+              code={agentMeta.code_block.code}
+              language={agentMeta.code_block.language || 'python'}
+              packages={agentMeta.code_block.packages}
+              status="generated"
+              notebookId={message.notebookId}
+            />
+          )}
+
+          {/* ── Generic content ── */}
           {renderAIContent()}
-          {generatedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {generatedFiles.map((file, idx) => (
-                <GeneratedFileCard key={`${file.filename}-${idx}`} filename={file.filename} downloadUrl={file.download_url} size={file.size} fileType={file.type} />
+
+          {/* Inline artifacts rendered by display_type */}
+          {allArtifacts.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {allArtifacts.map((art, idx) => (
+                <OutputRenderer key={art.artifact_id || idx} artifact={art} />
               ))}
             </div>
           )}
+
+          {/* ── Web search mode: sources ── */}
+          {intent === 'WEB_SEARCH' && agentMeta?.web_sources?.length > 0 && (
+            <WebSources sources={agentMeta.web_sources} />
+          )}
+
+          {/* ── Research mode: sources ── */}
+          {intent === 'WEB_RESEARCH' && agentMeta?.research_sources?.length > 0 && (
+            <WebSources sources={agentMeta.research_sources} />
+          )}
+
+          {/* ── Agent mode: tools used badges ── */}
+          {intent === 'AGENT' && agentMeta?.tools_used?.length > 0 && agentStepResults.length === 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {[...new Set(agentMeta.tools_used)].map(tool => {
+                const b = TOOL_BADGE[tool];
+                if (!b) return null;
+                return (
+                  <span key={tool} className="inline-flex items-center gap-1 text-xs text-text-muted px-2 py-0.5 rounded-full bg-surface-overlay/60 border border-border/20">
+                    <b.Icon className="w-3 h-3" /> {b.label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Legacy citations */}
           {message.citations?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {message.citations.map((citation, idx) => (
@@ -299,6 +327,8 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
               ))}
             </div>
           )}
+
+          {/* Action bar */}
           <div className="ai-action-bar opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-2 flex items-center gap-0.5">
             <CopyActionButton content={message.content} />
             <ActionButton label="Good response" icon={<ThumbsUp className="w-3.5 h-3.5" />} />
@@ -314,7 +344,7 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
               </button>
             )}
           </div>
-          {agentMeta?.tools_used?.length > 0 && !stepLog.length && (
+          {!intent && agentMeta?.tools_used?.length > 0 && !stepLog.length && (
             <div className="flex flex-wrap gap-1.5 mt-2.5">
               {[...new Set(agentMeta.tools_used)].map(tool => {
                 const b = TOOL_BADGE[tool];
@@ -327,8 +357,7 @@ export default memo(function ChatMessage({ message, notebookId, onRetry, onEdit,
               })}
             </div>
           )}
-          {agentMeta && !stepLog.length && <AgentStepsPanel meta={agentMeta} />}
-        </div>
+          </div>
       </div>
     </div>
   );

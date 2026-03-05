@@ -6,7 +6,10 @@ import { Lightbulb } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import MarkdownRenderer, { sanitizeStreamingMarkdown } from './MarkdownRenderer';
 import ResearchReport from './ResearchReport';
-import CodeReviewBlock from './CodeReviewBlock';
+import AgentStatusStrip from './AgentStatusStrip';
+import CodePanel from './CodePanel';
+import WebSearchStrip from './WebSearchStrip';
+import ResearchProgressPanel from './ResearchProgressPanel';
 
 /**
  * LiveStepText — animated step indicator shown during streaming.
@@ -57,10 +60,7 @@ function LiveStepText({ steps }) {
  *   liveStepLog — live step log entries
  *   isThinking — whether agent is thinking
  *   researchMode / researchSteps / researchQuery — research state
- *   codeForReview — pending generated code
- *   agentTaskSteps — /agent ReAct step cards
- *   webResearchPhase — /web research phase progress
- *   agentStepLabel — thinking bar label
+
  *   isLoading — loading state
  *   hasSource — whether source is selected
  *   isSourceProcessing — sources are indexing
@@ -81,11 +81,22 @@ function ChatMessageList({
   researchMode,
   researchSteps,
   researchQuery,
-  codeForReview,
-  agentTaskSteps,
-  webResearchPhase,
-  agentStepLabel,
   isLoading,
+  /* ── Mode-specific live state ── */
+  agentPlan,
+  agentStepResults,
+  agentActiveStep,
+  codeBlock,
+  codeExecResult,
+  webSearchStatus,
+  webSources,
+  researchStatus,
+  researchIteration,
+  researchTotalIterations,
+  researchPhase,
+  researchPhaseLabel,
+  researchQueriesUsed,
+  researchSources,
 }) {
   const messagesEndRef = useRef(null);
 
@@ -103,14 +114,13 @@ function ChatMessageList({
         <ChatMessage
           key={msg.id}
           message={msg}
-          notebookId={notebookId}
           onRetry={msg.role === 'assistant' ? onRetry : undefined}
           onEdit={msg.role === 'user' ? onEdit : undefined}
           onDelete={onDelete}
         />
       ))}
 
-      {/* Research progress */}
+      {/* Research progress (legacy) */}
       {researchMode && (
         <div className="message flex w-full justify-start message-ai">
           <div className="message-content w-full">
@@ -119,55 +129,91 @@ function ChatMessageList({
         </div>
       )}
 
+      {/* ── Live mode-specific panels ── */}
+      {/* Agent mode: live step timeline */}
+      {isLoading && agentPlan && (
+        <div className="chat-msg chat-msg-ai group py-3">
+          <div className="flex gap-3 w-full">
+            <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <AgentStatusStrip
+                status={agentActiveStep ? 'running' : (streamingContent ? 'synthesizing' : 'planning')}
+                currentLabel={agentActiveStep?.description || 'Planning...'}
+                steps={agentStepResults || []}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code mode: live code block */}
+      {isLoading && codeBlock && !streamingContent && (
+        <div className="chat-msg chat-msg-ai group py-3">
+          <div className="flex gap-3 w-full">
+            <div className="ai-avatar shrink-0 mt-0.5">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CodePanel
+                code={codeBlock.code}
+                language={codeBlock.language || 'python'}
+                packages={codeBlock.packages}
+                status="generated"
+                notebookId={notebookId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Web search: live status */}
+      {isLoading && webSearchStatus !== 'idle' && webSearchStatus !== 'done' && (
+        <div className="chat-msg chat-msg-ai group py-3">
+          <div className="flex gap-3 w-full">
+            <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <WebSearchStrip status={webSearchStatus} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Research: live progress panel */}
+      {isLoading && (researchStatus === 'researching' || researchStatus === 'synthesizing') && (
+        <div className="chat-msg chat-msg-ai group py-3">
+          <div className="flex gap-3 w-full">
+            <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <ResearchProgressPanel
+                status={researchStatus}
+                iteration={researchIteration}
+                totalIterations={researchTotalIterations}
+                currentPhase={researchPhase}
+                phaseLabel={researchPhaseLabel}
+                queriesUsed={researchQueriesUsed}
+                sources={researchSources}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Live streaming bubble */}
-      {(streamingContent || codeForReview || (isThinking && liveStepLog.length > 0)) && (
+      {(streamingContent || (isThinking && liveStepLog.length > 0)) && (
         <div className="chat-msg chat-msg-ai group py-5">
           <div className="flex gap-3 w-full">
             <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
               <Lightbulb className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              {/* /web phase progress */}
-              {webResearchPhase && !streamingContent && (
-                <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-                  <span className="text-blue-400">🔬</span>
-                  <span>Phase {webResearchPhase.phase}/5 — {webResearchPhase.label}</span>
-                </div>
-              )}
-              {/* /agent ReAct step cards (in-progress) */}
-              {agentTaskSteps.length > 0 && !streamingContent && (
-                <div className="space-y-1.5 mb-2">
-                  {agentTaskSteps.slice(-3).map((step, idx) => (
-                    <div
-                      key={step.id || idx}
-                      className="text-xs text-text-muted bg-surface-overlay/40 rounded-lg px-3 py-1.5"
-                    >
-                      {step.phase === 'plan' && (
-                        <><span className="text-orange-400">📋 Plan</span> {step.action}</>
-                      )}
-                      {step.phase === 'act' && (
-                        <><span className="text-yellow-400">⚡ Act</span> {step.action}</>
-                      )}
-                      {step.phase === 'observe' && (
-                        <><span className="text-green-400">🔎 Observe</span> {step.observation?.slice(0, 120)}…</>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {liveStepLog.length > 0 && !streamingContent && !codeForReview && (
+              {liveStepLog.length > 0 && !streamingContent && (
                 <LiveStepText steps={liveStepLog} />
-              )}
-              {/* /code — code review block */}
-              {codeForReview && (
-                <CodeReviewBlock
-                  code={codeForReview.code}
-                  language={codeForReview.language}
-                  explanation={codeForReview.explanation}
-                  dependencies={codeForReview.dependencies}
-                  notebookId={notebookId}
-                  sessionId={currentSessionId}
-                />
               )}
               {streamingContent && (
                 <div className="markdown-content">
@@ -195,9 +241,6 @@ function ChatMessageList({
                 <span />
                 <span />
               </div>
-              {agentStepLabel && (
-                <span className="text-xs text-text-muted">{agentStepLabel}</span>
-              )}
             </div>
           </div>
         </div>
