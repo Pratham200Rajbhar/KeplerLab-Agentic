@@ -1,528 +1,255 @@
-2026-03-05 21:43:48,100 app.db.prisma_client INFO Prisma client connected to database
-2026-03-05 21:43:48,100 main INFO Warming up embedding model (running in thread pool)…
-2026-03-05 21:43:48,214 app.db.chroma INFO ChromaDB client initialised at /disk1/New KeplerLab /backend/./data/chroma
-2026-03-05 21:43:48,214 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-05 21:43:50,864 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/New KeplerLab /backend/data/models/BAAI--bge-m3
-2026-03-05 21:43:51,558 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-05 21:43:51,762 app.db.chroma INFO Version marker written: /disk1/New KeplerLab /backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-05 21:43:51,763 app.db.chroma INFO ChromaDB collection 'chapters' ready (967 existing chunks).
-2026-03-05 21:43:51,863 app.services.rag.embedder INFO Embedding model warm-up complete (967 existing chunks).
-2026-03-05 21:43:51,864 main INFO Preloading reranker model (running in thread pool)…
-2026-03-05 21:43:51,996 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-05 21:43:55,090 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-05 21:43:55,091 app.services.rag.reranker INFO Reranker loaded successfully in 3.23s
-2026-03-05 21:43:55,091 main INFO Reranker preloaded.
-2026-03-05 21:43:55,093 main INFO Background job processor task created.
-2026-03-05 21:43:55,094 main INFO Ensuring sandbox packages are installed…
-2026-03-05 21:43:55,717 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-05 21:43:55,719 main INFO Output directories ensured.
-2026-03-05 21:43:55,719 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-05 21:44:20,932 main INFO GET /health 401 0.00s [74aed6f7]
-2026-03-05 21:44:20,944 app.routes.auth INFO Signup attempt for email: agent_tester_b832aede@testkepler.com
-2026-03-05 21:44:21,197 app.routes.auth INFO User registered successfully: 057ed706-9399-4495-a7f0-8976c4441536
-2026-03-05 21:44:21,198 main INFO POST /auth/signup 201 0.26s [5535024f]
-2026-03-05 21:44:21,201 app.routes.auth INFO Login attempt for email: agent_tester_b832aede@testkepler.com
-2026-03-05 21:44:21,434 app.routes.auth INFO User logged in successfully: 057ed706-9399-4495-a7f0-8976c4441536
-2026-03-05 21:44:21,435 main INFO POST /auth/login 200 0.24s [8a2029a6]
-2026-03-05 21:44:21,447 app.services.notebook_service INFO Created notebook: bdb82bc5-c0e2-4c6f-96cc-874dbb5c4b11 for user: 057ed706-9399-4495-a7f0-8976c4441536
-2026-03-05 21:44:21,447 performance INFO request_performance
-2026-03-05 21:44:21,447 main INFO POST /notebooks 201 0.01s [0e38c02e]
-2026-03-05 21:44:21,475 main INFO POST /agent/execute 200 0.03s [66a7d25d]
-2026-03-05 21:44:24,902 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:45:00,216 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:45:00,218 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:45:05,145 main INFO POST /agent/execute 200 0.01s [4a9f04b8]
-2026-03-05 21:45:08,929 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:45:18,590 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:45:24,504 main INFO POST /agent/execute 200 0.01s [e5b2b340]
-2026-03-05 21:45:28,227 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:45:35,120 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:47:09,097 main INFO GET /health 401 0.00s [e27da1d2]
-2026-03-05 21:47:09,099 app.routes.auth INFO Signup attempt for email: agent_tester_a5ad3820@testkepler.com
-2026-03-05 21:47:09,336 app.routes.auth INFO User registered successfully: 641efa2c-ad5b-452e-b409-7908630abca0
-2026-03-05 21:47:09,337 main INFO POST /auth/signup 201 0.24s [05b96925]
-2026-03-05 21:47:09,339 app.routes.auth INFO Login attempt for email: agent_tester_a5ad3820@testkepler.com
-2026-03-05 21:47:09,571 app.routes.auth INFO User logged in successfully: 641efa2c-ad5b-452e-b409-7908630abca0
-2026-03-05 21:47:09,572 main INFO POST /auth/login 200 0.23s [c2e2a273]
-2026-03-05 21:47:09,579 app.services.notebook_service INFO Created notebook: 46127bf4-f6bf-407b-a133-a58922fe1976 for user: 641efa2c-ad5b-452e-b409-7908630abca0
-2026-03-05 21:47:09,580 performance INFO request_performance
-2026-03-05 21:47:09,580 main INFO POST /notebooks 201 0.01s [4f5e6bde]
-2026-03-05 21:47:09,584 main INFO POST /agent/execute 200 0.00s [9b0e9137]
-2026-03-05 21:47:12,639 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:47:32,057 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:48:36,803 main INFO GET /health 401 0.00s [a06f1be0]
-2026-03-05 21:48:36,805 app.routes.auth INFO Signup attempt for email: agent_tester_45d047b9@testkepler.com
-2026-03-05 21:48:37,034 app.routes.auth INFO User registered successfully: 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,034 main INFO POST /auth/signup 201 0.23s [b40bab77]
-2026-03-05 21:48:37,036 app.routes.auth INFO Login attempt for email: agent_tester_45d047b9@testkepler.com
-2026-03-05 21:48:37,263 app.routes.auth INFO User logged in successfully: 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,263 main INFO POST /auth/login 200 0.23s [ce6037ae]
-2026-03-05 21:48:37,270 app.services.notebook_service INFO Created notebook: 3a2ecfce-d4f4-40d2-8652-adfc23f64c56 for user: 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,270 performance INFO request_performance
-2026-03-05 21:48:37,270 main INFO POST /notebooks 201 0.01s [a40c69e8]
-2026-03-05 21:48:37,280 app.routes.upload INFO [UPLOAD] START  file=car data (2).csv  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,281 app.routes.upload INFO [UPLOAD] file_write_time=0.7ms  file=car data (2).csv  size=17209 bytes
-2026-03-05 21:48:37,283 app.services.file_validator INFO File validation passed: car data (2).csv → f4fc2295242d4605a35f87cdcb4e3b8f.csv (text/csv, 17209 bytes)
-2026-03-05 21:48:37,283 app.routes.upload INFO Validation passed: car data (2).csv -> f4fc2295242d4605a35f87cdcb4e3b8f.csv (text/csv)
-2026-03-05 21:48:37,283 app.routes.upload INFO [UPLOAD] validation_time=2.2ms  file=car data (2).csv
-2026-03-05 21:48:37,284 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d2d3b1b1332741158d24a84013dc72ef_car data (2).csv
-2026-03-05 21:48:37,288 app.services.material_service INFO Created material record ffd7d270-2bb2-4895-b58f-f5e94659042a (pending) for user 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,292 app.services.job_service INFO Created background job 418ff308-9f6f-4b40-885b-5374bc413adf type=material_processing for user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,292 app.routes.upload INFO [UPLOAD] db_insert_time=8.2ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  job=418ff308-9f6f-4b40-885b-5374bc413adf
-2026-03-05 21:48:37,292 app.routes.upload INFO [UPLOAD] upload_request_time=12.1ms  total_upload_time=12.1ms  file_write_time=0.7ms  db_insert_time=8.2ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  job=418ff308-9f6f-4b40-885b-5374bc413adf  target=<300ms OK
-2026-03-05 21:48:37,293 main INFO POST /upload 202 0.02s [13351424]
-2026-03-05 21:48:37,295 app.services.worker INFO Processing job 418ff308-9f6f-4b40-885b-5374bc413adf | material=ffd7d270-2bb2-4895-b58f-f5e94659042a type=file user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,302 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d2d3b1b1332741158d24a84013dc72ef_car data (2).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 21:48:37,328 app.routes.upload INFO [UPLOAD] START  file=Mall_Customers (1).csv  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,330 app.routes.upload INFO [UPLOAD] file_write_time=1.8ms  file=Mall_Customers (1).csv  size=4286 bytes
-2026-03-05 21:48:37,331 app.services.file_validator INFO File validation passed: Mall_Customers (1).csv → e21dd535940d43858304d3753e3dc958.csv (text/csv, 4286 bytes)
-2026-03-05 21:48:37,331 app.routes.upload INFO Validation passed: Mall_Customers (1).csv -> e21dd535940d43858304d3753e3dc958.csv (text/csv)
-2026-03-05 21:48:37,331 app.routes.upload INFO [UPLOAD] validation_time=0.9ms  file=Mall_Customers (1).csv
-2026-03-05 21:48:37,332 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d17b5aad693a41e8a3cfcee18243bd84_Mall_Customers (1).csv
-2026-03-05 21:48:37,336 app.services.material_service INFO Created material record cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a (pending) for user 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,342 app.services.job_service INFO Created background job 9f11d524-8f6f-4cbd-abee-1360a95ebe26 type=material_processing for user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,342 app.routes.upload INFO [UPLOAD] db_insert_time=9.9ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  job=9f11d524-8f6f-4cbd-abee-1360a95ebe26
-2026-03-05 21:48:37,342 app.routes.upload INFO [UPLOAD] upload_request_time=13.6ms  total_upload_time=13.6ms  file_write_time=1.8ms  db_insert_time=9.9ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  job=9f11d524-8f6f-4cbd-abee-1360a95ebe26  target=<300ms OK
-2026-03-05 21:48:37,342 main INFO POST /upload 202 0.05s [48a1f966]
-2026-03-05 21:48:37,351 app.routes.upload INFO [UPLOAD] START  file=Social_Network_Ads (1).csv  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,359 app.routes.upload INFO [UPLOAD] file_write_time=7.0ms  file=Social_Network_Ads (1).csv  size=10926 bytes
-2026-03-05 21:48:37,364 app.services.material_service INFO PERF extraction: 62.1ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  category=document
-2026-03-05 21:48:37,365 app.services.file_validator INFO File validation passed: Social_Network_Ads (1).csv → 6f91a05a077c4b13a7ad98ffbe13fba2.csv (text/csv, 10926 bytes)
-2026-03-05 21:48:37,366 app.routes.upload INFO Validation passed: Social_Network_Ads (1).csv -> 6f91a05a077c4b13a7ad98ffbe13fba2.csv (text/csv)
-2026-03-05 21:48:37,376 app.routes.upload INFO [UPLOAD] validation_time=12.1ms  file=Social_Network_Ads (1).csv
-2026-03-05 21:48:37,376 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/130a2cb253bc4e9e84f62f36dcef7ce1_Social_Network_Ads (1).csv
-2026-03-05 21:48:37,377 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  raw_path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d2d3b1b1332741158d24a84013dc72ef_car data (2).csv
-2026-03-05 21:48:37,454 app.services.storage_service INFO Saved material text: ffd7d270-2bb2-4895-b58f-f5e94659042a (36595 chars)
-2026-03-05 21:48:37,456 app.services.material_service INFO Created material record b9c87564-d37d-4fc1-bebb-d7e246b23ffa (pending) for user 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,458 app.services.material_service INFO PERF save_text: 80.9ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  chars=36595
-2026-03-05 21:48:37,458 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=ffd7d270-2bb2-4895-b58f-f5e94659042a
-2026-03-05 21:48:37,464 app.services.job_service INFO Created background job 59c544f4-732e-497b-869c-ce932eb5974f type=material_processing for user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,465 app.routes.upload INFO [UPLOAD] db_insert_time=88.7ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  job=59c544f4-732e-497b-869c-ce932eb5974f
-2026-03-05 21:48:37,465 app.routes.upload INFO [UPLOAD] upload_request_time=114.4ms  total_upload_time=114.4ms  file_write_time=7.0ms  db_insert_time=88.7ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  job=59c544f4-732e-497b-869c-ce932eb5974f  target=<300ms OK
-2026-03-05 21:48:37,467 main INFO POST /upload 202 0.12s [306373d8]
-2026-03-05 21:48:37,484 app.routes.upload INFO [UPLOAD] START  file=Covid cases in India (1).xlsx  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,486 app.routes.upload INFO [UPLOAD] file_write_time=0.9ms  file=Covid cases in India (1).xlsx  size=14940 bytes
-2026-03-05 21:48:37,496 app.services.file_validator INFO File validation passed: Covid cases in India (1).xlsx → ec062bbcb980495baadcd009c2b7fe4d.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, 14940 bytes)
-2026-03-05 21:48:37,496 app.routes.upload INFO Validation passed: Covid cases in India (1).xlsx -> ec062bbcb980495baadcd009c2b7fe4d.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
-2026-03-05 21:48:37,497 app.routes.upload INFO [UPLOAD] validation_time=10.5ms  file=Covid cases in India (1).xlsx
-2026-03-05 21:48:37,498 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/4bbee94d042949d7bceb86cfb2a68935_Covid cases in India (1).xlsx
-2026-03-05 21:48:37,508 app.services.material_service INFO Created material record db7b28ac-1f47-41a2-a458-0ad5abc986a5 (pending) for user 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,517 app.services.job_service INFO Created background job 0b7215af-46cf-498b-a4e0-d2da00607b14 type=material_processing for user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,517 app.routes.upload INFO [UPLOAD] db_insert_time=19.0ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  job=0b7215af-46cf-498b-a4e0-d2da00607b14
-2026-03-05 21:48:37,518 app.routes.upload INFO [UPLOAD] upload_request_time=33.2ms  total_upload_time=33.2ms  file_write_time=0.9ms  db_insert_time=19.0ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  job=0b7215af-46cf-498b-a4e0-d2da00607b14  target=<300ms OK
-2026-03-05 21:48:37,519 main INFO POST /upload 202 0.04s [d8add890]
-2026-03-05 21:48:37,579 app.routes.upload INFO [UPLOAD] START  file=Introduction.pdf  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,584 app.routes.upload INFO [UPLOAD] file_write_time=4.9ms  file=Introduction.pdf  size=2793703 bytes
-2026-03-05 21:48:37,588 app.services.file_validator INFO File validation passed: Introduction.pdf → 9b125bd9d8744341b85a93bd957ef79a.pdf (application/pdf, 2793703 bytes)
-2026-03-05 21:48:37,589 app.routes.upload INFO Validation passed: Introduction.pdf -> 9b125bd9d8744341b85a93bd957ef79a.pdf (application/pdf)
-2026-03-05 21:48:37,589 app.routes.upload INFO [UPLOAD] validation_time=4.6ms  file=Introduction.pdf
-2026-03-05 21:48:37,591 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/74c15e1b708a4be7aa5c390ed3793a97_Introduction.pdf
-2026-03-05 21:48:37,595 app.services.material_service INFO Created material record d72cb6c4-8a78-4ec0-a133-c933d45a0c73 (pending) for user 9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,603 app.services.job_service INFO Created background job e92534f2-5f75-4c85-a355-fcedf2f6449e type=material_processing for user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:37,604 app.routes.upload INFO [UPLOAD] db_insert_time=12.7ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  job=e92534f2-5f75-4c85-a355-fcedf2f6449e
-2026-03-05 21:48:37,604 app.routes.upload INFO [UPLOAD] upload_request_time=25.5ms  total_upload_time=25.5ms  file_write_time=4.9ms  db_insert_time=12.7ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  job=e92534f2-5f75-4c85-a355-fcedf2f6449e  target=<300ms OK
-2026-03-05 21:48:37,606 main INFO POST /upload 202 0.08s [1778ec3a]
-2026-03-05 21:48:37,618 main INFO POST /agent/execute 200 0.01s [9cf218ad]
-2026-03-05 21:48:38,439 app.services.rag.embedder INFO Stored 1/1 chunks  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:38,439 app.services.material_service INFO PERF embedding: 972.2ms  chunks=1  material=ffd7d270-2bb2-4895-b58f-f5e94659042a
-2026-03-05 21:48:38,445 app.services.material_service INFO PERF _process_material total (critical path): 1081.2ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a
-2026-03-05 21:48:38,445 app.services.material_service INFO PERF process_material_by_id total: 1150.2ms  material=ffd7d270-2bb2-4895-b58f-f5e94659042a
-2026-03-05 21:48:38,451 app.services.worker INFO [WORKER] job_processing_time=1150.3ms  job=418ff308-9f6f-4b40-885b-5374bc413adf  material=ffd7d270-2bb2-4895-b58f-f5e94659042a  status=completed
-2026-03-05 21:48:38,456 app.services.worker INFO Processing job 9f11d524-8f6f-4cbd-abee-1360a95ebe26 | material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a type=file user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:38,458 app.services.worker INFO Processing job 59c544f4-732e-497b-869c-ce932eb5974f | material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa type=file user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:38,460 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d17b5aad693a41e8a3cfcee18243bd84_Mall_Customers (1).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 21:48:38,463 app.services.worker INFO Processing job 0b7215af-46cf-498b-a4e0-d2da00607b14 | material=db7b28ac-1f47-41a2-a458-0ad5abc986a5 type=file user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:38,465 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/130a2cb253bc4e9e84f62f36dcef7ce1_Social_Network_Ads (1).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 21:48:38,471 app.services.worker INFO Processing job e92534f2-5f75-4c85-a355-fcedf2f6449e | material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73 type=file user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:38,478 app.services.material_service INFO PERF extraction: 18.6ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  category=document
-2026-03-05 21:48:38,479 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/4bbee94d042949d7bceb86cfb2a68935_Covid cases in India (1).xlsx  ext=xlsx  mime=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet  category=document
-2026-03-05 21:48:38,489 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  raw_path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/d17b5aad693a41e8a3cfcee18243bd84_Mall_Customers (1).csv
-2026-03-05 21:48:38,495 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/74c15e1b708a4be7aa5c390ed3793a97_Introduction.pdf  ext=pdf  mime=application/pdf  category=document
-2026-03-05 21:48:38,506 app.services.material_service INFO PERF extraction: 43.1ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  category=document
-2026-03-05 21:48:38,506 app.services.storage_service INFO Saved material text: cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a (14732 chars)
-2026-03-05 21:48:38,511 app.services.material_service INFO PERF save_text: 17.7ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  chars=14732
-2026-03-05 21:48:38,512 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a
-2026-03-05 21:48:38,525 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  raw_path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/130a2cb253bc4e9e84f62f36dcef7ce1_Social_Network_Ads (1).csv
-2026-03-05 21:48:38,541 app.services.storage_service INFO Saved material text: b9c87564-d37d-4fc1-bebb-d7e246b23ffa (22118 chars)
-2026-03-05 21:48:38,541 app.services.material_service INFO PERF save_text: 5.4ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  chars=22118
-2026-03-05 21:48:38,541 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa
-2026-03-05 21:48:38,592 app.services.text_processing.extractor WARNING Parquet save failed for sheet Sheet2: ("Could not convert 'Total number of confirmed cases in India' with type str: tried to convert to int64", 'Conversion failed for column S. No. with type object')
-2026-03-05 21:48:38,688 app.services.material_service INFO PERF extraction: 210.5ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  category=document
-2026-03-05 21:48:38,719 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  raw_path=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/4bbee94d042949d7bceb86cfb2a68935_Covid cases in India (1).xlsx
-2026-03-05 21:48:38,720 app.services.storage_service INFO Saved material text: db7b28ac-1f47-41a2-a458-0ad5abc986a5 (11631 chars)
-2026-03-05 21:48:38,721 app.services.material_service INFO PERF save_text: 1.1ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  chars=11631
-2026-03-05 21:48:38,721 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5
-2026-03-05 21:48:38,827 app.services.text_processing.pdf_extractor INFO Digital PDF detected (avg 275 chars/page), using PyMuPDF
-2026-03-05 21:48:40,066 app.services.material_service INFO Background AI title updated: material=ffd7d270-2bb2-4895-b58f-f5e94659042a  title='Used Car Sales Dataset'
-2026-03-05 21:48:40,406 app.services.text_processing.resilient_runner INFO PDF-OCR attempt 1/2 (timeout=300s)
-2026-03-05 21:48:40,615 app.services.text_processing.ocr_service INFO OCR GPU mode: NVIDIA GeForce RTX 3050 6GB Laptop GPU (CUDA 12.8)
-2026-03-05 21:48:40,615 app.services.text_processing.extractor INFO Initialising OCRService singleton — first use.
-2026-03-05 21:48:41,082 app.services.rag.embedder INFO Stored 1/1 chunks  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:41,082 app.services.material_service INFO PERF embedding: 2514.9ms  chunks=1  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa
-2026-03-05 21:48:41,087 app.services.material_service INFO PERF _process_material total (critical path): 2580.6ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa
-2026-03-05 21:48:41,087 app.services.material_service INFO PERF process_material_by_id total: 2629.1ms  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa
-2026-03-05 21:48:41,090 app.services.worker INFO [WORKER] job_processing_time=2629.1ms  job=59c544f4-732e-497b-869c-ce932eb5974f  material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  status=completed
-2026-03-05 21:48:41,134 app.services.rag.embedder INFO Stored 1/1 chunks  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:41,134 app.services.material_service INFO PERF embedding: 2617.3ms  chunks=1  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a
-2026-03-05 21:48:41,138 app.services.material_service INFO PERF _process_material total (critical path): 2659.7ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a
-2026-03-05 21:48:41,138 app.services.material_service INFO PERF process_material_by_id total: 2682.3ms  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a
-2026-03-05 21:48:41,141 app.services.worker INFO [WORKER] job_processing_time=2682.5ms  job=9f11d524-8f6f-4cbd-abee-1360a95ebe26  material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  status=completed
-2026-03-05 21:48:41,517 app.services.rag.embedder INFO Stored 1/1 chunks  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:48:41,518 app.services.material_service INFO PERF embedding: 2793.3ms  chunks=1  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5
-2026-03-05 21:48:41,521 app.services.material_service INFO PERF _process_material total (critical path): 2832.3ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5
-2026-03-05 21:48:41,521 app.services.material_service INFO PERF process_material_by_id total: 3058.0ms  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5
-2026-03-05 21:48:41,524 app.services.worker INFO [WORKER] job_processing_time=3058.0ms  job=0b7215af-46cf-498b-a4e0-d2da00607b14  material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  status=completed
-2026-03-05 21:48:42,126 app.services.text_processing.ocr_service INFO EasyOCR initialised in GPU mode
-2026-03-05 21:48:42,463 app.services.text_processing.ocr_service INFO EasyOCR warm-up complete
-2026-03-05 21:48:42,463 app.services.text_processing.ocr_service INFO OCR: processing 11/61 pages  pdf=/disk1/New KeplerLab /backend/./data/uploads/9f41b73b-e4ea-4f07-b100-1d4a69528e2a/74c15e1b708a4be7aa5c390ed3793a97_Introduction.pdf
-2026-03-05 21:48:42,986 app.services.text_processing.ocr_service INFO OCR processing page 1/61
-2026-03-05 21:48:44,157 app.services.text_processing.ocr_service INFO OCR processing page 9/61
-2026-03-05 21:48:45,182 app.services.text_processing.ocr_service INFO OCR processing page 10/61
-2026-03-05 21:48:46,224 app.services.text_processing.ocr_service INFO OCR processing page 38/61
-2026-03-05 21:48:47,247 app.services.text_processing.ocr_service INFO OCR processing page 39/61
-2026-03-05 21:48:48,416 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:48:48,501 app.services.text_processing.ocr_service INFO OCR processing page 40/61
-2026-03-05 21:48:49,124 app.services.material_service INFO Background AI title updated: material=b9c87564-d37d-4fc1-bebb-d7e246b23ffa  title='Social Network Ads Purchase Dataset'
-2026-03-05 21:48:49,519 app.services.text_processing.ocr_service INFO OCR processing page 44/61
-2026-03-05 21:48:50,687 app.services.text_processing.ocr_service INFO OCR processing page 46/61
-2026-03-05 21:48:50,868 app.services.material_service INFO Background AI title updated: material=db7b28ac-1f47-41a2-a458-0ad5abc986a5  title='India State-wise COVID-19 Case Statistics'
-2026-03-05 21:48:51,317 app.services.material_service INFO Background AI title updated: material=cc844b54-c395-4ef0-ac5e-4fca2e1b3c7a  title='Mall Customer Demographics and Spending Behavior'
-2026-03-05 21:48:53,146 app.services.text_processing.ocr_service INFO OCR processing page 47/61
-2026-03-05 21:48:54,120 app.services.text_processing.ocr_service INFO OCR processing page 49/61
-2026-03-05 21:48:55,264 app.services.text_processing.ocr_service INFO OCR processing page 50/61
-2026-03-05 21:48:56,449 app.services.material_service INFO PERF extraction: 17963.5ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  category=document
-2026-03-05 21:48:56,450 app.services.storage_service INFO Saved material text: d72cb6c4-8a78-4ec0-a133-c933d45a0c73 (34589 chars)
-2026-03-05 21:48:56,450 app.services.material_service INFO PERF save_text: 0.7ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  chars=34589
-2026-03-05 21:48:56,450 app.services.text_processing.chunker INFO Detected Markdown structure, using heading-aware chunking
-2026-03-05 21:48:56,453 app.services.text_processing.chunker INFO Filtered 112 low-quality chunks
-2026-03-05 21:48:56,453 app.services.text_processing.chunker INFO Created 64 chunks from 70 sections (filtered 112 low-quality)
-2026-03-05 21:48:56,453 app.services.material_service INFO PERF chunking: 2.5ms  chunks=64  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73
-2026-03-05 21:49:18,682 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:49:18,683 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:49:19,801 app.services.rag.embedder INFO Stored 64/64 chunks  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  user=9f41b73b-e4ea-4f07-b100-1d4a69528e2a
-2026-03-05 21:49:19,801 app.services.material_service INFO PERF embedding: 23344.3ms  chunks=64  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73
-2026-03-05 21:49:19,810 app.services.material_service INFO PERF _process_material total (critical path): 23360.2ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73
-2026-03-05 21:49:19,810 app.services.material_service INFO PERF process_material_by_id total: 41335.0ms  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73
-2026-03-05 21:49:19,813 app.services.worker INFO [WORKER] job_processing_time=41335.1ms  job=e92534f2-5f75-4c85-a355-fcedf2f6449e  material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  status=completed
-2026-03-05 21:49:29,436 app.services.material_service INFO Background AI title updated: material=d72cb6c4-8a78-4ec0-a133-c933d45a0c73  title='Cloud Computing Course Outline'
-2026-03-05 21:49:34,432 main INFO POST /agent/execute 200 0.01s [128b0e80]
-2026-03-05 21:49:36,237 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:49:46,774 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:49:53,311 main INFO POST /agent/execute 200 0.01s [5056be66]
-2026-03-05 21:49:57,091 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:50:05,797 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:50:05,797 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:50:12,384 main INFO POST /agent/execute 200 0.01s [2945d24a]
-2026-03-05 21:50:44,127 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:51:15,020 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:51:15,020 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:51:29,287 main INFO POST /agent/execute 200 0.01s [13de200b]
-2026-03-05 21:51:45,133 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:52:10,471 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:52:16,485 main INFO POST /agent/execute 200 0.01s [ae747588]
-2026-03-05 21:52:29,098 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:52:43,373 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:52:57,377 main INFO POST /agent/execute 200 0.01s [1dbb1303]
-2026-03-05 21:53:00,214 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:53:15,082 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:53:15,082 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:53:15,083 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:53:27,728 main INFO POST /agent/execute 200 0.01s [0f722d82]
-2026-03-05 21:53:32,665 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:54:32,830 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:54:32,831 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:54:45,977 main INFO POST /agent/execute 200 0.01s [3e454705]
-2026-03-05 21:54:57,231 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:55:17,712 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:55:17,712 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:55:28,485 main INFO POST /agent/execute 200 0.01s [26fa62a3]
-2026-03-05 21:55:33,903 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:55:58,125 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:56:00,553 main INFO POST /agent/execute 200 0.01s [bedbacfa]
-2026-03-05 21:56:13,545 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:57:20,001 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:57:20,001 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:57:26,784 main INFO POST /agent/execute 200 0.00s [61c2829f]
-2026-03-05 21:57:33,004 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:58:03,769 app.services.code_execution.sandbox_env INFO [sandbox_env] Auto-installing missing package: wordcloud
-2026-03-05 21:58:28,118 app.services.code_execution.sandbox_env INFO [sandbox_env] Installed wordcloud
-2026-03-05 21:58:29,087 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:58:32,650 main INFO POST /agent/execute 200 0.01s [75479ca2]
-2026-03-05 21:58:44,957 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 21:58:44,958 app.services.agent.tools ERROR [rag_tool] Failed: secure_similarity_search_enhanced() got an unexpected keyword argument 'k'
-2026-03-05 21:59:18,153 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 21:59:18,153 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:07,590 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:07,590 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:07,590 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:07,591 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,853 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,853 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,853 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,854 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,854 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:00:30,854 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:01:13,102 app.services.agent.execution_engine WARNING Same error repeated, stopping repair attempts
-2026-03-05 22:02:25,650 app.services.agent.execution_engine WARNING Same error repeated, stopping repair attempts
-2026-03-05 22:02:58,666 app.services.agent.execution_engine WARNING Same error repeated, stopping repair attempts
-2026-03-05 22:03:35,698 main INFO POST /agent/execute 200 0.01s [4aac3c31]
-2026-03-05 22:03:46,801 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:03:46,802 app.services.agent.tools ERROR [rag_tool] Failed: secure_similarity_search_enhanced() got an unexpected keyword argument 'k'
-2026-03-05 22:05:14,736 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:14,737 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:14,737 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:14,738 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:14,738 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:14,738 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:05:20,801 main INFO POST /agent/execute 200 0.01s [38151bc3]
-2026-03-05 22:05:37,726 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:06:49,515 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:06:49,516 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:06:49,516 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:06:49,516 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:06:49,516 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,436 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,436 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,437 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,437 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,437 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:07:32,437 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:08:01,400 main INFO POST /agent/execute 200 0.01s [a59a18f3]
-2026-03-05 22:08:04,390 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:10:36,810 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:10:36,810 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:10:36,811 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:10:36,811 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:10:36,811 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:10:36,811 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:11:00,045 main INFO POST /agent/execute 200 0.00s [3caade64]
-2026-03-05 22:11:30,756 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:12:01,252 main INFO POST /agent/execute 200 0.01s [36e83ab3]
-2026-03-05 22:12:09,735 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:13:23,030 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:13:23,031 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:13:23,031 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:13:23,031 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:13:38,823 main INFO POST /agent/execute 200 0.01s [1a54b570]
-2026-03-05 22:14:15,534 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:17:20,326 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:17:20,326 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:17:20,326 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:17:20,326 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:17:20,327 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,355 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,356 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:19:03,357 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,649 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,649 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,650 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,650 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,650 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,650 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,650 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:02,651 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,782 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,782 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,782 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,783 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,783 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,783 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,783 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,783 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:20:53,784 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:05,417 main INFO POST /agent/execute 200 0.01s [08a9e5ca]
-2026-03-05 22:21:08,411 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:21:53,212 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:53,213 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:53,213 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:53,213 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:53,213 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:21:53,213 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:22:09,750 main INFO POST /agent/execute 200 0.01s [e59ef63a]
-2026-03-05 22:22:14,386 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:28:49,883 main INFO GET /health 401 0.00s [c7d7ff98]
-2026-03-05 22:28:49,888 app.routes.auth INFO Signup attempt for email: agent_tester_2bd36cb8@testkepler.com
-2026-03-05 22:28:50,282 app.routes.auth INFO User registered successfully: 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,283 main INFO POST /auth/signup 201 0.40s [b1d66613]
-2026-03-05 22:28:50,286 app.routes.auth INFO Login attempt for email: agent_tester_2bd36cb8@testkepler.com
-2026-03-05 22:28:50,709 app.routes.auth INFO User logged in successfully: 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,709 main INFO POST /auth/login 200 0.42s [d095f605]
-2026-03-05 22:28:50,724 app.services.notebook_service INFO Created notebook: 89ef649f-9846-495f-92c7-8a90dff8d55c for user: 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,725 performance INFO request_performance
-2026-03-05 22:28:50,725 main INFO POST /notebooks 201 0.01s [935afd21]
-2026-03-05 22:28:50,737 app.routes.upload INFO [UPLOAD] START  file=car data (2).csv  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,738 app.routes.upload INFO [UPLOAD] file_write_time=0.5ms  file=car data (2).csv  size=17209 bytes
-2026-03-05 22:28:50,739 app.services.file_validator INFO File validation passed: car data (2).csv → 74ec7fd3a6524fa7b586a56054b10e35.csv (text/csv, 17209 bytes)
-2026-03-05 22:28:50,739 app.routes.upload INFO Validation passed: car data (2).csv -> 74ec7fd3a6524fa7b586a56054b10e35.csv (text/csv)
-2026-03-05 22:28:50,739 app.routes.upload INFO [UPLOAD] validation_time=1.3ms  file=car data (2).csv
-2026-03-05 22:28:50,740 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/98f76eaf24cb4117a13a280d2672ec93_car data (2).csv
-2026-03-05 22:28:50,744 app.services.material_service INFO Created material record 0fe02bd9-64ea-4230-8752-9980ce569dd8 (pending) for user 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,748 app.services.job_service INFO Created background job 67343a1b-3f09-413e-bdb2-bc596c0fcecb type=material_processing for user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,748 app.routes.upload INFO [UPLOAD] db_insert_time=7.7ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  job=67343a1b-3f09-413e-bdb2-bc596c0fcecb
-2026-03-05 22:28:50,748 app.routes.upload INFO [UPLOAD] upload_request_time=11.1ms  total_upload_time=11.1ms  file_write_time=0.5ms  db_insert_time=7.7ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  job=67343a1b-3f09-413e-bdb2-bc596c0fcecb  target=<300ms OK
-2026-03-05 22:28:50,749 main INFO POST /upload 202 0.02s [5e2a121c]
-2026-03-05 22:28:50,753 app.services.worker INFO Processing job 67343a1b-3f09-413e-bdb2-bc596c0fcecb | material=0fe02bd9-64ea-4230-8752-9980ce569dd8 type=file user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,760 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/98f76eaf24cb4117a13a280d2672ec93_car data (2).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 22:28:50,762 app.routes.upload INFO [UPLOAD] START  file=Mall_Customers (1).csv  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,763 app.routes.upload INFO [UPLOAD] file_write_time=0.8ms  file=Mall_Customers (1).csv  size=4286 bytes
-2026-03-05 22:28:50,768 app.services.file_validator INFO File validation passed: Mall_Customers (1).csv → c2b8a845c15e4a3ab87fc805eb1b1b4c.csv (text/csv, 4286 bytes)
-2026-03-05 22:28:50,768 app.routes.upload INFO Validation passed: Mall_Customers (1).csv -> c2b8a845c15e4a3ab87fc805eb1b1b4c.csv (text/csv)
-2026-03-05 22:28:50,768 app.routes.upload INFO [UPLOAD] validation_time=3.4ms  file=Mall_Customers (1).csv
-2026-03-05 22:28:50,769 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/919c6e74303f491381f4f212e533232f_Mall_Customers (1).csv
-2026-03-05 22:28:50,777 app.services.material_service INFO Created material record 7ef11029-be7c-41b1-9c19-5872743e6a9a (pending) for user 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,798 app.services.job_service INFO Created background job 7932f750-406f-436c-8ac3-e5f4524a94fa type=material_processing for user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,798 app.routes.upload INFO [UPLOAD] db_insert_time=29.3ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  job=7932f750-406f-436c-8ac3-e5f4524a94fa
-2026-03-05 22:28:50,798 app.routes.upload INFO [UPLOAD] upload_request_time=36.5ms  total_upload_time=36.5ms  file_write_time=0.8ms  db_insert_time=29.3ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  job=7932f750-406f-436c-8ac3-e5f4524a94fa  target=<300ms OK
-2026-03-05 22:28:50,799 app.services.material_service INFO PERF extraction: 40.3ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  category=document
-2026-03-05 22:28:50,799 main INFO POST /upload 202 0.05s [0b411e18]
-2026-03-05 22:28:50,820 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  raw_path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/98f76eaf24cb4117a13a280d2672ec93_car data (2).csv
-2026-03-05 22:28:50,828 app.services.storage_service INFO Saved material text: 0fe02bd9-64ea-4230-8752-9980ce569dd8 (36595 chars)
-2026-03-05 22:28:50,829 app.services.material_service INFO PERF save_text: 8.0ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  chars=36595
-2026-03-05 22:28:50,829 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=0fe02bd9-64ea-4230-8752-9980ce569dd8
-2026-03-05 22:28:50,831 app.routes.upload INFO [UPLOAD] START  file=Social_Network_Ads (1).csv  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,832 app.routes.upload INFO [UPLOAD] file_write_time=0.7ms  file=Social_Network_Ads (1).csv  size=10926 bytes
-2026-03-05 22:28:50,833 app.services.file_validator INFO File validation passed: Social_Network_Ads (1).csv → 4df082ecd6a440b6b714f022e9a5d777.csv (text/csv, 10926 bytes)
-2026-03-05 22:28:50,833 app.routes.upload INFO Validation passed: Social_Network_Ads (1).csv -> 4df082ecd6a440b6b714f022e9a5d777.csv (text/csv)
-2026-03-05 22:28:50,834 app.routes.upload INFO [UPLOAD] validation_time=1.1ms  file=Social_Network_Ads (1).csv
-2026-03-05 22:28:50,834 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a716ab7ac171469cb2decc21417130a2_Social_Network_Ads (1).csv
-2026-03-05 22:28:50,857 app.services.material_service INFO Created material record a5d12c03-3efa-449e-ac7b-fdcaa467acf8 (pending) for user 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,864 app.services.job_service INFO Created background job 57627237-b8d5-41a6-bf3e-8ae920f87d7a type=material_processing for user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,864 app.routes.upload INFO [UPLOAD] db_insert_time=30.4ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  job=57627237-b8d5-41a6-bf3e-8ae920f87d7a
-2026-03-05 22:28:50,865 app.routes.upload INFO [UPLOAD] upload_request_time=33.3ms  total_upload_time=33.3ms  file_write_time=0.7ms  db_insert_time=30.4ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  job=57627237-b8d5-41a6-bf3e-8ae920f87d7a  target=<300ms OK
-2026-03-05 22:28:50,865 main INFO POST /upload 202 0.06s [de139a78]
-2026-03-05 22:28:50,873 app.routes.upload INFO [UPLOAD] START  file=Covid cases in India (1).xlsx  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,874 app.routes.upload INFO [UPLOAD] file_write_time=0.6ms  file=Covid cases in India (1).xlsx  size=14940 bytes
-2026-03-05 22:28:50,876 app.services.file_validator INFO File validation passed: Covid cases in India (1).xlsx → b94d22f33c9d458b9c558830a45b547a.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, 14940 bytes)
-2026-03-05 22:28:50,876 app.routes.upload INFO Validation passed: Covid cases in India (1).xlsx -> b94d22f33c9d458b9c558830a45b547a.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
-2026-03-05 22:28:50,876 app.routes.upload INFO [UPLOAD] validation_time=1.8ms  file=Covid cases in India (1).xlsx
-2026-03-05 22:28:50,877 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/4f8ebc1979f94aca88fadda5ca73bb59_Covid cases in India (1).xlsx
-2026-03-05 22:28:50,883 app.services.material_service INFO Created material record 618eada0-ba56-49fb-807d-97b259796fc2 (pending) for user 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,888 app.services.job_service INFO Created background job b177cc68-e90c-4b5b-a9b5-fb96f09fff96 type=material_processing for user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,889 app.routes.upload INFO [UPLOAD] db_insert_time=11.3ms  material=618eada0-ba56-49fb-807d-97b259796fc2  job=b177cc68-e90c-4b5b-a9b5-fb96f09fff96
-2026-03-05 22:28:50,889 app.routes.upload INFO [UPLOAD] upload_request_time=15.4ms  total_upload_time=15.4ms  file_write_time=0.6ms  db_insert_time=11.3ms  material=618eada0-ba56-49fb-807d-97b259796fc2  job=b177cc68-e90c-4b5b-a9b5-fb96f09fff96  target=<300ms OK
-2026-03-05 22:28:50,889 main INFO POST /upload 202 0.02s [da732c47]
-2026-03-05 22:28:50,942 app.routes.upload INFO [UPLOAD] START  file=Introduction.pdf  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,947 app.routes.upload INFO [UPLOAD] file_write_time=4.3ms  file=Introduction.pdf  size=2793703 bytes
-2026-03-05 22:28:50,952 app.services.file_validator INFO File validation passed: Introduction.pdf → 9b38b6a9c9844f76beaa8803d44de74f.pdf (application/pdf, 2793703 bytes)
-2026-03-05 22:28:50,953 app.routes.upload INFO Validation passed: Introduction.pdf -> 9b38b6a9c9844f76beaa8803d44de74f.pdf (application/pdf)
-2026-03-05 22:28:50,953 app.routes.upload INFO [UPLOAD] validation_time=5.7ms  file=Introduction.pdf
-2026-03-05 22:28:50,955 app.routes.upload INFO [UPLOAD] file_saved  path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a2464d9e323d4ab0b930d219e722e28a_Introduction.pdf
-2026-03-05 22:28:50,960 app.services.material_service INFO Created material record af68cd39-cdb9-4671-85c6-b63d9e893087 (pending) for user 54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,966 app.services.job_service INFO Created background job e6dbad6f-b309-41a0-9318-99a623f1608c type=material_processing for user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:50,966 app.routes.upload INFO [UPLOAD] db_insert_time=11.3ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087  job=e6dbad6f-b309-41a0-9318-99a623f1608c
-2026-03-05 22:28:50,966 app.routes.upload INFO [UPLOAD] upload_request_time=23.9ms  total_upload_time=23.9ms  file_write_time=4.3ms  db_insert_time=11.3ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087  job=e6dbad6f-b309-41a0-9318-99a623f1608c  target=<300ms OK
-2026-03-05 22:28:50,967 main INFO POST /upload 202 0.07s [4988441c]
-2026-03-05 22:28:50,976 main INFO POST /agent/execute 200 0.01s [e2937ea5]
-2026-03-05 22:28:52,068 app.services.rag.embedder INFO Stored 1/1 chunks  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:52,069 app.services.material_service INFO PERF embedding: 1212.7ms  chunks=1  material=0fe02bd9-64ea-4230-8752-9980ce569dd8
-2026-03-05 22:28:52,077 app.services.material_service INFO PERF _process_material total (critical path): 1278.3ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8
-2026-03-05 22:28:52,077 app.services.material_service INFO PERF process_material_by_id total: 1324.6ms  material=0fe02bd9-64ea-4230-8752-9980ce569dd8
-2026-03-05 22:28:52,084 app.services.worker INFO [WORKER] job_processing_time=1324.7ms  job=67343a1b-3f09-413e-bdb2-bc596c0fcecb  material=0fe02bd9-64ea-4230-8752-9980ce569dd8  status=completed
-2026-03-05 22:28:52,092 app.services.worker INFO Processing job 7932f750-406f-436c-8ac3-e5f4524a94fa | material=7ef11029-be7c-41b1-9c19-5872743e6a9a type=file user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:52,099 app.services.worker INFO Processing job 57627237-b8d5-41a6-bf3e-8ae920f87d7a | material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8 type=file user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:52,104 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/919c6e74303f491381f4f212e533232f_Mall_Customers (1).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 22:28:52,110 app.services.worker INFO Processing job b177cc68-e90c-4b5b-a9b5-fb96f09fff96 | material=618eada0-ba56-49fb-807d-97b259796fc2 type=file user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:52,116 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a716ab7ac171469cb2decc21417130a2_Social_Network_Ads (1).csv  ext=csv  mime=text/csv  category=document
-2026-03-05 22:28:52,119 app.services.worker INFO Processing job e6dbad6f-b309-41a0-9318-99a623f1608c | material=af68cd39-cdb9-4671-85c6-b63d9e893087 type=file user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:52,132 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/4f8ebc1979f94aca88fadda5ca73bb59_Covid cases in India (1).xlsx  ext=xlsx  mime=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet  category=document
-2026-03-05 22:28:52,167 app.services.material_service INFO PERF extraction: 54.0ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  category=document
-2026-03-05 22:28:52,187 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a2464d9e323d4ab0b930d219e722e28a_Introduction.pdf  ext=pdf  mime=application/pdf  category=document
-2026-03-05 22:28:52,188 app.services.material_service INFO PERF extraction: 85.4ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  category=document
-2026-03-05 22:28:52,231 app.services.text_processing.pdf_extractor INFO Digital PDF detected (avg 275 chars/page), using PyMuPDF
-2026-03-05 22:28:52,233 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  raw_path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a716ab7ac171469cb2decc21417130a2_Social_Network_Ads (1).csv
-2026-03-05 22:28:52,293 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  raw_path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/919c6e74303f491381f4f212e533232f_Mall_Customers (1).csv
-2026-03-05 22:28:52,401 app.services.storage_service INFO Saved material text: 7ef11029-be7c-41b1-9c19-5872743e6a9a (14732 chars)
-2026-03-05 22:28:52,404 app.services.storage_service INFO Saved material text: a5d12c03-3efa-449e-ac7b-fdcaa467acf8 (22118 chars)
-2026-03-05 22:28:52,409 app.services.material_service INFO PERF save_text: 103.8ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  chars=14732
-2026-03-05 22:28:52,422 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=7ef11029-be7c-41b1-9c19-5872743e6a9a
-2026-03-05 22:28:52,425 app.services.material_service INFO PERF save_text: 153.7ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  chars=22118
-2026-03-05 22:28:52,426 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8
-2026-03-05 22:28:52,474 app.services.text_processing.extractor WARNING Parquet save failed for sheet Sheet2: ("Could not convert 'Total number of confirmed cases in India' with type str: tried to convert to int64", 'Conversion failed for column S. No. with type object')
-2026-03-05 22:28:52,546 app.services.material_service INFO PERF extraction: 419.8ms  material=618eada0-ba56-49fb-807d-97b259796fc2  category=document
-2026-03-05 22:28:52,668 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=618eada0-ba56-49fb-807d-97b259796fc2  raw_path=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/4f8ebc1979f94aca88fadda5ca73bb59_Covid cases in India (1).xlsx
-2026-03-05 22:28:52,689 app.services.storage_service INFO Saved material text: 618eada0-ba56-49fb-807d-97b259796fc2 (11631 chars)
-2026-03-05 22:28:52,700 app.services.material_service INFO PERF save_text: 21.8ms  material=618eada0-ba56-49fb-807d-97b259796fc2  chars=11631
-2026-03-05 22:28:52,707 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=618eada0-ba56-49fb-807d-97b259796fc2
-2026-03-05 22:28:54,892 app.services.text_processing.resilient_runner INFO PDF-OCR attempt 1/2 (timeout=300s)
-2026-03-05 22:28:54,894 app.services.text_processing.ocr_service INFO OCR: processing 11/61 pages  pdf=/disk1/New KeplerLab /backend/./data/uploads/54a05534-983a-4013-9cf9-c48767beaeb3/a2464d9e323d4ab0b930d219e722e28a_Introduction.pdf
-2026-03-05 22:28:55,989 app.services.text_processing.ocr_service INFO OCR processing page 1/61
-2026-03-05 22:28:56,929 app.services.rag.embedder INFO Stored 1/1 chunks  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:56,929 app.services.material_service INFO PERF embedding: 4489.3ms  chunks=1  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8
-2026-03-05 22:28:56,939 app.services.material_service INFO PERF _process_material total (critical path): 4752.8ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8
-2026-03-05 22:28:56,940 app.services.material_service INFO PERF process_material_by_id total: 4840.2ms  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8
-2026-03-05 22:28:56,948 app.services.worker INFO [WORKER] job_processing_time=4840.3ms  job=57627237-b8d5-41a6-bf3e-8ae920f87d7a  material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  status=completed
-2026-03-05 22:28:56,950 app.services.rag.embedder INFO Stored 1/1 chunks  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:56,951 app.services.material_service INFO PERF embedding: 4511.7ms  chunks=1  material=7ef11029-be7c-41b1-9c19-5872743e6a9a
-2026-03-05 22:28:56,957 app.services.material_service INFO PERF _process_material total (critical path): 4723.9ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a
-2026-03-05 22:28:56,957 app.services.material_service INFO PERF process_material_by_id total: 4864.6ms  material=7ef11029-be7c-41b1-9c19-5872743e6a9a
-2026-03-05 22:28:56,964 app.services.worker INFO [WORKER] job_processing_time=4864.7ms  job=7932f750-406f-436c-8ac3-e5f4524a94fa  material=7ef11029-be7c-41b1-9c19-5872743e6a9a  status=completed
-2026-03-05 22:28:57,641 app.services.rag.embedder INFO Stored 1/1 chunks  material=618eada0-ba56-49fb-807d-97b259796fc2  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:28:57,642 app.services.material_service INFO PERF embedding: 4911.5ms  chunks=1  material=618eada0-ba56-49fb-807d-97b259796fc2
-2026-03-05 22:28:57,648 app.services.material_service INFO PERF _process_material total (critical path): 5098.6ms  material=618eada0-ba56-49fb-807d-97b259796fc2
-2026-03-05 22:28:57,648 app.services.material_service INFO PERF process_material_by_id total: 5536.5ms  material=618eada0-ba56-49fb-807d-97b259796fc2
-2026-03-05 22:28:57,652 app.services.worker INFO [WORKER] job_processing_time=5536.7ms  job=b177cc68-e90c-4b5b-a9b5-fb96f09fff96  material=618eada0-ba56-49fb-807d-97b259796fc2  status=completed
-2026-03-05 22:28:57,869 app.services.text_processing.ocr_service INFO OCR processing page 9/61
-2026-03-05 22:28:59,531 app.services.text_processing.ocr_service INFO OCR processing page 10/61
-2026-03-05 22:29:01,183 app.services.text_processing.ocr_service INFO OCR processing page 38/61
-2026-03-05 22:29:02,781 app.services.text_processing.ocr_service INFO OCR processing page 39/61
-2026-03-05 22:29:04,701 app.services.text_processing.ocr_service INFO OCR processing page 40/61
-2026-03-05 22:29:06,502 app.services.text_processing.ocr_service INFO OCR processing page 44/61
-2026-03-05 22:29:08,134 app.services.text_processing.ocr_service INFO OCR processing page 46/61
-2026-03-05 22:29:08,283 app.services.material_service INFO Background AI title updated: material=a5d12c03-3efa-449e-ac7b-fdcaa467acf8  title='Social Network Ads Purchase Prediction Dataset'
-2026-03-05 22:29:09,748 app.services.material_service INFO Background AI title updated: material=7ef11029-be7c-41b1-9c19-5872743e6a9a  title='Mall Customer Demographics and Spending Data'
-2026-03-05 22:29:09,781 app.services.material_service INFO Background AI title updated: material=0fe02bd9-64ea-4230-8752-9980ce569dd8  title='Used Car Sales Dataset'
-2026-03-05 22:29:10,698 app.services.material_service INFO Background AI title updated: material=618eada0-ba56-49fb-807d-97b259796fc2  title='India State-wise COVID-19 Case Statistics'
-2026-03-05 22:29:11,631 app.services.text_processing.ocr_service INFO OCR processing page 47/61
-2026-03-05 22:29:12,950 app.services.text_processing.ocr_service INFO OCR processing page 49/61
-2026-03-05 22:29:14,545 app.services.text_processing.ocr_service INFO OCR processing page 50/61
-2026-03-05 22:29:16,261 app.services.material_service INFO PERF extraction: 24119.2ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087  category=document
-2026-03-05 22:29:16,262 app.services.storage_service INFO Saved material text: af68cd39-cdb9-4671-85c6-b63d9e893087 (34589 chars)
-2026-03-05 22:29:16,262 app.services.material_service INFO PERF save_text: 0.7ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087  chars=34589
-2026-03-05 22:29:16,262 app.services.text_processing.chunker INFO Detected Markdown structure, using heading-aware chunking
-2026-03-05 22:29:16,267 app.services.text_processing.chunker INFO Filtered 112 low-quality chunks
-2026-03-05 22:29:16,267 app.services.text_processing.chunker INFO Created 64 chunks from 70 sections (filtered 112 low-quality)
-2026-03-05 22:29:16,267 app.services.material_service INFO PERF chunking: 4.9ms  chunks=64  material=af68cd39-cdb9-4671-85c6-b63d9e893087
-2026-03-05 22:29:32,486 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:29:52,388 app.services.rag.embedder INFO Stored 64/64 chunks  material=af68cd39-cdb9-4671-85c6-b63d9e893087  user=54a05534-983a-4013-9cf9-c48767beaeb3
-2026-03-05 22:29:52,388 app.services.material_service INFO PERF embedding: 36116.2ms  chunks=64  material=af68cd39-cdb9-4671-85c6-b63d9e893087
-2026-03-05 22:29:52,394 app.services.material_service INFO PERF _process_material total (critical path): 36133.0ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087
-2026-03-05 22:29:52,395 app.services.material_service INFO PERF process_material_by_id total: 60274.5ms  material=af68cd39-cdb9-4671-85c6-b63d9e893087
-2026-03-05 22:29:52,399 app.services.worker INFO [WORKER] job_processing_time=60274.6ms  job=e6dbad6f-b309-41a0-9318-99a623f1608c  material=af68cd39-cdb9-4671-85c6-b63d9e893087  status=completed
-2026-03-05 22:29:53,554 app.services.material_service INFO Background AI title updated: material=af68cd39-cdb9-4671-85c6-b63d9e893087  title='Cloud Computing Course Outline'
-2026-03-05 22:31:38,815 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:31:38,816 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:31:55,545 main INFO POST /agent/execute 200 0.01s [f788572c]
-2026-03-05 22:32:00,429 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:34:59,430 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:34:59,431 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:34:59,431 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:34:59,432 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:35:10,651 main INFO POST /agent/execute 200 0.01s [677cd062]
-2026-03-05 22:35:17,736 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:39:09,128 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:39:09,129 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:39:15,610 main INFO POST /agent/execute 200 0.01s [975f6311]
-2026-03-05 22:39:18,286 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
-2026-03-05 22:40:11,484 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:40:11,485 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:40:11,485 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:40:11,485 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:40:11,486 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
-2026-03-05 22:40:11,486 app.services.agent.pipeline ERROR [agent] Failed to register artifact: 'Prisma' object has no attribute 'artifact'
+2026-03-06 09:08:19,570 app.db.prisma_client INFO Prisma client connected to database
+2026-03-06 09:08:19,570 main INFO Warming up embedding model (running in thread pool)…
+2026-03-06 09:08:19,672 app.db.chroma INFO ChromaDB client initialised at /disk1/New KeplerLab /backend/./data/chroma
+2026-03-06 09:08:19,672 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-06 09:08:22,515 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/New KeplerLab /backend/data/models/BAAI--bge-m3
+2026-03-06 09:08:23,202 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-06 09:08:23,868 app.db.chroma INFO Version marker written: /disk1/New KeplerLab /backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-06 09:08:23,870 app.db.chroma INFO ChromaDB collection 'chapters' ready (1241 existing chunks).
+2026-03-06 09:08:23,957 app.services.rag.embedder INFO Embedding model warm-up complete (1241 existing chunks).
+2026-03-06 09:08:23,958 main INFO Preloading reranker model (running in thread pool)…
+2026-03-06 09:08:24,114 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-06 09:08:27,624 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-06 09:08:27,624 app.services.rag.reranker INFO Reranker loaded successfully in 3.67s
+2026-03-06 09:08:27,624 main INFO Reranker preloaded.
+2026-03-06 09:08:27,626 main INFO Background job processor task created.
+2026-03-06 09:08:27,627 main INFO Ensuring sandbox packages are installed…
+2026-03-06 09:08:28,496 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-06 09:08:28,497 main INFO Output directories ensured.
+2026-03-06 09:08:28,498 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-06 09:08:42,316 app.routes.auth INFO Signup attempt for email: 24172012068@gnu.ac.in
+2026-03-06 09:08:42,578 app.routes.auth INFO User registered successfully: 1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:42,578 main INFO POST /auth/signup 201 0.27s [c0b876d4]
+2026-03-06 09:08:43,643 app.routes.auth INFO Login attempt for email: 24172012068@gnu.ac.in
+2026-03-06 09:08:43,875 app.routes.auth INFO User logged in successfully: 1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:43,876 main INFO POST /auth/login 200 0.24s [33b4b315]
+2026-03-06 09:08:43,884 main INFO GET /auth/me 200 0.00s [4333e0f0]
+2026-03-06 09:08:43,986 performance INFO request_performance
+2026-03-06 09:08:43,986 main INFO GET /notebooks 200 0.01s [30102ae0]
+2026-03-06 09:08:43,992 performance INFO request_performance
+2026-03-06 09:08:43,993 main INFO GET /notebooks 200 0.01s [f6f96b00]
+2026-03-06 09:08:45,914 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca connected
+2026-03-06 09:08:58,044 app.routes.upload INFO Batch upload started: 1 files user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,072 app.services.notebook_service INFO Created notebook: 409bbc52-fc5a-4cd0-8cfa-45e255d81acf for user: 1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,073 app.routes.upload INFO Auto-created notebook 'dataset2' id=409bbc52-fc5a-4cd0-8cfa-45e255d81acf for batch
+2026-03-06 09:08:58,073 app.routes.upload INFO Batch stream: 0.4ms  file=dataset2.csv  size=251 bytes
+2026-03-06 09:08:58,075 app.services.file_validator INFO File validation passed: dataset2.csv → 06fb8c585adc4e48aab67cb380991c2e.csv (text/csv, 251 bytes)
+2026-03-06 09:08:58,075 app.routes.upload INFO Validation passed: dataset2.csv -> 06fb8c585adc4e48aab67cb380991c2e.csv (text/csv)
+2026-03-06 09:08:58,081 app.services.material_service INFO Created material record f9199ede-d132-4198-b754-f73ef55ccf1e (pending) for user 1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,087 app.services.job_service INFO Created background job b79be003-90fe-457f-a75e-c1701a48dd22 type=material_processing for user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,088 main INFO POST /upload/batch 202 0.08s [a255b894]
+2026-03-06 09:08:58,090 app.services.worker INFO Processing job b79be003-90fe-457f-a75e-c1701a48dd22 | material=f9199ede-d132-4198-b754-f73ef55ccf1e type=file user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,097 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/1581367b-e085-49b3-8057-a678b89da9ca/dd67d39382a441669ab0dca2c90be7ad_dataset2.csv  ext=csv  mime=text/csv  category=document
+2026-03-06 09:08:58,157 main INFO GET /materials 200 0.04s [ae0e2f8c]
+2026-03-06 09:08:58,166 performance INFO request_performance
+2026-03-06 09:08:58,169 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.04s [5af26234]
+2026-03-06 09:08:58,174 performance INFO request_performance
+2026-03-06 09:08:58,175 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf/content 200 0.04s [48a34c0f]
+2026-03-06 09:08:58,192 app.services.material_service INFO PERF extraction: 95.2ms  material=f9199ede-d132-4198-b754-f73ef55ccf1e  category=document
+2026-03-06 09:08:58,196 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=f9199ede-d132-4198-b754-f73ef55ccf1e  raw_path=/disk1/New KeplerLab /backend/./data/uploads/1581367b-e085-49b3-8057-a678b89da9ca/dd67d39382a441669ab0dca2c90be7ad_dataset2.csv
+2026-03-06 09:08:58,197 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca disconnected
+2026-03-06 09:08:58,197 app.services.ws_manager INFO WS disconnect: user=1581367b-e085-49b3-8057-a678b89da9ca  remaining=0
+2026-03-06 09:08:58,198 app.services.storage_service INFO Saved material text: f9199ede-d132-4198-b754-f73ef55ccf1e (544 chars)
+2026-03-06 09:08:58,198 app.services.material_service INFO PERF save_text: 1.2ms  material=f9199ede-d132-4198-b754-f73ef55ccf1e  chars=544
+2026-03-06 09:08:58,198 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=f9199ede-d132-4198-b754-f73ef55ccf1e
+2026-03-06 09:08:58,216 performance INFO request_performance
+2026-03-06 09:08:58,217 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [0a400932]
+2026-03-06 09:08:58,217 main INFO GET /podcast/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.09s [f1a746b4]
+2026-03-06 09:08:58,220 performance INFO request_performance
+2026-03-06 09:08:58,221 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.08s [bb1d138b]
+2026-03-06 09:08:58,230 performance INFO request_performance
+2026-03-06 09:08:58,231 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [2c58d963]
+2026-03-06 09:08:58,288 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca connected
+2026-03-06 09:08:58,707 app.services.rag.embedder INFO Stored 1/1 chunks  material=f9199ede-d132-4198-b754-f73ef55ccf1e  user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:08:58,708 app.services.material_service INFO PERF embedding: 501.8ms  chunks=1  material=f9199ede-d132-4198-b754-f73ef55ccf1e
+2026-03-06 09:08:58,713 app.services.material_service INFO PERF _process_material total (critical path): 520.0ms  material=f9199ede-d132-4198-b754-f73ef55ccf1e
+2026-03-06 09:08:58,713 app.services.material_service INFO PERF process_material_by_id total: 622.8ms  material=f9199ede-d132-4198-b754-f73ef55ccf1e
+2026-03-06 09:08:58,716 app.services.worker INFO [WORKER] job_processing_time=622.9ms  job=b79be003-90fe-457f-a75e-c1701a48dd22  material=f9199ede-d132-4198-b754-f73ef55ccf1e  status=completed
+2026-03-06 09:09:00,199 app.services.material_service INFO Background AI title updated: material=f9199ede-d132-4198-b754-f73ef55ccf1e  title='Weather Outlook Dataset'
+2026-03-06 09:09:00,327 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca disconnected
+2026-03-06 09:09:00,327 app.services.ws_manager INFO WS disconnect: user=1581367b-e085-49b3-8057-a678b89da9ca  remaining=0
+2026-03-06 09:09:00,339 performance INFO request_performance
+2026-03-06 09:09:00,339 main INFO GET /notebooks 200 0.01s [7e12080c]
+2026-03-06 09:09:00,347 performance INFO request_performance
+2026-03-06 09:09:00,348 main INFO GET /notebooks 200 0.01s [4ceb99d6]
+2026-03-06 09:09:01,062 performance INFO request_performance
+2026-03-06 09:09:01,062 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [64ce1613]
+2026-03-06 09:09:01,069 performance INFO request_performance
+2026-03-06 09:09:01,069 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [5fee61d4]
+2026-03-06 09:09:01,109 main INFO GET /materials 200 0.02s [e94e5fdd]
+2026-03-06 09:09:01,111 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca connected
+2026-03-06 09:09:01,112 performance INFO request_performance
+2026-03-06 09:09:01,116 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [fa895b1b]
+2026-03-06 09:09:01,121 performance INFO request_performance
+2026-03-06 09:09:01,125 main INFO GET /podcast/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [54509ffa]
+2026-03-06 09:09:01,125 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [0702f10b]
+2026-03-06 09:09:01,126 performance INFO request_performance
+2026-03-06 09:09:01,127 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf/content 200 0.04s [86c74b1c]
+2026-03-06 09:09:01,136 main INFO GET /materials 200 0.02s [811ff252]
+2026-03-06 09:09:01,137 performance INFO request_performance
+2026-03-06 09:09:01,138 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.02s [684308ef]
+2026-03-06 09:09:01,145 performance INFO request_performance
+2026-03-06 09:09:01,147 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.02s [6a73f843]
+2026-03-06 09:09:01,147 main INFO GET /podcast/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.02s [92c27562]
+2026-03-06 09:09:01,149 performance INFO request_performance
+2026-03-06 09:09:01,150 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf/content 200 0.02s [70097587]
+2026-03-06 09:09:32,528 performance INFO request_performance
+2026-03-06 09:09:32,528 main INFO POST /chat/sessions 200 0.01s [712354db]
+2026-03-06 09:09:32,549 performance INFO request_performance
+2026-03-06 09:09:32,550 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [b21c4dcd]
+2026-03-06 09:09:32,619 performance INFO request_performance
+2026-03-06 09:09:32,620 main INFO POST /chat 200 0.07s [45e9cde1]
+2026-03-06 09:09:32,648 app.services.agent.pipeline INFO [agent] Profiled 1 dataset(s) for session d3b40d8d-95d0-456e-b004-d9df75fd9ac2
+2026-03-06 09:09:32,692 performance INFO request_performance
+2026-03-06 09:09:32,692 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.04s [2eeb3639]
+2026-03-06 09:09:34,998 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
+2026-03-06 09:09:48,375 main INFO GET /agent/file/7e09f3dd-3dd4-4e8f-a35e-e7996f9f1b59 200 0.00s [b2b75a91]
+2026-03-06 09:09:48,379 main INFO GET /agent/file/7e09f3dd-3dd4-4e8f-a35e-e7996f9f1b59 200 0.00s [36f23426]
+2026-03-06 09:09:48,390 main INFO GET /agent/file/85159b30-28e0-4237-9799-316bd48a479a 200 0.00s [2ee3ee60]
+2026-03-06 09:09:48,391 main INFO GET /agent/file/fd7a9708-40df-4c9f-9228-f505b90c87ab 200 0.00s [074281dc]
+2026-03-06 09:09:48,416 main INFO GET /agent/file/364bd211-aacd-4c1c-9beb-905a8e46af91 200 0.00s [69ae644a]
+2026-03-06 09:09:51,930 main INFO GET /agent/file/7e09f3dd-3dd4-4e8f-a35e-e7996f9f1b59 200 0.01s [871dbe98]
+2026-03-06 09:09:51,934 main INFO GET /agent/file/7e09f3dd-3dd4-4e8f-a35e-e7996f9f1b59 200 0.00s [51849f44]
+2026-03-06 09:10:31,474 performance INFO request_performance
+2026-03-06 09:10:31,475 main INFO POST /chat 200 0.02s [c2618d5e]
+2026-03-06 09:10:31,476 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: give me pdf report file...
+2026-03-06 09:10:31,590 app.services.rag.secure_retriever INFO Retrieved 1 valid chunks
+2026-03-06 09:10:31,590 app.services.rag.secure_retriever INFO Expanded structured chunk for material=f9199ede-d132-4198-b754-f73ef55ccf1e (544 chars)
+2026-03-06 09:10:31,809 app.services.rag.secure_retriever INFO Reranked to top 1 chunks
+2026-03-06 09:10:31,809 app.services.rag.context_formatter INFO Formatted 1 sources with citation metadata
+2026-03-06 09:11:31,864 performance INFO request_performance
+2026-03-06 09:11:31,864 main INFO POST /chat 200 0.01s [aa5e67a3]
+2026-03-06 09:11:31,875 app.services.agent.pipeline INFO [agent] Profiled 1 dataset(s) for session d3b40d8d-95d0-456e-b004-d9df75fd9ac2
+2026-03-06 09:11:45,258 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
+2026-03-06 09:12:06,683 main INFO GET /agent/file/8d83c636-fbd6-4df5-a001-38c1138de5e4 200 0.01s [b05ac989]
+2026-03-06 09:12:06,684 main INFO GET /agent/file/288fcdf1-3674-42f4-aa4e-0c1e4fb1f336 200 0.01s [0e4b150c]
+2026-03-06 09:12:06,685 main INFO GET /agent/file/b90a294e-e820-4f2b-a687-40ed7e45687a 200 0.01s [35ad3d28]
+2026-03-06 09:12:06,692 main INFO GET /agent/file/010929dd-5bab-423c-adf0-6a696ed35ca3 200 0.00s [7905e71f]
+2026-03-06 09:12:06,694 main INFO GET /agent/file/b90a294e-e820-4f2b-a687-40ed7e45687a 200 0.00s [24a9f7ec]
+2026-03-06 09:12:14,095 main INFO GET /agent/file/e72aeffa-d797-4c8a-a7bd-1c1487782685 200 0.00s [bc1865df]
+2026-03-06 09:12:14,100 main INFO GET /agent/file/e72aeffa-d797-4c8a-a7bd-1c1487782685 200 0.00s [788676c8]
+2026-03-06 09:12:14,115 main INFO GET /agent/file/30f87bec-eb0e-428e-a191-a04d1a9d7d1e 200 0.01s [43742cc5]
+2026-03-06 09:12:14,117 main INFO GET /agent/file/99e148ca-9771-4ff2-830d-560c168e05f2 200 0.01s [e13ae285]
+2026-03-06 09:12:14,118 main INFO GET /agent/file/bb0af8e9-d0f8-4788-8657-2e3cf6d72d19 200 0.01s [41b4e6fa]
+2026-03-06 09:12:14,118 main INFO GET /agent/file/7674fe6d-8b43-49a1-b0da-85d6af676bd1 200 0.01s [0f5f56d7]
+2026-03-06 09:12:14,124 main INFO GET /agent/file/7674fe6d-8b43-49a1-b0da-85d6af676bd1 200 0.00s [999154bd]
+2026-03-06 09:12:29,762 main INFO GET /agent/file/08e90dd9-a68c-4b02-8e1d-e95eed2f4845 200 0.01s [41fbc16b]
+2026-03-06 09:12:29,766 main INFO GET /agent/file/08e90dd9-a68c-4b02-8e1d-e95eed2f4845 200 0.00s [11f6b010]
+2026-03-06 09:12:29,787 main INFO GET /agent/file/deab0368-52a9-4f58-bb1b-0ae7de5a8af8 200 0.01s [a580e98e]
+2026-03-06 09:12:29,790 main INFO GET /agent/file/a67f47e3-a1cc-4201-b78b-5ea9756ea81f 200 0.01s [a38799ea]
+2026-03-06 09:12:29,790 main INFO GET /agent/file/bc29ff09-0a8f-4295-ad69-12eab87d6ec7 200 0.01s [bd43c301]
+2026-03-06 09:12:29,791 main INFO GET /agent/file/7cf33451-01e7-4da6-a51e-0de93949eb20 200 0.01s [f3feae5b]
+2026-03-06 09:12:29,812 main INFO GET /agent/file/6ef5ed05-bbb9-47af-b234-496e4c4bf098 200 0.00s [bb280686]
+2026-03-06 09:12:33,986 main INFO GET /agent/file/e72aeffa-d797-4c8a-a7bd-1c1487782685 200 0.01s [833a1d96]
+2026-03-06 09:12:33,989 main INFO GET /agent/file/288fcdf1-3674-42f4-aa4e-0c1e4fb1f336 200 0.01s [b3a7afe8]
+2026-03-06 09:12:33,989 main INFO GET /agent/file/99e148ca-9771-4ff2-830d-560c168e05f2 200 0.01s [d24ab02e]
+2026-03-06 09:12:33,989 main INFO GET /agent/file/08e90dd9-a68c-4b02-8e1d-e95eed2f4845 200 0.01s [67607f5c]
+2026-03-06 09:12:33,990 main INFO GET /agent/file/bc29ff09-0a8f-4295-ad69-12eab87d6ec7 200 0.01s [33ed2eba]
+2026-03-06 09:12:33,990 main INFO GET /agent/file/b90a294e-e820-4f2b-a687-40ed7e45687a 200 0.01s [236b5938]
+2026-03-06 09:12:33,996 main INFO GET /agent/file/7674fe6d-8b43-49a1-b0da-85d6af676bd1 200 0.00s [b16ba1c8]
+2026-03-06 09:12:42,371 main INFO POST /agent/refresh-token 200 0.02s [aeddf601]
+2026-03-06 09:12:42,390 main INFO GET /agent/file/ed084302-f263-41fc-8bc3-28f583c1ca18 200 0.01s [50993c83]
+2026-03-06 09:13:10,032 performance INFO request_performance
+2026-03-06 09:13:10,033 main INFO POST /chat/sessions 200 0.01s [259e2348]
+2026-03-06 09:13:10,049 performance INFO request_performance
+2026-03-06 09:13:10,049 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [0f3993d2]
+2026-03-06 09:13:10,126 performance INFO request_performance
+2026-03-06 09:13:10,126 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [a2aeb9f5]
+2026-03-06 09:13:14,846 main INFO GET /materials/f9199ede-d132-4198-b754-f73ef55ccf1e/text 200 0.01s [00a77ed8]
+2026-03-06 09:13:22,156 app.routes.upload INFO Batch upload started: 1 files user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:13:22,157 app.routes.upload INFO Batch stream: 0.8ms  file=Social_Network_Ads (1).csv  size=10926 bytes
+2026-03-06 09:13:22,158 app.services.file_validator INFO File validation passed: Social_Network_Ads (1).csv → 99ba25b1ce9848c8ac0fb883cdaf6c7b.csv (text/csv, 10926 bytes)
+2026-03-06 09:13:22,158 app.routes.upload INFO Validation passed: Social_Network_Ads (1).csv -> 99ba25b1ce9848c8ac0fb883cdaf6c7b.csv (text/csv)
+2026-03-06 09:13:22,163 app.services.material_service INFO Created material record 677ba810-41a5-4757-8e93-a6dc83eede2e (pending) for user 1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:13:22,166 app.services.job_service INFO Created background job 8eeca150-d0af-4617-9af2-442cc786a13a type=material_processing for user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:13:22,167 main INFO POST /upload/batch 202 0.02s [1ab7369c]
+2026-03-06 09:13:22,168 app.services.worker INFO Processing job 8eeca150-d0af-4617-9af2-442cc786a13a | material=677ba810-41a5-4757-8e93-a6dc83eede2e type=file user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:13:22,173 app.services.text_processing.extractor INFO Extracting file: /disk1/New KeplerLab /backend/./data/uploads/1581367b-e085-49b3-8057-a678b89da9ca/fa292e3bf32d48d9a4c3b38e8b69590f_Social_Network_Ads (1).csv  ext=csv  mime=text/csv  category=document
+2026-03-06 09:13:22,185 app.services.material_service INFO PERF extraction: 13.1ms  material=677ba810-41a5-4757-8e93-a6dc83eede2e  category=document
+2026-03-06 09:13:22,190 app.services.material_service INFO Structured fast-path: skipping chunker, 1 summary chunk  material=677ba810-41a5-4757-8e93-a6dc83eede2e  raw_path=/disk1/New KeplerLab /backend/./data/uploads/1581367b-e085-49b3-8057-a678b89da9ca/fa292e3bf32d48d9a4c3b38e8b69590f_Social_Network_Ads (1).csv
+2026-03-06 09:13:22,192 app.services.storage_service INFO Saved material text: 677ba810-41a5-4757-8e93-a6dc83eede2e (22118 chars)
+2026-03-06 09:13:22,192 app.services.material_service INFO PERF save_text: 1.5ms  material=677ba810-41a5-4757-8e93-a6dc83eede2e  chars=22118
+2026-03-06 09:13:22,192 app.services.material_service INFO PERF chunking: 0.0ms  chunks=1  material=677ba810-41a5-4757-8e93-a6dc83eede2e
+2026-03-06 09:13:22,682 app.services.rag.embedder INFO Stored 1/1 chunks  material=677ba810-41a5-4757-8e93-a6dc83eede2e  user=1581367b-e085-49b3-8057-a678b89da9ca
+2026-03-06 09:13:22,683 app.services.material_service INFO PERF embedding: 486.8ms  chunks=1  material=677ba810-41a5-4757-8e93-a6dc83eede2e
+2026-03-06 09:13:22,687 app.services.material_service INFO PERF _process_material total (critical path): 501.7ms  material=677ba810-41a5-4757-8e93-a6dc83eede2e
+2026-03-06 09:13:22,688 app.services.material_service INFO PERF process_material_by_id total: 519.1ms  material=677ba810-41a5-4757-8e93-a6dc83eede2e
+2026-03-06 09:13:22,691 app.services.worker INFO [WORKER] job_processing_time=519.2ms  job=8eeca150-d0af-4617-9af2-442cc786a13a  material=677ba810-41a5-4757-8e93-a6dc83eede2e  status=completed
+2026-03-06 09:13:22,699 main INFO GET /materials 200 0.01s [118709e6]
+2026-03-06 09:13:24,385 app.services.material_service INFO Background AI title updated: material=677ba810-41a5-4757-8e93-a6dc83eede2e  title='Social Network Ads Purchase Prediction Dataset'
+2026-03-06 09:13:24,391 main INFO GET /materials 200 0.00s [3d86cc9e]
+2026-03-06 09:14:15,970 performance INFO request_performance
+2026-03-06 09:14:15,971 main INFO POST /chat 200 0.02s [a4e854fe]
+2026-03-06 09:14:15,993 app.services.agent.pipeline INFO [agent] Profiled 1 dataset(s) for session 988fab41-a3c0-4cfa-8e69-24c4b6165adc
+2026-03-06 09:14:21,518 app.services.llm_service.structured_invoker INFO Async structured output validated (attempt 1)
+2026-03-06 09:14:37,508 main INFO GET /agent/file/8e0a38ed-e1fd-4051-b6e5-e204e099ca01 200 0.01s [756b7ead]
+2026-03-06 09:14:37,517 main INFO GET /agent/file/22efc014-34af-4da0-8d6e-dabe03a04b03 200 0.01s [c1179999]
+2026-03-06 09:14:37,517 main INFO GET /agent/file/2a35bce3-db5d-4dd7-a1ee-809325985979 200 0.01s [66f09be7]
+2026-03-06 09:14:37,518 main INFO GET /agent/file/326dc446-6f1e-4c4f-bb8f-176aa272992f 200 0.01s [8dc0634f]
+2026-03-06 09:14:37,529 main INFO GET /agent/file/22efc014-34af-4da0-8d6e-dabe03a04b03 200 0.01s [1b5fedd9]
+2026-03-06 09:14:37,530 main INFO GET /agent/file/2a35bce3-db5d-4dd7-a1ee-809325985979 200 0.01s [2b16e24d]
+2026-03-06 09:14:37,530 main INFO GET /agent/file/8eeb3ca1-2bd1-4abb-a3c2-2b3fb75bcbdf 200 0.01s [20632c9f]
+2026-03-06 09:14:37,531 main INFO GET /agent/file/326dc446-6f1e-4c4f-bb8f-176aa272992f 200 0.01s [9953da3b]
+2026-03-06 09:14:37,535 main INFO GET /agent/file/19393dbc-0680-47e6-bc6e-faeda84cda8d 200 0.01s [e66b8b1b]
+2026-03-06 09:14:37,540 main INFO GET /agent/file/8eeb3ca1-2bd1-4abb-a3c2-2b3fb75bcbdf 200 0.01s [c0d96b1e]
+2026-03-06 09:14:37,541 main INFO GET /agent/file/19393dbc-0680-47e6-bc6e-faeda84cda8d 200 0.00s [26e6d7ab]
+2026-03-06 09:15:06,745 main INFO GET /agent/file/49609d13-ecc3-4143-bf6f-42438c0dbdc6 200 0.01s [dffe4b44]
+2026-03-06 09:15:06,771 main INFO GET /agent/file/53eb429f-44e2-4066-ab95-0675e3b796d3 200 0.00s [a10a2fff]
+2026-03-06 09:15:06,817 main INFO GET /agent/file/06000221-2e3b-4a11-a1c7-15c4f6b01988 200 0.01s [9a855595]
+2026-03-06 09:15:06,818 main INFO GET /agent/file/7d7801a5-8d77-4d81-9951-fcee730c4f76 200 0.01s [99045e54]
+2026-03-06 09:15:06,819 main INFO GET /agent/file/f163fbff-9442-4636-b3b4-45b3269d0eaa 200 0.01s [30ac411d]
+2026-03-06 09:15:06,823 main INFO GET /agent/file/bf6980a9-3aaf-4857-9467-9f36f66998ad 200 0.01s [26f66e38]
+2026-03-06 09:15:06,823 main INFO GET /agent/file/ec6003c5-f4f2-46eb-b964-1be52091567c 200 0.01s [469e32bd]
+2026-03-06 09:15:11,954 main INFO GET /agent/file/326dc446-6f1e-4c4f-bb8f-176aa272992f 200 0.01s [e4bcefee]
+2026-03-06 09:15:11,955 main INFO GET /agent/file/19393dbc-0680-47e6-bc6e-faeda84cda8d 200 0.01s [c454692d]
+2026-03-06 09:15:11,970 main INFO GET /agent/file/7d7801a5-8d77-4d81-9951-fcee730c4f76 200 0.01s [318e2ab2]
+2026-03-06 09:15:11,971 main INFO GET /agent/file/f163fbff-9442-4636-b3b4-45b3269d0eaa 200 0.01s [b6e8812f]
+2026-03-06 09:15:11,984 main INFO GET /agent/file/bf6980a9-3aaf-4857-9467-9f36f66998ad 200 0.01s [cb61bf14]
+2026-03-06 09:15:11,985 main INFO GET /agent/file/ec6003c5-f4f2-46eb-b964-1be52091567c 200 0.01s [7cb24d9a]
+2026-03-06 09:15:11,996 main INFO GET /agent/file/8e0a38ed-e1fd-4051-b6e5-e204e099ca01 200 0.01s [f106d15b]
+2026-03-06 09:15:11,996 main INFO GET /agent/file/22efc014-34af-4da0-8d6e-dabe03a04b03 200 0.01s [5e6a51f5]
+2026-03-06 09:15:12,033 main INFO GET /agent/file/06000221-2e3b-4a11-a1c7-15c4f6b01988 200 0.09s [e222a9f5]
+2026-03-06 09:15:12,035 main INFO GET /agent/file/8eeb3ca1-2bd1-4abb-a3c2-2b3fb75bcbdf 200 0.09s [2a3254e6]
+2026-03-06 09:15:12,039 main INFO GET /agent/file/53eb429f-44e2-4066-ab95-0675e3b796d3 200 0.09s [f8757c22]
+2026-03-06 09:15:12,041 main INFO GET /agent/file/dbd5ac37-b846-4469-b484-b0fc790fb8ec 200 0.00s [867effb5]
+2026-03-06 09:15:12,041 main INFO GET /agent/file/2a35bce3-db5d-4dd7-a1ee-809325985979 200 0.09s [10c71915]
+2026-03-06 09:15:19,292 main INFO GET /agent/file/126c1b80-1b45-4e35-aacc-b314c2bb6c21 200 0.01s [f1d96889]
+2026-03-06 09:15:19,292 main INFO GET /agent/file/5a8d3bcb-c867-4246-87a4-3b3efb99cf88 200 0.01s [39837983]
+2026-03-06 09:15:59,677 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca disconnected
+2026-03-06 09:15:59,677 app.services.ws_manager INFO WS disconnect: user=1581367b-e085-49b3-8057-a678b89da9ca  remaining=0
+2026-03-06 09:15:59,690 performance INFO request_performance
+2026-03-06 09:15:59,690 main INFO GET /notebooks 200 0.01s [053333f6]
+2026-03-06 09:15:59,698 performance INFO request_performance
+2026-03-06 09:15:59,699 main INFO GET /notebooks 200 0.01s [f2475f95]
+2026-03-06 09:16:00,558 main INFO GET /materials 200 0.02s [0974d7c0]
+2026-03-06 09:16:00,568 performance INFO request_performance
+2026-03-06 09:16:00,571 performance INFO request_performance
+2026-03-06 09:16:00,572 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [f68c5ee9]
+2026-03-06 09:16:00,573 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [3ddd8c4e]
+2026-03-06 09:16:00,573 main INFO GET /podcast/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.03s [d1ce65e2]
+2026-03-06 09:16:00,574 performance INFO request_performance
+2026-03-06 09:16:00,576 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf/content 200 0.03s [bd9203f3]
+2026-03-06 09:16:00,577 main INFO GET /materials 200 0.01s [4f54975e]
+2026-03-06 09:16:00,585 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca connected
+2026-03-06 09:16:00,588 performance INFO request_performance
+2026-03-06 09:16:00,590 performance INFO request_performance
+2026-03-06 09:16:00,591 main INFO GET /chat/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.02s [9c6b9a88]
+2026-03-06 09:16:00,591 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [87a5467a]
+2026-03-06 09:16:00,592 main INFO GET /podcast/sessions/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [e19276c1]
+2026-03-06 09:16:00,596 performance INFO request_performance
+2026-03-06 09:16:00,596 main INFO GET /notebooks/409bbc52-fc5a-4cd0-8cfa-45e255d81acf/content 200 0.02s [280ea36c]
+2026-03-06 09:16:01,195 performance INFO request_performance
+2026-03-06 09:16:01,195 main INFO GET /chat/history/409bbc52-fc5a-4cd0-8cfa-45e255d81acf 200 0.01s [a93f97e5]
+2026-03-06 09:16:03,037 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca disconnected
+2026-03-06 09:16:03,037 app.services.ws_manager INFO WS disconnect: user=1581367b-e085-49b3-8057-a678b89da9ca  remaining=0
+2026-03-06 09:16:03,054 performance INFO request_performance
+2026-03-06 09:16:03,054 main INFO GET /notebooks 200 0.01s [c793757a]
+2026-03-06 09:16:03,061 performance INFO request_performance
+2026-03-06 09:16:03,061 main INFO GET /notebooks 200 0.01s [35ad643b]
+2026-03-06 09:16:03,792 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca connected
+2026-03-06 09:16:07,224 app.routes.websocket_router INFO WS /ws/jobs/1581367b-e085-49b3-8057-a678b89da9ca disconnected
+2026-03-06 09:16:07,224 app.services.ws_manager INFO WS disconnect: user=1581367b-e085-49b3-8057-a678b89da9ca  remaining=0
+2026-03-06 09:16:07,232 performance INFO request_performance
+2026-03-06 09:16:07,232 main INFO GET /notebooks 200 0.01s [2cc3d35f]
+2026-03-06 09:16:07,239 performance INFO request_performance
+2026-03-06 09:16:07,239 main INFO GET /notebooks 200 0.01s [e70da85e]

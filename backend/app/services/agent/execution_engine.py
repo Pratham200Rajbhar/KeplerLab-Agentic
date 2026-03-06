@@ -189,18 +189,23 @@ class ExecutionEngine:
             )
     
     def _enrich_inputs(self, inputs: Dict[str, Any], tool: str) -> Dict[str, Any]:
-        """Enrich tool inputs with context from state."""
+        """Enrich tool inputs with context from state, including dataset profiles."""
         enriched = dict(inputs)
         
         # Add context from previous tool outputs
         if tool == "python_tool":
-            # Add dataset info if available
-            if self.state.datasets and "context" not in enriched:
+            # Prefer rich dataset profile context over basic metadata
+            if self.state.dataset_profile_context and "context" not in enriched:
+                enriched["context"] = self.state.dataset_profile_context
+            elif self.state.datasets and "context" not in enriched:
                 ds_context = []
                 for ds in self.state.datasets:
-                    ds_context.append(
-                        f"Dataset '{ds.name}': {ds.rows} rows, columns: {', '.join(ds.column_names[:10])}"
-                    )
+                    if ds.profile_context:
+                        ds_context.append(ds.profile_context)
+                    else:
+                        ds_context.append(
+                            f"Dataset '{ds.name}': {ds.rows} rows, columns: {', '.join(ds.column_names[:10])}"
+                        )
                 enriched["context"] = "\n".join(ds_context)
             
             # Add RAG context if available
@@ -246,6 +251,10 @@ Important instructions:
 4. Print key results and metrics clearly
 5. If training a model, print accuracy/performance metrics
 6. Save any generated data to CSV files
+7. USE the dataset profile provided in context to guide your analysis — do NOT re-discover what is already known
+8. Reference actual column names, data types, and distributions from the profile
+9. Handle missing values based on the missing value percentages shown in the profile
+10. Focus on the most correlated features when building models (see correlations in profile)
 """
         
         if context:

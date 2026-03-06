@@ -17,10 +17,15 @@ function ResultSummary({ summary, totalTime }) {
     return null;
   }
 
-  const text = typeof summary === 'string' ? summary : summary.text;
+  const text = typeof summary === 'string'
+    ? summary
+    : summary.text || summary.description || summary.title || null;
+
+  // key_results as bullet list if no text but has key_results
+  const keyResults = typeof summary === 'object' ? (summary.key_results || []) : [];
   const metrics = typeof summary === 'object' ? summary.metrics : null;
 
-  if (!text && !metrics) {
+  if (!text && !metrics && keyResults.length === 0) {
     return null;
   }
 
@@ -43,6 +48,20 @@ function ResultSummary({ summary, totalTime }) {
           <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
             {text}
           </p>
+        </div>
+      )}
+
+      {/* Key results as bullet list */}
+      {keyResults.length > 0 && (
+        <div className="px-3 py-2">
+          <ul className="space-y-1">
+            {keyResults.map((item, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-sm text-text-secondary">
+                <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
+                <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

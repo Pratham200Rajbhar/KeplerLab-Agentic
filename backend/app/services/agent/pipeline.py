@@ -32,6 +32,11 @@ from app.services.agent.state import (
     ExecutionPhase,
     create_agent_state,
 )
+from app.services.agent.dataset_profiler import (
+    DatasetProfiler,
+    DatasetProfile,
+    build_combined_profile_context,
+)
 from app.services.agent.tool_selector import (
     TaskType,
     classify_task,
@@ -154,6 +159,89 @@ async def stream_agent(
             "requires_computation": classification.requires_computation,
             "requires_materials": classification.requires_materials,
         })
+
+        # ── STEP 1.5: DATASET PROFILING ──────────────────────
+        # For data-related tasks, profile datasets BEFORE planning
+        # so the LLM has actual data characteristics for reasoning.
+        dataset_profiles: List[DatasetProfile] = []
+        if classification.requires_computation and material_ids:
+            yield _sse("step", {
+                "status": "Profiling datasets",
+                "phase": "profiling",
+            })
+
+            try:
+                profiler = DatasetProfiler(
+                    material_ids=material_ids,
+                    user_id=user_id,
+                    work_dir=work_dir,
+                )
+                dataset_profiles = await profiler.profile_all()
+
+                if dataset_profiles:
+                    # Store profile context in state for all downstream use
+                    profile_context = build_combined_profile_context(dataset_profiles)
+                    state.dataset_profile_context = profile_context
+
+                    # Also populate datasets list with enriched metadata
+                    from app.services.agent.state import DatasetMetadata
+                    for dp in dataset_profiles:
+                        if dp.profiling_error:
+                            continue
+                        ds_meta = DatasetMetadata(
+                            name=dp.name,
+                            rows=dp.rows,
+                            columns=dp.columns,
+                            column_names=[cp.name for cp in dp.column_profiles],
+                            dtypes={cp.name: cp.dtype for cp in dp.column_profiles},
+                            missing_values={
+                                cp.name: cp.missing_count
+                                for cp in dp.column_profiles
+                                if cp.missing_count > 0
+                            },
+                            numeric_columns=dp.numeric_columns,
+                            categorical_columns=dp.categorical_columns,
+                            datetime_columns=dp.datetime_columns,
+                            correlations=dp.correlations,
+                            top_correlations=[
+                                {"col1": c1, "col2": c2, "value": v}
+                                for c1, c2, v in dp.top_correlations
+                            ],
+                            sample_rows=dp.sample_rows,
+                            profile_context=dp.to_context_string(),
+                        )
+                        state.add_dataset(ds_meta)
+
+                    yield _sse("dataset_profile", {
+                        "datasets_profiled": len(dataset_profiles),
+                        "profiles": [
+                            {
+                                "name": dp.name,
+                                "rows": dp.rows,
+                                "columns": dp.columns,
+                                "numeric_columns": dp.numeric_columns,
+                                "categorical_columns": dp.categorical_columns,
+                                "missing_summary": {
+                                    cp.name: f"{cp.missing_pct:.1f}%"
+                                    for cp in dp.column_profiles
+                                    if cp.missing_count > 0
+                                },
+                            }
+                            for dp in dataset_profiles
+                            if not dp.profiling_error
+                        ],
+                    })
+                    logger.info(
+                        "[agent] Profiled %d dataset(s) for session %s",
+                        len(dataset_profiles), session_id,
+                    )
+            except Exception as exc:
+                logger.warning("[agent] Dataset profiling failed: %s", exc)
+                yield _sse("step", {
+                    "status": "Dataset profiling skipped",
+                    "phase": "profiling",
+                    "warning": str(exc),
+                })
 
         # ── STEP 2: TASK PLANNING ────────────────────────────
         yield _sse("step", {
@@ -392,6 +480,29 @@ Provide a helpful response:"""
         yield _sse("token", {"content": f"\n\nI completed the analysis but encountered an issue generating the summary: {e}"})
 
 
+_DISPLAY_TYPE_TO_CATEGORY: Dict[str, str] = {
+    "image":        "charts",
+    "csv_table":    "datasets",
+    "json_tree":    "datasets",
+    "text_preview": "reports",
+    "html_preview": "reports",
+    "pdf_embed":    "reports",
+}
+
+_MODEL_EXTENSIONS = {
+    ".pkl", ".pickle", ".joblib",
+    ".h5", ".pt", ".pth", ".onnx", ".pb", ".keras",
+}
+
+
+def _derive_category(display_type: str, filename: str) -> str:
+    """Compute a meaningful artifact category from display_type and filename."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in _MODEL_EXTENSIONS:
+        return "models"
+    return _DISPLAY_TYPE_TO_CATEGORY.get(display_type, "files")
+
+
 async def _register_artifact(
     art: Dict[str, Any],
     ctx: AgentContext,
@@ -404,8 +515,10 @@ async def _register_artifact(
 
     filename = art.get("filename", os.path.basename(fpath))
     mime = art.get("mime", "application/octet-stream")
-    category = art.get("category", "file")
     display_type = art.get("display_type", classify_artifact(filename, mime))
+    # Derive category from display_type/extension; fall back to any explicit value
+    # already set on the artifact (e.g. by a future tool that knows its category).
+    category = art.get("category") or _derive_category(display_type, filename)
     size = art.get("size", os.path.getsize(fpath))
 
     # Generate secure download token

@@ -320,7 +320,22 @@ def generate_result_text(state: AgentExecutionState) -> str:
     # Dataset analysis
     for ds in state.datasets:
         parts.append(f"- Analyzed dataset '{ds.name}' with {ds.rows:,} rows and {ds.columns} columns")
-        if ds.column_names:
+        if ds.numeric_columns:
+            parts.append(f"  Numeric columns: {', '.join(ds.numeric_columns)}")
+        if ds.categorical_columns:
+            parts.append(f"  Categorical columns: {', '.join(ds.categorical_columns)}")
+        if ds.missing_values:
+            missing = {k: v for k, v in ds.missing_values.items() if v > 0}
+            if missing:
+                parts.append(f"  Missing values: {missing}")
+        if ds.top_correlations:
+            top_corrs = ds.top_correlations[:5]
+            corr_str = ", ".join(
+                f"{c.get('col1', '')} ↔ {c.get('col2', '')} ({c.get('value', 0):.3f})"
+                for c in top_corrs
+            )
+            parts.append(f"  Top correlations: {corr_str}")
+        if not ds.numeric_columns and ds.column_names:
             cols = ", ".join(ds.column_names[:10])
             if len(ds.column_names) > 10:
                 cols += f" and {len(ds.column_names) - 10} more"

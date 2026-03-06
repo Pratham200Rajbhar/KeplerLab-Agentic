@@ -52,6 +52,14 @@ class DatasetMetadata:
     missing_values: Dict[str, int] = field(default_factory=dict)
     summary_stats: Dict[str, Any] = field(default_factory=dict)
     loaded_at: str = ""
+    # Enhanced profile fields
+    numeric_columns: List[str] = field(default_factory=list)
+    categorical_columns: List[str] = field(default_factory=list)
+    datetime_columns: List[str] = field(default_factory=list)
+    correlations: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    top_correlations: List[Dict[str, Any]] = field(default_factory=list)
+    sample_rows: List[Dict[str, Any]] = field(default_factory=list)
+    profile_context: str = ""  # Pre-formatted context string for LLM
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -63,6 +71,11 @@ class DatasetMetadata:
             "missing_values": self.missing_values,
             "summary_stats": self.summary_stats,
             "loaded_at": self.loaded_at,
+            "numeric_columns": self.numeric_columns,
+            "categorical_columns": self.categorical_columns,
+            "datetime_columns": self.datetime_columns,
+            "top_correlations": self.top_correlations,
+            "sample_rows": self.sample_rows[:5],
         }
 
 
@@ -166,6 +179,7 @@ class AgentExecutionState:
     
     # Context Awareness
     datasets: List[DatasetMetadata] = field(default_factory=list)
+    dataset_profile_context: str = ""  # Pre-computed rich profile string for LLM
     models: List[ModelMetadata] = field(default_factory=list)
     charts_generated: List[str] = field(default_factory=list)
     files_created: List[str] = field(default_factory=list)
@@ -331,13 +345,29 @@ class AgentExecutionState:
         self.execution_logs.append(f"[{timestamp}] {log}")
     
     def get_context_summary(self) -> str:
-        """Get a summary of current context for LLM prompts."""
+        """Get a summary of current context for LLM prompts.
+        
+        Includes rich dataset profile when available, falling back to
+        basic metadata otherwise.
+        """
         parts = []
         
-        if self.datasets:
+        # Prefer rich dataset profile context over basic metadata
+        if self.dataset_profile_context:
+            parts.append(self.dataset_profile_context)
+        elif self.datasets:
             ds_info = []
             for ds in self.datasets:
-                ds_info.append(f"- {ds.name}: {ds.rows} rows, {ds.columns} columns")
+                info = f"- {ds.name}: {ds.rows} rows, {ds.columns} columns"
+                if ds.numeric_columns:
+                    info += f"\n  Numeric: {', '.join(ds.numeric_columns)}"
+                if ds.categorical_columns:
+                    info += f"\n  Categorical: {', '.join(ds.categorical_columns)}"
+                if ds.missing_values:
+                    missing = {k: v for k, v in ds.missing_values.items() if v > 0}
+                    if missing:
+                        info += f"\n  Missing: {missing}"
+                ds_info.append(info)
             parts.append(f"Loaded datasets:\n" + "\n".join(ds_info))
         
         if self.models:

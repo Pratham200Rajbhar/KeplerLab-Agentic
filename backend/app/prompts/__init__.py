@@ -165,6 +165,7 @@ def get_code_generation_prompt(user_request: str) -> str:
 def get_data_analysis_prompt(
     filename: str, shape: str, columns: str,
     dtypes: str, describe: str, user_request: str,
+    dataset_profile: str = "",
 ) -> str:
     """Load and render the data analysis prompt template."""
     return _render("data_analysis_prompt.txt", {
@@ -173,5 +174,6 @@ def get_data_analysis_prompt(
         "{{COLUMNS}}": columns,
         "{{DTYPES}}": dtypes,
         "{{DESCRIBE}}": describe,
+        "{{DATASET_PROFILE}}": dataset_profile or "No detailed profile available.",
         "{{USER_REQUEST}}": user_request,
     })

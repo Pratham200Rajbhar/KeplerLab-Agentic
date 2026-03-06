@@ -296,6 +296,12 @@ Planning rules:
 5. Keep plans concise: 1-5 steps typically. Don't over-plan.
 6. For data analysis tasks: First analyze the dataset, then visualize, then summarize.
 7. For ML tasks: Analyze data → clean/preprocess → train model → evaluate → generate charts.
+8. If a dataset profile is provided below, USE it to make smarter plans:
+   - Reference actual column names and types when describing python_tool tasks
+   - Mention specific columns for visualization or analysis
+   - Account for missing values and data distributions
+   - Use correlation info to suggest feature selection for ML tasks
+9. Dataset files are already available in the sandbox working directory — the python_tool can load them directly by filename.
 
 Context from prior analysis:
 {context or "No prior context."}

@@ -15,6 +15,7 @@ import {
   deleteChatSession,
 } from '@/lib/api/chat';
 import { readSSEStream } from '@/lib/utils/helpers';
+import { apiConfig } from '@/lib/api/config';
 import { RESEARCH_STEPS_TEMPLATE } from '@/lib/utils/constants';
 
 import ChatMessageList from './ChatMessageList';
@@ -316,11 +317,13 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
         // ── Common events ──
         token: (p) => { accumulated += p.content || ''; setStreamingContent(accumulated); },
         step: (p) => {
-          const stepEntry = { tool: p.tool || p.label || '', status: 'running', label: p.label };
+          // Backend uses 'status' key for the step description text
+          const stepLabel = p.label || p.status || p.tool || '';
+          const stepEntry = { tool: p.tool || p.label || '', status: 'running', label: stepLabel };
           localStepLog.push(stepEntry);
           setLiveStepLog([...localStepLog]);
           // Also update AgentExecutionView steps
-          const agentStep = { label: p.label || p.tool || p.step || '', status: 'running' };
+          const agentStep = { label: stepLabel, status: 'running' };
           localAgentSteps.push(agentStep);
           setLiveAgentSteps([...localAgentSteps]);
         },
@@ -329,23 +332,32 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
           localStepLog.push(stepEntry);
           setStepLog((prev) => [...prev, stepEntry]);
         },
-        // New: intent detection event
+        // New: intent detection event — backend sends {task_type, confidence, ...}
         intent: (p) => {
-          detectedIntent = p.intent || p;
+          detectedIntent = p.intent || p.task_type || detectedIntent;
         },
-        // New: summary event
+        // New: summary event — backend sends {title, description, key_results, metrics}
         summary: (p) => {
-          localAgentSummary = p.summary || p.text || p;
+          const summaryText = p.text || p.summary || p.description || p.title || '';
+          localAgentSummary = {
+            text: summaryText,
+            key_results: p.key_results || [],
+            metrics: p.metrics || null,
+            title: p.title || '',
+          };
           setLiveAgentSummary(localAgentSummary);
         },
         file_ready: (p) => { localPendingFiles.push(p); setPendingFiles((prev) => [...prev, p]); },
         artifact: (p) => {
+          // Make the artifact URL absolute — backend returns relative path like /agent/file/{id}?token=...
+          const rawUrl = p.url || p.download_url || p.downloadUrl || '';
+          const absoluteUrl = rawUrl && rawUrl.startsWith('/') ? `${apiConfig.baseUrl}${rawUrl}` : rawUrl;
           const artifact = {
             artifact_id: p.artifact_id || p.id || null,
             filename: p.filename || p.name || 'file',
             mime: p.mime || p.mimeType || '',
             display_type: p.display_type || 'file_card',
-            url: p.url || p.download_url || p.downloadUrl || '',
+            url: absoluteUrl,
             size: p.size_bytes || p.sizeBytes || p.size || 0,
             category: p.category || null,
           };

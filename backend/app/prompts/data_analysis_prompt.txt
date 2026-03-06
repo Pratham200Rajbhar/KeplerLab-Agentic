@@ -9,16 +9,23 @@ Data Types: {{DTYPES}}
 Summary Statistics:
 {{DESCRIBE}}
 
+=== DATASET PROFILE ===
+{{DATASET_PROFILE}}
+
 === USER REQUEST ===
 {{USER_REQUEST}}
 
 === INSTRUCTIONS ===
-1. First, decide what analysis is needed to answer the user's question
-2. Write clean Python code to perform the analysis
-3. The data file path is already available as a variable — use it directly
-4. Save any charts or output files to OUTPUT_DIR (already defined)
-5. Print FILE_SAVED:{OUTPUT_DIR}/filename.ext for each saved file
-6. After the code, explain the results in plain English
+1. First, review the dataset profile above — it contains column types, missing values, correlations, and sample data
+2. Use the profile to decide what analysis is needed to answer the user's question
+3. Write clean Python code to perform the analysis
+4. The data file path is already available as a variable — use it directly
+5. Save any charts or output files to OUTPUT_DIR (already defined)
+6. Print FILE_SAVED:{OUTPUT_DIR}/filename.ext for each saved file
+7. After the code, explain the results in plain English
+8. Reference actual column names and data characteristics from the profile
+9. Handle missing values based on the percentages shown in the profile
+10. Use correlation information to guide feature selection
 
 IMPORTANT:
 - Use matplotlib with Agg backend (already set up)
@@ -26,6 +33,7 @@ IMPORTANT:
 - NEVER use input()
 - Always call plt.close() after saving charts
 - Keep the analysis focused on what the user asked
+- Do NOT re-compute statistics that are already in the profile
 
 SECURITY — FORBIDDEN (will cause validation errors):
 - NEVER use subprocess, shutil, socket, requests, urllib, httpx, aiohttp

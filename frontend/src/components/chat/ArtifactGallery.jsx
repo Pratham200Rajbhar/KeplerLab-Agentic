@@ -70,12 +70,28 @@ const CATEGORY_CONFIG = {
 const CATEGORY_ORDER = ['charts', 'datasets', 'models', 'reports', 'files'];
 
 function ArtifactGallery({ artifacts = [], onDownload }) {
-  // Group artifacts by category
+  // Group artifacts by category.
+  // Always use filename-based categorization as the primary source — the backend
+  // currently defaults to `category: "file"` for every artifact, so we cannot rely
+  // on the backend value.  Fall back to `artifact.category` only when filename-based
+  // detection returns the generic "files" bucket AND the backend supplies something
+  // more specific.
   const groupedArtifacts = useMemo(() => {
     const groups = {};
     
     for (const artifact of artifacts) {
-      const category = artifact.category || categorizeByFilename(artifact.filename);
+      const filenameCategory = categorizeByFilename(artifact.filename);
+      const backendCategory = artifact.category || artifact.backendCategory || null;
+      // Prefer filename-derived category; use backend only when it provides a known
+      // non-generic value and filename detection is inconclusive.
+      const KNOWN_CATEGORIES = new Set(['charts', 'datasets', 'models', 'reports']);
+      const category =
+        filenameCategory !== 'files'
+          ? filenameCategory
+          : KNOWN_CATEGORIES.has(backendCategory)
+            ? backendCategory
+            : 'files';
+
       if (!groups[category]) {
         groups[category] = [];
       }

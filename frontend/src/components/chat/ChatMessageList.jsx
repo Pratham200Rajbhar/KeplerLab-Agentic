@@ -6,11 +6,13 @@ import { Lightbulb } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import MarkdownRenderer, { sanitizeStreamingMarkdown } from './MarkdownRenderer';
 import ResearchReport from './ResearchReport';
-import AgentStatusStrip from './AgentStatusStrip';
 import { AgentExecutionStreaming } from './AgentExecutionView';
+import ArtifactGallery from './ArtifactGallery';
+import ResultSummary from './ResultSummary';
 import CodePanel from './CodePanel';
 import WebSearchStrip from './WebSearchStrip';
 import ResearchProgressPanel from './ResearchProgressPanel';
+import { apiConfig } from '@/lib/api/config';
 
 /**
  * LiveStepText — animated step indicator shown during streaming.
@@ -134,26 +136,8 @@ function ChatMessageList({
       )}
 
       {/* ── Live mode-specific panels ── */}
-      {/* Agent mode: live step timeline */}
-      {isLoading && agentPlan && (
-        <div className="chat-msg chat-msg-ai group py-3">
-          <div className="flex gap-3 w-full">
-            <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
-              <Lightbulb className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <AgentStatusStrip
-                status={agentActiveStep ? 'running' : (streamingContent ? 'synthesizing' : 'planning')}
-                currentLabel={agentActiveStep?.description || 'Planning...'}
-                steps={agentStepResults || []}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New Agent mode: streaming execution view */}
-      {isLoading && liveAgentSteps?.length > 0 && !agentPlan && (
+      {/* ── Live agent execution view (replaces old AgentStatusStrip) ── */}
+      {isLoading && (liveAgentSteps?.length > 0 || agentPlan) && (
         <div className="chat-msg chat-msg-ai group py-3">
           <div className="flex gap-3 w-full">
             <div className="ai-avatar shrink-0 mt-0.5 streaming-pulse">
@@ -161,14 +145,31 @@ function ChatMessageList({
             </div>
             <div className="flex-1 min-w-0">
               <AgentExecutionStreaming
-                liveSteps={liveAgentSteps}
+                liveSteps={liveAgentSteps || []}
                 isStreaming={isLoading}
               />
-              {/* Show streaming summary if available */}
+              {/* Live summary if available */}
               {liveAgentSummary && (
-                <div className="mt-3 text-sm text-text-secondary">
-                  {liveAgentSummary}
-                </div>
+                <ResultSummary summary={liveAgentSummary} totalTime={0} />
+              )}
+              {/* Live artifacts during streaming */}
+              {liveAgentArtifacts?.length > 0 && (
+                <ArtifactGallery
+                  artifacts={liveAgentArtifacts.map((art, idx) => {
+                    const rawUrl = art.url || art.download_url || art.downloadUrl || '';
+                    const absoluteUrl = rawUrl && rawUrl.startsWith('/') ? `${apiConfig.baseUrl}${rawUrl}` : rawUrl;
+                    return {
+                      id: art.artifact_id || art.id || `live-artifact-${idx}`,
+                      filename: art.filename || art.name || 'file',
+                      mimeType: art.mime || art.mimeType || '',
+                      displayType: art.display_type || art.displayType || 'file_card',
+                      category: art.category || null,
+                      downloadUrl: absoluteUrl,
+                      size: art.size_bytes || art.sizeBytes || art.size || 0,
+                    };
+                  })}
+                  onDownload={null}
+                />
               )}
             </div>
           </div>

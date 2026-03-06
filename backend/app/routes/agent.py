@@ -509,6 +509,19 @@ async def _register_code_artifact(art, current_user, request):
     display_type = art.get("display_type", classify_artifact(filename, mime))
     size = art.get("size", os.path.getsize(fpath))
 
+    # Derive a meaningful category so the frontend gallery can group correctly.
+    _DISPLAY_TYPE_CATEGORY = {
+        "image":        "charts",
+        "csv_table":    "datasets",
+        "json_tree":    "datasets",
+        "text_preview": "reports",
+        "html_preview": "reports",
+        "pdf_embed":    "reports",
+    }
+    _MODEL_EXTS = {".pkl", ".pickle", ".joblib", ".h5", ".pt", ".pth", ".onnx", ".pb", ".keras"}
+    ext = os.path.splitext(filename)[1].lower()
+    category = "models" if ext in _MODEL_EXTS else _DISPLAY_TYPE_CATEGORY.get(display_type, "files")
+
     token = secrets.token_urlsafe(48)
     expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
 
@@ -528,8 +541,10 @@ async def _register_code_artifact(art, current_user, request):
             }
         )
         return {
+            "id": record.id,
             "filename": filename,
             "mime": mime,
+            "category": category,
             "display_type": display_type,
             "url": f"/agent/file/{record.id}?token={token}",
             "size": size,
