@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/materials';
 import { X, CloudUpload, Globe, File, FileText, Loader2, Link, CheckCircle } from 'lucide-react';
 import { useToast } from '@/stores/useToastStore';
+import useAppStore from '@/stores/useAppStore';
 
 const TABS = [
   { id: 'files', label: 'Upload Files', icon: File },
@@ -100,6 +101,7 @@ export default function UploadDialog({
       if (draftMode && currentNotebook?.isDraft) {
         result = await uploadBatchWithAutoNotebook(files);
         if (result.notebook) {
+          useAppStore.getState().setNewlyCreatedNotebookId(result.notebook.id);
           setCurrentNotebook(result.notebook);
           setDraftMode(false);
           router.replace(`/notebook/${result.notebook.id}`);
@@ -142,6 +144,7 @@ export default function UploadDialog({
       const notebookId = autoCreate ? null : currentNotebook.id;
       const result = await uploadUrl(url.trim(), notebookId, autoCreate, 'auto');
       if (result.notebook) {
+        useAppStore.getState().setNewlyCreatedNotebookId(result.notebook.id);
         setCurrentNotebook(result.notebook);
         setDraftMode(false);
         router.replace(`/notebook/${result.notebook.id}`);
@@ -170,6 +173,7 @@ export default function UploadDialog({
       const notebookId = autoCreate ? null : currentNotebook.id;
       const result = await uploadText(textContent.trim(), textTitle.trim(), notebookId, autoCreate);
       if (result.notebook) {
+        useAppStore.getState().setNewlyCreatedNotebookId(result.notebook.id);
         setCurrentNotebook(result.notebook);
         setDraftMode(false);
         router.replace(`/notebook/${result.notebook.id}`);

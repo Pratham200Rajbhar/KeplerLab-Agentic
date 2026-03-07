@@ -34,22 +34,16 @@ function CodePanel({
   artifacts = [],
   exitCode = null,
 }) {
-  const [code, setCode] = useState(initialCode || '');
+  const [code, setCode] = useState(() => repairedCode || initialCode || '');
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef(null);
 
-  // Update code when repaired code arrives
+  // Sync internal state if initialCode or repairedCode props change
   useEffect(() => {
-    if (repairedCode) {
-      setCode(repairedCode);
-    }
-  }, [repairedCode]);
-
-  // Update code when initial code changes
-  useEffect(() => {
-    if (initialCode && !repairedCode) {
-      setCode(initialCode);
-    }
+    const timeoutId = setTimeout(() => {
+      setCode(repairedCode || initialCode || '');
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [initialCode, repairedCode]);
 
   const handleCopy = useCallback(async () => {

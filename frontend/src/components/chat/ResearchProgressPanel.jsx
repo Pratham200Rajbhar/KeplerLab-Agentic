@@ -26,20 +26,21 @@ function ResearchProgressPanel({
 }) {
   const [queriesOpen, setQueriesOpen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const timerRef = useRef(null);
 
   // Elapsed timer
   useEffect(() => {
+    let intervalId;
     if (status === 'researching' || status === 'synthesizing') {
-      timerRef.current = setInterval(() => {
+      intervalId = setInterval(() => {
         setElapsed((prev) => prev + 1);
       }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (status === 'idle') setElapsed(0);
+    } else if (status === 'idle') {
+      // Defer state update to next tick to avoid React warning
+      const timeoutId = setTimeout(() => setElapsed(0), 0);
+      return () => clearTimeout(timeoutId);
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (intervalId) clearInterval(intervalId);
     };
   }, [status]);
 

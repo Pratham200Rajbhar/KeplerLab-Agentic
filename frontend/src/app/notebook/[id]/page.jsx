@@ -26,6 +26,8 @@ export default function NotebookPage() {
     setCurrentNotebook,
     setDraftMode,
     resetForNotebookSwitch,
+    newlyCreatedNotebookId,
+    setNewlyCreatedNotebookId,
   } = useAppStore();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,6 +38,18 @@ export default function NotebookPage() {
     let cancelled = false;
 
     const loadNotebook = async () => {
+      // Prevent resetting state while transitioning to newly created notebook
+      if (newlyCreatedNotebookId) {
+        if (id === 'draft') {
+          setLoaded(true);
+          return;
+        }
+        if (id === newlyCreatedNotebookId) {
+          setNewlyCreatedNotebookId(null);
+          // Let it fall through, currentNotebook.id === id will be true so fetch is skipped
+        }
+      }
+
       if (id === 'draft') {
         if (!currentNotebook?.isDraft) {
           resetForNotebookSwitch();
@@ -64,7 +78,7 @@ export default function NotebookPage() {
 
     loadNotebook();
     return () => { cancelled = true; };
-  }, [id, currentNotebook?.id, currentNotebook?.isDraft, resetForNotebookSwitch, setCurrentNotebook, setDraftMode, router]);
+  }, [id, currentNotebook?.id, currentNotebook?.isDraft, resetForNotebookSwitch, setCurrentNotebook, setDraftMode, router, newlyCreatedNotebookId, setNewlyCreatedNotebookId]);
 
   const handleBack = () => {
     resetForNotebookSwitch();

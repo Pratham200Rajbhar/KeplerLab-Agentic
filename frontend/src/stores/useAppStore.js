@@ -14,6 +14,7 @@ const useAppStore = create((set, get) => ({
   // ── Notebook state ──
   currentNotebook: null,
   draftMode: false,
+  newlyCreatedNotebookId: null,
 
   // ── Material state ──
   currentMaterial: null,
@@ -43,6 +44,7 @@ const useAppStore = create((set, get) => ({
   // ── Notebook actions ──
   setCurrentNotebook: (notebook) => set({ currentNotebook: notebook }),
   setDraftMode: (mode) => set({ draftMode: mode }),
+  setNewlyCreatedNotebookId: (id) => set({ newlyCreatedNotebookId: id }),
 
   // ── Material actions ──
   setCurrentMaterial: (material) => set({ currentMaterial: material }),

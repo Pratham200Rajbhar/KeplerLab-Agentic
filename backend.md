@@ -1,1646 +1,1290 @@
-# KeplerLab Backend — Complete Technical Documentation
+# KeplerLab — Backend Complete Documentation
 
-> **Application:** KeplerLab AI Learning Platform  
-> **Framework:** FastAPI 0.115.6  
-> **Python:** 3.11+  
-> **Last Updated:** March 2026
+> **Framework:** FastAPI (Python 3.11) · **DB:** PostgreSQL + Prisma ORM · **Vector DB:** ChromaDB · **LLM:** Ollama / Google Gemini / NVIDIA / Custom OpenLM
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#1-overview)
-2. [Project Directory Structure](#2-project-directory-structure)
-3. [Technology Stack](#3-technology-stack)
-4. [Architecture Overview](#4-architecture-overview)
-5. [Database Schema (PostgreSQL + Prisma)](#5-database-schema)
-6. [Application Startup & Lifespan](#6-application-startup--lifespan)
-7. [Middleware Stack](#7-middleware-stack)
-8. [Configuration System](#8-configuration-system)
-9. [Authentication System](#9-authentication-system)
-10. [API Routes — Complete Reference](#10-api-routes)
-11. [Feature Flows — End to End](#11-feature-flows)
-    - 11.1 [Material Upload & Processing](#111-material-upload--processing)
-    - 11.2 [RAG Chat](#112-rag-chat)
-    - 11.3 [Code Execution Mode (/code)](#113-code-execution-mode)
-    - 11.4 [Web Search Mode (/web)](#114-web-search-mode)
-    - 11.5 [Deep Research Mode (/research)](#115-deep-research-mode)
-    - 11.6 [Agent Mode (/agent)](#116-agent-mode)
-    - 11.7 [Flashcard Generation](#117-flashcard-generation)
-    - 11.8 [Quiz Generation](#118-quiz-generation)
-    - 11.9 [Presentation (PPT) Generation](#119-presentation-ppt-generation)
-    - 11.10 [Mind Map Generation](#1110-mind-map-generation)
-    - 11.11 [Podcast Feature](#1111-podcast-feature)
-    - 11.12 [Explainer Video Generation](#1112-explainer-video-generation)
-    - 11.13 [Notebook Management](#1113-notebook-management)
-12. [Service Layer — Detailed Reference](#12-service-layer)
-13. [RAG Pipeline — Deep Dive](#13-rag-pipeline)
-14. [LLM Service](#14-llm-service)
-15. [Background Job Worker](#15-background-job-worker)
-16. [WebSocket Manager](#16-websocket-manager)
-17. [Vector Database (ChromaDB)](#17-vector-database-chromadb)
-18. [Storage Service](#18-storage-service)
-19. [Security & Validation](#19-security--validation)
-20. [Logging & Monitoring](#20-logging--monitoring)
-21. [CLI Tools](#21-cli-tools)
-22. [Environment Variables Reference](#22-environment-variables-reference)
+1. [Architecture Overview](#1-architecture-overview)
+2. [Technology Stack](#2-technology-stack)
+3. [Project Structure](#3-project-structure)
+4. [Application Entry Point (`main.py`)](#4-application-entry-point-mainpy)
+5. [Configuration System](#5-configuration-system)
+6. [Database Layer](#6-database-layer)
+7. [Authentication System](#7-authentication-system)
+8. [Background Worker](#8-background-worker)
+9. [Material Ingestion Pipeline](#9-material-ingestion-pipeline)
+10. [ChromaDB & Embeddings](#10-chromadb--embeddings)
+11. [RAG Pipeline](#11-rag-pipeline)
+12. [LLM Service](#12-llm-service)
+13. [Agent Pipeline](#13-agent-pipeline)
+14. [Code Execution Sandbox](#14-code-execution-sandbox)
+15. [Deep Research Pipeline](#15-deep-research-pipeline)
+16. [Chat Routing System](#16-chat-routing-system)
+17. [Presentation (PPT) Service](#17-presentation-ppt-service)
+18. [Podcast Service](#18-podcast-service)
+19. [Flashcard & Quiz Services](#19-flashcard--quiz-services)
+20. [Mind Map Service](#20-mind-map-service)
+21. [WebSocket System](#21-websocket-system)
+22. [Routes Reference](#22-routes-reference)
+23. [Middleware Stack](#23-middleware-stack)
+24. [Complete Request Flow Diagrams](#24-complete-request-flow-diagrams)
+25. [Prisma Schema Reference](#25-prisma-schema-reference)
 
 ---
 
-## 1. Overview
+## 1. Architecture Overview
 
-KeplerLab is an AI-powered learning platform backend built on FastAPI. It provides:
+KeplerLab backend is an **AI-powered study assistant API** built on FastAPI. It provides:
 
-- **Notebook workspace** — users organize materials (PDFs, URLs, YouTube, text, code) into named notebooks
-- **RAG Chat** — retrieval-augmented generation over uploaded materials
-- **Multi-modal AI** — flashcards, quizzes, presentations, mindmaps, podcasts, explainer videos
-- **Agentic AI** — multi-step autonomous task execution, Python sandbox, web research
-- **Real-time features** — WebSocket-based material processing status, podcast playback
-- **Multi-provider LLM** — Ollama (local), Google Gemini, NVIDIA NIM, MyOpenLM
+- **Document ingestion** — Upload files (PDF, DOCX, PPTX, XLSX, CSV, audio/video, URLs, raw text)  
+  → OCR → text extraction → chunking → embedding → ChromaDB storage
+- **RAG Chat** — Semantic search over user documents → LLM streaming response with citations
+- **Agentic AI** — Multi-step agent loop with tool calls (RAG, Python sandbox, web search)
+- **Content Generation** — Flashcards, quizzes, HTML presentations, podcasts (TTS), mind maps, explainer videos
+- **Real-time updates** — WebSocket for material processing status, SSE for streaming LLM responses
+- **Auth** — JWT access tokens (15 min) + HttpOnly refresh tokens (7 days) with family-based rotation
 
-The API serves a Next.js 16 frontend and runs as a single FastAPI process with a background async job processor.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                          FastAPI App                        │
+│                                                             │
+│  Auth ─► Notebooks ─► Materials ─► Chat ─► Agent ─► PPT    │
+│          Flashcard     Quiz         Mindmap  Podcast         │
+├──────────┬──────────┬──────────┬──────────┬────────────────-┤
+│ Postgres │ ChromaDB │  LLM     │ Sandbox  │  WebSocket      │
+│ (Prisma) │ (BGE-m3) │ Provider │ (Python) │  Manager        │
+└──────────┴──────────┴──────────┴──────────┴─────────────────┘
+```
 
 ---
 
-## 2. Project Directory Structure
+## 2. Technology Stack
+
+| Component | Library / Version |
+|-----------|-------------------|
+| Web Framework | `fastapi==0.115.6` |
+| ASGI Server | `uvicorn[standard]==0.30.6` |
+| ORM | `prisma==0.15.0` (async) |
+| Database | PostgreSQL |
+| Vector Store | `chromadb>=0.5.11,<0.6.0` |
+| Embeddings | `sentence-transformers==3.1.1` (BAAI/bge-m3, 1024-dim) |
+| Reranker | BAAI/bge-reranker-large |
+| LLM Integration | LangChain (Google Gemini, NVIDIA, Ollama, Custom) |
+| Agent Framework | LangGraph (for structured tasks) |
+| OCR | `pytesseract`, `easyocr` |
+| Audio Transcription | `openai-whisper` |
+| TTS | `edge-tts` |
+| PDF Processing | `pypdf`, `pymupdf`, `pdfplumber`, `pdf2image` |
+| Presentation Screenshots | LibreOffice headless + `poppler` |
+| Security | `python-jose`, `passlib[bcrypt]` |
+| Validation | `pydantic v2`, `pydantic-settings` |
+| Caching | `fastapi-cache2` |
+
+---
+
+## 3. Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── main.py                    # FastAPI app, lifespan, middleware, routers
+│   ├── main.py                  # FastAPI app, lifespan, middleware
 │   ├── core/
-│   │   ├── config.py              # Pydantic BaseSettings — all env vars
-│   │   └── utils.py               # Shared utilities
+│   │   ├── config.py            # Pydantic BaseSettings — all env vars
+│   │   └── utils.py             # Shared helpers (sanitize_null_bytes, etc.)
 │   ├── db/
-│   │   ├── prisma_client.py       # Prisma singleton (PostgreSQL ORM)
-│   │   └── chroma.py              # ChromaDB persistent client + collection
+│   │   ├── chroma.py            # ChromaDB singleton + bootstrap
+│   │   └── prisma_client.py     # Prisma async client singleton
 │   ├── models/
-│   │   ├── mindmap_schemas.py     # MindMap Pydantic models
-│   │   ├── model_schemas.py       # LLM model metadata
-│   │   └── shared_enums.py        # IntentOverride, DifficultyLevel enums
-│   ├── prompts/                   # Plaintext prompt templates (*.txt)
-│   │   ├── chat_prompt.txt
-│   │   ├── flashcard_prompt.txt
-│   │   ├── quiz_prompt.txt
-│   │   ├── mindmap_prompt.txt
-│   │   ├── ppt_prompt.txt         # Stage 1: intent
-│   │   ├── presentation_intent_prompt.txt
-│   │   ├── presentation_strategy_prompt.txt
-│   │   ├── slide_content_prompt.txt
-│   │   ├── code_generation_prompt.txt
-│   │   ├── code_repair_prompt.txt
-│   │   ├── data_analysis_prompt.txt
-│   │   ├── podcast_script_prompt.txt
-│   │   ├── podcast_qa_prompt.txt
-│   │   └── flashcard_prompt.txt
-│   ├── routes/                    # FastAPI routers (one file per feature)
-│   │   ├── auth.py                 GET /auth/me, POST /auth/signup|login|refresh|logout
-│   │   ├── notebook.py             CRUD /notebooks + content store
-│   │   ├── upload.py               POST /upload (file, url, youtube, text)
-│   │   ├── materials.py            GET|PATCH|DELETE /materials
-│   │   ├── chat.py                 POST /chat + sessions + suggestions
-│   │   ├── flashcard.py            POST /flashcard
-│   │   ├── quiz.py                 POST /quiz
-│   │   ├── ppt.py                  POST /presentation
-│   │   ├── mindmap.py              POST|GET|DELETE /mindmap
-│   │   ├── podcast_live.py         /podcast/* (session, segments, QA, export)
-│   │   ├── explainer.py            /explainer/* (check, generate, status, video)
-│   │   ├── agent.py                POST /agent/execute-code, GET /workspace/file
-│   │   ├── search.py               POST /search/web (bridges external search)
-│   │   ├── proxy.py                GET /proxy/presentation/slides (image proxy)
-│   │   ├── jobs.py                 GET /jobs/{id} (job polling)
-│   │   ├── models.py               GET /models (LLM list)
-│   │   ├── health.py               GET /health, /health/simple
-│   │   ├── websocket_router.py     WS /ws/materials/{id}
-│   │   └── utils.py                Shared route helpers
-│   └── services/                  # Business logic (one subdir per domain)
-│       ├── agent/                  pipeline.py, tools.py, schemas.py
-│       ├── auth/                   service.py, security.py
-│       ├── chat/                   service.py
-│       ├── code_execution/         sandbox.py, sandbox_env.py, security.py
-│       ├── explainer/              processor.py, script_generator.py, tts.py, video_composer.py
-│       ├── flashcard/              generator.py
-│       ├── llm_service/            llm.py, llm_schemas.py, structured_invoker.py
-│       ├── mindmap/                generator.py
-│       ├── podcast/                session_manager.py, script_generator.py, tts_service.py,
-│       │                           qa_service.py, satisfaction_detector.py, export_service.py, voice_map.py
-│       ├── ppt/                    generator.py, screenshot_service.py, slide_extractor.py
-│       ├── quiz/                   generator.py
-│       ├── rag/                    pipeline.py, embedder.py, reranker.py,
-│       │                           context_builder.py, context_formatter.py,
-│       │                           citation_validator.py, secure_retriever.py
-│       ├── research/               pipeline.py
-│       ├── text_processing/        file_detector.py (+ text extractors)
-│       ├── audit_logger.py         API usage logging to DB
-│       ├── file_validator.py       Upload MIME/size validation
-│       ├── gpu_manager.py          GPU memory management
-│       ├── job_service.py          Background job CRUD
-│       ├── material_service.py     Material CRUD + processing dispatch
-│       ├── model_manager.py        Model registry
-│       ├── notebook_name_generator.py  AI-generated notebook names
-│       ├── notebook_service.py     Notebook + content CRUD
-│       ├── performance_logger.py   Request timing middleware
-│       ├── rate_limiter.py         Rate limit middleware (disabled)
-│       ├── storage_service.py      Local file storage for material text
-│       ├── token_counter.py        LLM token counting/tracking
-│       ├── worker.py               Async background job processor
-│       └── ws_manager.py           WebSocket connection manager
-├── cli/                           # One-off maintenance scripts
-│   ├── backup_chroma.py
-│   ├── download_models.py
-│   ├── export_embeddings.py
-│   ├── import_embeddings.py
-│   ├── migrate_material_joins.py
-│   └── reindex.py
+│   │   ├── mindmap_schemas.py   # MindMap Pydantic schemas
+│   │   ├── model_schemas.py     # LLM model path helpers
+│   │   └── shared_enums.py      # IntentOverride, DifficultyLevel enums
+│   ├── prompts/                 # All LLM prompt template .txt files
+│   ├── routes/                  # FastAPI routers (one file per feature)
+│   └── services/
+│       ├── agent/               # Multi-step agent pipeline
+│       ├── auth/                # JWT + bcrypt auth
+│       ├── chat/                # Chat session service
+│       ├── code_execution/      # Python sandbox + security scanner
+│       ├── explainer/           # Explainer video service
+│       ├── flashcard/           # Flashcard generator
+│       ├── llm_service/         # LLM factory + structured invoker
+│       ├── mindmap/             # Mind map generator
+│       ├── podcast/             # Script gen + TTS + session manager
+│       ├── ppt/                 # Presentation HTML generator
+│       ├── quiz/                # Quiz generator
+│       ├── rag/                 # Retrieval pipeline
+│       ├── research/            # Deep web research pipeline
+│       ├── stream/              # SSE stream helpers
+│       ├── text_processing/     # File/URL/YouTube text extraction
+│       ├── audit_logger.py      # API usage logging
+│       ├── gpu_manager.py       # GPU memory management
+│       ├── job_service.py       # Background job CRUD
+│       ├── material_service.py  # Material lifecycle (ingest, chunk, embed)
+│       ├── model_manager.py     # Hugging Face model download manager
+│       ├── notebook_service.py  # Notebook CRUD
+│       ├── notebook_name_generator.py
+│       ├── performance_logger.py # Request timing middleware
+│       ├── rate_limiter.py      # Rate limit middleware (currently disabled)
+│       ├── storage_service.py   # File-system text storage (material_text/)
+│       ├── token_counter.py     # Token counting + usage tracking
+│       ├── worker.py            # Background job processor (asyncio.Task)
+│       └── ws_manager.py        # WebSocket connection manager
+├── cli/                         # CLI tools (backup, reindex, export, etc.)
 ├── data/
-│   ├── chroma/                    ChromaDB persistent storage
-│   ├── material_text/             Extracted material text files ({uuid}.txt)
-│   ├── models/                    Local sentence-transformer model cache
-│   ├── uploads/                   Raw uploaded files
-│   ├── output/                    Generated output files
-│   └── workspaces/                Per-session code sandbox directories
-├── logs/                          Rotating log files (app.log)
-├── output/
-│   ├── explainers/                Explainer MP4 videos
-│   ├── generated/                 Generated files (CSV exports, etc.)
-│   ├── podcast/                   Podcast MP3 audio segments
-│   └── presentations/             Generated HTML presentations
+│   ├── chroma/                  # ChromaDB persistent storage
+│   ├── material_text/           # Full extracted text files per material
+│   ├── models/                  # Downloaded embedding/reranker models
+│   ├── output/                  # Generated content (podcasts, presentations)
+│   ├── uploads/                 # Raw uploaded files
+│   └── workspaces/              # Agent sandbox working dirs
+├── logs/                        # Rotating log files
+├── output/                      # Alias for generated output
 ├── prisma/
-│   └── schema.prisma              Complete Prisma schema
-├── templates/                     PPT HTML templates
+│   └── schema.prisma            # PostgreSQL schema definition
 └── requirements.txt
 ```
 
 ---
 
-## 3. Technology Stack
+## 4. Application Entry Point (`main.py`)
 
-| Layer | Technology |
-|-------|-----------|
-| Web Framework | FastAPI 0.115.6 |
-| ASGI Server | Uvicorn 0.30.6 |
-| ORM | Prisma 0.15.0 (prisma-client-py, asyncio) |
-| Database | PostgreSQL |
-| Vector DB | ChromaDB ≥0.5.11, <0.6.0 |
-| Embeddings | BAAI/bge-m3 (1024-dim) via sentence-transformers |
-| Reranker | BAAI/bge-reranker-large |
-| LLM Orchestration | LangChain 0.2.16 + LangGraph ≥0.2.0 |
-| LLM Providers | Ollama (llama3), Google Gemini 2.5 Flash, NVIDIA Qwen, MyOpenLM |
-| PDF Extraction | PyMuPDF, pypdf, pdfplumber |
-| OCR | pytesseract, EasyOCR |
-| Audio/TTS | edge-tts, pydub, soundfile |
-| Transcription | OpenAI Whisper |
-| Video | ffmpeg-python |
-| Auth | python-jose (JWT), passlib/bcrypt |
-| HTTP Client | httpx |
-| Web Scraping | beautifulsoup4, selenium, trafilatura, yt-dlp |
-| Data | numpy, pyarrow, pandas (implicit via polars) |
-| Validation | Pydantic v2 |
-| Config | pydantic-settings |
-| Testing | pytest, pytest-asyncio |
+The FastAPI app is configured with an **async lifespan context manager** that runs startup/shutdown logic.
+
+### Startup Sequence (in order)
+
+```
+1. connect_db()                   — Connect Prisma/PostgreSQL
+2. warm_up_embeddings()           — Preload BAAI/bge-m3 model (run_in_executor)
+3. get_reranker()                 — Preload BAAI/bge-reranker-large (run_in_executor)
+4. asyncio.create_task(job_processor()) — Start background document worker
+5. ensure_packages()              — Install sandbox Python packages
+6. Cleanup stale /tmp/kepler_sandbox_* dirs from previous crashes
+7. os.makedirs() for output directories
+8. cleanup_expired_tokens()       — Purge stale refresh tokens from DB
+```
+
+### Shutdown Sequence
+
+```
+1. graceful_shutdown()  — Signal worker to stop accepting new jobs
+2. _job_processor_task.cancel()  — Cancel background task
+3. asyncio.wait_for(..., timeout=30s) — Wait for in-flight jobs to finish
+4. disconnect_db()      — Close Prisma connection
+```
+
+### Middleware Stack (order of execution)
+
+```
+1. performance_monitoring_middleware  — Logs request timing
+2. rate_limit_middleware              — Currently a pass-through (disabled)
+3. log_requests                       — Logs method, path, status, duration, X-Request-ID
+4. CORSMiddleware                     — Allow CORS_ORIGINS (configurable)
+5. TrustedHostMiddleware              — Production only: validates Host header
+```
+
+### Registered Routers
+
+| Prefix | Module | Description |
+|--------|--------|-------------|
+| `/auth` | `routes/auth.py` | Signup, login, refresh, logout |
+| `/notebook` | `routes/notebook.py` | Notebook CRUD |
+| `/upload` | `routes/upload.py` | File/URL/text upload |
+| `/materials` | `routes/materials.py` | Material listing, deletion, text view |
+| `/flashcard` | `routes/flashcard.py` | Flashcard generation |
+| `/quiz` | `routes/quiz.py` | Quiz generation |
+| `/chat` | `routes/chat.py` | Chat with RAG / agent / web |
+| `/models` | `routes/models.py` | LLM model management |
+| `/jobs` | `routes/jobs.py` | Background job status polling |
+| `/ppt` | `routes/ppt.py` | Presentation generation |
+| `/mindmap` | `routes/mindmap.py` | Mind map generation |
+| `/health` | `routes/health.py` | Health check |
+| `/ws` | `routes/websocket_router.py` | WebSocket endpoints |
+| `/search` | `routes/search.py` | Web search proxy |
+| `/proxy` | `routes/proxy.py` | Generic HTTP proxy |
+| `/explainer` | `routes/explainer.py` | Explainer video generation |
+| `/podcast` | `routes/podcast_live.py` | Podcast session API |
+| `/agent` | `routes/agent.py` | Agent execute, code execute, files |
 
 ---
 
-## 4. Architecture Overview
+## 5. Configuration System
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Next.js Frontend                        │
-│          (HTTP REST + Server-Sent Events + WebSocket)        │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ HTTP / WS
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Application                        │
-│                                                              │
-│  Middleware Stack (in order):                                │
-│  ① PerformanceMonitoring → ② RateLimit → ③ RequestLogger   │
-│  ④ CORSMiddleware → ⑤ TrustedHost (prod)                   │
-│                                                              │
-│  Routers (18 total):                                         │
-│  auth | notebook | upload | materials | chat | flashcard    │
-│  quiz | ppt | mindmap | podcast | explainer | agent         │
-│  search | proxy | jobs | models | health | ws               │
-└───────────┬──────────────────────────────────────┬──────────┘
-            │                                      │
-     ┌──────▼──────┐                    ┌──────────▼────────┐
-     │  Services   │                    │  Background Worker │
-     │  Layer      │                    │  (asyncio.Task)    │
-     └──────┬──────┘                    └──────────┬────────┘
-            │                                      │
-     ┌──────┴──────────────────────────────────────┘
-     │
-     ├── PostgreSQL (via Prisma)     [Users, Notebooks, Materials, Sessions...]
-     ├── ChromaDB                    [Vector embeddings — BAAI/bge-m3 1024d]
-     ├── Local Filesystem            [Uploaded files, material text, outputs]
-     └── External                    [LLM providers, Search service, Sandbox]
+**File:** `app/core/config.py`
+
+All settings use **Pydantic BaseSettings** — automatically loaded from environment / `.env` file.
+
+### Key Settings Categories
+
+#### Database
+```python
+DATABASE_URL = ""               # PostgreSQL connection string (REQUIRED)
+CHROMA_DIR = "./data/chroma"    # ChromaDB persistence directory
 ```
 
-### Key Design Decisions
+#### LLM Provider
+```python
+LLM_PROVIDER = "OLLAMA"         # OLLAMA | GOOGLE | NVIDIA | MYOPENLM
+OLLAMA_MODEL = "llama3"
+GOOGLE_MODEL = "models/gemini-2.5-flash"
+GOOGLE_API_KEY = ""
+NVIDIA_MODEL = "qwen/qwen3.5-397b-a17b"
+NVIDIA_API_KEY = ""
+```
 
-- **No request-level LLM intent classification** — intent is always set explicitly by the frontend via slash commands (`IntentOverride` enum). Backend never guesses.
-- **Single background worker** — one `asyncio.Task` processes the job queue sequentially (up to 5 concurrent material extractions). Gracefully shuts down with 30s timeout.
-- **Event-driven job queue** — instead of polling, the worker uses an asyncio `Event` notified immediately on new job creation.
-- **Token rotation auth** — refresh tokens stored hashed in DB, rotated on every use. Reuse detection kicks the user out of all sessions.
-- **Sticky embedding version** — ChromaDB is wiped and rebuilt if `EMBEDDING_VERSION` changes, preventing dimension mismatches.
-- **SSE streaming** — all chat, agent, code-execution responses are streamed via `StreamingResponse` with SSE format.
+#### LLM Generation Control
+```python
+LLM_TEMPERATURE_STRUCTURED = 0.1   # JSON/schema outputs
+LLM_TEMPERATURE_CHAT = 0.2         # Conversational responses
+LLM_TEMPERATURE_CREATIVE = 0.7     # Creative content
+LLM_TEMPERATURE_CODE = 0.1         # Code generation
+LLM_MAX_TOKENS = 4000
+LLM_MAX_TOKENS_CHAT = 3000
+```
+
+#### Embeddings + Retrieval
+```python
+EMBEDDING_MODEL = "BAAI/bge-m3"
+EMBEDDING_DIMENSION = 1024
+RERANKER_MODEL = "BAAI/bge-reranker-large"
+USE_RERANKER = True
+INITIAL_VECTOR_K = 10     # Candidates from ChromaDB
+MMR_K = 8                 # After MMR diversity filtering
+FINAL_K = 10              # Final results after reranking
+MAX_CONTEXT_TOKENS = 6000
+```
+
+#### JWT Authentication
+```python
+JWT_SECRET_KEY = ""                    # REQUIRED — 64-byte random key
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+COOKIE_NAME = "refresh_token"
+COOKIE_SECURE = False                  # Auto-set True in production
+COOKIE_SAMESITE = "lax"
+```
+
+#### CORS
+```python
+CORS_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
+```
+
+### Path Resolution
+All relative paths (`CHROMA_DIR`, `UPLOAD_DIR`, `MODELS_DIR`, etc.) are resolved to absolute paths against `_PROJECT_ROOT` at startup via `_resolve_paths_and_cross_validate`.
 
 ---
 
-## 5. Database Schema
+## 6. Database Layer
 
-Complete PostgreSQL schema managed by Prisma ORM. 20 models total.
+### Prisma Client (`db/prisma_client.py`)
+Async Prisma client singleton. Connected/disconnected in the lifespan.
 
-### Enums
-
-| Enum | Values |
-|------|--------|
-| `UserRole` | `USER`, `ADMIN` |
-| `MaterialStatus` | `pending`, `processing`, `ocr_running`, `transcribing`, `embedding`, `completed`, `failed` |
-| `JobStatus` | `pending`, `processing`, `ocr_running`, `transcribing`, `embedding`, `completed`, `failed` |
-| `VideoStatus` | `pending`, `processing`, `completed`, `failed` |
-| `ExportStatus` | `pending`, `processing`, `completed`, `failed` |
-| `PodcastSessionStatus` | `created`, `script_generating`, `audio_generating`, `ready`, `playing`, `paused`, `completed`, `failed` |
-
-### Core Models
-
-#### `User`
-```
-id             UUID (PK)
-email          VARCHAR(255) UNIQUE
-username       VARCHAR(100)
-hashedPassword VARCHAR(255)
-isActive       BOOLEAN DEFAULT true
-role           UserRole DEFAULT USER
-deletedAt      TIMESTAMP?
-createdAt      TIMESTAMP
-updatedAt      TIMESTAMP
-```
-Relations → Notebook[], Material[], ChatSession[], ChatMessage[], GeneratedContent[], RefreshToken[], BackgroundJob[], UserTokenUsage[], ApiUsageLog[], AgentExecutionLog[], CodeExecutionSession[], ResearchSession[], ExplainerVideo[], PodcastSession[], Artifact[]
-
-#### `Notebook`
-```
-id          UUID (PK)
-userId      UUID (FK → User, CASCADE)
-name        VARCHAR(255)
-description TEXT?
-createdAt   TIMESTAMP
-updatedAt   TIMESTAMP
+```python
+from app.db.prisma_client import prisma
+# Usage anywhere:
+user = await prisma.user.find_unique(where={"email": email})
 ```
 
-#### `Material`
+### PostgreSQL Schema (`prisma/schema.prisma`)
+
+#### Core Models
+
+| Model | Key Fields | Relations |
+|-------|-----------|-----------|
+| `User` | id (UUID), email, username, hashedPassword, isActive, role (USER/ADMIN) | Notebooks, Materials, ChatSessions, ChatMessages, GeneratedContent, RefreshTokens, BackgroundJobs, Artifacts |
+| `Notebook` | id, userId, name, description | Owner (User), Materials, ChatSessions, ChatMessages, GeneratedContent, AgentLogs |
+| `Material` | id, userId, notebookId, filename, title, originalText (summary only), status, chunkCount, sourceType, metadata | Owner, Notebook, GeneratedContent |
+| `ChatSession` | id, notebookId, userId, title | Notebook, User, ChatMessages, Artifacts |
+| `ChatMessage` | id, notebookId, userId, chatSessionId, role, content, agentMeta (JSON) | ResponseBlocks, Artifacts |
+| `GeneratedContent` | id, notebookId, contentType, data (JSON), title | ExplainerVideos, MaterialJoins |
+| `RefreshToken` | id, userId, tokenHash, family, used, expiresAt | User |
+| `BackgroundJob` | id, userId, jobType, status, result (JSON), error | User |
+| `Artifact` | id, userId, notebookId, sessionId, messageId, fileId, mimeType, tokenExpiry | User |
+
+#### Enums
 ```
-id           UUID (PK)
-userId       UUID (FK → User)
-notebookId   UUID? (FK → Notebook)
-filename     VARCHAR(255)
-title        VARCHAR(510)?        -- Custom title for URL/YouTube materials
-originalText TEXT?                -- Extracted text stored in DB (legacy)
-status       MaterialStatus
-chunkCount   INT DEFAULT 0
-sourceType   VARCHAR(50)?         -- 'file', 'url', 'youtube', 'text'
-metadata     JSON?                -- Extraction metadata
-error        TEXT?
+UserRole:       USER | ADMIN
+MaterialStatus: pending | processing | ocr_running | transcribing | embedding | completed | failed
+JobStatus:      pending | processing | ocr_running | transcribing | embedding | completed | failed
+VideoStatus:    pending | processing | completed | failed
+ExportStatus:   pending | processing | completed | failed
 ```
 
-#### `ChatSession`
-```
-id         UUID (PK)
-notebookId UUID (FK → Notebook)
-userId     UUID (FK → User)
-title      VARCHAR(255) DEFAULT 'New Chat'
-```
-
-#### `ChatMessage`
-```
-id            UUID (PK)
-notebookId    UUID
-userId        UUID
-chatSessionId UUID?
-role          VARCHAR(20)     -- 'user' or 'assistant'
-content       TEXT
-agentMeta     TEXT?           -- JSON: intent, tools_used, step_log, etc.
-```
-→ has ResponseBlock[] (paragraph-level blocks) and Artifact[]
-
-#### `GeneratedContent`
-```
-id          UUID (PK)
-notebookId  UUID
-userId      UUID
-materialId  UUID?           -- legacy single-material link
-contentType VARCHAR(50)     -- 'flashcard', 'quiz', 'presentation', 'mindmap'
-title       VARCHAR(255)?
-data        JSON            -- full generated content
-language    VARCHAR(10)?
-materialIds STRING[]        -- legacy array
-```
-M2M join → `GeneratedContentMaterial` (generatedContentId, materialId)
-
-#### `RefreshToken`
-```
-id        UUID (PK)
-userId    UUID
-tokenHash VARCHAR(255) UNIQUE
-family    VARCHAR(255)    -- Token rotation family ID
-used      BOOLEAN DEFAULT false
-expiresAt TIMESTAMP
-```
-
-#### `BackgroundJob`
-```
-id      UUID (PK)
-userId  UUID
-jobType VARCHAR(50)     -- 'material_processing', 'url_processing', 'youtube_processing', 'text_processing'
-status  JobStatus
-result  JSON?
-error   TEXT?
-```
-
-#### `UserTokenUsage`
-```
-id         UUID (PK)
-userId     UUID
-date       DATE
-tokensUsed INT DEFAULT 0
-```
-Unique constraint on (userId, date) — daily token tracking.
-
-#### `ApiUsageLog`
-```
-id                 UUID
-userId             UUID
-endpoint           VARCHAR(255)
-materialIds        STRING[]
-contextTokenCount  INT
-responseTokenCount INT
-modelUsed          VARCHAR(100)
-llmLatency         FLOAT
-retrievalLatency   FLOAT
-totalLatency       FLOAT
-```
-
-#### `AgentExecutionLog`
-```
-id          UUID
-userId      UUID
-notebookId  UUID
-intent      VARCHAR(50)
-confidence  FLOAT
-toolsUsed   STRING[]
-stepsCount  INT
-tokensUsed  INT
-elapsedTime FLOAT
-```
-
-#### `CodeExecutionSession`
-```
-id          UUID
-userId      UUID
-notebookId  UUID
-code        TEXT
-stdout      TEXT?
-stderr      TEXT?
-exitCode    INT DEFAULT -1
-hasChart    BOOLEAN
-elapsedTime FLOAT
-```
-
-#### `ResearchSession`
-```
-id           UUID
-userId       UUID
-notebookId   UUID
-query        TEXT
-report       TEXT?
-sourcesCount INT
-queriesCount INT
-iterations   INT
-elapsedTime  FLOAT
-sourceUrls   STRING[]
-```
-
-#### `ExplainerVideo`
-```
-id                UUID
-userId            UUID
-presentationId    UUID (FK → GeneratedContent)
-pptLanguage       VARCHAR(10)
-narrationLanguage VARCHAR(10)
-voiceGender       VARCHAR(10)
-voiceId           VARCHAR(100)
-status            VideoStatus
-script            JSON?         -- Array of slide narration scripts
-audioFiles        JSON?
-videoUrl          TEXT?
-duration          INT?
-chapters          JSON?
-```
-
-#### Podcast Models
-- `PodcastSession` — session config + state (mode, language, voices, status, chapters, totalDurationMs)
-- `PodcastSessionMaterial` — M2M join (sessions ↔ materials)
-- `PodcastSegment` — individual host/guest dialogue segment (text + audioUrl + durationMs)
-- `PodcastDoubt` — user-submitted question mid-playback (question + answer text + audio URLs)
-- `PodcastExport` — export requests (PDF or JSON)
-- `PodcastBookmark` — segment bookmarks with optional label
-- `PodcastAnnotation` — text notes attached to a segment
-
-#### `Artifact`
-```
-id            UUID
-userId        UUID
-notebookId    UUID?
-sessionId     UUID?
-messageId     UUID?
-filename      VARCHAR(255)
-mimeType      VARCHAR(128)
-displayType   VARCHAR(50)?    -- 'chart', 'table', 'csv', 'text'
-sizeBytes     INT
-downloadToken VARCHAR(64) UNIQUE
-tokenExpiry   TIMESTAMP      -- 24-hour expiry default
-workspacePath TEXT           -- absolute path on disk
-sourceCode    TEXT?
-```
-
-#### `ResponseBlock`
-```
-id            UUID
-chatMessageId UUID
-blockIndex    INT
-text          TEXT
-```
-Stores individual paragraph blocks of AI responses for hover-menu interactions.
+#### Additional Models
+- `ResponseBlock` — Paragraph-level AI response blocks with citations
+- `AgentExecutionLog` — Agent intent, tools used, tokens, elapsed time
+- `CodeExecutionSession` — Python sandbox execution history
+- `ResearchSession` — Deep research session history
+- `PodcastSession + PodcastSessionMaterial` — Podcast session with linked materials
+- `ExplainerVideo` — Video generation status + script + audio + chapters
+- `UserTokenUsage` — Daily token consumption per user
+- `ApiUsageLog` — Per-request latency, token counts, model used
 
 ---
 
-## 6. Application Startup & Lifespan
+## 7. Authentication System
 
-The `lifespan` async context manager in `main.py` performs these steps in order on **startup**:
+**Files:** `app/services/auth/service.py`, `app/services/auth/security.py`, `app/routes/auth.py`
 
-1. **Connect to PostgreSQL** via Prisma (`connect_db()`)
-2. **Warm up embedding model** `BAAI/bge-m3` in thread pool executor (non-blocking)
-3. **Preload reranker** `BAAI/bge-reranker-large` in thread pool executor
-4. **Start background job processor** as `asyncio.Task` named `job_processor`
-5. **Ensure sandbox packages** installed (seaborn, wordcloud, etc.)
-6. **Clean up stale sandbox temp dirs** from previous crashes (`/tmp/kepler_sandbox_*`, `/tmp/kepler_analysis_*`)
-7. **Ensure output directories** exist (`output/generated`, `output/presentations`, `output/explainers`, `output/podcast`)
-8. **Purge expired refresh tokens** from DB
-
-On **shutdown**:
-1. Signal graceful shutdown to worker
-2. Cancel `_job_processor_task` and wait up to 30s
-3. `disconnect_db()`
-
----
-
-## 7. Middleware Stack
-
-Applied in order (first to last around the request):
-
-| Order | Middleware | Purpose |
-|-------|-----------|---------|
-| 1 | `performance_monitoring_middleware` | Records full request time, logs slow requests |
-| 2 | `rate_limit_middleware` | **Currently disabled** — passes all requests through |
-| 3 | `log_requests` | Logs `METHOD /path STATUS time [request_id]`, adds `X-Request-ID` header |
-| 4 | `CORSMiddleware` | Allows configured origins, credentials, all methods/headers |
-| 5 | `TrustedHostMiddleware` | Production only — validates `Host` header against CORS domains |
-
-Global error handlers ensure CORS headers are included even on exception responses:
-- `HTTPException` handler → returns `JSONResponse` with proper CORS headers
-- `Exception` handler → logs unhandled exceptions, returns 500 with `request_id`
-
----
-
-## 8. Configuration System
-
-`app/core/config.py` — Pydantic `BaseSettings` loaded from `.env` file.
-
-### Key Configuration Sections
-
-| Section | Variables | Notes |
-|---------|-----------|-------|
-| Environment | `ENVIRONMENT`, `DEBUG` | `development` / `staging` / `production` |
-| Database | `DATABASE_URL` | Required |
-| ChromaDB | `CHROMA_DIR` | Default `./data/chroma` |
-| File Storage | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE_MB` | 10 GB default |
-| Output Dirs | `PRESENTATIONS_OUTPUT_DIR`, `GENERATED_OUTPUT_DIR`, `TEMPLATES_DIR` | |
-| Code Execution | `MAX_CODE_REPAIR_ATTEMPTS` (3), `CODE_EXECUTION_TIMEOUT` (15s) | |
-| Workspace | `WORKSPACE_BASE_DIR`, `WORKSPACE_IDLE_TTL_MINUTES` (30), `WORKSPACE_MEMORY_MB` (512) | |
-| JWT | `JWT_SECRET_KEY` (required), `ACCESS_TOKEN_EXPIRE_MINUTES` (15), `REFRESH_TOKEN_EXPIRE_DAYS` (7) | |
-| Cookies | `COOKIE_SECURE`, `COOKIE_SAMESITE`, `COOKIE_DOMAIN`, `COOKIE_NAME` | Auto-secure in production |
-| CORS | `CORS_ORIGINS` | Comma-separated string or list |
-| LLM | `LLM_PROVIDER`, `OLLAMA_MODEL`, `GOOGLE_MODEL`, `NVIDIA_MODEL` | Provider selection |
-| API Keys | `GOOGLE_API_KEY`, `NVIDIA_API_KEY` | Required per-provider |
-| LLM Params | `LLM_TEMPERATURE_STRUCTURED` (0.1), `LLM_TEMPERATURE_CHAT` (0.2), `LLM_TEMPERATURE_CREATIVE` (0.7), `LLM_TEMPERATURE_CODE` (0.1) | |
-| Tokens | `LLM_MAX_TOKENS` (4000), `LLM_MAX_TOKENS_CHAT` (3000) | |
-| Embeddings | `EMBEDDING_MODEL` (BAAI/bge-m3), `EMBEDDING_VERSION`, `EMBEDDING_DIMENSION` (1024) | |
-| Reranking | `RERANKER_MODEL` (BAAI/bge-reranker-large), `USE_RERANKER` (true) | |
-| Retrieval | `INITIAL_VECTOR_K` (10), `MMR_K` (8), `FINAL_K` (10), `MMR_LAMBDA` (0.5), `MAX_CONTEXT_TOKENS` (6000) | |
-| Thresholds | `MIN_SIMILARITY_SCORE` (0.3), `MIN_CHUNK_LENGTH` (100), `MIN_CONTEXT_CHUNK_LENGTH` (150) | |
-| Timeouts | `OCR_TIMEOUT_SECONDS` (300), `WHISPER_TIMEOUT_SECONDS` (600), `LIBREOFFICE_TIMEOUT_SECONDS` (120) | |
-| Search | `SEARCH_SERVICE_URL` | External search microservice |
-
-All relative paths are resolved to absolute at validation time against the project root.
-`COOKIE_SECURE` is auto-set to `True` in production.
-
----
-
-## 9. Authentication System
-
-Located in `app/services/auth/` (service.py + security.py) and `app/routes/auth.py`.
-
-### Flow
+### Token Architecture
 
 ```
-POST /auth/signup
-  → Validate email/username/password (min 8 chars, 1 upper, 1 lower, 1 digit)
-  → Hash password with bcrypt
-  → Create User record in DB
-  → Return UserResponse
+                                    ┌─────────────────────────────┐
+Browser → POST /auth/login          │  Returns:                   │
+                                    │  - access_token (bearer, 15m)│
+                                    │  - refresh_token (HttpOnly   │
+                                    │    cookie, 7 days)           │
+                                    └─────────────────────────────┘
 
-POST /auth/login
-  → Authenticate credentials
-  → Generate UUID token family
-  → Create access_token (JWT, 15 min expiry)
-  → Create refresh_token (JWT, 7-day expiry, includes family claim)
-  → Store SHA-256 hash of refresh_token in RefreshToken table
-  → Set refresh_token as HttpOnly cookie (path="/")
-  → Return { access_token, token_type }
+Browser → POST /api/route           Authorization: Bearer <access_token>
+          ↓ 401                       → POST /auth/refresh (cookie sent auto)
+          ↓ new access_token          → retry original request
 
-POST /auth/refresh (called by frontend auto-refresh)
-  → Read refresh_token from cookie
-  → Look up token hash in RefreshToken table
-  → Verify not expired, not already used
-  → If token was already used → REUSE DETECTED → revoke entire family → 401
-  → Mark old token as used
-  → Create new access_token + new refresh_token (same family)
-  → Store new refresh_token hash
-  → Set new cookie
-  → Return new access_token
-
-GET /auth/me
-  → Validate Bearer access_token from Authorization header
-  → Return current user info
-
-POST /auth/logout
-  → Revoke ALL refresh tokens for user
-  → Clear cookie
-
-App startup
-  → cleanup_expired_tokens() — deletes expired rows from DB
+Browser → POST /auth/refresh        Cookie: refresh_token=<token>
+                                    Returns: { access_token }
+                                    Rotates refresh token in DB
 ```
 
-### Token Details
-- **Access Token**: JWT signed with `JWT_SECRET_KEY`, algorithm `HS256`, 15-minute expiry, payload `{"sub": user_id}`
-- **Refresh Token**: JWT with 7-day expiry, includes `family` claim for rotation tracking
-- **Storage**: Only SHA-256 hash stored in DB (never plaintext)
-- **Rotation**: Every refresh rotates the token. Reuse detection by checking `used` flag.
+### Security Features
 
-### Route Protection
-All protected routes use `Depends(get_current_user)` which:
-1. Extracts `Authorization: Bearer <token>` header
-2. Decodes JWT and extracts `sub` (user ID)
-3. Fetches user from DB and verifies `isActive`
-4. Returns the `User` model
+1. **Password Validation** — min 8 chars, uppercase + lowercase + digit required
+2. **Bcrypt Hashing** — `passlib[bcrypt]` via `hash_password()` / `verify_password()`
+3. **JWT Signing** — `python-jose` with HS256, separate types: `"access"`, `"refresh"`, `"file"`
+4. **Refresh Token Rotation** — Each refresh issues a new token; old token marked `used=True`
+5. **Token Family Theft Detection** — If a `used` token is replayed, ALL tokens in that family are revoked
+6. **Token Hashing** — Refresh tokens stored as SHA-256 hashes, never plaintext
+7. **HttpOnly Cookie** — Refresh token in `HttpOnly; Secure; SameSite=lax` cookie (inaccessible to JS)
+8. **Startup Token Cleanup** — Expired refresh tokens purged on every server start
+9. **Soft Delete Support** — `deleted_at` field on User model
 
----
-
-## 10. API Routes
-
-### Public Routes (no auth required)
+### Auth Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Full health check (DB, ChromaDB, LLM) |
-| `GET` | `/health/simple` | Basic uptime check |
-| `POST` | `/auth/signup` | Register new user |
-| `POST` | `/auth/login` | Login, set refresh cookie |
-| `POST` | `/auth/refresh` | Rotate refresh token |
-| `GET` | `/models` | List available LLM models |
+| POST | `/auth/signup` | Register user, validate password rules |
+| POST | `/auth/login` | Authenticate, issue access + refresh tokens |
+| POST | `/auth/refresh` | Rotate refresh token, issue new access token |
+| POST | `/auth/logout` | Revoke all user tokens |
+| GET | `/auth/me` | Get current user info |
 
-### Protected Routes (Bearer token required)
-
-#### Auth
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/auth/me` | Get current user |
-| `POST` | `/auth/logout` | Revoke tokens, clear cookie |
-
-#### Notebooks
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/notebooks` | Create notebook |
-| `GET` | `/notebooks` | List user notebooks (skip/take pagination) |
-| `GET` | `/notebooks/{id}` | Get single notebook |
-| `PATCH` | `/notebooks/{id}` | Update name/description |
-| `DELETE` | `/notebooks/{id}` | Delete notebook + all content (cascade) |
-| `POST` | `/notebooks/{id}/content` | Save generated content to notebook |
-| `GET` | `/notebooks/{id}/content` | Get notebook saved content |
-| `DELETE` | `/notebooks/{id}/content/{content_id}` | Delete saved content item |
-
-#### Upload
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/upload` | Upload file (PDF, DOCX, PPTX, XLSX, CSV, TXT, audio, video, image) |
-| `POST` | `/upload/url` | Ingest web URL |
-| `POST` | `/upload/youtube` | Ingest YouTube video (transcript or Whisper) |
-| `POST` | `/upload/text` | Save raw text as material |
-
-#### Materials
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/materials` | List materials (optional `?notebook_id=`) |
-| `PATCH` | `/materials/{id}` | Update filename or title |
-| `DELETE` | `/materials/{id}` | Delete material + embeddings |
-| `GET` | `/materials/{id}/text` | Get full extracted text |
-
-#### Chat
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/chat` | Send chat message (SSE stream or JSON) |
-| `GET` | `/chat/sessions` | List chat sessions for notebook |
-| `POST` | `/chat/sessions` | Create new chat session |
-| `DELETE` | `/chat/sessions/{id}` | Delete session + messages |
-| `GET` | `/chat/sessions/{id}/messages` | Load session history |
-| `POST` | `/chat/block-followup` | Follow-up on a specific response block |
-| `POST` | `/chat/suggestions` | Get input suggestions from partial text |
-
-#### Generation
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/flashcard` | Generate flashcards |
-| `POST` | `/quiz` | Generate MCQ quiz |
-| `POST` | `/presentation` | Generate HTML presentation |
-| `POST` | `/mindmap` | Generate mind map |
-| `GET` | `/mindmap/{notebook_id}` | Get saved mind map |
-| `DELETE` | `/mindmap/{id}` | Delete mind map |
-
-#### Podcast
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/podcast/session` | Create podcast session |
-| `POST` | `/podcast/session/{id}/generate` | Start script + audio generation |
-| `GET` | `/podcast/session/{id}` | Get session state |
-| `GET` | `/podcast/sessions` | List user sessions |
-| `PATCH` | `/podcast/session/{id}` | Update title/tags/current_segment |
-| `DELETE` | `/podcast/session/{id}` | Delete session |
-| `GET` | `/podcast/session/{id}/segments` | Get all audio segments |
-| `GET` | `/podcast/audio/{session_id}/{index}` | Stream MP3 audio segment |
-| `POST` | `/podcast/session/{id}/doubt` | Submit a question (interrupt) |
-| `GET` | `/podcast/session/{id}/doubts` | Get Q&A history |
-| `POST` | `/podcast/session/{id}/bookmark` | Add bookmark |
-| `POST` | `/podcast/session/{id}/annotation` | Add annotation |
-| `POST` | `/podcast/session/{id}/export` | Export PDF/JSON |
-| `GET` | `/podcast/export/{id}/file` | Download export |
-| `GET` | `/podcast/voices` | List available TTS voices by language |
-| `POST` | `/podcast/voices/preview` | Generate voice preview audio |
-
-#### Explainer
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/explainer/check-presentations` | Find existing PPTs for materials |
-| `POST` | `/explainer/generate` | Start explainer video generation |
-| `GET` | `/explainer/{id}/status` | Poll generation progress |
-| `GET` | `/explainer/{id}/video` | Download finished MP4 |
-
-#### Agent / Code
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/agent/execute-code` | Execute code in sandbox (SSE stream) |
-| `GET` | `/workspace/file/{id}` | Serve artifact file with token auth |
-
-#### Utilities
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/search/web` | Bridge to external search service |
-| `GET` | `/proxy/presentation/slides/{path}` | Image proxy for presentation slides |
-| `GET` | `/jobs/{id}` | Poll background job status |
-
-#### WebSocket
-| Method | Path | Description |
-|--------|------|-------------|
-| `WS` | `/ws/materials/{material_id}` | Real-time material processing status |
+### `get_current_user` Dependency
+Used by all protected routes via `Depends(get_current_user)`:
+1. Extract Bearer token from `Authorization` header
+2. Decode JWT → check type == "access"
+3. Load user from DB by `sub` (user_id)
+4. Check `user.isActive == True`
+5. Return user object
 
 ---
 
-## 11. Feature Flows
+## 8. Background Worker
 
-### 11.1 Material Upload & Processing
+**File:** `app/services/worker.py`
 
-**Supported source types:** file, URL, YouTube, text
-
-#### File Upload Flow
-```
-POST /upload
-Body: multipart/form-data { file, notebook_id? }
-
-1. FileValidator validates MIME type and extension
-2. Sanitize filename (strip dangerous chars)
-3. Save raw file to data/uploads/{uuid}_{filename}
-4. Create Material record in DB with status=pending
-5. Create BackgroundJob (type=material_processing) in DB
-6. Notify job queue event → worker wakes up immediately
-7. Return { material_id, status: "pending" }
-
-Background Worker picks up job:
-1. status → processing
-2. Detect file type (FileTypeDetector)
-3. Extract text:
-   - PDF: PyMuPDF → pdfplumber (tables) → OCR fallback (pytesseract/EasyOCR)
-   - DOCX: python-docx
-   - PPTX: python-pptx (text extraction)
-   - XLSX/CSV: openpyxl/xlrd (tabular to text)
-   - TXT/MD: direct UTF-8
-   - Audio (MP3/WAV/M4A): Whisper transcription
-   - Video (MP4): extract audio → Whisper
-   - Image (JPG/PNG): OCR via EasyOCR
-4. status → ocr_running (if OCR needed)
-5. status → transcribing (if Whisper needed)
-6. status → embedding
-7. Save full text to data/material_text/{uuid}.txt (StorageService)
-8. Chunk text:
-   - langchain RecursiveCharacterTextSplitter
-   - chunk_overlap = CHUNK_OVERLAP_TOKENS (150)
-   - Min chunk length: MIN_CHUNK_LENGTH (100 chars)
-9. Generate embeddings for all chunks (BAAI/bge-m3)
-10. Upsert into ChromaDB collection
-11. Update Material.chunkCount
-12. status → completed
-13. WebSocket push to all clients watching this material
-
-Error handling: status → failed, error message stored in Material.error
-```
-
-#### URL Upload Flow
-```
-POST /upload/url
-Body: { url, notebook_id?, title? }
-
-1. Validate URL format
-2. Create Material (sourceType='url')
-3. Create BackgroundJob (type=url_processing)
-
-Worker:
-1. Fetch page content (httpx + trafilatura for text extraction)
-2. Fall back to BeautifulSoup if trafilatura fails
-3. Continue with embedding pipeline (same as file)
-```
-
-#### YouTube Upload Flow
-```
-POST /upload/youtube
-Body: { url, notebook_id? }
-
-Worker:
-1. Extract video ID from URL (yt-dlp)
-2. Try youtube_transcript_api for existing transcript
-3. Fall back: yt-dlp → download audio → Whisper transcription
-4. status → transcribing during Whisper
-5. Continue with embedding pipeline
-```
-
-#### Text Upload Flow
-```
-POST /upload/text
-Body: { text, title, notebook_id? }
-
-Worker:
-1. Directly tokenize/chunk provided text
-2. Embed and store in ChromaDB
-```
-
----
-
-### 11.2 RAG Chat
-
-Intent: no slash command (default path)
-
-```
-POST /chat
-Body: { message, material_ids[], notebook_id, session_id?, stream? }
-
-1. Resolve material IDs (material_ids or material_id)
-2. Validate all materials belong to user
-3. Filter to only completed materials
-4. Find or create ChatSession (auto-title from first message)
-5. Save user ChatMessage to DB
-6. Call chat_service.get_response():
-
-   RAG Pipeline (rag/pipeline.py):
-   ┌─ Retrieval Phase ─────────────────────────────────────────┐
-   │ a. Embed query (BAAI/bge-m3)                               │
-   │ b. ChromaDB initial similarity search → INITIAL_VECTOR_K=10│
-   │ c. Filter: skip chunks < MIN_SIMILARITY_SCORE (0.3)        │
-   │ d. MMR (Maximal Marginal Relevance) re-rank → MMR_K=8      │
-   │ e. Reranker (bge-reranker-large) cross-encoder scoring     │
-   │ f. Final top-k → FINAL_K=10                               │
-   │ g. Token budget trim → MAX_CONTEXT_TOKENS=6000            │
-   └───────────────────────────────────────────────────────────┘
-   ┌─ Context Building ─────────────────────────────────────────┐
-   │ a. Format chunks with material names and page numbers      │
-   │ b. Citation validator — validate citation indices           │
-   │ c. Build context string with source attribution            │
-   └───────────────────────────────────────────────────────────┘
-   ┌─ Generation Phase ─────────────────────────────────────────┐
-   │ a. Load prompt from chat_prompt.txt                        │
-   │ b. Build message array: [system, ...history, human]        │
-   │ c. LLM.stream() → token chunks                            │
-   │ d. Parse [n] citation markers in response                  │
-   │ e. Map citations to material metadata                      │
-   └───────────────────────────────────────────────────────────┘
-
-7. SSE stream format:
-   data: {"type": "token", "content": "..."}
-   data: {"type": "citations", "citations": [...]}
-   data: {"type": "done"}
-
-8. Save assistant ChatMessage + ResponseBlocks to DB
-9. Log ApiUsageLog (tokens, latency, model)
-10. Track UserTokenUsage (daily aggregate)
-```
-
----
-
-### 11.3 Code Execution Mode
-
-Intent: `CODE_EXECUTION` (set by `/code` slash command)
-
-**Phase 1 — Code Generation (via POST /chat):**
-```
-1. LLM receives message with code_generation_prompt.txt
-2. Returns Python code (not executed yet)
-3. SSE stream: sends code to frontend via "code" type events
-4. Frontend shows code in CodePanel (Monaco-like editor)
-5. User can edit code before running
-```
-
-**Phase 2 — Code Execution (POST /agent/execute-code):**
-```
-1. Code received from frontend
-2. SecurityValidator scans code:
-   - Checks for forbidden imports (os.system, subprocess, socket, etc.)
-   - Checks for dangerous patterns (__import__, exec, eval of untrusted input)
-   - Returns violations list
-3. If not safe → SSE "execution_blocked" event
-4. sanitize_code() — removes obviously malicious tokens
-5. Create temp directory: /tmp/kepler_code_{uuid}
-
-Sandbox Execution (code_execution/sandbox.py):
-   - Write code to {work_dir}/code.py
-   - Run in subprocess with timeout
-   - Capture stdout, stderr, exit_code
-   - Detect output files (plots, CSVs, charts)
-
-6. If ModuleNotFoundError & module in APPROVED_ON_DEMAND:
-   → pip install the package
-   → retry execution
-
-7. If exit_code != 0 (error):
-   → Send to LLM with code_repair_prompt.txt
-   → Attempt auto-repair (up to MAX_CODE_REPAIR_ATTEMPTS=3)
-   → If repaired → re-execute
-
-8. SSE events:
-   "execution_start" → "stdout" → "stderr" → "chart" (base64 PNG) → "done"
-
-9. Detect and register output artifacts:
-   - PNG/JPEG charts → displayType='chart'
-   - CSV files → displayType='table'
-   - Other files → generic artifact
-
-10. Save CodeExecutionSession to DB
-11. Register Artifact records with downloadToken (24h expiry)
-```
-
----
-
-### 11.4 Web Search Mode
-
-Intent: `WEB_SEARCH` (set by `/web` slash command)
-
-```
-POST /chat (intent_override: WEB_SEARCH)
-
-1. Extract query from message
-2. POST to search service (SEARCH_SERVICE_URL/api/search)
-   - Returns organic_results[]: {title, link, snippet}
-3. Build context from top search results (titles + snippets + URLs)
-4. LLM summarizes with web search context
-5. SSE stream response with source URLs
-6. Frontend displays WebSources component with clickable links
-```
-
----
-
-### 11.5 Deep Research Mode
-
-Intent: `WEB_RESEARCH` (set by `/research` slash command)
-
-```
-POST /chat (intent_override: WEB_RESEARCH)
-
-Research Pipeline (services/research/pipeline.py):
-1. Query decomposition — LLM breaks query into sub-questions
-2. For each sub-question:
-   a. Web search (via search service)
-   b. Fetch page content (httpx + trafilatura extraction)
-   c. Extract relevant paragraphs
-3. Iterative synthesis:
-   a. Merge evidence from all sources
-   b. LLM generates structured report with inline citations
-4. Final report building:
-   - Executive summary
-   - Detailed sections
-   - Citation list with URLs
-5. SSE stream: progress events + final report
-6. Save ResearchSession to DB (query, report, sourcesCount, sourceUrls, elapsedTime)
-7. Frontend displays ResearchReport component with progress bar
-```
-
----
-
-### 11.6 Agent Mode
-
-Intent: `AGENT` (set by `/agent` slash command)
-
-```
-POST /chat (intent_override: AGENT)
-
-Agent Pipeline (services/agent/pipeline.py):
-Uses LangGraph for multi-step tool orchestration.
-
-Available tools (services/agent/tools.py):
-  - rag_search: Search materials with vector retrieval
-  - web_search: Quick web lookup
-  - run_code: Execute Python in sandbox
-  - read_artifact: Read previously generated artifact
-  - create_chart: Generate matplotlib/seaborn chart
-  - write_file: Save output to workspace
-
-Tool call loop:
-1. LLM decides next action (ReAct: Reasoning + Acting)
-2. Execute tool
-3. Feed tool result back to LLM
-4. Loop until LLM returns final_answer
-5. Each step streamed as SSE event:
-   "agent_step" → {"tool": "...", "input": "...", "output": "..."}
-
-6. Final response streamed
-7. Save AgentExecutionLog (intent, tools_used, stepsCount, tokensUsed, elapsedTime)
-8. Any artifacts registered with download tokens
-```
-
----
-
-### 11.7 Flashcard Generation
-
-```
-POST /flashcard
-Body: { material_ids[], topic?, card_count?, difficulty, additional_instructions? }
-
-1. Load material text (single or combined)
-2. If topic provided → prepend "Focus on topic: {topic}"
-3. Run flashcard/generator.py in thread pool executor
-4. LLM called with flashcard_prompt.txt
-5. Structured JSON output:
-   { flashcards: [{ front, back, source? }] }
-6. Return JSON directly (no DB persistence of individual cards)
-   The frontend saves to notebook via POST /notebooks/{id}/content
-
-Difficulty levels: easy | medium | hard
-Max cards: 150
-```
-
----
-
-### 11.8 Quiz Generation
-
-```
-POST /quiz
-Body: { material_ids[], topic?, mcq_count=10, difficulty, additional_instructions? }
-
-1. Load material text
-2. Run quiz/generator.py in thread pool executor
-3. LLM called with quiz_prompt.txt
-4. Structured JSON output:
-   { questions: [{ question, options: [A,B,C,D], correct_answer, explanation }] }
-5. Return JSON
-
-Max questions: 150
-```
-
----
-
-### 11.9 Presentation (PPT) Generation
-
-```
-POST /presentation
-Body: { material_ids[], max_slides?, theme?, additional_instructions? }
-
-Multi-stage generation (services/ppt/generator.py):
-
-Stage 1 — Intent Analysis:
-  LLM + presentation_intent_prompt.txt
-  Output: { title, audience, key_themes[], tone, language }
-
-Stage 2 — Strategy Planning:
-  LLM + presentation_strategy_prompt.txt
-  Input: intent + material outline
-  Output: { slide_plan: [{slide_title, key_points[], visual_suggestion}] }
-
-Stage 3 — Slide Content Generation:
-  LLM + slide_content_prompt.txt (per-slide batching)
-  Output: full slide content with structured data
-
-Stage 4 — HTML Rendering:
-  Template engine renders slide data to HTML/CSS
-  Each slide: title, bullets, optional visual
-
-Returns:
-  {
-    title, slide_count,
-    html: "<html>...</html>",   -- Full presentation HTML
-    slides: [{title, content}],
-    metadata: { theme, language, ... }
-  }
-
-Save to GeneratedContent (contentType='presentation')
-```
-
----
-
-### 11.10 Mind Map Generation
-
-```
-POST /mindmap
-Body: { material_ids[], notebook_id }
-
-1. Verify notebook belongs to user
-2. Load material texts
-3. LLM + mindmap_prompt.txt
-4. Structured output:
-   {
-     nodes: [{id, label, type: 'root'|'branch'|'leaf'}],
-     edges: [{source, target, label?}]
-   }
-5. Save to GeneratedContent (contentType='mindmap') in DB
-
-GET /mindmap/{notebook_id}
-  → Fetch latest GeneratedContent of type 'mindmap'
-  → Returns nodes + edges + id
-
-DELETE /mindmap/{id}
-  → Delete GeneratedContent record
-
-Frontend renders with @xyflow/react (React Flow) + dagre layout.
-```
-
----
-
-### 11.11 Podcast Feature
-
-**Creation & Generation Flow:**
-```
-POST /podcast/session
-Body: { notebook_id, mode, topic?, language, host_voice?, guest_voice?, material_ids[] }
-
-Modes: overview | deep-dive | debate | q-and-a | full | topic
-
-1. Validate material_ids ≥ 1
-2. topic required for 'topic' or 'deep-dive' modes
-3. Create PodcastSession record
-4. If no voice specified → use language defaults from voice_map.py
-
-POST /podcast/session/{id}/generate
-1. status → script_generating
-2. Load content from all linked materials
-3. LLM + podcast_script_prompt.txt
-   Output: [ { speaker: 'host'|'guest', text: "..." } ]
-4. Save PodcastSegment records
-5. status → audio_generating
-6. edge-tts TTS generation:
-   - One MP3 per segment using host_voice/guest_voice
-   - Save to output/podcast/{session_id}/{index}.mp3
-   - Update PodcastSegment.audioUrl + durationMs
-7. Detect chapter boundaries — save to PodcastSession.chapters
-8. Calculate totalDurationMs
-9. status → ready
-10. WebSocket push to all subscribed clients
-```
-
-**Playback:**
-```
-GET /podcast/audio/{session_id}/{index}
-→ FileResponse for MP3 file
-
-Frontend usePodcastPlayer hook:
-- Manages AudioContext + segment queue
-- Seamless crossfade between segments
-- Updates currentSegment in session
-- Sends PATCH /podcast/session/{id} on segment advance
-```
-
-**Q&A / Doubt Interruption:**
-```
-POST /podcast/session/{id}/doubt
-Body: { question_text, paused_at_segment, question_audio_url? }
-
-1. Create PodcastDoubt record
-2. Load context from nearby podcast segments
-3. LLM + podcast_qa_prompt.txt
-4. Generate answer text
-5. TTS → answer audio (same host/guest voice)
-6. Save answer to PodcastDoubt
-7. Return { answer_text, answer_audio_url }
-```
-
-**Export:**
-```
-POST /podcast/session/{id}/export
-Body: { format: 'pdf' | 'json' }
-
-PDF: fpdf2 → transcript + metadata
-JSON: full session data dump
-
-GET /podcast/export/{id}/file → Download
-```
-
----
-
-### 11.12 Explainer Video Generation
-
-```
-POST /explainer/check-presentations
-Body: { material_ids[], notebook_id }
-→ Find existing GeneratedContent presentations for these materials
-
-POST /explainer/generate
-Body: { material_ids[], notebook_id, ppt_language, narration_language, voice_gender, presentation_id?, create_new_ppt? }
-
-1. Validate languages against EDGE_TTS_VOICES
-2. Create ExplainerVideo record (status=pending)
-3. Start background task (BackgroundTasks):
-
-Explainer Processor (services/explainer/processor.py):
-  
-  Step 1 — Get or generate presentation:
-    - If presentation_id → fetch existing SlideData from GeneratedContent
-    - If create_new_ppt=True → call generate_presentation()
-  
-  Step 2 — Script generation (explainer/script_generator.py):
-    - LLM generates narration for each slide
-    - { slide: N, narration: "...", duration_hint: Xs }
-  
-  Step 3 — TTS audio (explainer/tts.py):
-    - edge-tts voice selected by gender + language
-    - Generate MP3 per slide narration
-    - Save to output/explainers/
-  
-  Step 4 — Video composition (explainer/video_composer.py):
-    - Screenshot each slide (screenshot_service.py)
-    - ffmpeg: combine slide PNG + audio into MP4 clip per slide
-    - Concatenate all clips into final MP4
-    - Add fade transitions
-  
-  Step 5 — Save result:
-    - Update ExplainerVideo.videoUrl, duration, chapters
-    - status → completed
-
-GET /explainer/{id}/status → { status, progress%, videoUrl? }
-GET /explainer/{id}/video → FileResponse MP4
-```
-
----
-
-### 11.13 Notebook Management
-
-```
-POST /notebooks
-Body: { name, description? }
-→ Create Notebook record
-→ AI generates name suggestions (notebook_name_generator.py)
-
-GET /notebooks
-→ Paginated list (skip/take)
-
-GET /notebooks/{id}
-→ Single notebook + metadata
-
-PATCH /notebooks/{id}
-→ Update name or description
-
-DELETE /notebooks/{id}
-→ Cascade delete: materials, chat sessions, generated content, jobs
-
-POST /notebooks/{id}/content
-→ Save generated content (flashcards, quizzes, etc.) to notebook
-→ Stored as GeneratedContent in DB
-
-GET /notebooks/{id}/content
-→ List all saved content items (type, title, createdAt, data)
-
-DELETE /notebooks/{id}/content/{content_id}
-→ Remove specific saved content
-```
-
----
-
-## 12. Service Layer
-
-### `services/auth/`
-- **service.py**: `register_user`, `authenticate_user`, `get_current_user`, `create_access_token`, `create_refresh_token`, `store_refresh_token`, `validate_and_rotate_refresh_token`, `revoke_user_tokens`, `cleanup_expired_tokens`
-- **security.py**: Password hashing (bcrypt), JWT encoding/decoding
-
-### `services/rag/`
-- **pipeline.py**: Full RAG pipeline — combines embedding, retrieval, reranking, context building, LLM generation
-- **embedder.py**: BAAI/bge-m3 sentence-transformer — `warm_up_embeddings()`, `embed_texts()`, `embed_query()`
-- **reranker.py**: BAAI/bge-reranker-large cross-encoder — `get_reranker()`, `rerank()`
-- **secure_retriever.py**: ChromaDB query wrapper with user isolation (always filters by material_id)
-- **context_builder.py**: Builds LLM-ready context string from retrieved chunks with metadata
-- **context_formatter.py**: Formats chunks for different prompt types
-- **citation_validator.py**: Validates and resolves `[n]` citation markers to source info
-
-### `services/llm_service/`
-- **llm.py**: LLM factory — `get_llm()`, `get_llm_structured()` with provider selection (Ollama/Google/NVIDIA/MyOpenLM). LRU cache (max 16 instances).
-- **structured_invoker.py**: Calls LLM with retry logic and JSON parsing for structured outputs
-- **llm_schemas.py**: Pydantic models for common LLM response shapes
-
-### `services/material_service.py`
-- `process_material_by_id(material_id)` — dispatches to correct extractor
-- `process_url_material_by_id(material_id)` — URL fetch + extract
-- `process_text_material_by_id(material_id)` — direct text
-- `get_user_materials(user_id, notebook_id?)` — DB query
-- `delete_material(material_id, user_id)` — deletes DB record + ChromaDB embeddings + text file
-- `filter_completed_material_ids(ids, user_id)` — filters to only completed materials
-
-### `services/worker.py`
-- Single `asyncio.Task` running `job_processor()` loop
-- Polls for `pending` jobs every 2 seconds (or woken by `_JobQueue.notify()`)
-- Atomically claims jobs (`status → processing`)
-- Dispatches to material/url/text processors
-- Handles stuck job recovery on startup
-- Supports up to 5 concurrent material extractions
-- Graceful shutdown with 30s timeout
-
-### `services/ws_manager.py`
-- `WebSocketManager` with per-material-ID subscription sets
-- `connect(material_id, websocket)` — register connection
-- `disconnect(material_id, websocket)` — cleanup
-- `broadcast(material_id, message)` — push status to all watchers
-
-### `services/storage_service.py`
-- Abstracts file storage for material text
-- Current: local filesystem at `data/material_text/{uuid}.txt`
-- UUID validation prevents path traversal
-- Designed for future S3/MinIO migration
-
-### `services/token_counter.py`
-- `estimate_token_count(text)` — tiktoken-based estimate
-- `track_token_usage(user_id, tokens)` — upserts UserTokenUsage daily aggregate
-- `get_model_token_limit(model_name)` — per-model context window
-
-### `services/audit_logger.py`
-- `log_api_usage(user_id, endpoint, material_ids, context_tokens, response_tokens, model, llm_latency, retrieval_latency, total_latency)` — saves ApiUsageLog
-
-### `services/performance_logger.py`
-- Middleware that times each request and logs slow requests (>2s)
-
-### `services/rate_limiter.py`
-- Currently disabled — all requests pass through
-
-### `services/gpu_manager.py`
-- GPU memory management utilities for local model loading
-
-### `services/model_manager.py`
-- Registry of available LLM models and their metadata
-
-### `services/notebook_name_generator.py`
-- Generates AI-suggested notebook names based on first material
-
-### `services/file_validator.py`
-- MIME type detection (python-magic)
-- Extension whitelist checking
-- Returns structured validation result
-
----
-
-## 13. RAG Pipeline — Deep Dive
-
-`app/services/rag/pipeline.py`
-
-### Chunking Strategy
-- Splitter: `RecursiveCharacterTextSplitter` from LangChain
-- Chunk overlap: 150 tokens
-- Min chunk size: 100 chars (shorter discarded at indexing)
-- Min retrieval chunk size: 150 chars (shorter skipped after retrieval)
-
-### Embedding
-- Model: `BAAI/bge-m3` (multilingual, 1024 dimensions)
-- Stored in ChromaDB with EF `SentenceTransformerEmbeddingFunction`
-- Warmed up at startup in thread pool executor
-
-### Retrieval Parameters
-
-| Parameter | Setting | Purpose |
-|-----------|---------|---------|
-| `INITIAL_VECTOR_K` | 10 | Initial vector similarity results |
-| `MMR_K` | 8 | After MMR diversity filter |
-| `MMR_LAMBDA` | 0.5 | Balance relevance vs diversity |
-| `FINAL_K` | 10 | After reranker sorting |
-| `MIN_SIMILARITY_SCORE` | 0.3 | Drop irrelevant chunks |
-| `MAX_CONTEXT_TOKENS` | 6000 | Token budget for LLM context |
-| `CHUNK_OVERLAP_TOKENS` | 150 | Chunk overlap for continuity |
-
-### Pipeline Steps
-1. Embed query with `embed_query()`
-2. ChromaDB `query()` with `n_results=INITIAL_VECTOR_K`, filtered to user's material IDs
-3. Filter chunks below `MIN_SIMILARITY_SCORE`
-4. MMR re-ranking for diversity (λ=0.5 relevance/diversity trade-off)
-5. If `USE_RERANKER=True`: bge-reranker-large cross-encoder scoring
-6. Sort by reranker score, take top `FINAL_K`
-7. Trim to `MAX_CONTEXT_TOKENS` budget
-8. Format with `/services/rag/context_formatter.py`
-9. Inject into prompt: `[Source: material_name, Page: N] chunk_text`
-10. LLM generation with streaming
-11. Citation extraction and validation
-
----
-
-## 14. LLM Service
-
-`app/services/llm_service/llm.py`
-
-### Provider Selection
-Configured via `LLM_PROVIDER` env var:
-
-| Provider | Model | Class |
-|----------|-------|-------|
-| `OLLAMA` | `OLLAMA_MODEL` (default: llama3) | `ChatOllama` |
-| `GOOGLE` | `GOOGLE_MODEL` (gemini-2.5-flash) | `ChatGoogleGenerativeAI` |
-| `NVIDIA` | `NVIDIA_MODEL` (qwen/qwen3.5-397b-a17b) | `ChatNVIDIA` |
-| `MYOPENLM` | Custom endpoint | Custom LangChain LLM |
-
-### Factory Functions
-- `get_llm()` — chat temperature (0.2), higher creativity
-- `get_llm_structured()` — structured temperature (0.1), deterministic JSON output
-- LRU cache (max 16 instances) keyed on provider + kwargs
-
-### Temperature Configuration
-| Context | Temperature |
-|---------|------------|
-| Structured (JSON) | 0.1 |
-| Chat | 0.2 |
-| Code generation | 0.1 |
-| Creative (podcast, naming) | 0.7 |
-
-### Prompt Templates
-All prompts stored as plaintext `.txt` files in `app/prompts/` and loaded via `app/prompts/__init__.py`. No inline prompt strings in code.
-
----
-
-## 15. Background Job Worker
-
-`app/services/worker.py`
+A single `asyncio.Task` created at startup that continuously processes document ingestion jobs.
 
 ### Architecture
-- Single `asyncio.Task` created at startup
-- Event-driven: notified immediately when new job added
-- Falls back to 2-second polling for missed notifications
-- Max 5 concurrent material extractions (`asyncio.Semaphore`)
-- 5-second backoff after unexpected errors
 
-### Job Type Mapping
-| jobType | Handler |
-|---------|---------|
-| `material_processing` | `process_material_by_id()` |
-| `url_processing` | `process_url_material_by_id()` |
-| `youtube_processing` | `process_url_material_by_id()` |
-| `text_processing` | `process_text_material_by_id()` |
+```
+[Upload Route]
+   ↓ creates BackgroundJob(jobType="material_processing", status="pending")
+   ↓ job_queue.notify()  ← wakes worker immediately
 
-### Status Lifecycle
+[job_processor() — running as asyncio.Task]
+   ↓ fetch_next_pending_job() — SELECT ... FOR UPDATE SKIP LOCKED (atomic claim)
+   ↓ up to MAX_CONCURRENT_JOBS=5 jobs run concurrently as asyncio.Tasks
+   ↓ _process_job(job) → process_material_by_id() / process_url_material_by_id()
+   ↓ Update job status: processing → embedding → completed / failed
 ```
-pending → processing → [ocr_running] → [transcribing] → embedding → completed
-                                                                    → failed
-```
+
+### Concurrency Model
+- **Event-driven** via `_JobQueue` — worker wakes immediately when job is created
+- **Falls back to polling** every 2 seconds if no notification received
+- At capacity: waits for `asyncio.FIRST_COMPLETED` before picking next job
+- Maximum 5 concurrent document processing jobs
 
 ### Stuck Job Recovery
-On startup, resets any jobs stuck in `processing` state for > 30 minutes back to `pending`. Uses raw SQL for atomic update.
+On startup, jobs stuck in `processing` longer than 30 minutes are reset to `pending` via raw SQL UPDATE.
 
 ### Graceful Shutdown
-- Sets `_shutdown_event` flag
-- Waits for in-flight jobs to complete (30s timeout)
-- Any remaining jobs left in DB with `processing` status (recovered on next start)
+1. Sets `_shutdown_event` to stop accepting new jobs
+2. Waits up to 30 seconds for in-flight tasks to complete
+3. Cancels remaining tasks
 
 ---
 
-## 16. WebSocket Manager
+## 9. Material Ingestion Pipeline
 
-`app/services/ws_manager.py` + `app/routes/websocket_router.py`
+**File:** `app/services/material_service.py`
 
-### Connection
+### Ingestion Paths
+
+#### 1. File Upload (`process_material_by_id`)
 ```
-WS /ws/materials/{material_id}?token={access_token}
+pending → processing
+   ↓ text_processing/extractor.py
+   ↓ Selects extractor by MIME/extension:
+   │  • PDF:   PyMuPDF + OCR fallback (pytesseract / easyocr)
+   │  • DOCX:  python-docx
+   │  • PPTX:  python-pptx (text extraction)
+   │  • XLSX/CSV: pandas → full data + structured summary chunk
+   │  • MP3/MP4/WAV: Whisper transcription (status → transcribing)
+   │  • Image: OCR (status → ocr_running)
+   ↓ chunk_text() — LangChain RecursiveCharacterTextSplitter
+   ↓ embed_and_store() → ChromaDB
+   ↓ save_material_text() → data/material_text/{material_id}.txt
+   ↓ DB: status=completed, chunkCount=N, originalText=summary[:1000]
 ```
-- Token validated on connection
-- User must own the material
-- Connection stored in `Dict[str, Set[WebSocket]]` keyed by material_id
 
-### Messages Pushed
-```json
-{"event": "status_update", "material_id": "...", "status": "embedding", "chunk_count": 0}
-{"event": "status_update", "material_id": "...", "status": "completed", "chunk_count": 142}
-{"event": "status_update", "material_id": "...", "status": "failed", "error": "OCR timeout"}
+#### 2. URL Ingestion (`process_url_material_by_id`)
+```
+   ↓ Detect URL type:
+   │  • YouTube URL → YouTubeService (transcript API or Whisper)
+   │  • Web URL → WebScrapingService (trafilatura / BeautifulSoup)
+   ↓ Same chunking + embedding pipeline
 ```
 
-### Frontend Usage
-- `useMaterialUpdates` hook subscribes on material view
-- Updates material status in Zustand `useMaterialStore`
-- Shows real-time progress indicator on upload
+#### 3. Text Upload (`process_text_material_by_id`)
+```
+   ↓ Direct text → chunk → embed → store
+```
+
+### Storage Architecture
+- **Full text** → `data/material_text/{material_id}.txt` (file system)
+- **Database** → only `originalText` (first 1000 chars as summary), `chunkCount`, metadata
+- **ChromaDB** → text chunks with metadata (user_id, notebook_id, material_id, filename)
+- *Why files, not DB?* — Avoids PostgreSQL TOAST bloat for large documents; simple file I/O is faster
+
+### Structured Data (CSV/Excel) Special Path
+```python
+# For CSV/Excel: two things happen:
+# 1. Full df.to_string() saved to material_text/ (complete data for LLM)
+# 2. Schema summary (column names + dtypes + shape + head(5)) stored in ChromaDB
+#    tagged chunk_type="structured_summary"
+# → When retrieved, secure_retriever swaps in the full dataset for the LLM context
+```
+
+### WebSocket Status Pushes
+Every status transition emits `{"type": "material_update", "material_id": "...", "status": "..."}` via `ws_manager.send_to_user()`.
 
 ---
 
-## 17. Vector Database (ChromaDB)
+## 10. ChromaDB & Embeddings
 
-`app/db/chroma.py`
+**Files:** `app/db/chroma.py`, `app/services/rag/embedder.py`
 
-### Configuration
-- Type: `PersistentClient` at `CHROMA_DIR`
-- Collection: single shared collection `documents`
-- Embedding function: `SentenceTransformerEmbeddingFunction` with `BAAI/bge-m3`
-- Dimension: 1024
+### ChromaDB Setup
 
-### Version Management
-- Version marker file at `{CHROMA_DIR}/.embedding_version`
-- Contains `EMBEDDING_VERSION` string (e.g., `bge_m3_v1`)
-- If version mismatch on startup → **wipe entire CHROMA_DIR** → rebuild
-- Dimension probe: embed test string → verify 1024-dim upsert succeeds before writing marker
+- Single collection: `"chapters"` — shared across all users
+- Tenant isolation via `user_id` metadata filter on all queries
+- Embedding function: `SentenceTransformerEmbeddingFunction("BAAI/bge-m3", device="cpu")`
+- 1024-dimensional vectors (FP32)
 
-### Document Storage Format
-Each chunk stored with:
+### Bootstrap Sequence (`get_collection`)
+```
+1. Check version marker: <CHROMA_DIR>/.embedding_version
+   → If EMBEDDING_VERSION changed or marker absent: physically wipe CHROMA_DIR
+     (prevents stale HNSW dimension mismatch)
+2. chromadb.PersistentClient(CHROMA_DIR)
+3. get_or_create_collection("chapters", embedding_function=bge_m3_ef)
+4. Dimension probe: embed ["warm-up"] string → upsert → delete
+   → If dimension error: wipe + retry once → if still fails: RuntimeError
+5. Write version marker on success
+```
+
+### `embed_and_store()`
+- **UPSERT semantics** — idempotent re-processing
+- **Batch size 200** — below ChromaDB's 256-item hard limit
+- **3 retries** with 0.5s/1s/1.5s backoff for transient I/O errors
+- **Dimension errors** → permanent, never retried; invalidates version marker
+
+### Metadata per chunk
 ```python
 {
-  "id": f"{material_id}_{chunk_index}",
-  "document": chunk_text,
-  "metadata": {
-    "material_id": "uuid",
-    "user_id": "uuid",
-    "notebook_id": "uuid",
-    "chunk_index": N,
-    "source_page": N,  # PDF page number
-    "filename": "material.pdf"
-  }
+  "user_id": str,          # REQUIRED for tenant isolation
+  "material_id": str,
+  "notebook_id": str,
+  "filename": str,
+  "source": "chapter",
+  "embedding_version": str,
+  "section_title": str,    # Optional
+  "chunk_index": str,      # Optional
+  "chunk_type": str,       # Optional: "structured_summary"
 }
 ```
 
-### Isolation
-All queries filter by `material_id` (and optionally `user_id`) to prevent cross-user data leakage.
-
-### Telemetry
-All ChromaDB and posthog telemetry is disabled at import time.
-
 ---
 
-## 18. Storage Service
+## 11. RAG Pipeline
 
-`app/services/storage_service.py`
+**Files:** `app/services/rag/`
 
-- Material texts stored at: `data/material_text/{material_id}.txt`
-- UUID validation prevents path traversal attacks
-- `save_material_text(material_id, text)` — writes UTF-8 text file
-- `load_material_text(material_id)` — reads back
-- `delete_material_text(material_id)` — removes file
-- Designed as abstraction layer for future S3/MinIO migration
-
-### Directory Layout
+### Pipeline Overview
 ```
-data/
-├── uploads/          # Raw uploaded files (PDFs, audio, images, etc.)
-├── material_text/    # Extracted text per material ({uuid}.txt)
-├── models/           # Sentence-transformer model cache
-├── chroma/           # ChromaDB persistent storage
-│   ├── .embedding_version
-│   ├── chroma.sqlite3
-│   └── <uuid>/       # HNSW segment data
-└── workspaces/       # Per-session code sandboxes
+User Query
+   ↓ secure_similarity_search_enhanced()
+   ↓ [1] ChromaDB vector search (K=10) filtered by user_id + material_ids
+   ↓ [2] MMR (Maximal Marginal Relevance) diversity filtering (K=8)
+   ↓ [3] BGE-reranker-large re-scores candidates (if USE_RERANKER=True)
+   ↓ [4] Sort by reranker score, take top FINAL_K=10
+   ↓ context_builder.py — Assemble context within MAX_CONTEXT_TOKENS=6000
+   ↓ context_formatter.py — Format with [SOURCE N] citation markers
+   ↓ LLM streaming with citations
+   ↓ citation_validator.py — Verify citations are valid
 ```
 
----
+### `secure_retriever.py`  
+All retrieval goes through `secure_similarity_search_enhanced()` which:
+- **Enforces user_id filter** — prevents cross-tenant data leaks
+- Optionally filters by specific `material_ids` (user-selected sources)
+- Optionally filters by `notebook_id`
+- Supports both MMR and standard similarity search modes
 
-## 19. Security & Validation
-
-### Upload Security
-- MIME type detection via `python-magic` (not just extension)
-- Extension whitelist: `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.csv`, `.txt`, `.md`, `.mp3`, `.wav`, `.m4a`, `.mp4`, `.jpg`, `.png`, etc.
-- Filename sanitization: strip path separators, limit length
-- Max upload size: 10 GB (configurable)
-
-### Code Execution Security
-`services/code_execution/security.py`:
-- Static analysis of code before execution
-- Forbidden import list: `os.system`, `subprocess`, `socket`, `ftplib`, `smtplib`, `ctypes`, `importlib`
-- Dangerous pattern detection: `__import__`, bare `exec` on untrusted strings
-- Approved on-demand packages: `seaborn`, `wordcloud`, `missingno`, `folium`, `altair`, `pyvis`
-- Execution timeout: `CODE_EXECUTION_TIMEOUT` (15s default, up to 120s via API)
-- Isolated temp directory per execution (`/tmp/kepler_code_*`)
-- Cleanup of stale temp dirs on startup
-
-### Artifact Access Control
-- Each artifact gets a unique `downloadToken` (64-char random hex)
-- Token expires after `ARTIFACT_TOKEN_EXPIRY_HOURS` (24h)
-- `GET /workspace/file/{id}?token={downloadToken}` validates token and expiry
-- Token burned after single use (or expiry)
-
-### Path Traversal Prevention
-- UUID format validation for all material_id references
-- All file paths constructed through `safe_path()` utility
-- No user-controlled path components in file I/O
-
----
-
-## 20. Logging & Monitoring
-
-### Log Configuration
-`main.py` configures at module level (before any imports):
-- **Stream handler**: stdout
-- **File handler**: `logs/app.log`, rotating, 10 MB max, 3 backups
-- Format: `%(asctime)s %(name)s %(levelname)s %(message)s`
-- Noisy loggers suppressed: `httpx`, `httpcore`, `uvicorn.access`
-
-### Request Logging
-Every request logged with:
+### RAG Chat Flow (`rag/pipeline.py`)
 ```
-METHOD /path STATUS_CODE elapsed_time [request_id]
+1. No materials selected → polite message asking to select materials
+2. No relevant context found → clear "couldn't find" message
+3. Build prompt: context + last 10 history messages + user query
+4. Stream LLM tokens → SSE "token" events → accumulate full response
+5. Validate citations
+6. Emit SSE "meta" event: { intent, chunks_used, elapsed }
+7. Emit SSE "done" event
 ```
-`X-Request-ID` header added to all responses.
 
-### Performance Monitoring
-`services/performance_logger.py` — middleware that:
-- Times full request lifecycle
-- Logs slow requests (>2s) with `SLOW_REQUEST` prefix
-- Records endpoint, method, status, latency
-
-### Database Audit Logging
-`services/audit_logger.py` — saves `ApiUsageLog` for every LLM-powered request:
-- Endpoint name
-- Material IDs involved
-- Context token count + response token count
-- Model used
-- LLM latency, retrieval latency, total latency
-
-### Token Usage Tracking
-`services/token_counter.py` — `UserTokenUsage` table updated daily with aggregate token consumption per user.
-
-### Agent Execution Logging
-`AgentExecutionLog` records every agent run:
-- Intent, confidence, tools used, steps count, tokens, elapsed time
+### Reranker (`rag/reranker.py`)
+- Model: `BAAI/bge-reranker-large` loaded once at startup
+- Runs on CPU to avoid VRAM contention
+- Cross-encoder model: directly scores (query, document) pairs
 
 ---
 
-## 21. CLI Tools
+## 12. LLM Service
 
-All in `backend/cli/`:
+**File:** `app/services/llm_service/llm.py`
 
-| Script | Purpose |
-|--------|---------|
-| `backup_chroma.py` | Export ChromaDB data to backup |
-| `download_models.py` | Pre-download embedding + reranker models |
-| `export_embeddings.py` | Export embeddings to Parquet |
-| `import_embeddings.py` | Import embeddings from Parquet |
-| `migrate_material_joins.py` | Migrate legacy materialIds arrays to join table |
-| `reindex.py` | Re-embed all materials (after model change) |
+### Provider Factory Pattern
+```python
+from app.services.llm_service.llm import get_llm, get_llm_structured
 
----
+llm = get_llm()                        # Chat temperature (0.2)
+llm = get_llm(temperature=0.1)         # Custom temperature
+llm = get_llm_structured()             # Lower temperature (0.1) for JSON
+```
 
-## 22. Environment Variables Reference
+### Supported Providers
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
-| `JWT_SECRET_KEY` | ✅ | — | 64-char random secret for JWT |
-| `LLM_PROVIDER` | — | `OLLAMA` | `OLLAMA` / `GOOGLE` / `NVIDIA` / `MYOPENLM` |
-| `GOOGLE_API_KEY` | If GOOGLE | — | Google AI Studio API key |
-| `NVIDIA_API_KEY` | If NVIDIA | — | NVIDIA NIM API key |
-| `OLLAMA_MODEL` | — | `llama3` | Ollama model name |
-| `GOOGLE_MODEL` | — | `models/gemini-2.5-flash` | Google model ID |
-| `ENVIRONMENT` | — | `development` | Sets cookie security, trusted hosts |
-| `CORS_ORIGINS` | — | localhost:3000,5173 | Comma-separated allowed origins |
-| `EMBEDDING_MODEL` | — | `BAAI/bge-m3` | Sentence-transformer model |
-| `EMBEDDING_VERSION` | — | `bge_m3_v1` | Version marker (bump to rebuild index) |
-| `RERANKER_MODEL` | — | `BAAI/bge-reranker-large` | Reranker model |
-| `USE_RERANKER` | — | `true` | Enable/disable reranking |
-| `CHROMA_DIR` | — | `./data/chroma` | ChromaDB storage |
-| `UPLOAD_DIR` | — | `./data/uploads` | Uploaded file storage |
-| `SEARCH_SERVICE_URL` | — | `http://localhost:8002` | External search microservice |
-| `CODE_EXECUTION_TIMEOUT` | — | `15` | Sandbox execution timeout (seconds) |
-| `MAX_CODE_REPAIR_ATTEMPTS` | — | `3` | LLM self-repair iterations |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | — | `7` | Refresh token lifetime |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | — | `15` | Access token lifetime |
-| `COOKIE_SECURE` | — | `false` | Set to `true` for HTTPS production |
-| `COOKIE_SAMESITE` | — | `lax` | Cookie SameSite policy |
-| `MAX_CONTEXT_TOKENS` | — | `6000` | Max RAG context tokens |
-| `LLM_TIMEOUT` | — | `None` | LLM call timeout (null = no timeout) |
+| Provider | Key | LangChain Class | Notes |
+|----------|-----|-----------------|-------|
+| Ollama | `OLLAMA` | `ChatOllama` | Local models, default |
+| Google Gemini | `GOOGLE` | `ChatGoogleGenerativeAI` | `models/gemini-2.5-flash` |
+| NVIDIA | `NVIDIA` | `ChatNVIDIA` | `qwen/qwen3.5-397b-a17b`, thinking disabled |
+| Custom | `MYOPENLM` | `MyOpenLM` (custom) | Custom HTTP endpoint |
+
+### LLM Instance Cache
+- LRU cache (`_llm_cache`, max 16 entries) keyed by `(provider, temperature, top_p, max_tokens, **kwargs)`
+- Prevents creating new client objects on every request
+
+### `structured_invoker.py`
+Used for formats requiring strict JSON output (flashcards, quiz, mindmap, PPT):
+```python
+result = invoke_structured(prompt, OutputSchema, max_retries=2)
+# Uses LLM with temperature=STRUCTURED (0.1)
+# Auto-parses and validates JSON with json_repair fallback
+```
 
 ---
 
-*Generated from full codebase analysis — March 2026*
+## 13. Agent Pipeline
+
+**Files:** `app/services/agent/`
+
+The agent is the most complex system — it orchestrates multi-step AI task execution.
+
+### Execution Lifecycle
+```
+stream_agent(message, notebook_id, material_ids, session_id, user_id)
+   │
+   ├─ STEP 1: Intent Detection
+   │    classify_task(message, has_materials)
+   │    → TaskType: DATA_ANALYSIS | VISUALIZATION | ML_MODELING |
+   │                STATISTICAL_ANALYSIS | TEXT_ANALYSIS | QA | etc.
+   │    → Confidence score
+   │    → Flags: requires_computation, requires_materials
+   │    Emits SSE: "intent"
+   │
+   ├─ STEP 1.5: Dataset Profiling (for data tasks with materials)
+   │    DatasetProfiler.profile_all()
+   │    → For each CSV/Excel material: load → pandas profiling
+   │    → Column names, dtypes, missing %, statistics
+   │    → Stored in state.dataset_profile_context
+   │    Emits SSE: "step" (phase: profiling)
+   │
+   ├─ STEP 2: Execution Planning
+   │    generate_execution_plan(message, classification, profiles)
+   │    → LLM generates ordered steps with tool assignments:
+   │       { steps: [{tool, description, inputs}] }
+   │    Emits SSE: "agent_start" (plan)
+   │
+   ├─ STEP 3: Tool Execution Loop (max MAX_ITERATIONS=10)
+   │    For each plan step:
+   │      ExecutionEngine.execute_step(step_index, tool, description, inputs)
+   │      ├─ rag_tool       → ChromaDB retrieval
+   │      ├─ python_tool    → Code gen → security scan → sandbox execution
+   │      │                   Auto-repair loop (max 3 attempts)
+   │      │                   On-demand package install (approved list)
+   │      ├─ web_search_tool → External search service (DuckDuckGo)
+   │      └─ research_tool  → Deep iterative web research
+   │      Emits SSE: "step", "code_generated", "tool_result"
+   │
+   ├─ STEP 4: Artifact Detection
+   │    ArtifactDetector.detect_artifacts(work_dir)
+   │    → Scan output files: .png/.svg/.html/.csv/.json/.pkl
+   │    → Register in DB: Artifact table with short-lived token (24h)
+   │    Emits SSE: "artifact" per detected file
+   │
+   ├─ STEP 5: Result Validation
+   │    ResultValidator.validate(state)
+   │    → Check step success rates, artifact counts
+   │    → Determine overall execution quality
+   │
+   ├─ STEP 6: Response Synthesis
+   │    SummaryGenerator.generate(state)
+   │    → LLM synthesizes a final narrative from all step results
+   │    Emits SSE: "summary", "token" (streaming)
+   │
+   └─ STEP 7: Persistence
+        → Save AgentExecutionLog to DB
+        → Save ChatMessage with agentMeta JSON
+        Emits SSE: "done"
+```
+
+### Tool Registry
+```python
+TOOL_REGISTRY = {
+    "rag_tool":        rag_tool,
+    "python_tool":     python_tool,
+    "web_search_tool": web_search_tool,
+    "research_tool":   research_tool,
+}
+```
+
+### AgentExecutionState
+Tracks full execution state:
+- `phase: ExecutionPhase` — PLANNING | EXECUTING | VALIDATING | COMPLETE | FAILED
+- `steps: List[StepState]` — each step's status, timing, output
+- `artifacts: List[dict]` — detected output files
+- `datasets: List[DatasetMetadata]`
+- `generated_code: Dict[int, str]` — code per step index
+- `dataset_profile_context: str` — pre-computed column/type info
+- `detected_intent, intent_confidence`
+
+### Security Sandboxing for Python Execution
+Always applied before running any code:
+1. `validate_code()` — AST-based scanner for dangerous imports/syscalls
+2. `sanitize_code()` — Strips known dangerous patterns
+3. Code runs in isolated subprocess with `cwd=work_dir` and `MPLBACKEND=Agg`
+4. Hard timeout (`CODE_EXECUTION_TIMEOUT=15s`, extendable to 120s via agent route)
+5. Only approved packages can be installed on-demand (`APPROVED_ON_DEMAND` whitelist)
+
+---
+
+## 14. Code Execution Sandbox
+
+**Files:** `app/services/code_execution/`
+
+### `sandbox.py` — Subprocess Execution
+```python
+result = await run_in_sandbox(
+    code,
+    work_dir="/tmp/kepler_agent_xyz",
+    timeout=30,
+    on_stdout_line=callback,  # Optional line-by-line streaming
+)
+# Returns ExecutionResult:
+#   stdout, stderr, exit_code, timed_out, elapsed_seconds
+#   chart_base64 (if __CHART__: marker detected in stdout)
+#   output_files (list of produced files)
+```
+
+- Runs code as a subprocess using the same Python interpreter (`sys.executable`)
+- Streams stdout/stderr asynchronously via `asyncio.subprocess.PIPE`
+- Detects chart output via `__CHART__:<base64>` stdout marker
+- Limits stdout to 16 MB to prevent memory exhaustion
+- Kills process on timeout with `proc.kill()`
+
+### `security.py` — Code Scanner
+AST-based static analysis before any execution:
+- Blocks dangerous imports: `os.system`, `subprocess`, `ctypes`, `socket`, `pickle` (unsafe usage)
+- Blocks file writes outside work_dir
+- Blocks shell command injection patterns
+- `sanitize_code()` — removes known injection vectors
+
+### `sandbox_env.py` — Package Management
+Pre-installed packages in sandbox environment. Approved on-demand packages:
+```python
+APPROVED_ON_DEMAND = {
+    "seaborn": "0.13.2",
+    "wordcloud": "1.9.3",
+    "missingno": "0.5.2",
+    "folium": "0.15.1",
+    "altair": "5.2.0",
+    "pyvis": "0.3.2",
+}
+```
+
+---
+
+## 15. Deep Research Pipeline
+
+**File:** `app/services/research/pipeline.py`
+
+Triggered by `intent_override = "WEB_RESEARCH"` (user types `/research` command).
+
+### Multi-Pass Research Flow
+```
+1. Decompose Query
+   → LLM breaks query into 3-5 sub-questions
+   → SSE: "research_start"
+
+2. For each of 3 iterations:
+   a. Web Search: _web_search() → external POST /api/search (DuckDuckGo via kepler-sandbox)
+   b. URL Fetching: _fetch_url() → external POST /api/scrape (max 3 URLs/subq, 15 total)
+   c. Partial Synthesis: LLM processes gathered content → partial answer + gaps
+   d. Gap Analysis: LLM generates follow-up queries for next iteration
+   → SSE: "research_phase" (iteration N/3, phase: searching → fetching → synthesizing)
+   → SSE: "research_source" per URL
+
+3. Final Synthesis
+   → LLM generates structured markdown report with inline [1][2][3] citations
+   → Streams as "token" SSE events
+   → SSE: "citations" (list of all sources)
+   → SSE: "done"
+```
+
+### External Dependencies
+Two calls go to the `kepler-sandbox` service (default: `http://localhost:8002`):
+- `POST /api/search` — DuckDuckGo web search
+- `POST /api/scrape` — URL content scraping
+
+---
+
+## 16. Chat Routing System
+
+**File:** `app/routes/chat.py`
+
+### Routing Logic (Strict Frontend-Driven — No LLM Classification)
+
+The frontend sends an explicit `intent_override` field based on the slash command used:
+
+```
+intent_override == "AGENT"          → _route_agent()         (full agent pipeline)
+intent_override == "WEB_RESEARCH"   → _route_web_research()  (deep research pipeline)
+intent_override == "CODE_EXECUTION" → _route_code_execution() (Python sandbox directly)
+intent_override == "WEB_SEARCH"     → _route_web_search()    (quick web search + LLM)
+None (no override)                  → _route_rag()           (default RAG pipeline)
+```
+
+### Chat Request Schema
+```python
+class ChatRequest(BaseModel):
+    material_ids: Optional[List[str]] = None
+    message: str                               # 1-50000 chars
+    notebook_id: str
+    session_id: Optional[str] = None
+    stream: Optional[bool] = True
+    intent_override: Optional[IntentOverride] = None
+```
+
+### `_route_rag` (Default Path)
+```
+1. filter_completed_material_ids() — skip unfinished materials
+2. create/auto-title chat session
+3. stream_rag() — SSE stream
+4. Accumulate tokens → _persist_and_finalize()
+5. Save user + assistant messages to DB with ResponseBlocks
+6. Emit SSE "blocks" event with parsed blocks
+```
+
+### `_route_agent`
+```
+1. stream_agent() — full agent pipeline SSE stream
+2. Forward all SSE events to client
+3. On "done" event: save final ChatMessage with agentMeta JSON
+```
+
+### `_route_web_search` (Quick Search)
+```
+1. POST to kepler-sandbox /api/search
+2. Fetch top 3 URL contents
+3. LLM synthesizes answer from web content
+4. Streams tokens
+```
+
+### `_route_code_execution`
+```
+1. LLM generates Python code from message
+2. Security scan + sanitize
+3. run_in_sandbox() with 30s timeout
+4. Return stdout, stderr, exit_code, chart (if any)
+```
+
+### Session Management
+- Sessions auto-created if `session_id` not provided
+- Auto-title: first 30 chars of message
+- Sessions not re-fetched unless notebook changes
+
+---
+
+## 17. Presentation (PPT) Service
+
+**File:** `app/services/ppt/generator.py`
+
+### Generation Flow
+```
+generate_presentation(material_text, user_id, max_slides=10, theme?, instructions?)
+   │
+   ├─ 1. Build prompt: get_ppt_prompt(text, slide_count, theme, instructions)
+   │     Template: prompts/ppt_prompt.txt
+   │
+   ├─ 2. invoke_structured(prompt, PresentationHTMLOutput, retries=2)
+   │     → LLM returns JSON: { title, theme, slide_count, html }
+   │     → html is a FULL standalone HTML document (<!DOCTYPE html>…)
+   │     → Validated by PresentationHTMLOutput Pydantic schema
+   │
+   ├─ 3. _post_process_html(html)
+   │     → Ensure DOCTYPE
+   │     → Fix/inject viewport meta tag (width=1920)
+   │     → Inject safety CSS: 1920×1080 fixed slide dimensions
+   │     → No JavaScript execution
+   │
+   ├─ 4. extract_slides(html)  — slide_extractor.py
+   │     → BeautifulSoup parses HTML for .slide elements
+   │     → Each slide extracted as standalone HTML document
+   │     → Returns [{slide_number, slide_id, html}]
+   │
+   └─ Returns: { presentation_id, title, slide_count, theme, html, slides }
+       slides = list of standalone HTML docs, rendered in iframes at 1920×1080
+```
+
+### Async Presentation via Background Jobs
+Route `/presentation/async` creates a BackgroundJob, returns `job_id` immediately.  
+Frontend polls `GET /jobs/{job_id}` every 3 seconds until `status=completed`.
+
+### Explainer Video (`services/explainer/`)
+Builds on presentations:
+1. PPT generation → video narration script via LLM
+2. Per-slide TTS audio via `edge-tts`
+3. LibreOffice → PNG screenshots of slides
+4. `ffmpeg` combines images + audio → MP4
+
+---
+
+## 18. Podcast Service
+
+**Files:** `app/services/podcast/`
+
+### Podcast Architecture
+
+#### Session Lifecycle
+```
+POST /podcast/session          → Create session (mode, language, voices, material_ids)
+POST /podcast/session/{id}/start → Start generation pipeline
+  ├─ script_generator.py        → Generate 2-persona dialogue script
+  │   ├─ Multi-angle RAG (2-3 parallel queries per mode)
+  │   ├─ LLM generates JSON: { segments: [{speaker, text}], chapters, title }
+  │   └─ Modes: overview | deep-dive | debate | q-and-a | full | topic
+  └─ tts_service.py             → Text-to-Speech per segment
+      ├─ edge-tts voices (configurable per language/gender)
+      ├─ Streams audio files as generated
+      └─ Progress pushed via WebSocket events
+
+GET /podcast/session/{id}/segment/{n}/audio → FileResponse (MP3)
+
+POST /podcast/session/{id}/question → Q&A mid-playback
+  ├─ qa_service.py: RAG search for answer
+  ├─ LLM generates spoken answer
+  └─ TTS converts to audio
+
+POST /podcast/session/{id}/export  → Export as PDF summary or JSON transcript
+```
+
+#### Voice System (`voice_map.py`)
+- `VOICE_MAP[language][gender]` → edge-tts voice name
+- Supports: English, Spanish, French, German, Hindi, Chinese, Japanese, Korean, Arabic, Portuguese, Russian, Italian
+- Preview generation endpoint
+
+#### Q&A Flow (`qa_service.py`)
+```
+User pauses at segment N → types question
+→ RAG search for answer context
+→ LLM generates spoken answer in podcast style
+→ edge-tts converts to audio
+→ Returns audio URL
+→ satisfaction_detector.py: evaluates if answer was complete
+```
+
+#### WebSocket Events (pushed to user)
+```json
+{"type": "podcast_generating", "session_id": "...", "progress": 45}
+{"type": "podcast_segment_ready", "session_id": "...", "segment": 5}
+{"type": "podcast_completed", "session_id": "..."}
+{"type": "podcast_failed", "session_id": "...", "error": "..."}
+```
+
+---
+
+## 19. Flashcard & Quiz Services
+
+**Files:** `app/services/flashcard/generator.py`, `app/services/quiz/generator.py`
+
+### Flashcard Generation
+```
+POST /flashcard
+  → Load material text (require_material_text / require_materials_text)
+  → Optional topic filter prepended to text
+  → invoke_structured(prompt, FlashcardsOutput)
+  → Prompt: prompts/flashcard_prompt.txt
+  → Returns: { flashcards: [{front, back, difficulty}] }
+  
+Parameters: card_count (1-150), difficulty (easy/medium/hard), topic, additional_instructions
+```
+
+### Quiz Generation
+```
+POST /quiz
+  → Same text loading pipeline
+  → invoke_structured(prompt, QuizOutput)
+  → Prompt: prompts/... (quiz-specific)
+  → Returns: { questions: [{question, options: [A/B/C/D], correct_answer, explanation}] }
+  
+Parameters: mcq_count, difficulty, topic, additional_instructions
+```
+
+Both services use `loop.run_in_executor(None, lambda: invoke_structured(...))` to avoid blocking the event loop on synchronous LLM calls.
+
+---
+
+## 20. Mind Map Service
+
+**File:** `app/services/mindmap/`
+
+```
+POST /mindmap
+  → Load material text
+  → invoke_structured(prompt, MindMapOutput)
+  → Prompt: prompts/mindmap_prompt.txt
+  → Returns hierarchical node tree:
+     { nodes: [{id, label, children: [...]}] }
+  
+MindMap chat bridge:
+  → User can click any mind map node → sends pre-filled query to chat
+```
+
+---
+
+## 21. WebSocket System
+
+**Files:** `app/services/ws_manager.py`, `app/routes/websocket_router.py`
+
+### Connection Manager (`ConnectionManager`)
+
+```python
+ws_manager.connect_user(user_id, websocket)   # Register connection
+ws_manager.disconnect_user(user_id, websocket) # Remove on close
+await ws_manager.send_to_user(user_id, payload) # Push to all user tabs
+await ws_manager.broadcast(payload)             # Push to all users
+ws_manager.user_is_connected(user_id)          # Presence check
+ws_manager.stats()                              # { user_connections, unique_users }
+```
+
+- `defaultdict(list)` — supports multiple tabs per user
+- Max 10 connections per user (prevents DoS)
+- Dead connections auto-pruned on failed send
+- Thread-safe (CPython GIL + asyncio single-threaded)
+
+### WebSocket Endpoint: `/ws/jobs/{user_id}`
+
+**Authentication:** Two modes:
+1. Query param: `?token=<jwt>` (legacy)
+2. First-message auth: `{"type": "auth", "token": "<jwt>"}` within 10-second timeout
+
+**Keepalive:** Server sends `{"type": "ping"}` every 30 seconds; client echoes `{"type": "pong"}`.
+
+**Messages received by client:**
+```json
+{ "type": "connected", "channel": "jobs", "user_id": "..." }
+{ "type": "material_update", "material_id": "...", "status": "embedding" }
+{ "type": "podcast_generating", "session_id": "...", "progress": 45 }
+{ "type": "ping" }
+```
+
+---
+
+## 22. Routes Reference
+
+### Auth Routes (`/auth`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/signup` | No | Register new user |
+| POST | `/auth/login` | No | Email/password login, set refresh cookie |
+| POST | `/auth/refresh` | Cookie | Rotate refresh token, get new access token |
+| POST | `/auth/logout` | Bearer | Revoke all user tokens |
+| GET | `/auth/me` | Bearer | Get current user profile |
+
+### Notebook Routes (`/notebook`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/notebook` | Create notebook |
+| GET | `/notebook/{id}` | Get single notebook |
+| GET | `/notebook` | List user notebooks |
+| PATCH | `/notebook/{id}` | Rename/update description |
+| DELETE | `/notebook/{id}` | Delete notebook + cascade |
+
+### Upload Routes (`/upload`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/upload` | Upload single file (202 Accepted) |
+| POST | `/upload/batch` | Upload multiple files |
+| POST | `/upload/url` | Submit URL for ingestion |
+| POST | `/upload/text` | Submit raw text |
+| GET | `/upload/supported-formats` | List accepted MIME types + max size |
+
+### Materials Routes (`/materials`)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/materials/{notebook_id}` | List materials in notebook |
+| GET | `/materials/{id}/text` | Get full material text |
+| PATCH | `/materials/{id}` | Update title |
+| DELETE | `/materials/{id}` | Delete material + embeddings |
+| POST | `/materials/{id}/move` | Move to different notebook |
+
+### Chat Routes (`/chat`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/chat` | Stream chat response (SSE) |
+| GET | `/chat/history/{notebook_id}` | Load message history |
+| DELETE | `/chat/history/{notebook_id}` | Clear history |
+| GET | `/chat/sessions/{notebook_id}` | List chat sessions |
+| POST | `/chat/sessions` | Create session |
+| DELETE | `/chat/sessions/{session_id}` | Delete session |
+| POST | `/chat/block-followup` | Ask follow-up on specific response block |
+| POST | `/chat/suggestions` | Autocomplete suggestions |
+
+### Agent Routes (`/agent`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/agent/execute` | Full agent pipeline (SSE) |
+| POST | `/agent/execute-code` | Run reviewed code in sandbox (SSE) |
+| GET | `/agent/file/{artifact_id}` | Serve artifact file (token auth) |
+| POST | `/agent/refresh-token` | Refresh artifact download token |
+| POST | `/agent/research` | Research-only endpoint |
+
+### Generation Routes
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/flashcard` | Generate flashcards |
+| POST | `/quiz` | Generate quiz |
+| POST | `/ppt` | Generate presentation (sync) |
+| POST | `/presentation/async` | Generate presentation (async job) |
+| POST | `/mindmap` | Generate mind map |
+| POST | `/explainer/{ppt_id}/start` | Start explainer video |
+
+### Podcast Routes (`/podcast`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/podcast/session` | Create session |
+| GET | `/podcast/session/{id}` | Get session state |
+| GET | `/podcast/sessions/{notebook_id}` | List sessions |
+| PATCH | `/podcast/session/{id}` | Update title/tags/position |
+| DELETE | `/podcast/session/{id}` | Delete session |
+| POST | `/podcast/session/{id}/start` | Start generation |
+| GET | `/podcast/session/{id}/segment/{n}/audio` | Stream segment audio |
+| POST | `/podcast/session/{id}/question` | Submit Q&A |
+| POST | `/podcast/session/{id}/bookmark` | Add bookmark |
+| POST | `/podcast/session/{id}/annotation` | Add note |
+| POST | `/podcast/session/{id}/export` | Export PDF/JSON |
+| GET | `/podcast/voices/{language}` | Available voices |
+
+### Other Routes
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| GET | `/jobs/{job_id}` | Job status |
+| POST | `/search/web` | Web search proxy |
+| WS | `/ws/jobs/{user_id}` | Real-time job updates |
+
+---
+
+## 23. Middleware Stack
+
+### Performance Logger (`performance_logger.py`)
+- Logs every request: `method path status_code duration_ms [request_id]`
+- Adds `X-Request-ID` header to all responses
+
+### Rate Limiter (`rate_limiter.py`)
+- Currently **DISABLED** — passes all requests through
+- Designed for 3 bucket types: `upload`, `chat`, `generation`
+
+### CORS Middleware
+- `allow_origins = settings.CORS_ORIGINS` (default: localhost:3000, localhost:5173)
+- `allow_credentials = True` (required for HttpOnly cookie)
+- `allow_methods = ["*"]`, `allow_headers = ["*"]`
+
+### TrustedHost Middleware
+- Active only in `production` environment
+- Validates `Host` header against allowed origins (prevents host-header injection)
+
+---
+
+## 24. Complete Request Flow Diagrams
+
+### Upload + Process File
+```
+Browser
+  │  POST /upload/batch  multipart/form-data
+  │  Authorization: Bearer <access_token>
+  ▼
+FastAPI [upload.py]
+  │  1. Stream file to /tmp/uuid_filename.ext (async chunked)
+  │  2. validate_upload() → python-magic MIME check + size check
+  │  3. Move to data/uploads/{uuid}/{filename}
+  │  4. prisma.material.create(status=pending)
+  │  5. create_job(userId, jobType="material_processing", result={material_id, ...})
+  │  6. job_queue.notify()
+  │  Returns: 202 { material_id, job_id }
+  ▼
+Background Worker [worker.py]
+  │  fetch_next_pending_job() — SELECT ... FOR UPDATE SKIP LOCKED
+  │  _process_job(job)
+  │  process_material_by_id(material_id, user_id, notebook_id)
+  │     status → processing
+  │     extractor.extract_text() by MIME type
+  │     status → [ocr_running | transcribing] (if needed)
+  │     chunk_text(text) → chunks[]
+  │     status → embedding
+  │     embed_and_store(chunks, material_id, user_id)
+  │     save_material_text(material_id, full_text)
+  │     status → completed
+  │     ws_manager.send_to_user(user_id, material_update event)
+  ▼
+Browser [WebSocket /ws/jobs/{user_id}]
+  Receives: {"type":"material_update","material_id":"...","status":"completed"}
+```
+
+### Chat RAG Request
+```
+Browser
+  │  POST /chat
+  │  { message, notebook_id, material_ids: ["id1","id2"] }
+  │  Authorization: Bearer <access_token>
+  ▼
+ChatRoute [chat.py]
+  │  validate material ownership
+  │  filter_completed_material_ids() — skip pending
+  │  route → _route_rag()
+  │  stream_rag() → StreamingResponse(media_type="text/event-stream")
+  │
+  │  [RAG Pipeline]
+  │    secure_similarity_search_enhanced(query, material_ids, user_id)
+  │      → ChromaDB.query(where={user_id, material_id ∈ material_ids})
+  │      → MMR diversity filter
+  │      → BGE reranker scoring
+  │      → top 10 chunks
+  │    build_context(chunks) → context string with [SOURCE N] markers
+  │    get_chat_history() → last 10 messages
+  │    get_chat_prompt(context, history, query)
+  │    llm.astream(prompt) → token by token
+  │
+  │  Browser receives: SSE stream
+  │  event: token
+  │  data: {"content": "The "}
+  │  event: token
+  │  data: {"content": "answer "}
+  │  ...
+  │  event: meta
+  │  data: {"intent":"RAG","chunks_used":5,"elapsed":2.3}
+  │  event: done
+  │  data: {"elapsed":2.3}
+  │
+  │  After stream complete:
+  │    _persist_and_finalize() → save user + assistant messages
+  │    → split response into ResponseBlocks
+  │    → emit SSE "blocks" event
+  ▼
+Browser renders streamed response
+```
+
+### Podcast Generation
+```
+Browser
+  POST /podcast/session
+  → Script generation: multi-angle RAG + LLM → JSON dialogue
+  → TTS: edge-tts per segment → MP3 files
+  → WebSocket events: progress updates
+
+Browser polls /podcast/session/{id} for phase
+  → phase: "script_generated" | "tts_generating" | "completed"
+
+Browser streams /podcast/session/{id}/segment/{n}/audio
+  → FileResponse MP3
+  → HTML5 Audio plays
+```
+
+---
+
+## 25. Prisma Schema Reference
+
+### Key Relationships
+
+```
+User
+ ├── Notebooks (1:many)
+ │     └── Materials (1:many, nullable notebook)
+ │     └── ChatSessions (1:many)
+ │     └── ChatMessages (1:many)
+ │     └── GeneratedContent (1:many)
+ │     └── AgentExecutionLogs (1:many)
+ ├── RefreshTokens (1:many, rotation family)
+ ├── BackgroundJobs (1:many)
+ ├── PodcastSessions (1:many, via join table)
+ ├── Artifacts (1:many)
+ └── UserTokenUsage (1:many, per day)
+
+ChatSession
+ └── ChatMessages
+       └── ResponseBlocks
+       └── Artifacts
+
+GeneratedContent (flashcard|quiz|presentation|mindmap)
+ └── ExplainerVideos
+ └── GeneratedContentMaterial (join table)
+
+Material
+ └── GeneratedContent (legacy direct ref)
+ └── GeneratedContentMaterial (join table)
+ └── PodcastSessionMaterial (join table)
+```
+
+### Material Status Lifecycle
+```
+pending
+  → processing (worker claimed job)
+  → ocr_running (PDF/image OCR in progress)
+  → transcribing (audio/video Whisper in progress)
+  → embedding (ChromaDB upsert in progress)
+  → completed ✓
+  → failed ✗ (error stored in material.error field)
+```
+
+### Important Indexes
+- `Material`: `[userId]`, `[notebookId]`, `[sourceType]`
+- `ChatMessage`: `[chatSessionId]`, `[notebookId]`, `[notebookId, createdAt]`
+- `RefreshToken`: `[userId]`, `[family]`
+- `AgentExecutionLog`: `[userId]`, `[notebookId]`
+- `ApiUsageLog`: `[userId]`, `[endpoint]`, `[createdAt]`
+
+---
+
+> **Note:** All sensitive data (passwords, JWT keys, API keys) must be set via environment variables. Never hardcode credentials. The `JWT_SECRET_KEY` and `DATABASE_URL` are validated as non-empty on startup and will prevent the server from starting if missing.

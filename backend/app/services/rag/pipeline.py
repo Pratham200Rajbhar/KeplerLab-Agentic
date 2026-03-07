@@ -52,60 +52,41 @@ async def stream_rag(
     start_time = time.time()
 
     try:
-        # ── Edge case: no materials selected ──────────────────
-        if not material_ids:
-            # Check if user has ANY materials
-            count = await prisma.material.count(
-                where={"userId": user_id, "status": "completed"},
-            )
-            if count == 0:
-                msg = (
-                    "Welcome to KeplerLab! 👋\n\n"
-                    "Upload some study materials (PDFs, documents, URLs, or text) "
-                    "to get started. I'll help you understand, analyse, and learn "
-                    "from your content."
-                )
-            else:
-                msg = (
-                    "Please select one or more materials from the sidebar to chat about. "
-                    "I need context from your materials to give accurate answers."
-                )
-            yield _sse("token", {"content": msg})
-            yield _sse("meta", {"intent": "RAG", "chunks_used": 0, "elapsed": round(time.time() - start_time, 2)})
-            yield _sse("done", {"elapsed": round(time.time() - start_time, 2)})
-            return
-
         # ── Step 1: Retrieve chunks via secure retriever ──────
         from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 
-        context: str = await asyncio.to_thread(
-            secure_similarity_search_enhanced,
-            user_id=user_id,
-            query=query,
-            material_ids=material_ids,
-            notebook_id=notebook_id,
-            use_mmr=True,
-            use_reranker=settings.USE_RERANKER,
-            return_formatted=True,
-        )
+        context = ""
+        chunks_used = 0
 
-        if not context or context.strip() == "No relevant context found.":
-            msg = (
-                "I couldn't find relevant information in your selected materials "
-                "for that question. Try rephrasing your query or selecting different materials."
+        if material_ids:
+            context = await asyncio.to_thread(
+                secure_similarity_search_enhanced,
+                user_id=user_id,
+                query=query,
+                material_ids=material_ids,
+                notebook_id=notebook_id,
+                use_mmr=True,
+                use_reranker=settings.USE_RERANKER,
+                return_formatted=True,
             )
-            yield _sse("token", {"content": msg})
-            yield _sse("meta", {"intent": "RAG", "chunks_used": 0, "elapsed": round(time.time() - start_time, 2)})
-            yield _sse("done", {"elapsed": round(time.time() - start_time, 2)})
-            return
 
-        # Count chunks used
-        import re
-        chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", context))
+            if not context or context.strip() == "No relevant context found.":
+                msg = (
+                    "I couldn't find relevant information in your selected materials "
+                    "for that question. Try rephrasing your query or selecting different materials."
+                )
+                yield _sse("token", {"content": msg})
+                yield _sse("meta", {"intent": "RAG", "chunks_used": 0, "elapsed": round(time.time() - start_time, 2)})
+                yield _sse("done", {"elapsed": round(time.time() - start_time, 2)})
+                return
+
+            # Count chunks used
+            import re
+            chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", context))
 
         # ── Step 2: Stream LLM response with citations ────────
-        from app.services.chat.service import get_chat_history
-        from app.services.llm_service.llm import get_llm
+        from app.services.chat_v2.message_store import get_history as get_chat_history
+        from app.services.llm_service.llm import get_llm, extract_chunk_content
         from app.prompts import get_chat_prompt
 
         # Build history
@@ -122,7 +103,7 @@ async def stream_rag(
 
         full_response: list[str] = []
         async for chunk in llm.astream(prompt):
-            content = getattr(chunk, "content", str(chunk))
+            content = extract_chunk_content(chunk)
             if content:
                 full_response.append(content)
                 yield _sse("token", {"content": content})

@@ -182,7 +182,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
         </div>
       );
     }
-    if (blocks.length > 0) {
+    if (blocks.length > 0 && blocks.some(b => b.text && b.text.trim().length > 0)) {
       return (
         <div className="markdown-content">
           {blocks.map(block => (

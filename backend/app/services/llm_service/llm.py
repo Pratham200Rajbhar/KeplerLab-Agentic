@@ -260,6 +260,31 @@ def get_llm_structured(
     return instance
 
 
+def extract_chunk_content(chunk) -> str:
+    """Safely extract text content from a LangChain streaming chunk.
+
+    Handles:
+    - Plain string content (Ollama, NVIDIA, OpenLM)
+    - List content from Google Gemini (newer LangChain):
+      [{"type": "text", "text": "..."}, ...]
+    - Qwen3 thinking-mode chunks where content="" but reasoning is in
+      additional_kwargs["reasoning_content"] or ["thinking"] — we SKIP
+      thinking tokens (internal reasoning, not the final answer).
+    """
+    raw = getattr(chunk, "content", None)
+    if isinstance(raw, list):
+        return "".join(
+            part.get("text", "") if isinstance(part, dict) else str(part)
+            for part in raw
+            if not (isinstance(part, dict) and part.get("type") == "thinking")
+        )
+    if isinstance(raw, str):
+        return raw
+    if raw is None:
+        return ""
+    return str(raw)
+
+
 # ── Custom OpenLM wrapper ─────────────────────────────────────
 
 

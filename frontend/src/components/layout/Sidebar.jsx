@@ -42,10 +42,10 @@ export default function Sidebar({ onNavigate }) {
 
   const {
     materials, setMaterials, currentMaterial, setCurrentMaterial,
-    addMaterial, setLoadingState, loading, currentNotebook,
-    setCurrentNotebook, draftMode, setDraftMode, selectedSources,
-    setSelectedSources, toggleSourceSelection, selectAllSources,
-    deselectAllSources,
+    addMaterial, setLoadingState, loading, currentNotebook, setCurrentNotebook,
+    selectedSources, setSelectedSources, toggleSourceSelection, selectAllSources,
+    deselectAllSources, newlyCreatedNotebookId, setNewlyCreatedNotebookId,
+    draftMode, setDraftMode,
   } = useAppStore();
 
   const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
@@ -144,6 +144,7 @@ export default function Sidebar({ onNavigate }) {
       if (draftMode && currentNotebook?.isDraft) {
         result = await uploadBatchWithAutoNotebook(files);
         if (result.notebook) {
+          setNewlyCreatedNotebookId(result.notebook.id);
           setCurrentNotebook(result.notebook);
           setDraftMode(false);
           router.replace(`/notebook/${result.notebook.id}`);
@@ -197,6 +198,7 @@ export default function Sidebar({ onNavigate }) {
         if (res.notebook && !newlyCreatedNotebook) {
           newlyCreatedNotebook = res.notebook;
           currentNbId = res.notebook.id;
+          setNewlyCreatedNotebookId(res.notebook.id);
           setCurrentNotebook(res.notebook);
           setDraftMode(false);
         }

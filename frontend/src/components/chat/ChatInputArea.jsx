@@ -152,7 +152,7 @@ function ChatInputArea({
   }, [inputValue, onResearch]);
 
   const handleGetSuggestions = useCallback(async () => {
-    if (!inputValue.trim() || !hasSource || !notebookId) return;
+    if (!inputValue.trim() || !notebookId) return;
     setIsFetchingSuggestions(true);
     setShowSuggestions(true);
     try {
@@ -164,7 +164,7 @@ function ChatInputArea({
     } finally {
       setIsFetchingSuggestions(false);
     }
-  }, [inputValue, hasSource, notebookId]);
+  }, [inputValue, notebookId]);
 
   const handleSuggestionSelect = useCallback((suggestion) => {
     setShowSuggestions(false);
@@ -246,9 +246,9 @@ function ChatInputArea({
                       : 'Ask about your selected materials...'
                     : isSourceProcessing
                       ? 'Processing source, please wait…'
-                      : 'Select a source to start…'
+                      : 'Ask anything, or select a source... '
               }
-              disabled={disabled || !hasSource || isLoading}
+              disabled={disabled || isLoading}
               className="flex-1 bg-transparent text-[15px] sm:text-base text-text-primary placeholder-text-muted resize-none outline-none min-h-[48px] max-h-[200px] py-3.5 px-4 leading-relaxed"
               rows={1}
               aria-label="Chat message input"
@@ -259,7 +259,7 @@ function ChatInputArea({
             {inputValue.trim().length > 0 && (
               <button
                 onClick={handleGetSuggestions}
-                disabled={!hasSource || isLoading || isFetchingSuggestions}
+                disabled={isLoading || isFetchingSuggestions}
                 className="btn-icon text-accent hover:bg-accent/10 disabled:opacity-30 rounded-[10px] w-9 h-9 flex items-center justify-center transition-all"
                 title="Get prompt suggestions"
                 aria-label="Get prompt suggestions"
@@ -276,7 +276,7 @@ function ChatInputArea({
             {!isLoading && (
               <button
                 onClick={handleResearch}
-                disabled={!inputValue.trim() || !hasSource || isLoading}
+                disabled={!inputValue.trim() || isLoading}
                 className="btn-icon text-text-muted disabled:opacity-30 rounded-[10px] w-9 h-9 flex items-center justify-center transition-all research-btn"
                 title="Deep Research — searches the web and synthesizes a report"
                 aria-label="Deep Research"
@@ -298,7 +298,7 @@ function ChatInputArea({
             ) : (
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim() || !hasSource || isLoading || disabled}
+                disabled={!inputValue.trim() || isLoading || disabled}
                 className="btn-icon bg-accent text-white disabled:opacity-40 disabled:bg-surface-overlay disabled:text-text-muted rounded-[10px] w-9 h-9 flex items-center justify-center transition-all ml-1"
                 aria-label="Send message"
               >
@@ -326,11 +326,10 @@ function ChatInputArea({
           </p>
           {inputValue.length > 0 && (
             <span
-              className={`text-xs tabular-nums ${
-                inputValue.length > TIMERS.INPUT_LENGTH_WARNING
+              className={`text-xs tabular-nums ${inputValue.length > TIMERS.INPUT_LENGTH_WARNING
                   ? 'text-status-error'
                   : 'text-text-muted'
-              }`}
+                }`}
             >
               {inputValue.length}
             </span>

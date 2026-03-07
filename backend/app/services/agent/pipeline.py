@@ -441,7 +441,7 @@ async def _synthesize_response(
     ctx: AgentContext,
 ) -> AsyncIterator[str]:
     """Synthesize final response using LLM. Streams tokens."""
-    from app.services.llm_service.llm import get_llm
+    from app.services.llm_service.llm import get_llm, extract_chunk_content
     from app.services.agent.result_validator import generate_result_text
 
     # Build context from execution
@@ -472,7 +472,7 @@ Provide a helpful response:"""
 
     try:
         async for chunk in llm.astream(prompt):
-            content = getattr(chunk, "content", str(chunk))
+            content = extract_chunk_content(chunk)
             if content:
                 yield _sse("token", {"content": content})
     except Exception as e:
@@ -713,7 +713,7 @@ async def _synthesize(
     ctx: AgentContext,
 ) -> AsyncIterator[str]:
     """Call LLM to produce final answer (legacy interface)."""
-    from app.services.llm_service.llm import get_llm
+    from app.services.llm_service.llm import get_llm, extract_chunk_content
 
     tool_context_parts = []
     for sr in state.step_results:
@@ -749,7 +749,7 @@ Provide your answer:"""
 
     try:
         async for chunk in llm.astream(prompt):
-            content = getattr(chunk, "content", str(chunk))
+            content = extract_chunk_content(chunk)
             if content:
                 yield _sse("token", {"content": content})
     except Exception as e:

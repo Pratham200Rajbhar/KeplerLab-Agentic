@@ -56,7 +56,7 @@ export default function ChatEmptyState({ hasSource, isSourceProcessing, selected
           <Sparkles className="w-6 h-6 text-text-muted" />
         </div>
         <h2 className="text-xl font-display font-semibold text-text-primary mb-2 tracking-tight">Welcome to KeplerLab</h2>
-        <p className="text-text-muted text-sm max-w-sm mx-auto">Add sources from the sidebar to start exploring with AI-powered research assistance.</p>
+        <p className="text-text-muted text-sm max-w-sm mx-auto">Ask anything, or add sources from the sidebar to start exploring with AI-powered research assistance.</p>
       </div>
     </div>
   );
