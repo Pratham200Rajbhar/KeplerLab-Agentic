@@ -133,7 +133,7 @@ function CategorySection({ category, artifacts, onDownload }) {
   const Icon = config.icon;
 
   return (
-    <div className="category-section rounded-lg border border-border/30 overflow-hidden">
+    <div className="category-section rounded-lg bg-surface-raised/20 overflow-hidden shadow-sm">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -203,7 +203,7 @@ function ChartPreview({ artifact, onDownload }) {
 
   return (
     <>
-      <div className="rounded-lg border border-border/30 overflow-hidden bg-white/5 group">
+      <div className="rounded-lg overflow-hidden bg-white/5 group shadow-sm transition-all hover:shadow-md">
         <div
           className="aspect-video relative cursor-pointer"
           onClick={() => setFullscreen(true)}
@@ -222,7 +222,7 @@ function ChartPreview({ artifact, onDownload }) {
             </span>
           </div>
         </div>
-        <div className="px-3 py-2 border-t border-border/20 flex items-center justify-between">
+        <div className="px-3 py-2 bg-black/10 flex items-center justify-between">
           <span className="text-xs text-text-secondary truncate">{artifact.filename}</span>
           {onDownload && (
             <button

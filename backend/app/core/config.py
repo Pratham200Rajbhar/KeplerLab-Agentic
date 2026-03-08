@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     MAX_CODE_REPAIR_ATTEMPTS: int = 3
     CODE_EXECUTION_TIMEOUT: int = 15
 
+    # ── Artifact Storage ──────────────────────────────────
+    ARTIFACTS_DIR: str = "data/artifacts"
+
     # ── Workspace / Agent Sandbox ─────────────────────────
     WORKSPACE_BASE_DIR: str = "./data/workspaces"
     WORKSPACE_CONTAINER_IMAGE: str = "kepler-sandbox:latest"

@@ -44,7 +44,7 @@ function AgentStatusStrip({ status, currentLabel, steps = [], stepCodes = {}, do
   const pulseClass = status === 'executing' ? 'animate-pulse' : '';
 
   return (
-    <div className="mb-3 rounded-lg border border-border/30 bg-surface-overlay/50 overflow-hidden">
+    <div className="mb-3 rounded-lg bg-surface-overlay/50 overflow-hidden shadow-sm">
       {/* Main strip */}
       <div
         className="flex items-center gap-2.5 px-3 py-2 cursor-pointer select-none"
@@ -68,7 +68,7 @@ function AgentStatusStrip({ status, currentLabel, steps = [], stepCodes = {}, do
 
       {/* Details panel */}
       {detailsOpen && steps.length > 0 && (
-        <div className="border-t border-border/20 px-3 py-2 space-y-1.5">
+        <div className="bg-surface-raised/30 px-3 py-2 space-y-1.5">
           {steps.map((step, idx) => {
             const Icon = TOOL_ICONS[step.tool] || Wrench;
             const isRunning = step.status === 'running';

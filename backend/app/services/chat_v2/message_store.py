@@ -205,7 +205,7 @@ async def get_history(
         messages = await prisma.chatmessage.find_many(
             where=where,
             order={"createdAt": "asc"},
-            include={"responseBlocks": True},
+            include={"responseBlocks": True, "artifacts": True},
         )
         result = []
         for m in messages:
@@ -216,12 +216,26 @@ async def get_history(
                     agent_meta_val = json.loads(raw_meta)
                 except Exception:
                     pass
+
+            # Serialize linked artifacts so frontend can render them after refresh
+            serialized_artifacts = []
+            for art in getattr(m, "artifacts", []) or []:
+                serialized_artifacts.append({
+                    "id": str(art.id),
+                    "filename": art.filename,
+                    "mime": art.mimeType,
+                    "display_type": art.displayType,
+                    "size": art.sizeBytes,
+                    "url": f"/api/artifacts/{art.id}",
+                })
+
             result.append({
                 "id": str(m.id),
                 "role": m.role,
                 "content": m.content,
                 "created_at": m.createdAt.isoformat(),
                 "agent_meta": agent_meta_val,
+                "artifacts": serialized_artifacts,
                 "blocks": sorted(
                     [{"id": str(b.id), "index": b.blockIndex, "text": b.text}
                      for b in getattr(m, "responseBlocks", []) or []],

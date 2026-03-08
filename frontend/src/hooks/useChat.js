@@ -54,6 +54,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
       const effectiveNotebookId = notebookIdOverride || notebookId;
       if (!effectiveNotebookId) return;
 
+      setStreaming(true); // Lock out empty history fetches immediately
       setError(null);
 
       // Ensure we have a session
@@ -66,6 +67,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
           setSessionId(activeSessionId);
         } catch (err) {
           setError(err.message || 'Failed to create chat session');
+          setStreaming(false); // Revert lock on failure
           return;
         }
       }
@@ -89,8 +91,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
       };
       addMessage(assistantMsg);
 
-      // Start streaming
-      setStreaming(true);
+      // Start streaming (already locked above)
       const ac = new AbortController();
       abortRef.current = ac;
 
@@ -117,36 +118,113 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 }));
               }
             },
-            done: () => {
+            done: (data) => {
+              // Propagate the backend intent to the assistant message so
+              // MessageItem can reliably distinguish agent vs code mode.
+              if (data?.intent) {
+                useChatStore.getState().updateLastMessage((prev) => ({
+                  ...prev,
+                  intentOverride: data.intent,
+                }));
+              }
               setStreaming(false);
             },
             error: (data) => {
               setError(data.error || 'Stream error');
               setStreaming(false);
             },
-            // Agent pipeline progress events
+            // ── Agent pipeline events ──────────────────────────
             step: (data) => {
-              const text = data.text || data.phase || '';
-              if (!text) return;
+              // Each step event appends a structured step object
+              const status = data.status || data.phase || '';
+              if (!status) return;
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
-                agentSteps: [...(prev.agentSteps || []), text],
+                agentSteps: [
+                  ...(prev.agentSteps || []),
+                  {
+                    status,
+                    phase: data.phase,
+                    step: data.step ?? null,
+                    tool: data.tool ?? null,
+                  },
+                ],
               }));
             },
             agent_start: (data) => {
-              const text = data.message || 'Starting agent…';
+              // Stores the planned steps for display in header
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
-                agentSteps: [...(prev.agentSteps || []), text],
+                agentPlan: data.plan || [],
               }));
             },
-            tool_result: () => {},
-            code_generated: () => {},
-            artifact: () => {},
+            code_generated: (data) => {
+              // Agent mode: code generated for a specific step.
+              // Stored in agentCodeBlocks (NOT codeBlocks) so it never
+              // triggers the /code CodeWorkspace UI.
+              if (!data.code) return;
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                agentCodeBlocks: [
+                  ...(prev.agentCodeBlocks || []),
+                  {
+                    step_index: data.step_index ?? null,
+                    code: data.code,
+                    language: data.language || 'python',
+                  },
+                ],
+              }));
+            },
+            // /code mode: code_block is emitted by python_tool via orchestrator
+            code_block: (data) => {
+              if (!data.code) return;
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                codeBlocks: [
+                  ...(prev.codeBlocks || []),
+                  {
+                    step_index: null,
+                    code: data.code,
+                    language: data.language || 'python',
+                  },
+                ],
+              }));
+            },
+            tool_result: (data) => {
+              // Attach result data to the last matching step by step index
+              useChatStore.getState().updateLastMessage((prev) => {
+                const steps = [...(prev.agentSteps || [])];
+                // Find last step with matching index, or just the last step
+                let target = -1;
+                if (data.step != null) {
+                  for (let i = steps.length - 1; i >= 0; i--) {
+                    if (steps[i].step === data.step) { target = i; break; }
+                  }
+                }
+                if (target === -1) target = steps.length - 1;
+                if (target >= 0) {
+                  steps[target] = { ...steps[target], toolResult: data };
+                }
+                return { ...prev, agentSteps: steps };
+              });
+            },
+            artifact: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                artifacts: [...(prev.artifacts || []), data],
+              }));
+            },
+            summary: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                agentSummary: data,
+              }));
+            },
+            tool_start: () => {},
             validation: () => {},
-            summary: () => {},
             intent: () => {},
             dataset_profile: () => {},
+            web_sources: () => {},
             meta: () => {},
             blocks: () => {},
           },
@@ -215,12 +293,25 @@ export default function useChat({ notebookId, materialIds = [] }) {
         const history = await getChatHistory(notebookId, sid || sessionId);
         if (history && history.length > 0) {
           setMessages(
-            history.map((msg) => ({
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              createdAt: new Date(msg.created_at).getTime(),
-            })),
+            history.map((msg) => {
+              const meta = msg.agent_meta || {};
+              // Restore intentOverride so agent/code messages re-render correctly
+              const intentOverride = meta.intent || undefined;
+              // Restore code blocks for /code messages (stored in agent_meta)
+              const codeBlocks = meta.code_block
+                ? [{ code: meta.code_block.code, language: meta.code_block.language || 'python', step_index: null }]
+                : undefined;
+              return {
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                createdAt: new Date(msg.created_at).getTime(),
+                intentOverride,
+                // Artifacts come from DB — persistent across refreshes
+                artifacts: msg.artifacts?.length ? msg.artifacts : undefined,
+                codeBlocks,
+              };
+            }),
           );
         } else {
           setMessages([]);

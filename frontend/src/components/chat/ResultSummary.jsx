@@ -30,7 +30,7 @@ function ResultSummary({ summary, totalTime }) {
   }
 
   return (
-    <div className="result-summary mb-4 rounded-lg border border-border/30 overflow-hidden">
+    <div className="result-summary mb-4 rounded-lg bg-surface-overlay/30 overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border-b border-emerald-500/20">
         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -67,7 +67,7 @@ function ResultSummary({ summary, totalTime }) {
 
       {/* Metrics */}
       {metrics && Object.keys(metrics).length > 0 && (
-        <div className="px-3 py-2 bg-surface-raised/30 border-t border-border/20">
+        <div className="px-3 py-2 bg-surface-raised/50">
           <div className="flex flex-wrap gap-4">
             {Object.entries(metrics).map(([key, value]) => (
               <MetricBadge key={key} label={key} value={value} />

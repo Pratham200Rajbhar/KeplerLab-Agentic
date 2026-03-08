@@ -54,18 +54,25 @@ async def get_user_by_id(user_id: str):
 
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
-    """Extract and validate user from Bearer token in Authorization header."""
-    if credentials is None:
+    """Extract and validate user from Bearer token in Authorization header or query parameter."""
+    token = None
+    if credentials:
+        token = credentials.credentials
+    elif "token" in request.query_params:
+        token = request.query_params["token"]
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
+    
     payload = decode_token(token)
-
+    
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

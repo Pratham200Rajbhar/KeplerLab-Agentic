@@ -19,8 +19,10 @@ import json
 import logging
 import os
 import secrets
+import shutil
 import tempfile
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
@@ -508,7 +510,7 @@ async def _register_artifact(
     ctx: AgentContext,
     state: AgentExecutionState,
 ) -> Optional[Dict[str, Any]]:
-    """Register an artifact in the database and return SSE payload."""
+    """Copy artifact to permanent storage and register in the database."""
     fpath = art.get("path", "")
     if not fpath or not os.path.isfile(fpath):
         return None
@@ -516,18 +518,31 @@ async def _register_artifact(
     filename = art.get("filename", os.path.basename(fpath))
     mime = art.get("mime", "application/octet-stream")
     display_type = art.get("display_type", classify_artifact(filename, mime))
-    # Derive category from display_type/extension; fall back to any explicit value
-    # already set on the artifact (e.g. by a future tool that knows its category).
     category = art.get("category") or _derive_category(display_type, filename)
     size = art.get("size", os.path.getsize(fpath))
 
-    # Generate secure download token
+    # Pre-generate stable UUID so we can name the file after the record ID
+    artifact_id = str(uuid.uuid4())
+    ext = os.path.splitext(filename)[1]
+
+    # Copy to permanent storage so temp workspaces can be cleaned without losing the file
+    artifacts_dir = os.path.abspath(settings.ARTIFACTS_DIR)
+    os.makedirs(artifacts_dir, exist_ok=True)
+    permanent_path = os.path.join(artifacts_dir, f"{artifact_id}{ext}")
+    try:
+        shutil.copy2(fpath, permanent_path)
+    except Exception as copy_err:
+        logger.error("[agent] Failed to copy artifact to permanent storage: %s", copy_err)
+        return None
+
+    # Use a non-expiring token (far-future expiry) kept for schema compatibility
     token = secrets.token_urlsafe(48)
-    expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
+    expiry = datetime.now(timezone.utc) + timedelta(days=36500)  # 100 years
 
     try:
         record = await prisma.artifact.create(
             data={
+                "id": artifact_id,
                 "userId": ctx.user_id,
                 "notebookId": ctx.notebook_id,
                 "sessionId": ctx.session_id,
@@ -537,7 +552,7 @@ async def _register_artifact(
                 "sizeBytes": size,
                 "downloadToken": token,
                 "tokenExpiry": expiry,
-                "workspacePath": fpath,
+                "workspacePath": permanent_path,
             }
         )
 
@@ -547,27 +562,21 @@ async def _register_artifact(
             "mime": mime,
             "category": category,
             "display_type": display_type,
-            "url": f"/agent/file/{record.id}?token={token}",
+            "url": f"/api/artifacts/{record.id}",
             "size": size,
-            "workspace_path": fpath,
         }
 
-        # Add to state
         state.add_artifact(artifact_data)
-
         return artifact_data
 
     except Exception as e:
-        logger.error("[agent] Failed to register artifact: %s", e)
-        return {
-            "filename": filename,
-            "mime": mime,
-            "category": category,
-            "display_type": display_type,
-            "url": "",
-            "size": size,
-            "workspace_path": fpath,
-        }
+        logger.error("[agent] Failed to register artifact in DB: %s", e)
+        # Clean up copied file on DB failure
+        try:
+            os.remove(permanent_path)
+        except OSError:
+            pass
+        return None
 
 
 async def _persist_execution(state: AgentExecutionState) -> None:

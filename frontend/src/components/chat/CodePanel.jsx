@@ -89,9 +89,9 @@ function CodePanel({
       )}
 
       {/* Code block */}
-      <div className="rounded-lg border border-border/30 overflow-hidden bg-[#1e1e2e]">
+      <div className="rounded-lg overflow-hidden bg-[#1e1e2e] shadow-lg">
         {/* Language label */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-surface-raised/50 border-b border-border/20">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-surface-raised/50">
           <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
             {language}
           </span>
@@ -141,7 +141,7 @@ function CodePanel({
         {isRunning ? (
           <button
             disabled
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-blue-500/20 text-blue-400 border border-blue-500/30 cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-blue-500/20 text-blue-400 cursor-not-allowed shadow-sm"
           >
             <Loader2 className="w-3 h-3 animate-spin" />
             <span>Running...</span>

@@ -370,7 +370,7 @@ async def _process_material(
 
             async def _background_title_update() -> None:
                 try:
-                    from app.services.notebook_name_generator import generate_material_title
+                    from app.services.notebook_name_generator import generate_material_title, generate_notebook_name
                     ai_title = await loop.run_in_executor(
                         None,
                         partial(generate_material_title, _bg_text, _bg_filename),
@@ -391,9 +391,56 @@ async def _process_material(
                             _bg_user_id, _bg_material_id, "completed",
                             title=ai_title,
                         )
+                    
+                    # ── Auto-Name Notebooks based on Material ──
+                    if notebook_id and notebook_id != "draft":
+                        notebook = await prisma.notebook.find_unique(where={"id": notebook_id})
+                        if notebook:
+                            import datetime
+                            now = datetime.datetime.now(datetime.timezone.utc)
+                            # Prisma returns UTC datetime for createdAt
+                            time_diff = now - notebook.createdAt.replace(tzinfo=datetime.timezone.utc)
+                            
+                            import os
+                            stem = os.path.splitext(_bg_filename or "")[0][:40].strip()
+                            
+                            is_default_name = (
+                                notebook.name.startswith("New Notebook") or 
+                                notebook.name.startswith("Untitled") or 
+                                notebook.name.startswith("Notebook 20") or 
+                                (stem and notebook.name == stem)
+                            )
+                            
+                            # Only rename if created within last 5 minutes AND has default name
+                            if time_diff.total_seconds() < 300 and is_default_name:
+                                ai_notebook_name = await loop.run_in_executor(
+                                    None,
+                                    partial(generate_notebook_name, _bg_text, _bg_filename),
+                                )
+                                ai_notebook_name = sanitize_null_bytes(str(ai_notebook_name)[:200])
+                                await prisma.notebook.update(
+                                    where={"id": notebook_id},
+                                    data={"name": ai_notebook_name},
+                                )
+                                logger.info(
+                                    "Background AI notebook name updated: notebook=%s  name='%s'",
+                                    notebook_id, ai_notebook_name,
+                                )
+                                
+                                # Send WS event so the frontend updates the notebook name in the UI
+                                if _bg_user_id:
+                                    try:
+                                        from app.services.ws_manager import ws_manager
+                                        await ws_manager.send_to_user(
+                                            _bg_user_id, 
+                                            {"type": "notebook_update", "notebook_id": notebook_id, "name": ai_notebook_name}
+                                        )
+                                    except Exception as ws_exc:
+                                        logger.debug("Notebook update WS emit failed: %s", ws_exc)
+
                 except Exception as bg_exc:
                     logger.warning(
-                        "Background title generation failed for material %s: %s",
+                        "Background title/notebook generation failed for material %s: %s",
                         _bg_material_id, bg_exc,
                     )
 

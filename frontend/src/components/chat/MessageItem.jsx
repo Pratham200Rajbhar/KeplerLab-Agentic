@@ -2,22 +2,28 @@
 
 import { memo, useState, useCallback } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';
+import AgentExecutionPanel from './AgentExecutionPanel';
+import CodeWorkspace from './CodeWorkspace';
+import ArtifactViewer from './ArtifactViewer';
 import { Bot, RotateCcw, Copy, Check } from 'lucide-react';
 
 const INTENT_BADGES = {
-  AGENT:          { label: 'Agent Mode',    color: 'bg-purple-500/15 text-purple-300 border border-purple-500/20' },
-  WEB_RESEARCH:   { label: 'Deep Research', color: 'bg-blue-500/15 text-blue-300 border border-blue-500/20' },
-  CODE_EXECUTION: { label: 'Code Mode',     color: 'bg-green-500/15 text-green-300 border border-green-500/20' },
-  WEB_SEARCH:     { label: 'Web Search',    color: 'bg-orange-500/15 text-orange-300 border border-orange-500/20' },
+  AGENT:          { label: 'Agent Mode',    color: 'bg-purple-500/10 text-purple-300' },
+  WEB_RESEARCH:   { label: 'Deep Research', color: 'bg-blue-500/10 text-blue-300' },
+  CODE_EXECUTION: { label: 'Code Mode',     color: 'bg-green-500/10 text-green-300' },
+  WEB_SEARCH:     { label: 'Web Search',    color: 'bg-orange-500/10 text-orange-300' },
 };
 
 /**
  * MessageItem — a single chat turn.
  *
  * User messages — right-aligned bubble.
- * Assistant messages — left-aligned with avatar, streaming cursor, hover actions.
+ * Assistant messages — left-aligned with avatar.
+ *   · /agent intent → AgentExecutionPanel (steps + artifacts) above markdown
+ *   · /code intent  → CodeWorkspace (editor + console + AI edit) below markdown
+ *   · standalone artifacts → ArtifactViewer
  */
-const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry }) {
+const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, notebookId, sessionId }) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -51,11 +57,23 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry })
   }
 
   /* ── Assistant message ────────────────────────────────── */
-  const hasSteps = message.agentSteps?.length > 0;
-  const hasContent = !!message.content;
+  // Agent mode: driven by intentOverride propagated from the done event,
+  // or by the presence of agentSteps / agentCodeBlocks emitted during execution.
+  const isAgentMode =
+    message.intentOverride === 'AGENT' ||
+    message.agentSteps?.length > 0 ||
+    message.agentCodeBlocks?.length > 0;
+  // Code mode: only when a /code code_block was generated AND we are NOT in agent mode.
+  // agent mode uses agentCodeBlocks (never codeBlocks) so this check is safe.
+  const isCodeMode  = !isAgentMode && message.codeBlocks?.length > 0;
+  const hasContent  = !!message.content;
+  const hasArtifactsOnly = message.artifacts?.length > 0 && !isAgentMode && !isCodeMode;
+
+  // When agent is working but no content yet — if agentSteps exist, panel handles display
+  const showTypingFallback = !hasContent && !message.agentSteps?.length && !isCodeMode && !isStreaming;
 
   return (
-    <div className="group px-4 sm:px-6 py-5">
+    <div className="group px-4 sm:px-6 py-4">
       <div className="max-w-3xl mx-auto flex gap-3.5">
         {/* Avatar */}
         <div className="shrink-0 mt-0.5">
@@ -64,48 +82,49 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry })
           </div>
         </div>
 
-        {/* Content area */}
+        {/* Content column */}
         <div className="flex-1 min-w-0 overflow-hidden">
-          {/* Agent step progress (shown while agent is working, before content arrives) */}
-          {hasSteps && !hasContent && (
-            <div className="mb-3 space-y-1.5">
-              {message.agentSteps.map((step, i) => {
-                const isLatest = i === message.agentSteps.length - 1;
-                return (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2 text-xs transition-opacity ${
-                      isLatest ? 'text-text-muted opacity-100' : 'text-text-muted/40 opacity-60'
-                    }`}
-                  >
-                    <span
-                      className={`shrink-0 w-1.5 h-1.5 rounded-full ${
-                        isLatest ? 'bg-accent animate-pulse' : 'bg-text-muted/20'
-                      }`}
-                    />
-                    {step}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Agent execution panel (steps, summary, artifacts) */}
+          {isAgentMode && (
+            <AgentExecutionPanel message={message} isStreaming={isStreaming} />
           )}
 
-          {/* Message body */}
-          {hasContent ? (
+          {/* Markdown response body */}
+          {hasContent && (
             <div className="text-sm text-text-primary leading-relaxed prose-chat">
               <MarkdownRenderer content={message.content} />
-              {isStreaming && (
+              {isStreaming && !isCodeMode && (
                 <span
                   className="inline-block w-[2px] h-[1em] bg-text-muted/50 ml-0.5 align-text-bottom animate-pulse"
                   aria-hidden="true"
                 />
               )}
             </div>
-          ) : !hasSteps && !isStreaming ? (
-            <div className="text-sm text-text-muted italic">No response generated.</div>
-          ) : null}
+          )}
 
-          {/* Hover actions */}
+          {/* Code workspace (/code mode) */}
+          {isCodeMode && (
+            <CodeWorkspace
+              codeBlocks={message.codeBlocks}
+              notebookId={notebookId}
+              sessionId={sessionId}
+              isStreaming={isStreaming}
+            />
+          )}
+
+          {/* Standalone artifacts (e.g., from web-search or research) */}
+          {hasArtifactsOnly && (
+            <div className="mt-2">
+              <ArtifactViewer artifacts={message.artifacts} />
+            </div>
+          )}
+
+          {/* Fallback empty state */}
+          {showTypingFallback && (
+            <div className="text-sm text-text-muted italic">No response generated.</div>
+          )}
+
+          {/* Hover actions (only for completed assistant messages with text) */}
           {!isStreaming && hasContent && (
             <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
               <button

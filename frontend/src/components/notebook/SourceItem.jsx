@@ -36,18 +36,18 @@ function getSourceIcon(type, filename) {
 
 function getSourceTypeColor(type, filename) {
   const ext = filename?.split('.').pop()?.toLowerCase();
-  if (type === 'youtube') return 'text-red-500 bg-gradient-to-br from-red-500/20 to-red-600/5 border-red-500/20';
-  if (type === 'url') return 'text-blue-500 bg-gradient-to-br from-blue-500/20 to-blue-600/5 border-blue-500/20';
-  if (ext === 'pdf') return 'text-red-500 bg-gradient-to-br from-red-500/20 to-red-600/5 border-red-500/20';
-  if (ext === 'docx' || ext === 'doc') return 'text-blue-500 bg-gradient-to-br from-blue-500/20 to-blue-600/5 border-blue-500/20';
-  if (ext === 'pptx' || ext === 'ppt') return 'text-orange-500 bg-gradient-to-br from-orange-500/20 to-orange-600/5 border-orange-500/20';
-  if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return 'text-green-500 bg-gradient-to-br from-green-500/20 to-green-600/5 border-green-500/20';
-  if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'm4a') return 'text-purple-500 bg-gradient-to-br from-purple-500/20 to-purple-600/5 border-purple-500/20';
-  if (ext === 'mp4' || ext === 'avi' || ext === 'mov' || ext === 'mkv' || ext === 'webm') return 'text-pink-500 bg-gradient-to-br from-pink-500/20 to-pink-600/5 border-pink-500/20';
-  if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') return 'text-amber-500 bg-gradient-to-br from-amber-500/20 to-amber-600/5 border-amber-500/20';
-  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'svg' || ext === 'webp') return 'text-teal-500 bg-gradient-to-br from-teal-500/20 to-teal-600/5 border-teal-500/20';
-  if (type === 'text' || ext === 'txt') return 'text-gray-400 bg-gradient-to-br from-gray-500/20 to-gray-600/5 border-gray-500/20';
-  return 'text-slate-400 bg-gradient-to-br from-slate-500/20 to-slate-600/5 border-slate-500/20';
+  if (type === 'youtube') return 'text-red-500 bg-gradient-to-br from-red-500/20 to-red-600/5';
+  if (type === 'url') return 'text-blue-500 bg-gradient-to-br from-blue-500/20 to-blue-600/5';
+  if (ext === 'pdf') return 'text-red-500 bg-gradient-to-br from-red-500/20 to-red-600/5';
+  if (ext === 'docx' || ext === 'doc') return 'text-blue-500 bg-gradient-to-br from-blue-500/20 to-blue-600/5';
+  if (ext === 'pptx' || ext === 'ppt') return 'text-orange-500 bg-gradient-to-br from-orange-500/20 to-orange-600/5';
+  if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return 'text-green-500 bg-gradient-to-br from-green-500/20 to-green-600/5';
+  if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'm4a') return 'text-purple-500 bg-gradient-to-br from-purple-500/20 to-purple-600/5';
+  if (ext === 'mp4' || ext === 'avi' || ext === 'mov' || ext === 'mkv' || ext === 'webm') return 'text-pink-500 bg-gradient-to-br from-pink-500/20 to-pink-600/5';
+  if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') return 'text-amber-500 bg-gradient-to-br from-amber-500/20 to-amber-600/5';
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'svg' || ext === 'webp') return 'text-teal-500 bg-gradient-to-br from-teal-500/20 to-teal-600/5';
+  if (type === 'text' || ext === 'txt') return 'text-gray-400 bg-gradient-to-br from-gray-500/20 to-gray-600/5';
+  return 'text-slate-400 bg-gradient-to-br from-slate-500/20 to-slate-600/5';
 }
 
 function getStatusLabel(status) {
@@ -65,12 +65,12 @@ function getStatusLabel(status) {
 
 function getStatusStyle(status) {
   const styles = {
-    pending: { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
-    processing: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-    ocr_running: { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-indigo-500/30' },
-    transcribing: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-    embedding: { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-teal-500/30' },
-    failed: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
+    pending: { bg: 'bg-gray-500/10', text: 'text-gray-400' },
+    processing: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
+    ocr_running: { bg: 'bg-indigo-500/10', text: 'text-indigo-400' },
+    transcribing: { bg: 'bg-purple-500/10', text: 'text-purple-400' },
+    embedding: { bg: 'bg-teal-500/10', text: 'text-teal-400' },
+    failed: { bg: 'bg-red-500/10', text: 'text-red-400' },
   };
   return styles[status] || styles.pending;
 }
@@ -133,12 +133,12 @@ export default memo(function SourceItem({
 
   return (
     <div
-      className={`source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors border
-        ${checked ? 'bg-accent/5 border-accent/15 ring-1 ring-accent/10' : 'border-transparent hover:bg-surface-100 hover:border-border'}
+      className={`source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all
+        ${checked ? 'bg-accent/5 ring-0 shadow-sm' : 'hover:bg-surface-100'}
         ${isProcessing ? 'bg-surface-overlay/50' : ''}`}
     >
       {/* Icon */}
-      <div className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
+      <div className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
         <div className="scale-90 flex items-center justify-center drop-shadow-md">
           {getSourceIcon(sourceType, source.filename)}
         </div>
@@ -151,7 +151,7 @@ export default memo(function SourceItem({
         </p>
         {(isProcessing || isFailed) && (
           <div className="mt-2 mb-1 flex items-center gap-2">
-            <div className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${statusStyle.bg} ${statusStyle.border} ${isProcessing ? 'animate-pulse' : ''}`} title={statusLabel} role="status">
+            <div className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${statusStyle.bg} ${isProcessing ? 'animate-pulse' : ''}`} title={statusLabel} role="status">
               {isProcessing && (
                 <div className={`w-1.5 h-1.5 rounded-full bg-current ${statusStyle.text} animate-ping absolute left-2 opacity-75`} />
               )}
@@ -180,8 +180,8 @@ export default memo(function SourceItem({
         </button>
         {menuOpen && (
           <div
-            className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl border animate-scale-in"
-            style={{ background: 'var(--surface-raised)', borderColor: 'var(--border-strong)', boxShadow: 'var(--shadow-glass)' }}
+            className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl animate-scale-in"
+            style={{ background: 'var(--surface-raised)', boxShadow: 'var(--shadow-elevated)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button onClick={handleSeeText} className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-overlay hover:text-text-primary flex items-center gap-2">
@@ -205,7 +205,7 @@ export default memo(function SourceItem({
       ) : (
         <button
           onClick={(e) => { e.stopPropagation(); onToggle(source); }}
-          className={`shrink-0 w-4 h-4 mt-0.5 rounded-[4px] border flex items-center justify-center transition-all ${checked ? 'bg-accent border-accent shadow-sm shadow-accent/30' : 'border-border-strong bg-transparent hover:border-accent/50'
+          className={`shrink-0 w-4 h-4 mt-0.5 rounded-[4px] flex items-center justify-center transition-all ${checked ? 'bg-accent shadow-sm shadow-accent/30' : 'bg-surface-raised hover:bg-surface-overlay'
             }`}
           disabled={isFailed}
           title={checked ? 'Deselect' : 'Select'}

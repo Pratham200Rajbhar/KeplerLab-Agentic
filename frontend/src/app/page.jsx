@@ -81,6 +81,20 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    const handleNotebookNameUpdate = (e) => {
+      const { id, name } = e.detail;
+      setNotebooks((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, name } : n))
+      );
+    };
+
+    window.addEventListener('notebookNameUpdate', handleNotebookNameUpdate);
+    return () => {
+      window.removeEventListener('notebookNameUpdate', handleNotebookNameUpdate);
+    };
+  }, []);
+
   /* ── Actions ── */
   const handleDelete = (notebookId, e) => {
     e?.stopPropagation();

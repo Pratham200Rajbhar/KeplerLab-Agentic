@@ -23,7 +23,8 @@ import {
   FileText,
 } from 'lucide-react';
 
-import { apiConfig } from '@/lib/api/config';
+import { apiConfig, getAccessToken } from '@/lib/api/config';
+import DocViewerRenderer from './DocViewerRenderer';
 
 const FILE_VIEWER_BASE = `${apiConfig.baseUrl}/api/v1`;
 
@@ -236,7 +237,7 @@ export default function FileViewerContent() {
     setState('validating');
     try {
       const res = await fetch(
-        `${FILE_VIEWER_BASE}/file-viewer/info?url=${encodeURIComponent(rawUrl)}`,
+        `${FILE_VIEWER_BASE}/file-viewer/info?url=${encodeURIComponent(rawUrl)}&token=${encodeURIComponent(getAccessToken() || '')}`,
         { credentials: 'omit' }
       );
       if (!res.ok) {
@@ -261,8 +262,8 @@ export default function FileViewerContent() {
   const filename = viewerInfo?.filename ?? getFilename(rawUrl);
   const domain = getDomain(rawUrl);
 
-  const proxyUrl = `${FILE_VIEWER_BASE}/file-viewer/proxy?url=${encodeURIComponent(rawUrl)}`;
-  const officeUrl = viewerInfo?.office_viewer_url ?? '';
+  const token = getAccessToken() || '';
+  const proxyUrl = `${FILE_VIEWER_BASE}/file-viewer/proxy?url=${encodeURIComponent(rawUrl)}&token=${encodeURIComponent(token)}`;
 
   /* ── Render ── */
   return (
@@ -284,67 +285,22 @@ export default function FileViewerContent() {
         ) : state === 'error' ? (
           <ErrorCard message={errorMsg} fileUrl={rawUrl} />
         ) : viewerInfo?.kind === 'pdf' ? (
-          <div className="flex-1 relative flex flex-col">
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
-                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--danger) rounded-full animate-spin" />
-                <p className="text-sm">Loading PDF\u2026</p>
-              </div>
-            )}
-            <iframe
-              src={proxyUrl}
-              title={filename}
-              className="flex-1 w-full h-full border-0"
-              onLoad={() => setIframeLoaded(true)}
-              onError={() => {
-                setState('error');
-                setErrorMsg(
-                  'Failed to load PDF. The file may be unavailable or require authentication.'
-                );
-              }}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
+          <div className="flex-1 relative flex flex-col p-4">
+            <DocViewerRenderer url={proxyUrl} filename={filename} />
           </div>
         ) : viewerInfo?.kind === 'office' ? (
-          <div className="flex-1 relative flex flex-col">
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
-                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--accent) rounded-full animate-spin" />
-                <p className="text-sm">Opening in Office Viewer\u2026</p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  The file must be publicly accessible on the internet.
-                </p>
-              </div>
-            )}
-            <div className="shrink-0 flex items-center gap-2 px-4 py-2 bg-[var(--surface-raised)] border-b border-[var(--border)] text-xs text-[var(--text-muted)]">
-              <FileText className="w-4 h-4 text-[var(--accent)]" />
-              Powered by Microsoft Office Online Viewer — file must be publicly
-              accessible
+          <div className="flex-1 relative flex flex-col p-4 items-center">
+            <div className="shrink-0 flex items-center justify-center gap-2 px-6 py-2 mb-4 rounded-full bg-accent/10 border border-accent/20 shadow-sm text-xs font-medium text-accent">
+              <FileText className="w-4 h-4" />
+              Document Viewer
             </div>
-            <iframe
-              src={officeUrl}
-              title={filename}
-              className="flex-1 w-full h-full border-0"
-              onLoad={() => setIframeLoaded(true)}
-              frameBorder="0"
-              allowFullScreen
-            />
+            <div className="flex-1 w-full relative">
+              <DocViewerRenderer url={proxyUrl} filename={filename} />
+            </div>
           </div>
         ) : viewerInfo?.kind === 'text' ? (
-          <div className="flex-1 relative flex flex-col">
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)] bg-[var(--surface)] z-10">
-                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-(--success) rounded-full animate-spin" />
-                <p className="text-sm">Loading file\u2026</p>
-              </div>
-            )}
-            <iframe
-              src={proxyUrl}
-              title={filename}
-              className="flex-1 w-full h-full border-0"
-              onLoad={() => setIframeLoaded(true)}
-              sandbox="allow-scripts allow-same-origin"
-            />
+          <div className="flex-1 relative flex flex-col p-4 w-full h-full">
+            <DocViewerRenderer url={proxyUrl} filename={filename} />
           </div>
         ) : (
           <OtherFileCard fileUrl={rawUrl} filename={filename} ext={ext} />

@@ -1,423 +1,195 @@
-Below is a **clear, structured prompt you can give to your AI coding tool** (Cursor / Claude Code / Windsurf / Copilot) to implement the UI and functionality you described.
-
-This prompt focuses on:
-
-* fixing `/agent` UI execution visualization
-* rendering agent artifacts (images/files)
-* implementing `/code` interactive coding environment
-* adding collapsible execution steps
-* improving productivity like a real **Agentic platform**
-
----
-
-# Prompt — Fix `/agent` UI + Implement `/code` Interactive Coding
-
-````markdown
 # ROLE
 
-You are a senior full-stack engineer building an **Agentic AI workspace UI**.
+You are a senior frontend engineer improving the chat workspace UI of an AI platform built with:
 
-The project uses:
-
-Frontend:
-Next.js App Router
+Next.js (App Router)
 React
 Zustand
 TailwindCSS
-SSE streaming
 
-Backend:
-FastAPI
-Agent pipeline
-Python execution sandbox
-Streaming tool events
+The current empty chat state shows a static UI with four cards:
 
-The chat UI exists but **agent execution and code tools are not displayed correctly in the frontend**.
+Agent Execution  
+Research Mode  
+Code Execution  
+Web Search  
 
-Your task is to **fix the agent UI and implement an interactive coding interface**.
+This UI must be removed and replaced with a **dynamic intelligent empty state** that shows information about selected resources and suggested queries.
 
 ---
 
-# TASK 1 — Fix `/agent` Execution Visualization
+# TASK
 
-Currently when `/agent` is used, the execution stages are streamed but **they are not properly visualized in the UI**.
+Remove the entire UI block that currently displays:
 
-We need a structured execution UI similar to:
+Agent Execution  
+Research Mode  
+Code Execution  
+Web Search  
 
-Cursor
-Perplexity Labs
-OpenAI tools
-
----
-
-## Implement Agent Execution Steps
-
-When the backend streams execution events:
-
-Example events:
-
-event: step_start  
-event: code_generated  
-event: tool_result  
-event: artifact  
-event: summary  
-
-The frontend must display them as **collapsible execution stages**.
+This section should no longer appear.
 
 ---
 
-## UI Design
+# NEW EMPTY STATE DESIGN
 
-Each agent step must appear as a **collapsible card**.
+When the chat has no messages yet, display a **Resource Overview Panel** instead.
 
-Example layout:
-
-Agent Execution
-
-Step 1 — Planning  
-Step 2 — Generating Code  
-Step 3 — Running Tool  
-Step 4 — Producing Output  
-
-Each step:
-
-collapsed by default  
-expandable when clicked  
-
-When expanded it shows:
-
-generated code  
-tool output  
-logs  
+The purpose is to help the user quickly understand the selected materials and ask useful questions.
 
 ---
 
-## Example UI
+# RESOURCE SUMMARY SECTION
 
-Step Card:
+If the user has selected materials in the sidebar:
 
-▶ Step 2 — Generate Visualization Code
+Display a **short AI generated summary** of the selected resources.
 
-Click expands:
+Rules:
 
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-...
-````
-
----
-
-# TASK 2 — Display Agent Generated Artifacts
-
-Agents can generate files or images.
-
-Examples:
-
-PNG charts
-CSV files
-JSON outputs
-HTML files
-
-The frontend must detect artifact type and render correctly.
-
----
-
-## Image Rendering
-
-If artifact is image:
-
-png
-jpg
-jpeg
-svg
-
-Show image preview directly inside chat.
+Only show **basic information**, not a full summary.
 
 Example:
 
-AI generated chart
-[IMAGE PREVIEW]
+Selected Resources Overview
+
+These documents appear to cover:
+
+Machine learning fundamentals  
+Neural networks and training methods  
+Practical AI development workflows  
+
+Do not show full explanations.
+
+Only show **3–5 key topics** detected in the resources.
+
+The summary must be concise.
 
 ---
 
-## File Rendering
+# NO RESOURCE SELECTED
 
-If artifact is not an image:
+If no resources are selected:
 
-Show a **file card with download button**.
-
-Example UI:
-
-Generated File
-data_analysis.csv
-
-Download
-
----
-
-# TASK 3 — Implement `/code` Interactive Coding Mode
-
-When the user types:
-
-/code write python code to calculate fibonacci
-
-The AI should generate code and display a **code workspace UI**.
-
----
-
-## Code Block UI
-
-Code must appear inside a **code editor container**.
-
-Features:
-
-syntax highlighting
-copy button
-run button
-
-Example UI:
-
-Python Code
-
-```python
-def fibonacci(n):
-    ...
-```
-
-Run Code
-
----
-
-# TASK 4 — Run Code Button
-
-When user clicks **Run Code**:
-
-Send code to backend Python execution API.
-
-Example endpoint:
-
-POST /agent/execute-code
-
-Request:
-
-{
-"code": "print('hello')"
-}
-
-Response:
-
-stdout
-stderr
-execution time
-
----
-
-## Console Output UI
-
-Display result in a console panel.
+Show a simple general message:
 
 Example:
 
-Console Output
-
-hello
+You can start by asking a question or exploring topics below.
 
 ---
 
-# TASK 5 — Editable Code
+# SUGGESTED QUESTIONS
 
-User must be able to edit code before running.
+Below the summary show a section:
 
-Use editable code editor.
+Suggested Questions
 
-Allow direct typing.
+Generate 4–6 clickable query suggestions.
 
----
+Rules:
 
-# TASK 6 — AI Code Editing Box
-
-Under the code editor, add a **small AI instruction input box**.
-
-Purpose:
-
-User can request changes to the code.
+If resources are selected:
+Generate questions based on those resources.
 
 Example:
 
-User writes:
+Explain the main concept in these documents  
+Summarize the key ideas from the materials  
+What are the important topics in these files?  
+Create flashcards from these resources  
 
-add error handling
+If no resources are selected:
 
-Send request to backend:
+Generate general questions such as:
 
-{
-"code": "...current code...",
-"instruction": "add error handling"
-}
-
-Backend returns updated code.
-
-Replace code in editor.
-
----
-
-# TASK 7 — UI Structure
-
-Create components:
-
-components/chat/
-
-AgentExecutionPanel.jsx
-AgentStepCard.jsx
-ArtifactViewer.jsx
-CodeWorkspace.jsx
-ConsoleOutput.jsx
+Explain how neural networks work  
+How does reinforcement learning work?  
+What are the basics of data analysis?  
+How can I build an AI model?
 
 ---
 
-# TASK 8 — Streaming Integration
+# AI GENERATED SUGGESTIONS
 
-Frontend must support new events:
+The suggestions must be **generated dynamically by AI** each time the page loads.
 
-step_start
-code_generated
-tool_result
-artifact
-summary
-token
-done
+Do NOT hardcode them.
 
-Unknown events should not break the UI.
+Use backend endpoint such as:
+
+GET /chat/suggestions
+
+or generate suggestions locally using context.
 
 ---
 
-# TASK 9 — UX Requirements
+# UI DESIGN
 
-Execution steps must be:
+The layout should look like this:
 
-collapsible
-easy to read
-progressive
+---------------------------------
 
-Artifacts must render automatically.
+How can I help you?
 
-Code execution must feel like a **mini IDE**.
+[Resource Summary Card]
+
+Selected Resources Overview  
+Short description about selected materials
+
+Suggested Questions
+
+[ Explain the main concept ]  
+[ Summarize the key ideas ]  
+[ What topics are covered ]  
+[ Generate flashcards ]
+
+---------------------------------
+
+Each suggestion must be clickable.
+
+Clicking a suggestion should insert the text into the chat input and send the message.
+
+---
+
+# IMPLEMENTATION
+
+Modify the empty chat component (ChatPanel or EmptyState).
+
+Detect:
+
+selectedSources from useMaterialStore.
+
+If selectedSources.length > 0:
+
+Show resource summary + resource-based suggestions.
+
+Else:
+
+Show general AI generated questions.
+
+---
+
+# UX REQUIREMENTS
+
+The new UI must be:
+
+clean  
+minimal  
+context-aware  
+dynamic  
+
+It should feel similar to ChatGPT / Claude starting screen.
 
 ---
 
 # OUTPUT
 
+Remove the old command cards UI.
+
 Implement:
 
-Agent execution step UI
-Collapsible step cards
-Artifact rendering system
-Interactive code editor UI
-Run code functionality
-Console output panel
-AI code editing input
-
-Ensure everything integrates with the existing chat streaming system.
-
-```
-
----
-
-# What This Prompt Will Build
-
-Your platform will now support:
-
-### `/agent`
-
-Execution UI like:
-
-```
-
-Agent Execution
-
-▶ Step 1 Planning
-▶ Step 2 Generate Code
-▶ Step 3 Run Tool
-▶ Step 4 Output
-
-```
-
-Click → expand to see details.
-
----
-
-### Agent Generated Image
-
-Example:
-
-```
-
-Generated Chart
-[Image Preview]
-
-```
-
----
-
-### Generated File
-
-Example:
-
-```
-
-Generated File
-sales_analysis.csv
-[Download]
-
-```
-
----
-
-### `/code`
-
-Interactive coding workspace:
-
-```
-
-## Python Code Editor
-
-def fibonacci(n):
-...
-
-[Run Code]
-
-## Console
-
-...
-
-```
-
----
-
-### AI Code Modification
-
-```
-
-Modify Code With AI:
-[ add error handling ]
-
-[Apply]
-
-```
-
----
-
-# Result
-
-Your platform will start behaving like a **real agentic AI development workspace**, similar to:
-
-- Cursor
-- OpenAI Code Interpreter
-- Perplexity Labs
-- Claude Artifacts
-
----
-
-If you want, I can also give you **one more advanced prompt** that upgrades your `/agent` system into a **full visual agent timeline UI (like OpenAI’s internal tools)** which is much more powerful for debugging and execution tracking.
-```
+Resource summary panel  
+Dynamic suggested queries  
+Clickable suggestion buttons  
+Integration with selected sources state

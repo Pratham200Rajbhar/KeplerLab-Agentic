@@ -6,7 +6,7 @@ import socket
 from urllib.parse import urlparse, quote
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from typing import Optional
 import logging
@@ -116,8 +116,9 @@ def _detect_file_type(url: str) -> dict:
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
-@router.get("/proxy")
+@router.api_route("/proxy", methods=["GET", "HEAD"])
 async def proxy_webpage(
+    request: Request,
     url: str = Query(..., description="URL to proxy"),
     current_user=Depends(get_current_user),
 ):
@@ -146,6 +147,9 @@ async def proxy_webpage(
                 name_lower = name.lower()
                 if name_lower not in RESTRICTED_HEADERS and name_lower not in {"content-encoding", "transfer-encoding"}:
                     proxy_headers[name] = value
+
+            if request.method == "HEAD":
+                return Response(status_code=response.status_code, media_type=content_type, headers=proxy_headers)
 
             return Response(content=response.content, status_code=response.status_code, media_type=content_type, headers=proxy_headers)
 
@@ -187,8 +191,9 @@ async def file_viewer_info(
     return JSONResponse(content=result)
 
 
-@router.get("/file-viewer/proxy")
+@router.api_route("/file-viewer/proxy", methods=["GET", "HEAD"])
 async def file_viewer_proxy(
+    request: Request,
     url: str = Query(..., description="Public HTTPS PDF/text URL"),
     current_user=Depends(get_current_user),
 ):
@@ -224,6 +229,16 @@ async def file_viewer_proxy(
 
             filename_safe = re.sub(r"[^\w.\-]", "_", meta["filename"])
 
+            if request.method == "HEAD":
+                return Response(
+                    status_code=200,
+                    media_type=content_type,
+                    headers={
+                        "Content-Disposition": f'inline; filename="{filename_safe}"',
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                )
+
             return Response(
                 content=response.content,
                 status_code=200,
@@ -231,8 +246,6 @@ async def file_viewer_proxy(
                 headers={
                     # inline = render in browser, not save
                     "Content-Disposition": f'inline; filename="{filename_safe}"',
-                    # Allow the frontend to embed this in an iframe
-                    "X-Frame-Options": "SAMEORIGIN",
                     "Access-Control-Allow-Origin": "*",
                 },
             )

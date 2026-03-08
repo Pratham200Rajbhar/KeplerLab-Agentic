@@ -1,43 +1,189 @@
 'use client';
 
-import { Zap, Globe, Code2, Search } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { BookOpen, Loader2, RefreshCw } from 'lucide-react';
+import { getEmptySuggestions } from '@/lib/api/chat';
+import useAppStore from '@/stores/useAppStore';
 
-const COMMAND_HINTS = [
-  { cmd: '/agent',    icon: Zap,    title: 'Agent Execution',  desc: 'Multi-step reasoning',  color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/15' },
-  { cmd: '/research', icon: Globe,  title: 'Research Mode',    desc: 'Deep web research',      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/15' },
-  { cmd: '/code',     icon: Code2,  title: 'Code Execution',   desc: 'Python & data analysis', color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/15' },
-  { cmd: '/web',      icon: Search, title: 'Web Search',       desc: 'Search the internet',    color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/15' },
-];
+export default function EmptyState({ onSend }) {
+  const selectedSources = useAppStore((s) => s.selectedSources);
+  const materials = useAppStore((s) => s.materials);
 
-export default function EmptyState() {
+  const [topics, setTopics] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Only IDs whose material is fully processed
+  const completedSelected = selectedSources.filter((id) => {
+    const mat = materials.find((m) => m.id === id);
+    return mat && mat.status === 'completed';
+  });
+  const hasResources = completedSelected.length > 0;
+
+  // Track the key so we only re-fetch when the selection meaningfully changes
+  const selectionKey = completedSelected.slice().sort().join(',');
+  const prevKeyRef = useRef(null);
+
+  const loadSuggestions = useCallback(async (ids) => {
+    setLoading(true);
+    try {
+      const data = await getEmptySuggestions(ids);
+      setTopics(data?.topics ?? null);
+      setSuggestions(data?.suggestions ?? []);
+    } catch {
+      setTopics(null);
+      setSuggestions(
+        ids.length > 0
+          ? [
+              'Explain the main concept in these documents',
+              'Summarize the key ideas from the materials',
+              'What are the important topics in these files?',
+              'Create flashcards from these resources',
+            ]
+          : [
+              'Explain how neural networks work',
+              'How does reinforcement learning work?',
+              'What are the basics of data analysis?',
+              'How can I build an AI model?',
+            ],
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (prevKeyRef.current === selectionKey) return;
+    prevKeyRef.current = selectionKey;
+    loadSuggestions(hasResources ? completedSelected : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionKey]);
+
+  const handleSuggestionClick = (text) => {
+    onSend?.(text);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 select-none">
-      <div className="max-w-md w-full text-center">
-        <h2 className="text-2xl font-semibold text-text-primary mb-2 tracking-tight">
-          How can I help you?
-        </h2>
-        <p className="text-text-muted text-sm mb-10 leading-relaxed">
-          Ask anything, add sources from the sidebar, or use a slash command for advanced modes.
-        </p>
+    <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 select-none overflow-y-auto">
+      <div className="max-w-lg w-full">
 
-        <div className="grid grid-cols-2 gap-2.5">
-          {COMMAND_HINTS.map(({ cmd, icon: Icon, title, desc, color, bg, border }) => (
-            <div
-              key={cmd}
-              className={`flex items-start gap-3 px-3.5 py-3 rounded-xl border ${border} text-left`}
-              style={{ background: 'var(--surface-raised, rgba(255,255,255,0.03))' }}
-            >
-              <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${bg} mt-0.5`}>
-                <Icon size={15} className={color} />
+        {/* Heading */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-semibold text-text-primary mb-2 tracking-tight">
+            How can I help you?
+          </h2>
+          {!hasResources && (
+            <p className="text-text-muted text-sm leading-relaxed">
+              You can start by asking a question or exploring topics below.
+            </p>
+          )}
+        </div>
+
+        {/* Resource Summary Card — only shown when sources are selected */}
+        {hasResources && (
+          <div
+            className="rounded-xl border p-4 mb-6"
+            style={{
+              background: 'var(--surface-raised, rgba(255,255,255,0.04))',
+              borderColor: 'rgba(255,255,255,0.07)',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                style={{ background: 'var(--accent-subtle)' }}
+              >
+                <BookOpen size={13} className="text-accent" />
               </div>
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-text-primary leading-snug">{title}</div>
-                <div className="text-xs text-text-muted mt-0.5">{desc}</div>
-                <code className="text-[11px] text-text-muted/60 font-mono mt-1 block">{cmd}</code>
+              <span className="text-sm font-medium text-text-primary">
+                Selected Resources Overview
+              </span>
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                <span className="text-xs text-text-muted">
+                  {completedSelected.length} source{completedSelected.length !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
-          ))}
+
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <Loader2 size={13} className="animate-spin" />
+                <span>Analysing resources…</span>
+              </div>
+            ) : topics && topics.length > 0 ? (
+              <div>
+                <p className="text-xs text-text-muted mb-2">These documents appear to cover:</p>
+                <ul className="space-y-1">
+                  {topics.map((topic, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-text-secondary">
+                      <span className="w-1 h-1 rounded-full bg-accent shrink-0" />
+                      {topic}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">
+                {completedSelected.length > 1
+                  ? `${completedSelected.length} sources ready to explore.`
+                  : `Ready to explore ${
+                      materials.find((m) => m.id === completedSelected[0])?.filename ||
+                      'your source'
+                    }.`}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Suggested Questions */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+              Suggested Questions
+            </p>
+            {!loading && (
+              <button
+                onClick={() => loadSuggestions(hasResources ? completedSelected : [])}
+                className="text-xs text-text-muted hover:text-text-secondary transition-colors flex items-center gap-1"
+                title="Refresh suggestions"
+              >
+                <RefreshCw size={11} />
+                Refresh
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-text-muted">
+              <Loader2 size={13} className="animate-spin" />
+              <span>Generating suggestions…</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSuggestionClick(s)}
+                  className="text-left px-4 py-2.5 rounded-lg border text-sm text-text-secondary hover:text-text-primary hover:bg-accent/5 transition-all"
+                  style={{
+                    background: 'var(--surface-raised, rgba(255,255,255,0.03))',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(var(--color-accent-rgb, 99,102,241),0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );

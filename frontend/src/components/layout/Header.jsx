@@ -53,7 +53,7 @@ export default function Header({ user, onBack }) {
   const userInitial = user?.username?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U';
 
   return (
-    <header className="h-[52px] flex items-center justify-between px-4 shrink-0 relative z-40" style={{ background: 'var(--surface-raised)', borderBottom: '1px solid rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)' }}>
+    <header className="h-[52px] flex items-center justify-between px-4 shrink-0 relative z-40 bg-surface/80 backdrop-blur-xl">
       {/* Left */}
       <div className="flex items-center gap-3">
         {onBack && (
@@ -69,7 +69,7 @@ export default function Header({ user, onBack }) {
           <span className="text-sm font-bold text-text-primary tracking-tight">KeplerLab</span>
         </div>
 
-        <div className="w-px h-4 bg-border ml-0.5" />
+        <div className="w-px h-4 bg-text-muted/10 ml-0.5" />
 
         <div className="flex items-center gap-1.5">
           <BookOpen className="w-3.5 h-3.5 text-text-muted" />
@@ -106,10 +106,9 @@ export default function Header({ user, onBack }) {
 
           {showMenu && (
             <div
-              className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden animate-scale-in z-50"
-              style={{ background: 'var(--surface-raised)', border: '1px solid var(--border-strong)', boxShadow: 'var(--shadow-glass)' }}
+              className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden animate-scale-in z-50 bg-surface shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
             >
-              <div className="px-4 py-3.5 border-b border-border" style={{ background: 'var(--surface-overlay)' }}>
+              <div className="px-4 py-3.5 bg-surface-raised/50 backdrop-blur-md">
                 <p className="text-sm font-semibold text-text-primary mb-0.5">{user?.username || 'User'}</p>
                 <p className="text-[11px] text-text-muted truncate">{user?.email || 'user@example.com'}</p>
               </div>

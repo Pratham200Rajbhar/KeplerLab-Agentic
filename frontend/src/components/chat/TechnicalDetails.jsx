@@ -39,7 +39,7 @@ function TechnicalDetails({ code, logs = [], toolOutputs = [], defaultOpen = fal
 
       {/* Content */}
       {isOpen && (
-        <div className="mt-3 space-y-4 rounded-lg border border-border/30 overflow-hidden">
+        <div className="mt-3 space-y-4 rounded-lg overflow-hidden shadow-sm">
           {/* Generated code */}
           {code && code.code && (
             <CodeSection code={code.code} language={code.language} />
@@ -86,7 +86,7 @@ function CodeSection({ code, language = 'python' }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between px-3 py-2 bg-surface-raised/50 border-b border-border/20">
+      <div className="flex items-center justify-between px-3 py-2 bg-surface-raised/50">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5 text-text-muted" />
           <span className="text-xs text-text-muted uppercase tracking-wider">{language}</span>
@@ -111,7 +111,7 @@ function CodeSection({ code, language = 'python' }) {
 function ToolOutputsSection({ outputs }) {
   return (
     <div>
-      <div className="flex items-center gap-2 px-3 py-2 bg-surface-raised/50 border-b border-border/20">
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface-raised/50">
         <Wrench className="w-3.5 h-3.5 text-text-muted" />
         <span className="text-xs text-text-muted">Tool Outputs</span>
       </div>

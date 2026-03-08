@@ -41,6 +41,8 @@ class AgentExecuteRequest(BaseModel):
 
 class ExecuteCodeRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=100000)
+    language: str = Field(default="python", description="Target language")
+    stdin: Optional[str] = Field(default=None, description="Program stdin input")
     notebook_id: str
     session_id: Optional[str] = None
     timeout: int = Field(default=30, ge=5, le=120)
@@ -48,7 +50,8 @@ class ExecuteCodeRequest(BaseModel):
 
 class RunGeneratedCodeRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=100000)
-    language: str = "python"
+    language: str = Field(default="python", description="Target language")
+    stdin: Optional[str] = Field(default=None, description="Program stdin input")
     notebook_id: str
     session_id: Optional[str] = None
     timeout: int = Field(default=30, ge=5, le=120)
@@ -153,6 +156,7 @@ async def execute_code(
             # Step 3: Execute
             result = await run_in_sandbox(
                 code, work_dir=work_dir, timeout=request.timeout,
+                language=request.language, stdin=request.stdin,
             )
 
             # Step 4: Handle ImportError
@@ -174,6 +178,7 @@ async def execute_code(
                             # Retry
                             result = await run_in_sandbox(
                                 code, work_dir=work_dir, timeout=request.timeout,
+                                language=request.language, stdin=request.stdin,
                             )
                         except Exception as ie:
                             yield _sse_event("install_progress", {
@@ -233,12 +238,16 @@ async def execute_code(
 
                 yield _sse_event("execution_done", {
                     "exit_code": 0,
+                    "stdout": result.stdout or "",
+                    "stderr": result.stderr or "",
                     "summary": f"Code executed successfully. {len(artifacts)} file(s) produced.",
                     "elapsed": result.elapsed_seconds,
                 })
             else:
                 yield _sse_event("execution_done", {
                     "exit_code": result.exit_code,
+                    "stdout": result.stdout or "",
+                    "stderr": result.stderr or result.error or "Execution failed",
                     "summary": result.error or result.stderr or "Execution failed",
                     "elapsed": result.elapsed_seconds,
                 })
@@ -276,9 +285,11 @@ async def run_generated_code(
     current_user=Depends(get_current_user),
 ):
     """Execute user-edited generated code. Returns SSE stream."""
-    # Delegate to execute-code with same logic
+    # Delegate to execute-code with same logic, forwarding language + stdin
     exec_req = ExecuteCodeRequest(
         code=request.code,
+        language=request.language,
+        stdin=request.stdin,
         notebook_id=request.notebook_id,
         session_id=request.session_id,
         timeout=request.timeout,
@@ -494,9 +505,11 @@ def _sse_event(event: str, data: dict) -> str:
 
 
 async def _register_code_artifact(art, current_user, request):
-    """Register a code-produced artifact."""
+    """Copy a code-produced artifact to permanent storage and register it."""
     import os
+    import shutil
     import secrets
+    import uuid
     from datetime import datetime, timedelta, timezone
     from app.services.agent.tools import classify_artifact
 
@@ -509,7 +522,6 @@ async def _register_code_artifact(art, current_user, request):
     display_type = art.get("display_type", classify_artifact(filename, mime))
     size = art.get("size", os.path.getsize(fpath))
 
-    # Derive a meaningful category so the frontend gallery can group correctly.
     _DISPLAY_TYPE_CATEGORY = {
         "image":        "charts",
         "csv_table":    "datasets",
@@ -522,12 +534,23 @@ async def _register_code_artifact(art, current_user, request):
     ext = os.path.splitext(filename)[1].lower()
     category = "models" if ext in _MODEL_EXTS else _DISPLAY_TYPE_CATEGORY.get(display_type, "files")
 
-    token = secrets.token_urlsafe(48)
-    expiry = datetime.now(timezone.utc) + timedelta(hours=settings.ARTIFACT_TOKEN_EXPIRY_HOURS)
+    # Pre-generate stable UUID and copy to permanent storage
+    artifact_id = str(uuid.uuid4())
+    artifacts_dir = os.path.abspath(settings.ARTIFACTS_DIR)
+    os.makedirs(artifacts_dir, exist_ok=True)
+    permanent_path = os.path.join(artifacts_dir, f"{artifact_id}{ext}")
+    try:
+        shutil.copy2(fpath, permanent_path)
+    except Exception as copy_err:
+        logger.error("Failed to copy code artifact to permanent storage: %s", copy_err)
+        return None
 
+    token = secrets.token_urlsafe(48)
+    expiry = datetime.now(timezone.utc) + timedelta(days=36500)  # 100 years
     try:
         record = await prisma.artifact.create(
             data={
+                "id": artifact_id,
                 "userId": str(current_user.id),
                 "notebookId": request.notebook_id,
                 "sessionId": request.session_id,
@@ -537,7 +560,7 @@ async def _register_code_artifact(art, current_user, request):
                 "sizeBytes": size,
                 "downloadToken": token,
                 "tokenExpiry": expiry,
-                "workspacePath": fpath,
+                "workspacePath": permanent_path,
             }
         )
         return {
@@ -546,9 +569,13 @@ async def _register_code_artifact(art, current_user, request):
             "mime": mime,
             "category": category,
             "display_type": display_type,
-            "url": f"/agent/file/{record.id}?token={token}",
+            "url": f"/api/artifacts/{record.id}",
             "size": size,
         }
     except Exception as e:
-        logger.error("Failed to register artifact: %s", e)
+        logger.error("Failed to register code artifact: %s", e)
+        try:
+            os.remove(permanent_path)
+        except OSError:
+            pass
         return None

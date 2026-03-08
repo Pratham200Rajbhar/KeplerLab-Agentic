@@ -217,3 +217,94 @@ Rules for suggestions:
     except Exception as exc:
         logger.error("get_suggestions failed: %s", exc)
         return []
+
+
+# ── Empty state suggestions ───────────────────────────────────
+
+_GENERAL_SUGGESTIONS = [
+    "Explain how neural networks work",
+    "How does reinforcement learning work?",
+    "What are the basics of data analysis?",
+    "How can I build an AI model?",
+    "What is the difference between supervised and unsupervised learning?",
+]
+
+_FALLBACK_RESOURCE_SUGGESTIONS = [
+    "Explain the main concept in these documents",
+    "Summarize the key ideas from the materials",
+    "What are the important topics in these files?",
+    "Create flashcards from these resources",
+    "Generate a quiz based on these materials",
+    "What questions would an exam ask about these documents?",
+]
+
+
+async def get_empty_state_suggestions(
+    material_ids: List[str], user_id: str
+) -> Dict[str, Any]:
+    """Generate topics and question suggestions for the empty chat state.
+
+    If material_ids is empty, returns general AI suggestions.
+    Otherwise, analyses the selected material titles and returns:
+    - topics: 3-5 key topic areas
+    - suggestions: 4-6 clickable question prompts
+    """
+    from app.services.llm_service.structured_invoker import parse_json_robust
+    from app.db.prisma_client import prisma
+
+    if not material_ids:
+        return {"topics": None, "suggestions": _GENERAL_SUGGESTIONS}
+
+    materials = await prisma.material.find_many(
+        where={"id": {"in": material_ids}, "userId": user_id},
+    )
+    if not materials:
+        return {"topics": None, "suggestions": _GENERAL_SUGGESTIONS}
+
+    material_titles = [m.title or m.filename for m in materials]
+    materials_context = "\n".join(f"- {t}" for t in material_titles)
+
+    prompt = f"""You are an assistant helping users explore their uploaded study materials.
+
+The user has selected the following materials:
+{materials_context}
+
+Your task: Analyze the material titles and generate:
+1. 3-5 concise key topic areas these materials appear to cover (brief phrases, 2-5 words each).
+2. 4-6 specific, actionable question suggestions the user might ask about these materials.
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "topics": ["topic 1", "topic 2", "topic 3"],
+  "suggestions": [
+    "Explain the main concept in these documents",
+    "Summarize the key ideas from the materials",
+    "What are the important topics in these files?",
+    "Create flashcards from these resources"
+  ]
+}}
+
+Rules:
+- Topics must be concise (2-5 words each).
+- Suggestions must be actionable questions or tasks relevant to the materials.
+- Do NOT include markdown code blocks or any text outside the JSON object.
+"""
+
+    try:
+        llm = get_llm_structured()
+        response = await llm.ainvoke(prompt)
+        text = getattr(response, "content", str(response)).strip()
+        parsed = parse_json_robust(text)
+        if not isinstance(parsed, dict):
+            raise ValueError("LLM returned non-dict response")
+
+        topics = [t for t in parsed.get("topics", []) if isinstance(t, str)][:5]
+        suggestions = [s for s in parsed.get("suggestions", []) if isinstance(s, str)][:6]
+
+        if not suggestions:
+            raise ValueError("Empty suggestions from LLM")
+
+        return {"topics": topics or None, "suggestions": suggestions}
+    except Exception as exc:
+        logger.error("get_empty_state_suggestions failed: %s", exc)
+        return {"topics": None, "suggestions": _FALLBACK_RESOURCE_SUGGESTIONS}

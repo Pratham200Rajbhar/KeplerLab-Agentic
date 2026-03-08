@@ -6,22 +6,22 @@ import useAutoScroll from '@/hooks/useAutoScroll';
 
 /**
  * MessageList — renders all messages with auto-scroll.
- *
- * Shows TypingIndicator only when the assistant message is truly empty
- * (no content AND no agentSteps yet).
+ * Passes notebookId + sessionId to MessageItem for CodeWorkspace.
  */
-export default function MessageList({ messages, isStreaming, error, onRetry }) {
+export default function MessageList({ messages, isStreaming, error, onRetry, notebookId, sessionId }) {
   const lastMessage = messages[messages.length - 1];
   const showTyping =
     isStreaming &&
     lastMessage?.role === 'assistant' &&
     !lastMessage.content &&
-    !lastMessage.agentSteps?.length;
+    !lastMessage.agentSteps?.length &&
+    !lastMessage.codeBlocks?.length;
 
   const { containerRef, scrollToBottom, isAtBottom } = useAutoScroll([
     messages.length,
     lastMessage?.content?.length,
     lastMessage?.agentSteps?.length,
+    lastMessage?.codeBlocks?.length,
     isStreaming,
   ]);
 
@@ -38,6 +38,8 @@ export default function MessageList({ messages, isStreaming, error, onRetry }) {
               message={msg}
               isStreaming={isLastAssistant && isStreaming}
               onRetry={!isStreaming && msg.role === 'assistant' ? onRetry : undefined}
+              notebookId={notebookId}
+              sessionId={sessionId}
             />
           );
         })}

@@ -203,9 +203,10 @@ export default function UploadDialog({
       aria-label="Upload sources"
       ref={dialogRef}
     >
-      <div className="relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in bg-surface-raised border border-border shadow-glass max-h-[88vh]">
+      <div className="relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in bg-surface-raised shadow-[0_25px_80px_rgba(0,0,0,0.5)] max-h-[88vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 bg-surface-overlay/30">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-accent-subtle">
               <CloudUpload className="w-5 h-5 text-accent-light" />
@@ -248,8 +249,8 @@ export default function UploadDialog({
           {activeTab === 'files' && (
             <div className="space-y-5">
               <div
-                className={`relative flex flex-col items-center justify-center rounded-2xl px-8 py-12 border border-dashed transition-all duration-200 cursor-pointer ${
-                  dragActive ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30 hover:bg-surface-overlay'
+                className={`relative flex flex-col items-center justify-center rounded-2xl px-8 py-12 transition-all duration-200 cursor-pointer ${
+                  dragActive ? 'bg-accent/5' : 'bg-surface-overlay/20 hover:bg-surface-overlay/50'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -257,7 +258,7 @@ export default function UploadDialog({
                 onDrop={handleDrop}
                 onClick={() => !loading && fileInputRef.current?.click()}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 border ${dragActive ? 'scale-110 bg-accent-subtle border-[var(--accent-border)]' : 'bg-surface-overlay border-border-light'}`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${dragActive ? 'scale-110 bg-accent-subtle' : 'bg-surface-overlay shadow-inner'}`}>
                   <CloudUpload className={`w-7 h-7 ${dragActive ? 'text-accent-light' : 'text-text-muted'}`} />
                 </div>
                 <p className="text-sm font-medium text-text-primary mb-1">
@@ -282,7 +283,7 @@ export default function UploadDialog({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {FORMAT_GROUPS.map(({ icon, label, formats }) => (
-                  <div key={label} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-surface-overlay border border-border-light">
+                  <div key={label} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-surface-overlay shadow-sm">
                     <span className="text-base leading-none mt-0.5">{icon}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-text-secondary">{label}</p>
@@ -324,7 +325,7 @@ export default function UploadDialog({
                   { icon: '📰', title: 'News & Wikis', desc: 'Rich content parsing' },
                   { icon: '🔍', title: 'Auto Detect', desc: 'Smart source recognition' },
                 ].map(({ icon, title, desc }) => (
-                  <div key={title} className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-surface-overlay border border-border-light">
+                  <div key={title} className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-surface-overlay shadow-sm">
                     <span className="text-lg">{icon}</span>
                     <div>
                       <p className="text-xs font-medium text-text-secondary">{title}</p>

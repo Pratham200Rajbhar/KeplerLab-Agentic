@@ -48,6 +48,11 @@ class SuggestionRequest(BaseModel):
     notebook_id: str
 
 
+class EmptyStateSuggestionRequest(BaseModel):
+    material_ids: List[str] = Field(default_factory=list)
+    notebook_id: Optional[str] = None
+
+
 class CreateSessionRequest(BaseModel):
     notebook_id: str
     title: Optional[str] = "New Chat"

@@ -170,7 +170,7 @@ async def run(
         yield sse_meta(meta)
 
         # Persist
-        blocks = await _persist(notebook_id, user_id, session_id, message, answer, meta)
+        blocks, _ = await _persist(notebook_id, user_id, session_id, message, answer, meta)
         if blocks:
             yield sse_blocks(blocks)
 
@@ -207,6 +207,7 @@ async def _handle_agent(message, notebook_id, user_id, session_id, material_ids,
     full_response: List[str] = []
     tools_used: List[str] = []
     steps_count = 0
+    artifact_ids: List[str] = []
 
     try:
         async for event in stream_agent(
@@ -226,6 +227,15 @@ async def _handle_agent(message, notebook_id, user_id, session_id, material_ids,
                                 full_response.append(payload.get("content", ""))
                             except json.JSONDecodeError:
                                 pass
+                elif event.startswith("event: artifact\n"):
+                    for line in event.split("\n"):
+                        if line.startswith("data: "):
+                            try:
+                                payload = json.loads(line[len("data: "):])
+                                if payload.get("id"):
+                                    artifact_ids.append(payload["id"])
+                            except json.JSONDecodeError:
+                                pass
                 elif event.startswith("event: done\n"):
                     for line in event.split("\n"):
                         if line.startswith("data: "):
@@ -239,9 +249,20 @@ async def _handle_agent(message, notebook_id, user_id, session_id, material_ids,
         complete = "".join(full_response)
         if complete:
             meta = {"intent": "AGENT", "tools_used": tools_used, "steps_count": steps_count}
-            blocks = await _persist(notebook_id, user_id, session_id, message, complete, meta)
+            blocks, msg_id = await _persist(notebook_id, user_id, session_id, message, complete, meta)
             if blocks:
                 yield sse_blocks(blocks)
+
+            # Link all session artifacts (registered during execution) to this message
+            if msg_id and artifact_ids:
+                try:
+                    from app.db.prisma_client import prisma
+                    await prisma.artifact.update_many(
+                        where={"id": {"in": artifact_ids}},
+                        data={"messageId": msg_id},
+                    )
+                except Exception as link_err:
+                    logger.warning("Failed to link artifacts to message: %s", link_err)
 
             elapsed = time.time() - start_time
             await message_store.log_agent_execution(user_id, notebook_id, meta, elapsed)
@@ -269,7 +290,7 @@ async def _handle_research(message, notebook_id, user_id, session_id, start_time
             "intent": "WEB_RESEARCH",
             "sources_count": tool_result.metadata.get("sources_count", 0),
         }
-        blocks = await _persist(notebook_id, user_id, session_id, message, tool_result.content, meta)
+        blocks, _ = await _persist(notebook_id, user_id, session_id, message, tool_result.content, meta)
         if blocks:
             yield sse_blocks(blocks)
 
@@ -349,8 +370,8 @@ async def _persist(
     user_message: str,
     assistant_answer: str,
     agent_meta: Dict[str, Any],
-) -> List[Dict[str, Any]]:
-    """Save user + assistant messages and response blocks. Returns blocks."""
+) -> tuple:
+    """Save user + assistant messages and response blocks. Returns (blocks, msg_id)."""
     try:
         # Save user message
         await message_store.save_user_message(notebook_id, user_id, session_id, user_message)
@@ -362,7 +383,7 @@ async def _persist(
 
         # Save response blocks
         blocks = await message_store.save_response_blocks(msg_id, assistant_answer)
-        return blocks
+        return blocks, msg_id
     except Exception as exc:
         logger.error("Persistence failed: %s", exc)
-        return []
+        return [], None

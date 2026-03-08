@@ -3,6 +3,8 @@
 import { memo, useState, useEffect } from 'react';
 import { FileText, AlertCircle } from 'lucide-react';
 
+import DocViewerRenderer from '../viewer/DocViewerRenderer';
+
 /**
  * OutputRenderer — renders ALL agent-produced files inline inside the message bubble.
  *
@@ -110,12 +112,12 @@ function CsvTableRenderer({ url, filename }) {
   return (
     <div>
       <FileLabel filename={filename} />
-      <div className="rounded-lg overflow-hidden border border-border/30" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+      <div className="rounded-lg overflow-hidden bg-surface-overlay/20" style={{ maxHeight: '320px', overflowY: 'auto' }}>
         <table className="w-full text-xs font-mono">
           <thead className="sticky top-0 bg-surface-raised z-10">
             <tr>
               {headers.map((h, i) => (
-                <th key={i} className="text-left px-2.5 py-1.5 text-text-secondary font-medium border-b border-border/30 whitespace-nowrap">
+                <th key={i} className="text-left px-2.5 py-1.5 text-text-secondary font-medium bg-surface-raised/30 whitespace-nowrap">
                   {h.trim()}
                 </th>
               ))}
@@ -192,7 +194,7 @@ function TextPreviewRenderer({ url, filename }) {
     <div>
       <FileLabel filename={filename} />
       <pre
-        className="text-[13px] font-mono px-3 py-2 rounded-lg bg-surface-overlay/60 border border-border/30 overflow-x-auto overflow-y-auto whitespace-pre-wrap text-text-secondary leading-relaxed"
+        className="text-[13px] font-mono px-3 py-2 rounded-lg bg-surface-overlay/60 overflow-x-auto overflow-y-auto whitespace-pre-wrap text-text-secondary leading-relaxed shadow-sm"
         style={{ maxHeight: '400px' }}
       >
         {text}
@@ -209,7 +211,7 @@ function HtmlPreviewRenderer({ url, filename }) {
       <iframe
         src={url}
         sandbox="allow-scripts allow-same-origin"
-        className="w-full rounded border border-border/30"
+        className="w-full rounded-lg bg-white/5"
         style={{ height: '480px', border: 'none' }}
         title={filename}
       />
@@ -217,17 +219,14 @@ function HtmlPreviewRenderer({ url, filename }) {
   );
 }
 
-/* ── PDF Embed Renderer ── */
-function PdfEmbedRenderer({ url, filename }) {
+/* ── Document Embed Renderer ── */
+function DocEmbedRenderer({ url, filename }) {
   return (
     <div>
       <FileLabel filename={filename} />
-      <iframe
-        src={url}
-        className="w-full rounded border border-border/30"
-        style={{ height: '520px' }}
-        title={filename}
-      />
+      <div className="w-full rounded-lg shadow-md overflow-hidden bg-surface" style={{ height: '520px' }}>
+        <DocViewerRenderer url={url} filename={filename} />
+      </div>
     </div>
   );
 }
@@ -259,7 +258,7 @@ function VideoPlayerRenderer({ url, filename }) {
 /* ── File Card (generic fallback) ── */
 function FileCardRenderer({ filename, mime, size }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/30 bg-surface-secondary/30">
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-secondary/30 shadow-sm transition-all hover:bg-surface-secondary/50">
       <FileText className="h-5 w-5 text-text-muted shrink-0" />
       <div className="min-w-0">
         <p className="text-xs text-text-secondary font-medium truncate">{filename}</p>
@@ -289,7 +288,8 @@ function OutputRenderer({ artifact }) {
     case 'html_preview':
       return <HtmlPreviewRenderer url={url} filename={filename} />;
     case 'pdf_embed':
-      return <PdfEmbedRenderer url={url} filename={filename} />;
+    case 'doc_embed':
+      return <DocEmbedRenderer url={url} filename={filename} />;
     case 'audio_player':
       return <AudioPlayerRenderer url={url} filename={filename} />;
     case 'video_player':

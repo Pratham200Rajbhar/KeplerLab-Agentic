@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@cyntler/react-doc-viewer": "^1.17.1",
     "@xyflow/react": "^12.10.1",
     "dagre": "^0.8.5",
     "html-to-image": "^1.11.13",

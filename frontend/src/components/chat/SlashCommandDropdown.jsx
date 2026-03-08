@@ -50,8 +50,8 @@ export default memo(function SlashCommandDropdown({ filter, onSelect, onClose, v
 
   return (
     <div className="slash-dropdown absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in">
-      <div className="bg-surface-raised border border-border rounded-xl shadow-elevated overflow-hidden max-h-[320px] overflow-y-auto">
-        <div className="px-3 py-2 border-b border-border/50">
+      <div className="bg-surface-raised rounded-xl shadow-[0_15px_60px_rgba(0,0,0,0.5)] overflow-hidden max-h-[320px] overflow-y-auto">
+        <div className="px-3 py-2 bg-surface-overlay/30">
           <span className="text-xs font-medium text-text-muted">Slash Commands</span>
         </div>
         <div ref={listRef} className="py-1" role="listbox" aria-label="Slash commands" aria-activedescendant={filtered[activeIndex] ? `slash-cmd-${filtered[activeIndex].command}` : undefined}>

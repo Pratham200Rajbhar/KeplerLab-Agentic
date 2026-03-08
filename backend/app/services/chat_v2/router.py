@@ -30,6 +30,7 @@ from app.services.chat_v2.schemas import (
     ChatRequest,
     BlockFollowupRequest,
     SuggestionRequest,
+    EmptyStateSuggestionRequest,
     CreateSessionRequest,
 )
 from app.services.chat_v2.service import (
@@ -41,6 +42,7 @@ from app.services.chat_v2.service import (
     delete_session,
     block_followup_stream,
     get_suggestions,
+    get_empty_state_suggestions,
 )
 from app.services.chat_v2.streaming import SSE_HEADERS
 from app.services.chat_v2 import message_store
@@ -186,6 +188,18 @@ async def suggestions_endpoint(
         request.partial_input, request.notebook_id, str(current_user.id)
     )
     return JSONResponse(content={"suggestions": suggestions})
+
+
+@router.post("/empty-suggestions")
+async def empty_suggestions_endpoint(
+    request: EmptyStateSuggestionRequest,
+    current_user=Depends(get_current_user),
+):
+    """Generate topics and suggested questions for the empty chat state."""
+    result = await get_empty_state_suggestions(
+        request.material_ids, str(current_user.id)
+    )
+    return JSONResponse(content=result)
 
 
 # ── Chat History ──────────────────────────────────────────────

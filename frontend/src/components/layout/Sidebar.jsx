@@ -65,6 +65,7 @@ export default function Sidebar({ onNavigate }) {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [isFileTypeDropdownOpen, setIsFileTypeDropdownOpen] = useState(false);
 
   const loadMaterials = useCallback(async (autoSelect = false) => {
     if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
@@ -104,6 +105,18 @@ export default function Sidebar({ onNavigate }) {
   const handleWsMessage = useCallback((msg) => {
     if (msg.type?.startsWith('podcast_')) {
       handlePodcastWsEvent(msg);
+      return;
+    }
+    if (msg.type === 'notebook_update' && msg.notebook_id) {
+      if (currentNotebook?.id === msg.notebook_id) {
+        setCurrentNotebook({ ...currentNotebook, name: msg.name });
+      }
+      // Dispatch custom event for dashboard/NotebookNav to update its list
+      window.dispatchEvent(
+        new CustomEvent('notebookNameUpdate', {
+          detail: { id: msg.notebook_id, name: msg.name },
+        })
+      );
       return;
     }
     if (msg.type === 'material_update' && msg.material_id) {
@@ -271,88 +284,111 @@ export default function Sidebar({ onNavigate }) {
   return (
     <>
       <aside
-        className="h-full overflow-hidden flex flex-col relative bg-surface text-text-primary"
+        className="h-full overflow-hidden flex flex-col relative bg-surface/60 backdrop-blur-2xl text-text-primary"
         style={{ width: `${width}px`, minWidth: '260px' }}
       >
         {/* Header */}
-        <div className="panel-header px-4">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-2">
-              <span className="text-text-primary font-semibold text-sm tracking-tight">Sources</span>
-              {materials.length > 0 && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
-                  {materials.length}
-                </span>
-              )}
-            </div>
-            <button className="btn-icon-sm" onClick={() => toast.info('Source settings coming soon!')} aria-label="Source settings">
-              <Settings className="w-4 h-4" />
-            </button>
+        <div className="flex items-center justify-between p-5 shrink-0 bg-surface/40">
+          <div className="flex items-center gap-2.5">
+            <span className="text-text-primary font-bold text-[13px] tracking-wide uppercase">Sources</span>
+            {materials.length > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-accent/10 text-accent">
+                {materials.length}
+              </span>
+            )}
           </div>
+          <button className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all" onClick={() => toast.info('Source settings coming soon!')} aria-label="Source settings">
+            <Settings className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Add Source & Search */}
-        <div className="p-4 space-y-5">
+        <div className="p-4 space-y-5 relative z-10">
           <button
-            className="w-full py-2.5 px-4 rounded-xl border border-dashed border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/50 transition-all flex items-center justify-center gap-2 text-sm text-accent font-semibold"
+            className="group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
             onClick={() => setShowUploadDialog(true)}
             disabled={loading.upload}
           >
-            {loading.upload ? <div className="loading-spinner w-4 h-4" /> : <span className="text-base leading-none font-bold">+</span>}
-            Add sources
+            {/* Animated Background Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent-light opacity-90 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-r from-accent-light to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            {loading.upload ? (
+              <div className="loading-spinner w-4 h-4 relative z-10" />
+            ) : (
+              <div className="w-5 h-5 relative z-10 flex border-none bg-white/20 rounded-lg items-center justify-center shrink-0 transform group-hover:scale-110 transition-transform">
+                <span className="text-[15px] font-bold leading-none mb-0.5">+</span>
+              </div>
+            )}
+            <span className="relative z-10 text-[14px] font-semibold tracking-wide">Add sources</span>
           </button>
 
           {/* Search Box */}
-          <div className="p-3 rounded-xl space-y-3 relative overflow-hidden bg-surface-raised">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl pointer-events-none transform translate-x-8 -translate-y-8" />
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-surface focus-within:ring-1 focus-within:ring-accent/20 transition-all relative z-10">
-              <Search className="w-3.5 h-3.5 text-accent" />
+          <div className="p-3.5 rounded-2xl space-y-3.5 relative bg-surface-raised/30 shadow-inner">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transform translate-x-12 -translate-y-12" />
+            
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-surface shadow-sm focus-within:ring-2 focus-within:ring-accent/20 transition-all relative z-10">
+              <Search className="w-4 h-4 text-text-muted" />
               <input
                 type="text"
                 placeholder="Search the web for sources..."
-                className="bg-transparent text-xs w-full outline-none text-text-primary placeholder:text-text-muted"
+                className="bg-transparent text-[13px] w-full outline-none text-text-primary placeholder:text-text-muted"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchSubmit}
               />
             </div>
             <div className="flex items-center justify-between relative z-10">
-              <div className="flex flex-col relative w-[160px]">
-                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                  <FileText className="w-3 h-3 text-text-muted" />
-                </div>
-                <select
-                  value={selectedFileType || ''}
-                  onChange={(e) => setSelectedFileType(e.target.value || null)}
-                  className="block w-full pl-7 pr-6 py-1.5 text-[11.5px] font-medium text-text-secondary bg-surface rounded-lg appearance-none focus:outline-none hover:bg-surface-raised transition-colors cursor-pointer truncate"
+              <div className="relative" style={{ width: '60%' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsFileTypeDropdownOpen(!isFileTypeDropdownOpen)}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 text-[12.5px] font-semibold text-text-secondary bg-surface rounded-xl hover:text-text-primary hover:bg-surface-raised transition-all shadow-sm ring-0 hover:shadow-md"
                 >
-                  {ALL_FILE_TYPES.map((ft) => (
-                    <option key={ft.id} value={ft.id} className="bg-surface text-text-primary">{ft.label}</option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-                  <ChevronDown className="w-3 h-3 text-text-muted" />
-                </div>
+                  <div className="flex items-center gap-2.5 truncate">
+                    <FileText className="w-3.5 h-3.5 text-accent" />
+                    <span className="truncate">{selectedFileType ? ALL_FILE_TYPES.find(f => f.id === selectedFileType)?.label : 'Any file type'}</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform ${isFileTypeDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isFileTypeDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsFileTypeDropdownOpen(false)} />
+                    <div className="absolute top-full left-0 mt-2 w-[240px] max-h-[280px] overflow-y-auto bg-[#1C1C1E] border-none rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] z-50 py-2 custom-scrollbar animate-in fade-in slide-in-from-top-2">
+                       {ALL_FILE_TYPES.map((ft) => (
+                         <button
+                           key={ft.id}
+                           onClick={() => { setSelectedFileType(ft.id); setIsFileTypeDropdownOpen(false); }}
+                           className={`w-full text-left px-4 py-2.5 text-[13px] font-semibold hover:bg-accent/10 transition-colors flex items-center gap-2.5 ${selectedFileType === ft.id ? 'text-accent bg-accent/5' : 'text-text-secondary hover:text-text-primary'}`}
+                         >
+                           {selectedFileType === ft.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                           <span className={selectedFileType === ft.id ? '' : 'ml-6'}>{ft.label}</span>
+                         </button>
+                       ))}
+                    </div>
+                  </>
+                )}
               </div>
               <button
                 onClick={() => handleSearchSubmit({ key: 'Enter' })}
                 disabled={!searchQuery.trim()}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-light text-white shadow-lg shadow-accent-dark/20 transition-all font-semibold text-[12px] disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent transition-all font-bold text-[13px] disabled:opacity-50 disabled:cursor-not-allowed group"
               >
-                <Globe className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" /> Web
+                <Globe className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /> <span className="tracking-wide">Web</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Select All */}
-        <div className="px-4 pt-3 pb-2 flex justify-between items-center">
-          <span className="text-[10.5px] font-semibold text-text-muted uppercase tracking-wider">All Sources</span>
+        <div className="px-5 pt-3 pb-2 flex justify-between items-center relative z-10">
+          <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em]">All Sources</span>
           <button
             onClick={() => selectedSources.length === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
-            className={`flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${selectedSources.length === materials.length && materials.length > 0
-              ? 'bg-transparent border-text-primary text-text-primary'
-              : selectedSources.length > 0 ? 'bg-transparent border-border-strong text-text-muted' : 'border-border bg-transparent hover:border-border-strong'
+            className={`flex items-center justify-center w-4 h-4 rounded-[4px] transition-colors ${selectedSources.length === materials.length && materials.length > 0
+              ? 'bg-accent text-white shadow-sm'
+              : selectedSources.length > 0 ? 'bg-text-muted/20 text-text-muted' : 'bg-surface-raised/50 hover:bg-surface-raised'
               }`}
             title={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all' : 'Select all'}
             aria-label={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all sources' : 'Select all sources'}
@@ -395,11 +431,11 @@ export default function Sidebar({ onNavigate }) {
               </div>
             </div>
           ) : (
-            <div className="h-full p-4">
-              <div className={`dropzone h-full ${dragActive ? 'dropzone-active' : ''}`}>
-                <div className="empty-state-icon"><Upload className="w-8 h-8 text-text-muted" /></div>
-                <p className="empty-state-title">Add sources</p>
-                <p className="empty-state-description mt-1">Upload PDFs, docs, or text files to get started</p>
+            <div className="h-full p-4 flex items-center justify-center">
+              <div className={`dropzone w-full h-full flex flex-col items-center justify-center rounded-3xl transition-all ${dragActive ? 'bg-accent/5' : 'hover:bg-surface-raised/30'}`}>
+                <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mb-5 shadow-sm"><Upload className="w-7 h-7 text-text-muted" strokeWidth={1.5} /></div>
+                <p className="text-[16px] font-bold text-text-primary tracking-tight">Add sources</p>
+                <p className="text-[13.5px] text-text-muted mt-2 text-center max-w-[200px] leading-relaxed font-medium">Upload PDFs, docs, or text files to get started.</p>
               </div>
             </div>
           )}
@@ -420,9 +456,10 @@ export default function Sidebar({ onNavigate }) {
       {/* Text Modal */}
       {showTextModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-backdrop backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowTextModal(false)}>
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative" style={{ border: '1px solid rgba(255,255,255,0.06)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-accent-subtle rounded-full blur-[60px] pointer-events-none" />
-            <div className="p-4 sm:p-5 flex items-center justify-between bg-surface/80 backdrop-blur-xl z-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            {/* Modal Content Header */}
+            <div className="p-4 sm:p-5 flex items-center justify-between bg-surface/80 backdrop-blur-xl z-10 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 rounded-lg bg-accent-subtle text-accent-light">
                   <FileText className="w-5 h-5" />
@@ -453,7 +490,7 @@ export default function Sidebar({ onNavigate }) {
                 </div>
               )}
             </div>
-            <div className="p-4 bg-surface/95 backdrop-blur-xl flex justify-end z-10 rounded-b-2xl" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="p-4 bg-surface/95 backdrop-blur-xl flex justify-end z-10 rounded-b-2xl shrink-0">
               <button onClick={() => setShowTextModal(false)} className="px-5 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close Preview</button>
             </div>
           </div>

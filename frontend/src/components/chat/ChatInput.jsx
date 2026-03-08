@@ -158,7 +158,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
                     <div className="text-sm font-medium text-text-primary leading-snug">{meta.title}</div>
                     <div className="text-xs text-text-muted mt-0.5">{meta.desc}</div>
                   </div>
-                  <kbd className="shrink-0 text-[11px] text-text-muted/50 font-mono px-1.5 py-0.5 rounded bg-black/20 border border-white/8">
+                  <kbd className="shrink-0 text-[11px] text-text-muted/50 font-mono px-1.5 py-0.5 rounded bg-black/40">
                     /{cmd}
                   </kbd>
                 </button>
@@ -172,7 +172,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           <div className="flex items-center gap-2 mb-2 px-1">
             <span
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
-                BADGE_COLORS[activeCommand.intent] || 'bg-surface-overlay text-text-muted border-white/10'
+                BADGE_COLORS[activeCommand.intent] || 'bg-surface-overlay text-text-muted shadow-sm'
               }`}
             >
               {activeCommand.label}

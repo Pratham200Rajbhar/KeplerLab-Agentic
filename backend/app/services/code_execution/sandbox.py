@@ -1,4 +1,6 @@
-"""Sandbox — subprocess-based isolated Python execution.
+"""Sandbox — subprocess-based isolated code execution.
+
+Supports Python, JavaScript, TypeScript, C, C++, Java, Go, Rust, Bash.
 
 Provides:
   - ExecutionResult  dataclass
@@ -8,15 +10,15 @@ Provides:
 from __future__ import annotations
 
 import asyncio
-import base64
 import logging
 import os
-import re
+import shutil
 import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, List, Optional
+from pathlib import Path
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,39 @@ _CHART_MARKER = "__CHART__:"
 
 # Maximum bytes of stdout we'll capture (16 MB)
 _MAX_OUTPUT_BYTES = 16 * 1024 * 1024
+
+# ── Language configuration ────────────────────────────────────
+
+# Maps normalised language name → (file_extension, compile_cmd_template, run_cmd_template)
+# Templates use {script} for source file path and {binary} for compiled output path.
+# None compile_cmd means no compilation step.
+_LANG_CONFIG: Dict[str, Tuple[str, Optional[List[str]], List[str]]] = {
+    "python": (".py", None, [sys.executable, "-u", "{script}"]),
+    "javascript": (".js", None, ["node", "{script}"]),
+    "typescript": (".ts", None, ["npx", "--yes", "ts-node", "{script}"]),
+    "c": (".c", ["gcc", "-O2", "-o", "{binary}", "{script}"], ["{binary}"]),
+    "cpp": (".cpp", ["g++", "-O2", "-o", "{binary}", "{script}"], ["{binary}"]),
+    "java": (".java", ["javac", "{script}"], ["java", "-cp", "{work_dir}", "Main"]),
+    "go": (".go", None, ["go", "run", "{script}"]),
+    "rust": (".rs", ["rustc", "-o", "{binary}", "{script}"], ["{binary}"]),
+    "bash": (".sh", None, ["bash", "{script}"]),
+}
+
+_ALIASES: Dict[str, str] = {
+    "py": "python",
+    "js": "javascript",
+    "ts": "typescript",
+    "c++": "cpp",
+    "golang": "go",
+    "sh": "bash",
+    "shell": "bash",
+}
+
+
+def _normalise_language(language: str) -> str:
+    """Return the canonical language key or 'python' as the safe default."""
+    lang = language.lower().strip()
+    return _ALIASES.get(lang, lang if lang in _LANG_CONFIG else "python")
 
 
 @dataclass
@@ -46,12 +81,17 @@ async def run_in_sandbox(
     work_dir: Optional[str] = None,
     timeout: int = 30,
     on_stdout_line: Optional[Callable[[str], Awaitable[None]]] = None,
+    language: str = "python",
+    stdin: Optional[str] = None,
 ) -> ExecutionResult:
     """Execute *code* in an isolated subprocess.
 
+    Supports multiple languages via ``language`` parameter.
+    Accepts program stdin via ``stdin`` string.
+
     - Creates a temporary working directory if *work_dir* is not given.
     - Streams stdout line-by-line through *on_stdout_line* if provided.
-    - Detects ``__CHART__:<base64>`` marker in stdout and extracts it.
+    - Detects ``__CHART__:<base64>`` marker in stdout (Python only) and extracts it.
     - Enforces *timeout* (seconds); sets ``timed_out=True`` on breach.
 
     Returns an :class:`ExecutionResult` instance.
@@ -62,8 +102,15 @@ async def run_in_sandbox(
     if _owns_work_dir:
         work_dir = tempfile.mkdtemp(prefix="kepler_sandbox_")
 
-    # Write code to a temp script file
-    script_path = os.path.join(work_dir, "_kepler_exec.py")
+    lang = _normalise_language(language)
+    cfg = _LANG_CONFIG[lang]
+    ext, compile_tpl, run_tpl = cfg
+
+    # Java requires the public class to be named exactly "Main" and file "Main.java"
+    script_name = f"Main{ext}" if lang == "java" else f"_kepler_exec{ext}"
+    script_path = os.path.join(work_dir, script_name)
+    binary_path = os.path.join(work_dir, "_kepler_bin")
+
     try:
         with open(script_path, "w", encoding="utf-8") as fh:
             fh.write(code)
@@ -74,9 +121,53 @@ async def run_in_sandbox(
             elapsed_seconds=time.perf_counter() - t0,
         )
 
-    # Build the subprocess command
-    python_exe = sys.executable
-    cmd = [python_exe, "-u", script_path]
+    def _render(tpl: List[str]) -> List[str]:
+        return [
+            part.replace("{script}", script_path)
+                .replace("{binary}", binary_path)
+                .replace("{work_dir}", work_dir)
+            for part in tpl
+        ]
+
+    # ── Compilation step (C, C++, Java, Rust) ────────────────
+    if compile_tpl is not None:
+        compile_cmd = _render(compile_tpl)
+        try:
+            compile_proc = await asyncio.create_subprocess_exec(
+                *compile_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=work_dir,
+            )
+            try:
+                c_stdout, c_stderr = await asyncio.wait_for(
+                    compile_proc.communicate(), timeout=60
+                )
+            except asyncio.TimeoutError:
+                compile_proc.kill()
+                return ExecutionResult(
+                    exit_code=-1,
+                    stderr="Compilation timed out",
+                    elapsed_seconds=time.perf_counter() - t0,
+                )
+            if compile_proc.returncode != 0:
+                return ExecutionResult(
+                    exit_code=compile_proc.returncode,
+                    stderr=c_stderr.decode("utf-8", errors="replace"),
+                    elapsed_seconds=time.perf_counter() - t0,
+                )
+        except FileNotFoundError:
+            return ExecutionResult(
+                exit_code=-1,
+                error=f"Compiler not found for language '{lang}'. Please install it.",
+                elapsed_seconds=time.perf_counter() - t0,
+            )
+
+    # ── Run step ─────────────────────────────────────────────
+    run_cmd = _render(run_tpl)
+
+    stdin_bytes: Optional[bytes] = stdin.encode("utf-8") if stdin else None
+    stdin_pipe = asyncio.subprocess.PIPE if stdin_bytes is not None else asyncio.subprocess.DEVNULL
 
     stdout_lines: List[str] = []
     stderr_lines: List[str] = []
@@ -87,12 +178,19 @@ async def run_in_sandbox(
 
     try:
         proc = await asyncio.create_subprocess_exec(
-            *cmd,
+            *run_cmd,
+            stdin=stdin_pipe,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=work_dir,
             env={**os.environ, "MPLBACKEND": "Agg"},
         )
+
+        # Feed stdin if provided
+        if stdin_bytes is not None:
+            proc.stdin.write(stdin_bytes)
+            await proc.stdin.drain()
+            proc.stdin.close()
 
         async def _read_stream(stream: asyncio.StreamReader, lines_buf: List[str], is_stdout: bool) -> None:
             """Read a stream line-by-line, collect and optionally emit."""
@@ -113,7 +211,6 @@ async def run_in_sandbox(
                 line = raw.decode("utf-8", errors="replace").rstrip("\n")
                 if is_stdout and line.startswith(_CHART_MARKER):
                     chart_b64 = line[len(_CHART_MARKER):].strip()
-                    # Don't add the raw base64 blob to human-readable output
                 else:
                     lines_buf.append(line)
                     if is_stdout and on_stdout_line:
@@ -138,25 +235,26 @@ async def run_in_sandbox(
                 proc.kill()
             except ProcessLookupError:
                 pass
-            # Drain remaining output briefly
             try:
                 await asyncio.wait_for(proc.wait(), timeout=2)
             except asyncio.TimeoutError:
                 pass
             exit_code = -1
 
+    except FileNotFoundError:
+        error_msg = f"Runtime not found for language '{lang}'. Please install it."
+        logger.error("[sandbox] %s", error_msg)
     except Exception as exc:
         error_msg = str(exc)
         logger.error("[sandbox] Subprocess error: %s", exc)
     finally:
-        # Clean up temp script
-        try:
-            os.remove(script_path)
-        except OSError:
-            pass
-        # Remove temp work dir if we created it
+        # Clean up script and compiled binary
+        for p in (script_path, binary_path):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
         if _owns_work_dir:
-            import shutil
             try:
                 shutil.rmtree(work_dir, ignore_errors=True)
             except Exception:
@@ -173,3 +271,4 @@ async def run_in_sandbox(
         chart_base64=chart_b64,
         error=error_msg,
     )
+

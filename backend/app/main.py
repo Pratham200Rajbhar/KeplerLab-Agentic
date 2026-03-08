@@ -55,6 +55,7 @@ from app.routes.proxy import router as proxy_router
 from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
 from app.routes.agent import router as agent_router
+from app.routes.artifacts import router as artifacts_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -122,6 +123,7 @@ async def lifespan(app: FastAPI):
     # 5. Create output directories (use resolved absolute paths from settings)
     for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers"), os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "podcast")]:
         os.makedirs(_dir, exist_ok=True)
+    os.makedirs(settings.ARTIFACTS_DIR, exist_ok=True)
     logger.info("Output directories ensured.")
 
     # 6. Purge expired refresh tokens left over from previous sessions.
@@ -265,6 +267,7 @@ app.include_router(proxy_router)
 app.include_router(explainer_router)
 app.include_router(podcast_live_router)
 app.include_router(agent_router)
+app.include_router(artifacts_router)
 
 # WebSocket channels (no REST replacement — live state push only)
 app.include_router(ws_router)
