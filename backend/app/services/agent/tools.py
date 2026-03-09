@@ -6,7 +6,7 @@ Each tool is an async function:
 Tools available:
   - rag_tool: vector search over user's uploaded materials
   - python_tool: code generation + sandboxed execution
-  - web_search_tool: External search service + page scraping
+  - web_search_tool: DuckDuckGo search + page scraping
   - research_tool: deep iterative research
 """
 
@@ -241,31 +241,18 @@ async def python_tool(
 
 
 async def web_search_tool(inputs: Dict[str, Any], ctx: AgentContext) -> ToolOutput:
-    """Web search via external search service + scraping.
+    """Web search via DuckDuckGo + page scraping.
     
     Input: { query: str }
     Output: { results: [{ title, url, content }] }
     """
-    import httpx
+    from app.core.web_search import ddg_search, fetch_url_content
 
     query = inputs.get("query", ctx.message)
 
     try:
-        # Search via external search service
-        raw_results = []
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            resp = await client.post(
-                f"{settings.SEARCH_SERVICE_URL}/api/search",
-                json={"query": query, "engine": "duckduckgo"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            for r in data.get("organic_results", []):
-                raw_results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("link", ""),
-                    "snippet": r.get("snippet", ""),
-                })
+        # Search via DuckDuckGo
+        raw_results = await ddg_search(query, max_results=5)
 
         if not raw_results:
             return ToolOutput(
@@ -273,26 +260,16 @@ async def web_search_tool(inputs: Dict[str, Any], ctx: AgentContext) -> ToolOutp
                 data={"results": []},
             )
 
-        # Scrape top 3 via external scrape service
+        # Scrape top 3 via trafilatura
         scraped = []
         for r in raw_results[:3]:
             url = r["url"]
             try:
-                async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-                    resp = await client.post(
-                        f"{settings.SEARCH_SERVICE_URL}/api/scrape",
-                        json={"url": url},
-                    )
-                    resp.raise_for_status()
-                    scrape_data = resp.json()
-                    # Scrape API: {"content": {"url", "title", "content": [paragraphs]}}
-                    inner = scrape_data.get("content", scrape_data)
-                    if isinstance(inner, dict):
-                        raw_content = inner.get("content", r["snippet"])
-                        body = (" ".join(raw_content) if isinstance(raw_content, list) else str(raw_content))[:4000]
-                    else:
-                        body = str(inner)[:4000]
-                    scraped.append({"title": r["title"], "url": url, "content": body})
+                fetched = await fetch_url_content(url)
+                if fetched and fetched.get("text"):
+                    scraped.append({"title": r["title"], "url": url, "content": fetched["text"][:4000]})
+                else:
+                    scraped.append({"title": r["title"], "url": url, "content": r["snippet"]})
             except Exception:
                 scraped.append({"title": r["title"], "url": url, "content": r["snippet"]})
 

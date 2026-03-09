@@ -27,6 +27,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import httpx
 
 from app.core.config import settings
+from app.core.web_search import ddg_search, fetch_url_content
 from app.services.llm_service.llm import get_llm
 
 logger = logging.getLogger(__name__)
@@ -48,71 +49,16 @@ def _sse(event_type: str, data: Any) -> str:
 
 
 async def _web_search(query: str, n: int = _SEARCH_RESULTS_PER_SUBQ) -> List[Dict[str, str]]:
-    """Search the web via external search service.
+    """Search the web via DuckDuckGo.
 
     Returns list of {title, url, snippet}.
     """
-    from app.core.config import settings
-
-    try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            resp = await client.post(
-                f"{settings.SEARCH_SERVICE_URL}/api/search",
-                json={"query": query, "engine": "duckduckgo"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            results = []
-            for r in data.get("organic_results", [])[:n]:
-                results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("link", ""),
-                    "snippet": r.get("snippet", ""),
-                })
-            return results
-    except Exception as exc:
-        logger.warning("[research] Web search failed: %s", exc)
-        return []
+    return await ddg_search(query, max_results=n)
 
 
 async def _fetch_url(url: str) -> Optional[Dict[str, str]]:
-    """Fetch a URL via external scrape service. Returns None on failure."""
-    from app.core.config import settings
-    from urllib.parse import urlparse
-
-    try:
-        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT, follow_redirects=True) as client:
-            resp = await client.post(
-                f"{settings.SEARCH_SERVICE_URL}/api/scrape",
-                json={"url": url},
-            )
-            resp.raise_for_status()
-            scrape_data = resp.json()
-
-        # Scrape API returns {"content": {"url", "title", "content": [paragraphs]}}
-        inner = scrape_data.get("content", scrape_data)
-        if isinstance(inner, dict):
-            title = inner.get("title", "")
-            raw_content = inner.get("content", "")
-            if isinstance(raw_content, list):
-                body = " ".join(raw_content)[:6000]
-            else:
-                body = str(raw_content)[:6000]
-        else:
-            title = scrape_data.get("title", "")
-            body = str(inner)[:6000]
-        domain = urlparse(url).netloc
-
-        return {
-            "url": url,
-            "title": title,
-            "domain": domain,
-            "text": body,
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
-        }
-    except Exception as exc:
-        logger.debug("[research] Failed to fetch %s: %s", url, exc)
-        return None
+    """Fetch a URL and extract content via trafilatura. Returns None on failure."""
+    return await fetch_url_content(url)
 
 
 # ── Step 1: Query Decomposer ─────────────────────────────────

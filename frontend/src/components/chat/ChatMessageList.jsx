@@ -204,7 +204,10 @@ function ChatMessageList({
               <Lightbulb className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <WebSearchStrip status={webSearchStatus} />
+              <WebSearchStrip 
+                status={webSearchStatus} 
+                label={webSearchStatus === 'scraping' ? 'Reading articles' : 'Searching the web'} 
+              />
             </div>
           </div>
         </div>

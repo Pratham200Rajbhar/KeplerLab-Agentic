@@ -335,7 +335,14 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
       await readSSEStream(response.body, {
         // ── Common events ──
-        token: (p) => { accumulated += p.content || ''; setStreamingContent(accumulated); },
+        token: (p) => { 
+          accumulated += p.content || ''; 
+          setStreamingContent(accumulated); 
+          // Fail-safe: transition web search to 'done' if we are getting tokens
+          if (webSearchStatus !== 'done' && webSearchStatus !== 'idle') {
+            setWebSearchStatus('done');
+          }
+        },
         step: (p) => {
           // Backend uses 'status' key for the step description text
           const stepLabel = p.label || p.status || p.tool || '';

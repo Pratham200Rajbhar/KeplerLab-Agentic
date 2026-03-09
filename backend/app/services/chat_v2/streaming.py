@@ -81,6 +81,20 @@ def sse_web_sources(sources: List[Dict[str, Any]]) -> str:
     return sse("web_sources", {"sources": sources})
 
 
+def sse_web_search_update(
+    status: str,
+    queries: Optional[List[str]] = None,
+    scraping_urls: Optional[List[Dict[str, str]]] = None,
+) -> str:
+    """Emit a unified web search update event."""
+    data: Dict[str, Any] = {"status": status}
+    if queries is not None:
+        data["queries"] = queries
+    if scraping_urls is not None:
+        data["scrapingUrls"] = scraping_urls
+    return sse("web_search_update", data)
+
+
 # ── SSE response headers ─────────────────────────────────────
 
 SSE_HEADERS = {

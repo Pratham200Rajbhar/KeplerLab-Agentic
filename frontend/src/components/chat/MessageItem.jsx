@@ -5,6 +5,8 @@ import MarkdownRenderer from './MarkdownRenderer';
 import AgentExecutionPanel from './AgentExecutionPanel';
 import CodeWorkspace from './CodeWorkspace';
 import ArtifactViewer from './ArtifactViewer';
+import WebSearchProgressPanel from './WebSearchProgressPanel';
+import ResearchReport from './ResearchReport';
 import { Bot, RotateCcw, Copy, Check } from 'lucide-react';
 
 const INTENT_BADGES = {
@@ -63,14 +65,17 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, n
     message.intentOverride === 'AGENT' ||
     message.agentSteps?.length > 0 ||
     message.agentCodeBlocks?.length > 0;
-  // Code mode: only when a /code code_block was generated AND we are NOT in agent mode.
-  // agent mode uses agentCodeBlocks (never codeBlocks) so this check is safe.
-  const isCodeMode  = !isAgentMode && message.codeBlocks?.length > 0;
+  // Research mode: active when research SSE events have arrived or intent is set.
+  const isResearchMode =
+    message.intentOverride === 'WEB_RESEARCH' ||
+    !!(message.researchState && message.researchState.status !== 'idle');
+  // Code mode: only when a /code code_block was generated AND NOT in agent/research mode.
+  const isCodeMode  = !isAgentMode && !isResearchMode && message.codeBlocks?.length > 0;
   const hasContent  = !!message.content;
-  const hasArtifactsOnly = message.artifacts?.length > 0 && !isAgentMode && !isCodeMode;
+  const hasArtifactsOnly = message.artifacts?.length > 0 && !isAgentMode && !isCodeMode && !isResearchMode;
 
   // When agent is working but no content yet — if agentSteps exist, panel handles display
-  const showTypingFallback = !hasContent && !message.agentSteps?.length && !isCodeMode && !isStreaming;
+  const showTypingFallback = !hasContent && !message.agentSteps?.length && !isCodeMode && !isResearchMode && !isStreaming;
 
   return (
     <div className="group px-4 sm:px-6 py-4">
@@ -89,8 +94,28 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, n
             <AgentExecutionPanel message={message} isStreaming={isStreaming} />
           )}
 
-          {/* Markdown response body */}
-          {hasContent && (
+          {/* Deep research — minimal loading indicator + collapsible panel + source bubbles */}
+          {isResearchMode && (
+            <ResearchReport
+              sources={message.researchState?.sources || []}
+              streamingContent={message.content}
+              citations={message.citations || []}
+              isDone={!isStreaming}
+              isStreaming={isStreaming}
+            />
+          )}
+
+          {/* Web search progress panel (live during streaming; collapses to sources when done) */}
+          {message.webSearchState && (
+            <WebSearchProgressPanel
+              webSearchState={message.webSearchState}
+              sources={message.webSources || []}
+              isStreaming={isStreaming}
+            />
+          )}
+
+          {/* Markdown response body — hidden in research mode (ResearchReport renders content) */}
+          {hasContent && !isResearchMode && (
             <div className="text-sm text-text-primary leading-relaxed prose-chat">
               <MarkdownRenderer content={message.content} />
               {isStreaming && !isCodeMode && (

@@ -89,7 +89,7 @@ prisma==0.15.0
 
 soundfile
 
-# duckduckgo-search removed — using external search service (SEARCH_SERVICE_URL)
+ddgs>=9.0.0
 
 pytest>=7.0
 pytest-asyncio>=0.21

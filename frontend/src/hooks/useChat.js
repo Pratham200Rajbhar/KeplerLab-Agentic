@@ -121,12 +121,13 @@ export default function useChat({ notebookId, materialIds = [] }) {
             done: (data) => {
               // Propagate the backend intent to the assistant message so
               // MessageItem can reliably distinguish agent vs code mode.
-              if (data?.intent) {
-                useChatStore.getState().updateLastMessage((prev) => ({
-                  ...prev,
-                  intentOverride: data.intent,
-                }));
-              }
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                ...(data?.intent ? { intentOverride: data.intent } : {}),
+                ...(prev.webSearchState
+                  ? { webSearchState: { ...prev.webSearchState, status: 'done' } }
+                  : {}),
+              }));
               setStreaming(false);
             },
             error: (data) => {
@@ -224,7 +225,86 @@ export default function useChat({ notebookId, materialIds = [] }) {
             validation: () => {},
             intent: () => {},
             dataset_profile: () => {},
-            web_sources: () => {},
+            web_search_update: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                webSearchState: {
+                  status: data.status || 'searching',
+                  queries: data.queries || prev.webSearchState?.queries || [],
+                  scrapingUrls: data.scrapingUrls || prev.webSearchState?.scrapingUrls || [],
+                },
+              }));
+            },
+            web_sources: (data) => {
+              if (!data?.sources) return;
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                webSources: data.sources,
+                webSearchState: prev.webSearchState ? { ...prev.webSearchState, status: 'done' } : undefined,
+              }));
+            },
+            // ── Deep research progress events ──────────────────
+            research_start: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                researchState: {
+                  status: 'researching',
+                  query: data.query || '',
+                  maxIterations: data.max_iterations || 3,
+                  targetSources: data.target_sources || 80,
+                  iteration: 0,
+                  phase: 'searching',
+                  phaseNum: 1,
+                  phaseLabel: 'Starting deep research…',
+                  queries: [],
+                  sources: [],
+                },
+              }));
+            },
+            research_phase: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => {
+                const existing = prev.researchState || {};
+                const newQueries = data.queries
+                  ? [...new Set([...(existing.queries || []), ...data.queries])]
+                  : existing.queries || [];
+                return {
+                  ...prev,
+                  researchState: {
+                    ...existing,
+                    status: data.phase === 'writing' ? 'synthesizing' : 'researching',
+                    iteration: data.iteration ?? existing.iteration ?? 0,
+                    phase: data.phase || existing.phase,
+                    phaseNum: data.phase_num || existing.phaseNum || 1,
+                    phaseLabel: data.label || '',
+                    queries: newQueries,
+                    sourcesFetched: data.sources_fetched ?? existing.sourcesFetched,
+                    totalQueued: data.total_queued ?? existing.totalQueued,
+                  },
+                };
+              });
+            },
+            research_source: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => {
+                const existing = prev.researchState || {};
+                return {
+                  ...prev,
+                  researchState: {
+                    ...existing,
+                    sources: [...(existing.sources || []), data],
+                  },
+                };
+              });
+            },
+            citations: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                citations: data.citations || [],
+                researchState: {
+                  ...(prev.researchState || {}),
+                  status: 'done',
+                },
+              }));
+            },
             meta: () => {},
             blocks: () => {},
           },

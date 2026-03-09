@@ -1,25 +1,16 @@
-"""Web search tool — Multi-query web search + scrape + LLM synthesis.
-
-Queries an external search service, scrapes top results, scores them,
-and returns synthesised context with inline citations.
-"""
-
-from __future__ import annotations
-
 import json
 import logging
+import asyncio
 from typing import Any, AsyncIterator, Dict, List
 from urllib.parse import urlparse
-
-import httpx
 
 from app.core.config import settings
 from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import (
     sse_tool_start,
     sse_tool_result,
-    sse,
     sse_web_sources,
+    sse_web_search_update,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,135 +20,145 @@ async def execute(
     query: str,
     user_id: str,
 ) -> AsyncIterator[str | ToolResult]:
-    """Run multi-query web search, scrape, and return context.
+    """Clean, robust multi-query web search + scrape + synthesis.
 
     Yields:
-        SSE events for streaming progress (tool_start, web_start, web_scraping, web_sources, tool_result).
-        Final yield is always a ToolResult.
+        SSE events for streaming progress.
+        Final ToolResult.
     """
     yield sse_tool_start("web_search", label="Searching the web…")
+    
+    # State tracking for unified updates
+    search_state = {
+        "status": "searching",
+        "queries": [],
+        "scraping_urls": []
+    }
 
     try:
-        # Step 1: Generate search queries via LLM
+        # 1. Query Generation
         from app.services.llm_service.llm import get_llm
-
-        llm_planner = get_llm(temperature=0.1)
-        query_prompt = (
-            f"Generate 1-3 optimized web search queries to answer this question. "
-            f"Return ONLY a JSON array of strings, nothing else.\n\n"
-            f"Question: {query}\n\nQueries:"
-        )
-        query_response = await llm_planner.ainvoke(query_prompt)
-        query_text = getattr(query_response, "content", str(query_response)).strip()
-
-        queries = [query]  # fallback
+        llm = get_llm(temperature=0)
+        
+        prompt = (
+            "Generate 2-3 short, distinct web search queries to find the most up-to-date information "
+            "to answer: {query}\n"
+            "Return ONLY a JSON list of strings."
+        ).format(query=query)
+        
         try:
-            parsed = json.loads(query_text.strip().strip("```json").strip("```"))
-            if isinstance(parsed, list) and len(parsed) > 0:
-                queries = [str(q) for q in parsed[:3]]
-        except Exception:
-            pass
+            resp = await llm.ainvoke(prompt)
+            content = getattr(resp, "content", str(resp)).strip()
+            # Basic JSON extraction
+            if "```" in content:
+                content = content.split("```")[1].strip()
+                if content.startswith("json"):
+                    content = content[4:].strip()
+            
+            queries = json.loads(content)
+            if not isinstance(queries, list):
+                queries = [query]
+        except Exception as e:
+            logger.warning("LLM query gen failed: %s", e)
+            queries = [query]
 
-        yield sse("web_start", {"queries": queries})
+        search_state["queries"] = queries
+        yield sse_web_search_update(**search_state)
 
-        # Step 2: Search via external service
-        all_results: List[Dict[str, Any]] = []
-        seen_urls: set = set()
+        # 2. Search (DuckDuckGo)
+        from app.core.web_search import ddg_search, fetch_url_content
+        
+        all_results = []
+        seen_urls = set()
 
         for q in queries:
             try:
-                async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-                    resp = await client.post(
-                        f"{settings.SEARCH_SERVICE_URL}/api/search",
-                        json={"query": q, "engine": "duckduckgo"},
-                    )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    for r in data.get("organic_results", []):
-                        url = r.get("link", "")
-                        if url and url not in seen_urls:
-                            seen_urls.add(url)
-                            all_results.append({
-                                "title": r.get("title", ""),
-                                "url": url,
-                                "snippet": r.get("snippet", ""),
-                            })
-            except Exception:
-                pass
+                hits = await ddg_search(q, max_results=5)
+                for h in hits:
+                    url = h.get("url")
+                    if url and url not in seen_urls:
+                        seen_urls.add(url)
+                        all_results.append({
+                            "title": h.get("title", ""),
+                            "url": url,
+                            "snippet": h.get("snippet", ""),
+                        })
+            except Exception as e:
+                logger.error("DDG search error for %s: %s", q, e)
 
-        # Step 3: Scrape top 5
-        scraped: List[Dict[str, Any]] = []
-        for r in all_results[:5]:
-            url = r["url"]
-            yield sse("web_scraping", {"url": url, "status": "fetching"})
+        if not all_results:
+            raise Exception("No search results found.")
+
+        # 3. Scraping
+        search_state["status"] = "reading"
+        # Initialize scraping status for top 5
+        to_scrape = all_results[:5]
+        search_state["scraping_urls"] = [{"url": r["url"], "status": "fetching"} for r in to_scrape]
+        yield sse_web_search_update(**search_state)
+
+        scraped_data = []
+
+        async def scrape_one(index, item):
+            url = item["url"]
             try:
-                async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-                    resp = await client.post(
-                        f"{settings.SEARCH_SERVICE_URL}/api/scrape",
-                        json={"url": url},
-                    )
-                    resp.raise_for_status()
-                    scrape_data = resp.json()
-                    inner = scrape_data.get("content", scrape_data)
-                    if isinstance(inner, dict):
-                        title = inner.get("title", r["title"])
-                        raw_content = inner.get("content", r["snippet"])
-                        body = (" ".join(raw_content) if isinstance(raw_content, list) else str(raw_content))[:4000]
-                    else:
-                        title = r["title"]
-                        body = str(inner)[:4000]
-                    domain = urlparse(url).netloc
-
-                    yield sse("web_scraping", {"url": url, "status": "done"})
-                    scraped.append({
-                        "title": title, "url": url, "domain": domain,
-                        "content": body, "snippet": r["snippet"],
+                fetched = await fetch_url_content(url)
+                if fetched and fetched.get("text"):
+                    search_state["scraping_urls"][index]["status"] = "done"
+                    scraped_data.append({
+                        "title": fetched.get("title") or item["title"],
+                        "url": url,
+                        "content": fetched["text"][:4000],
+                        "snippet": item["snippet"]
                     })
+                else:
+                    search_state["scraping_urls"][index]["status"] = "failed"
             except Exception:
-                yield sse("web_scraping", {"url": url, "status": "failed"})
-                scraped.append({
-                    "title": r["title"], "url": url,
-                    "domain": urlparse(url).netloc,
-                    "content": r["snippet"], "snippet": r["snippet"],
-                })
+                search_state["scraping_urls"][index]["status"] = "failed"
+            
+            # Yield update after each scrape task finishes
+            # Note: Since this is an async iterator, we can't easily yield from inside a task
+            # unless we use a queue or similar. For simplicity, we'll just run them serially 
+            # or update after each await.
 
-        # Step 4: Score and filter
-        for s in scraped:
-            content_score = min(len(s.get("content", "")), 2000) / 2000
-            msg_words = set(query.lower().split())
-            content_words = set(s.get("content", "").lower().split()[:200])
-            overlap = len(msg_words & content_words)
-            s["_score"] = content_score * 0.5 + min(overlap / max(len(msg_words), 1), 1.0) * 0.5
+        for i, item in enumerate(to_scrape):
+            await scrape_one(i, item)
+            yield sse_web_search_update(**search_state)
 
-        scraped.sort(key=lambda x: x.get("_score", 0), reverse=True)
-        scraped = scraped[:5]
+        # 4. Success / Context Build
+        scraped_data = scraped_data[:5]
+        if not scraped_data:
+            # Fallback to snippets if scraping failed for all
+            scraped_data = [{
+                "title": r["title"], "url": r["url"], 
+                "content": r["snippet"], "snippet": r["snippet"]
+            } for r in to_scrape]
 
-        # Build context for LLM synthesis
-        context = "\n\n".join(
-            f"[{i+1}] {s['title']}\nURL: {s['url']}\n{s['content'][:2000]}"
-            for i, s in enumerate(scraped)
-        )
+        context = "\n\n".join([
+            f"Source [{i+1}]: {s['title']}\nURL: {s['url']}\nContent: {s['content']}"
+            for i, s in enumerate(scraped_data)
+        ])
 
         sources = [
             {"title": s["title"], "url": s["url"], "index": i + 1}
-            for i, s in enumerate(scraped)
+            for i, s in enumerate(scraped_data)
         ]
-        yield sse_web_sources(sources)
-        yield sse_tool_result("web_search", success=True, summary=f"Found {len(scraped)} sources")
 
+        yield sse_web_sources(sources)
+        yield sse_tool_result("web_search", True, f"Found {len(sources)} sources")
+        
         yield ToolResult(
             tool_name="web_search",
             success=True,
             content=context,
-            metadata={"queries": queries, "sources": sources},
+            metadata={"queries": queries, "sources": sources}
         )
 
-    except Exception as exc:
-        logger.error("Web search failed: %s", exc)
-        yield sse_tool_result("web_search", success=False, summary="Web search failed")
+    except Exception as e:
+        logger.exception("Web search tool failed")
+        yield sse_tool_result("web_search", False, str(e))
         yield ToolResult(
             tool_name="web_search",
             success=False,
-            content="",
-            metadata={"error": str(exc)},
+            content=f"Error during web search: {str(e)}",
+            metadata={"error": str(e)}
         )

@@ -142,8 +142,7 @@ class Settings(BaseSettings):
     # ── Image Generation ──────────────────────────────────
     IMAGE_GENERATION_ENDPOINT: Optional[str] = None
 
-    # ── External Search Service ───────────────────────────
-    SEARCH_SERVICE_URL: str = "http://localhost:8002"
+
 
     @field_validator("LLM_PROVIDER", mode="after")
     @classmethod

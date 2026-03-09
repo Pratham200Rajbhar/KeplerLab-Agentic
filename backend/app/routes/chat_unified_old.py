@@ -329,22 +329,16 @@ async def _stream_web_search(request, ids, session_id, current_user):
             
             for q in queries:
                 try:
-                    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-                        resp = await client.post(
-                            f"{settings.SEARCH_SERVICE_URL}/api/search",
-                            json={"query": q, "engine": "duckduckgo"},
-                        )
-                        resp.raise_for_status()
-                        data = resp.json()
-                        for r in data.get("organic_results", []):
-                            url = r.get("link", "")
-                            if url and url not in seen_urls:
-                                seen_urls.add(url)
-                                all_results.append({
-                                    "title": r.get("title", ""),
-                                    "url": url,
-                                    "snippet": r.get("snippet", ""),
-                                })
+                    results = await ddg_search(q, max_results=5)
+                    for r in results:
+                        url = r.get("url", "")
+                        if url and url not in seen_urls:
+                            seen_urls.add(url)
+                            all_results.append({
+                                "title": r.get("title", ""),
+                                "url": url,
+                                "snippet": r.get("snippet", ""),
+                            })
                 except Exception:
                     pass
             
@@ -358,28 +352,21 @@ async def _stream_web_search(request, ids, session_id, current_user):
                 url = r["url"]
                 yield await manager.emit_event("web_scraping", {"url": url, "status": "fetching"})
                 try:
-                    async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-                        resp = await client.post(
-                            f"{settings.SEARCH_SERVICE_URL}/api/scrape",
-                            json={"url": url},
-                        )
-                        resp.raise_for_status()
-                        scrape_data = resp.json()
-                        inner = scrape_data.get("content", scrape_data)
-                        if isinstance(inner, dict):
-                            title = inner.get("title", r["title"])
-                            raw_content = inner.get("content", r["snippet"])
-                            body = (" ".join(raw_content) if isinstance(raw_content, list) else str(raw_content))[:4000]
-                        else:
-                            title = r["title"]
-                            body = str(inner)[:4000]
+                    fetched = await fetch_url_content(url)
+                    if fetched and fetched.get("text"):
+                        title = fetched.get("title") or r["title"]
+                        body = fetched["text"][:4000]
+                        domain = fetched.get("domain", urlparse(url).netloc)
+                    else:
+                        title = r["title"]
+                        body = r["snippet"]
                         domain = urlparse(url).netloc
-                        
-                        yield await manager.emit_event("web_scraping", {"url": url, "status": "done"})
-                        scraped.append({
-                            "title": title, "url": url, "domain": domain,
-                            "content": body, "snippet": r["snippet"],
-                        })
+                    
+                    yield await manager.emit_event("web_scraping", {"url": url, "status": "done"})
+                    scraped.append({
+                        "title": title, "url": url, "domain": domain,
+                        "content": body, "snippet": r["snippet"],
+                    })
                 except Exception:
                     yield await manager.emit_event("web_scraping", {"url": url, "status": "failed"})
                     scraped.append({

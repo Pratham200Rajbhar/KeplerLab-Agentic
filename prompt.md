@@ -1,195 +1,133 @@
 # ROLE
 
-You are a senior frontend engineer improving the chat workspace UI of an AI platform built with:
+You are a senior full-stack engineer improving the research UI of an AI agent platform.
 
-Next.js (App Router)
-React
-Zustand
-TailwindCSS
+The platform already has a research pipeline that gathers information from many websites.
 
-The current empty chat state shows a static UI with four cards:
+We must improve the UI so users can see **which information came from which website**.
 
-Agent Execution  
-Research Mode  
-Code Execution  
-Web Search  
+This should behave similar to:
 
-This UI must be removed and replaced with a **dynamic intelligent empty state** that shows information about selected resources and suggested queries.
+Perplexity AI  
+ChatGPT browsing  
+Claude research
 
 ---
 
-# TASK
+# TASK 1 — ADD CITATION SYSTEM
 
-Remove the entire UI block that currently displays:
+Modify the research response format.
 
-Agent Execution  
-Research Mode  
-Code Execution  
-Web Search  
+The backend must return:
 
-This section should no longer appear.
-
----
-
-# NEW EMPTY STATE DESIGN
-
-When the chat has no messages yet, display a **Resource Overview Panel** instead.
-
-The purpose is to help the user quickly understand the selected materials and ask useful questions.
-
----
-
-# RESOURCE SUMMARY SECTION
-
-If the user has selected materials in the sidebar:
-
-Display a **short AI generated summary** of the selected resources.
-
-Rules:
-
-Only show **basic information**, not a full summary.
+answer text containing citation markers
 
 Example:
 
-Selected Resources Overview
+"OpenAI released GPT-4o Mini in June 2024 [1]."
 
-These documents appear to cover:
-
-Machine learning fundamentals  
-Neural networks and training methods  
-Practical AI development workflows  
-
-Do not show full explanations.
-
-Only show **3–5 key topics** detected in the resources.
-
-The summary must be concise.
-
----
-
-# NO RESOURCE SELECTED
-
-If no resources are selected:
-
-Show a simple general message:
+Also return structured sources.
 
 Example:
 
-You can start by asking a question or exploring topics below.
+{
+  "answer": "...",
+  "sources": [
+    {
+      "id": 1,
+      "title": "OpenAI GPT-4o Mini",
+      "url": "https://openai.com",
+      "domain": "openai.com"
+    }
+  ]
+}
 
 ---
 
-# SUGGESTED QUESTIONS
+# TASK 2 — RENDER CITATIONS IN RESPONSE
 
-Below the summary show a section:
+When the assistant response contains markers like:
 
-Suggested Questions
+[1] [2] [3]
 
-Generate 4–6 clickable query suggestions.
+Render them as clickable citation buttons.
 
-Rules:
+Example UI:
 
-If resources are selected:
-Generate questions based on those resources.
+OpenAI released GPT-4o Mini in June 2024 [1].
+
+Hover or click should highlight the source.
+
+---
+
+# TASK 3 — SOURCE GRID BELOW RESPONSE
+
+At the bottom of the message show source cards.
 
 Example:
 
-Explain the main concept in these documents  
-Summarize the key ideas from the materials  
-What are the important topics in these files?  
-Create flashcards from these resources  
+Sources
 
-If no resources are selected:
+[ openai.com ]  
+[ techcrunch.com ]  
+[ arxiv.org ]
 
-Generate general questions such as:
+Only display domain names.
 
-Explain how neural networks work  
-How does reinforcement learning work?  
-What are the basics of data analysis?  
-How can I build an AI model?
+Do not show full URLs.
 
 ---
 
-# AI GENERATED SUGGESTIONS
+# TASK 4 — LINK BEHAVIOR
 
-The suggestions must be **generated dynamically by AI** each time the page loads.
+When user clicks a source bubble:
 
-Do NOT hardcode them.
+open the link in a new tab.
 
-Use backend endpoint such as:
+Example:
 
-GET /chat/suggestions
-
-or generate suggestions locally using context.
+target="_blank"
 
 ---
 
-# UI DESIGN
+# TASK 5 — SOURCE HIGHLIGHT
 
-The layout should look like this:
+When the user clicks citation [1] in the text:
 
----------------------------------
-
-How can I help you?
-
-[Resource Summary Card]
-
-Selected Resources Overview  
-Short description about selected materials
-
-Suggested Questions
-
-[ Explain the main concept ]  
-[ Summarize the key ideas ]  
-[ What topics are covered ]  
-[ Generate flashcards ]
-
----------------------------------
-
-Each suggestion must be clickable.
-
-Clicking a suggestion should insert the text into the chat input and send the message.
+highlight the corresponding source bubble.
 
 ---
 
-# IMPLEMENTATION
+# TASK 6 — CLEAN UI DESIGN
 
-Modify the empty chat component (ChatPanel or EmptyState).
+The UI should be minimal like:
 
-Detect:
+Claude  
+ChatGPT browsing  
+Perplexity
 
-selectedSources from useMaterialStore.
-
-If selectedSources.length > 0:
-
-Show resource summary + resource-based suggestions.
-
-Else:
-
-Show general AI generated questions.
+Do not show raw URLs or debug logs.
 
 ---
 
-# UX REQUIREMENTS
+# TASK 7 — OPTIONAL HOVER PREVIEW
 
-The new UI must be:
+If possible:
 
-clean  
-minimal  
-context-aware  
-dynamic  
+when hovering a citation number
 
-It should feel similar to ChatGPT / Claude starting screen.
+show a small tooltip with:
+
+source title  
+domain
 
 ---
 
 # OUTPUT
 
-Remove the old command cards UI.
-
 Implement:
 
-Resource summary panel  
-Dynamic suggested queries  
-Clickable suggestion buttons  
-Integration with selected sources state
+citation markers in responses  
+source bubble grid  
+clickable citations  
+source highlight system

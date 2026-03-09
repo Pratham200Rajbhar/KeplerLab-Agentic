@@ -1,266 +1,275 @@
 'use client';
 
-import { useState, memo } from 'react';
-import { Check, ExternalLink, Download } from 'lucide-react';
-import MarkdownRenderer, { sanitizeStreamingMarkdown } from './MarkdownRenderer';
+import { useState, useCallback, useMemo, useContext, createContext, memo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
+import { ChevronDown, ChevronRight, Globe } from 'lucide-react';
+import { sanitizeStreamingMarkdown } from './MarkdownRenderer';
 
 /**
- * ResearchReport — replaces ResearchProgress with a full research report UI.
+ * ResearchReport — minimal, citation-aware research UI.
  *
- * Features:
- *   - 5-phase progress bar: Decomposing → Searching → Fetching → Synthesizing → Formatting
- *   - Source cards as horizontal scroll row
- *   - Streaming markdown report body with citation chips
- *   - Export button after completion
+ * While streaming (no content yet): pulsing "Researching the web..."
+ * While streaming (content arriving): inline markdown with live citation chips + cursor
+ * When done:
+ *   - Collapsible "Research Process" panel (source count + domains)
+ *   - Clean markdown with interactive [N] citation chips
+ *   - Source bubble grid — click citation ↔ highlights matching bubble
  */
 
-const PHASES = [
-  { id: 1, label: 'Decomposing' },
-  { id: 2, label: 'Searching' },
-  { id: 3, label: 'Fetching' },
-  { id: 4, label: 'Synthesizing' },
-  { id: 5, label: 'Formatting' },
-];
+// ── Citation context ───────────────────────────────────────────────────────
+const CitationCtx = createContext({ citations: [], activeCite: null, onCite: () => {} });
 
-const RATING_STYLES = {
-  high:   'bg-green-500/20 text-green-400',
-  medium: 'bg-yellow-500/20 text-yellow-400',
-  low:    'bg-red-500/20 text-red-400',
-};
-
-/* ── Phase Progress Bar ── */
-function PhaseProgressBar({ currentPhase, detail }) {
-  return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between gap-1 mb-2">
-        {PHASES.map((phase, idx) => {
-          const isCompleted = phase.id < currentPhase;
-          const isActive = phase.id === currentPhase;
-          const isPending = phase.id > currentPhase;
-
-          return (
-            <div key={phase.id} className="flex items-center gap-1 flex-1">
-              {/* Node */}
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium transition-all duration-300 ${
-                    isCompleted
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : isActive
-                        ? 'bg-accent/20 text-accent border border-accent/40 ring-2 ring-accent/20 animate-pulse'
-                        : 'bg-surface-overlay text-text-muted border border-border/30'
-                  }`}
-                >
-                  {isCompleted ? <Check className="w-3 h-3" /> : phase.id}
-                </div>
-                <span
-                  className={`text-[10px] mt-1 text-center whitespace-nowrap ${
-                    isActive ? 'text-accent font-medium' : isCompleted ? 'text-green-400' : 'text-text-muted'
-                  }`}
-                >
-                  {phase.label}
-                </span>
-              </div>
-
-              {/* Connector line */}
-              {idx < PHASES.length - 1 && (
-                <div
-                  className={`flex-1 h-0.5 mx-0.5 rounded transition-colors duration-300 ${
-                    isCompleted ? 'bg-green-500/40' : 'bg-border/20'
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Status detail */}
-      {detail && (
-        <p className="text-xs text-text-muted text-center">{detail}</p>
-      )}
-    </div>
-  );
+// ── Helpers ────────────────────────────────────────────────────────────────
+function tryHostname(url) {
+  if (!url) return '';
+  try { return new URL(url).hostname; } catch { return ''; }
 }
 
-/* ── Source Card ── */
-function SourceCard({ source }) {
-  const rating = source.rating || 'medium';
-  const ratingStyle = RATING_STYLES[rating] || RATING_STYLES.medium;
-  const domain = source.domain || (source.url ? new URL(source.url).hostname : '');
-
-  return (
-    <a
-      href={source.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex-shrink-0 w-44 rounded-lg border border-border/20 bg-surface-overlay/30 p-3 hover:bg-surface-overlay/50 transition-all cursor-pointer"
-      style={{ animation: 'sourceSlideIn 0.3s ease-out forwards' }}
-    >
-      <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded font-medium mb-1.5 ${ratingStyle}`}>
-        {rating}
-      </span>
-      <p className="text-xs text-text-secondary font-medium truncate" title={source.title}>
-        {source.title}
-      </p>
-      <p className="text-[10px] text-text-muted truncate">{domain}</p>
-      {source.relevance != null && (
-        <p className="text-[10px] text-text-muted mt-1">
-          relevance: {typeof source.relevance === 'number' ? source.relevance.toFixed(2) : source.relevance}
-        </p>
-      )}
-    </a>
-  );
+/** Replace [N] in text with <cite data-n="N"> so rehype-raw renders them. */
+function injectCiteTags(text) {
+  if (!text) return '';
+  return text.replace(/\[(\d+)\]/g, '<cite class="cite-ref" data-n="$1">[$1]</cite>');
 }
 
-/* ── Source Cards Panel (horizontal scroll) ── */
-function SourceCardsPanel({ sources }) {
-  if (!sources.length) return null;
+const REMARK_PLUGINS = [remarkGfm, remarkMath];
+const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
+
+// ── Inline citation chip ────────────────────────────────────────────────────
+// Reads citation data + active state from CitationCtx.
+// Defined outside render to prevent remounts.
+function CiteChip({ 'data-n': rawN }) {
+  const { citations, activeCite, onCite } = useContext(CitationCtx);
+  const [hovered, setHovered] = useState(false);
+  const num = parseInt(rawN, 10);
+  if (!num) return <span>[{rawN}]</span>;
+
+  const src = citations[num - 1];
+  const domain = src?.domain || tryHostname(src?.url) || `Source ${num}`;
+  const title = src?.title || domain;
+  const isActive = activeCite === num;
 
   return (
-    <div className="mb-4">
-      <p className="text-xs font-medium text-text-muted mb-2">Sources Found ({sources.length})</p>
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-        {sources.map((source, idx) => (
-          <SourceCard key={source.url || idx} source={source} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Citation Chip ── */
-function CitationChip({ index, citation, onHover }) {
-  const [showPopover, setShowPopover] = useState(false);
-
-  return (
-    <span className="relative inline-block">
-      <span
-        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400 cursor-pointer font-mono hover:bg-blue-500/30 transition-colors"
-        onMouseEnter={() => setShowPopover(true)}
-        onMouseLeave={() => setShowPopover(false)}
+    <span className="relative inline-flex items-center align-middle mx-0.5">
+      <button
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => onCite(num)}
+        className={`inline-flex items-center text-[11px] font-mono px-1.5 py-0.5 rounded border transition-all leading-none ${
+          isActive
+            ? 'bg-blue-500/30 text-blue-300 border-blue-500/50'
+            : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20 hover:text-blue-300 hover:border-blue-500/40'
+        }`}
       >
-        [{index}]
-      </span>
-      {showPopover && citation && (
-        <div className="absolute bottom-full left-0 mb-1 w-64 p-3 rounded-lg border border-border/30 bg-surface-raised shadow-lg z-50 text-left">
-          <p className="text-xs font-medium text-text-secondary truncate">{citation.title}</p>
-          {citation.domain && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-[10px] text-text-muted">{citation.domain}</span>
-              {citation.rating && (
-                <span className={`text-[10px] px-1 py-0 rounded ${RATING_STYLES[citation.rating] || ''}`}>
-                  {citation.rating}
-                </span>
-              )}
-            </div>
-          )}
-          {citation.snippet && (
-            <p className="text-[11px] text-text-muted mt-1 line-clamp-3">{citation.snippet}</p>
-          )}
-          {citation.url && (
-            <a
-              href={citation.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-accent mt-1.5 hover:underline"
-            >
-              Open source <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-        </div>
+        {num}
+      </button>
+      {/* Hover tooltip */}
+      {hovered && src && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-max max-w-[200px] bg-surface-raised border border-border/30 rounded-lg shadow-xl px-3 py-2 pointer-events-none">
+          <span className="block text-[11px] font-medium text-text-secondary truncate leading-snug">{title}</span>
+          <span className="block text-[10px] text-text-muted mt-0.5">{domain}</span>
+        </span>
       )}
     </span>
   );
 }
 
-/* ── Main Component ── */
+/** ReactMarkdown component map — stable reference, reads from CitationCtx. */
+const MD_COMPONENTS = {
+  cite: CiteChip,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="md-link">
+      {children}
+    </a>
+  ),
+};
+
+// ── Citation-aware markdown renderer ───────────────────────────────────────
+function ResearchMarkdown({ content, isDone }) {
+  const text = isDone ? content : sanitizeStreamingMarkdown(content);
+  const withCites = injectCiteTags(text);
+
+  return (
+    <div className="text-sm text-text-primary leading-relaxed prose-chat">
+      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MD_COMPONENTS}>
+        {withCites}
+      </ReactMarkdown>
+      {!isDone && (
+        <span
+          className="inline-block w-[2px] h-[1em] bg-text-muted/50 ml-0.5 align-text-bottom animate-pulse"
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Loading indicator ──────────────────────────────────────────────────────
+function ResearchingIndicator() {
+  return (
+    <div className="flex items-center gap-2.5 py-1 mb-3">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+      </span>
+      <span className="text-sm text-text-muted">Researching the web...</span>
+    </div>
+  );
+}
+
+// ── Collapsible research process panel ────────────────────────────────────
+function ResearchProcessPanel({ sources, citations }) {
+  const [open, setOpen] = useState(false);
+
+  const domains = useMemo(() => {
+    const items = citations.length ? citations : sources;
+    const seen = new Set();
+    const out = [];
+    for (const item of items) {
+      const d = item.domain || tryHostname(item.url);
+      if (d && !seen.has(d)) { seen.add(d); out.push(d); }
+    }
+    return out;
+  }, [citations, sources]);
+
+  if (!domains.length) return null;
+
+  return (
+    <div className="mb-4 rounded-lg border border-border/20 bg-surface-overlay/20 overflow-hidden">
+      <button
+        className="flex items-center gap-2 w-full px-3 py-2.5 text-left hover:bg-surface-overlay/30 transition-colors"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        {open
+          ? <ChevronDown className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />}
+        <span className="text-xs text-text-secondary font-medium">Research Process</span>
+        <span className="ml-auto text-xs text-text-muted">Visited {domains.length} sources</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-3 pt-1 border-t border-border/10">
+          <div className="flex flex-wrap gap-1.5">
+            {domains.slice(0, 30).map((d) => (
+              <span key={d} className="text-[11px] text-text-secondary bg-surface-raised px-2 py-0.5 rounded-md border border-border/20">
+                {d}
+              </span>
+            ))}
+            {domains.length > 30 && (
+              <span className="text-[11px] text-text-muted px-2 py-0.5">+{domains.length - 30} more</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Source bubble grid ───────────────────────────────────────────────────
+function SourceBubbles({ citations, sources, activeCite, onCite }) {
+  const items = useMemo(() => {
+    const src = citations.length ? citations : sources;
+    const seen = new Set();
+    const out = [];
+    for (const item of src) {
+      const domain = item.domain || tryHostname(item.url);
+      if (!domain || seen.has(domain)) continue;
+      seen.add(domain);
+      out.push({ ...item, domain });
+    }
+    return out;
+  }, [citations, sources]);
+
+  if (!items.length) return null;
+
+  return (
+    <div className="mt-4 pt-3 border-t border-border/15">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Globe className="w-3.5 h-3.5 text-text-muted" />
+        <span className="text-xs font-medium text-text-muted">Sources</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.slice(0, 24).map((item, idx) => {
+          const n = item.index ?? idx + 1;
+          const isActive = activeCite === n;
+          return (
+            <a
+              key={item.domain}
+              id={`cite-src-${n}`}
+              href={item.url || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onCite(n)}
+              className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                isActive
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 ring-1 ring-blue-500/25'
+                  : 'text-text-secondary border-border/25 bg-surface-overlay/30 hover:bg-surface-overlay/60 hover:border-border/50 hover:text-text-primary'
+              }`}
+            >
+              <span className={`text-[10px] font-mono ${isActive ? 'text-blue-400' : 'text-text-muted'}`}>{n}</span>
+              {item.domain}
+            </a>
+          );
+        })}
+        {items.length > 24 && (
+          <span className="text-[11px] text-text-muted px-2 py-1">+{items.length - 24} more</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────
 function ResearchReport({
-  query = '',
-  currentPhase = 0,
-  phaseDetail = '',
   sources = [],
   streamingContent = '',
   citations = [],
   isDone = false,
-  // Legacy props for backward compatibility
-  steps = [],
+  isStreaming = false,
 }) {
-  // If we have legacy steps but no currentPhase, derive from steps
-  const resolvedPhase = currentPhase || (() => {
-    if (!steps.length) return 0;
-    const activeIdx = steps.findIndex((s) => s.status === 'active');
-    const allDone = steps.every((s) => s.status === 'done');
-    if (allDone) return 6; // past final phase
-    if (activeIdx >= 0) return activeIdx + 1;
-    return 0;
-  })();
+  const [activeCite, setActiveCite] = useState(null);
 
-  const showPhaseBar = resolvedPhase > 0 && resolvedPhase <= 5;
+  const handleCite = useCallback((n) => {
+    setActiveCite((prev) => (prev === n ? null : n));
+    setTimeout(() => {
+      document.getElementById(`cite-src-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }, []);
+
+  const ctxValue = useMemo(
+    () => ({ citations, activeCite, onCite: handleCite }),
+    [citations, activeCite, handleCite],
+  );
+
+  const showLoading = isStreaming && !streamingContent;
+  const hasContent = !!streamingContent;
 
   return (
-    <div className="research-report w-full">
-      {/* Query header */}
-      {query && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-base">🔬</span>
-          <div>
-            <p className="text-sm font-medium text-text-primary">Deep Research</p>
-            <p className="text-xs text-text-muted italic">&ldquo;{query}&rdquo;</p>
-          </div>
-        </div>
-      )}
+    <CitationCtx.Provider value={ctxValue}>
+      <div className="w-full">
+        {showLoading && <ResearchingIndicator />}
 
-      {/* Phase progress bar */}
-      {showPhaseBar && (
-        <PhaseProgressBar currentPhase={resolvedPhase} detail={phaseDetail} />
-      )}
+        {isDone && (
+          <ResearchProcessPanel sources={sources} citations={citations} />
+        )}
 
-      {/* Source cards — show during Searching/Fetching phases (2-3) or after */}
-      {sources.length > 0 && (
-        <SourceCardsPanel sources={sources} />
-      )}
+        {hasContent && (
+          <ResearchMarkdown content={streamingContent} isDone={isDone} />
+        )}
 
-      {/* Report body — streaming markdown */}
-      {streamingContent && (
-        <div className="markdown-content prose prose-sm max-w-none">
-          <MarkdownRenderer
-            content={isDone ? streamingContent : sanitizeStreamingMarkdown(streamingContent)}
+        {isDone && hasContent && (
+          <SourceBubbles
+            citations={citations}
+            sources={sources}
+            activeCite={activeCite}
+            onCite={handleCite}
           />
-          {!isDone && <span className="streaming-cursor" />}
-        </div>
-      )}
-
-      {/* Export button — after done */}
-      {isDone && streamingContent && (
-        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/20">
-          <button
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
-            aria-label="Export research report"
-            onClick={() => {
-              // Export as text file (PDF generation requires jspdf which may not be installed)
-              const blob = new Blob([streamingContent], { type: 'text/markdown' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `research-report-${Date.now()}.md`;
-              link.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export Report
-          </button>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes sourceSlideIn {
-          from { opacity: 0; transform: translateX(12px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
-    </div>
+        )}
+      </div>
+    </CitationCtx.Provider>
   );
 }
 
