@@ -54,7 +54,7 @@ export default function Header({ user, onBack }) {
 
   return (
     <header className="h-[52px] flex items-center justify-between px-4 shrink-0 relative z-40 bg-surface/80 backdrop-blur-xl">
-      {/* Left */}
+      {}
       <div className="flex items-center gap-3">
         {onBack && (
           <button onClick={handleBackClick} className="btn-icon-sm hover:bg-accent-subtle" title="Back to notebooks">
@@ -79,7 +79,7 @@ export default function Header({ user, onBack }) {
         </div>
       </div>
 
-      {/* Right */}
+      {}
       <div className="flex items-center gap-0.5">
         <button onClick={toggleTheme} className="btn-icon-sm" title={isDark ? 'Light mode' : 'Dark mode'}>
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -94,7 +94,7 @@ export default function Header({ user, onBack }) {
           <HelpCircle className="w-4 h-4" />
         </button>
 
-        {/* User Menu */}
+        {}
         <div className="relative ml-1" ref={menuRef}>
           <button
             className="w-7 h-7 rounded-lg bg-accent/15 flex items-center justify-center text-accent text-xs font-semibold hover:bg-accent/25 transition-all duration-200"

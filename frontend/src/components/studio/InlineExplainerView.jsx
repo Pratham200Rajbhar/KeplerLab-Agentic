@@ -7,7 +7,7 @@ import { useToast } from '@/stores/useToastStore';
 
 export default function InlineExplainerView({ explainer, onClose }) {
   const toast = useToast();
-  // Stable refs so the video-load effect doesn't re-run when callbacks change
+  
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const toastRef = useRef(toast);
@@ -19,7 +19,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
   const [duration, setDuration] = useState(0);
   const [showChapters, setShowChapters] = useState(false);
   const videoRef = useRef(null);
-  const videoUrlRef = useRef(null); // track blob URL for proper cleanup
+  const videoUrlRef = useRef(null); 
 
   const chapters = explainer?.data?.chapters || [];
 
@@ -95,7 +95,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      {/* Video */}
+      {}
       <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
         <video
           ref={videoRef}
@@ -109,7 +109,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
         />
       </div>
 
-      {/* Controls */}
+      {}
       <div className="flex items-center gap-3 px-2">
         <button onClick={() => skip(-10)} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Skip back 10 seconds">
           <SkipBack className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -121,7 +121,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
           <SkipForward className="w-4 h-4 text-[var(--text-secondary)]" />
         </button>
 
-        {/* Progress */}
+        {}
         <div className="flex-1 mx-2">
           <div
             className="h-1 rounded-full bg-[var(--surface)] cursor-pointer"
@@ -153,7 +153,7 @@ export default function InlineExplainerView({ explainer, onClose }) {
         )}
       </div>
 
-      {/* Chapters */}
+      {}
       {showChapters && chapters.length > 0 && (
         <div className="space-y-1 px-2 animate-fade-in">
           {chapters.map((ch, i) => (

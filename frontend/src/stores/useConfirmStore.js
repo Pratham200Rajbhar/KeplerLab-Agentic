@@ -11,7 +11,7 @@ const useConfirmStore = create((set, get) => ({
         message: '',
         confirmLabel: 'Confirm',
         cancelLabel: 'Cancel',
-        variant: 'default', // 'default' | 'danger'
+        variant: 'default', 
         prompt: false,
         defaultValue: '',
         placeholder: '',

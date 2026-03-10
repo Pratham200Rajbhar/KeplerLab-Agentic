@@ -3,13 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { apiConfig, getAccessToken } from '@/lib/api/config';
 
-/**
- * Connects to backend WebSocket for real-time material processing updates.
- *
- * @param {string|null} userId  – current user's ID (skip if null)
- * @param {(msg: object) => void} onMessage – handler for incoming messages
- * @returns {{ connected: boolean }}
- */
+
 export default function useMaterialUpdates(userId, onMessage) {
   const wsRef = useRef(null);
   const [connected, setConnected] = useState(false);
@@ -22,7 +16,7 @@ export default function useMaterialUpdates(userId, onMessage) {
     onMessageRef.current = onMessage;
   }, [onMessage]);
 
-  // Stable ref to the connect function so ws.onclose can schedule a reconnect
+  
   const connectRef = useRef(null);
 
   const connect = useCallback(() => {
@@ -31,7 +25,7 @@ export default function useMaterialUpdates(userId, onMessage) {
     const token = getAccessToken();
     if (!token) return;
 
-    // Derive WS URL from API base (http→ws, https→wss)
+    
     const base = apiConfig.baseUrl.replace(/^http/, 'ws');
     const url = `${base}/ws/jobs/${userId}`;
 
@@ -56,7 +50,7 @@ export default function useMaterialUpdates(userId, onMessage) {
           if (msg.type === 'connected') return;
           onMessageRef.current?.(msg);
         } catch {
-          // ignore malformed messages
+          
         }
       };
 
@@ -66,7 +60,7 @@ export default function useMaterialUpdates(userId, onMessage) {
         wsRef.current = null;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         reconnectAttempts.current += 1;
-        // Clear any existing timer before setting a new one
+        
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = setTimeout(() => {
           if (mountedRef.current) connectRef.current?.();
@@ -74,7 +68,7 @@ export default function useMaterialUpdates(userId, onMessage) {
       };
 
       ws.onerror = () => {
-        // onclose fires after onerror
+        
       };
 
       wsRef.current = ws;
@@ -89,7 +83,7 @@ export default function useMaterialUpdates(userId, onMessage) {
     }
   }, [userId]);
 
-  // Keep the ref current so ws.onclose always calls the latest version
+  
   useEffect(() => {
     connectRef.current = connect;
   }, [connect]);
@@ -102,7 +96,7 @@ export default function useMaterialUpdates(userId, onMessage) {
       mountedRef.current = false;
       clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) {
-        wsRef.current.onclose = null; // prevent reconnect on intentional close
+        wsRef.current.onclose = null; 
         wsRef.current.close();
         wsRef.current = null;
       }

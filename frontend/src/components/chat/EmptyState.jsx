@@ -13,14 +13,14 @@ export default function EmptyState({ onSend }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Only IDs whose material is fully processed
+  
   const completedSelected = selectedSources.filter((id) => {
     const mat = materials.find((m) => m.id === id);
     return mat && mat.status === 'completed';
   });
   const hasResources = completedSelected.length > 0;
 
-  // Track the key so we only re-fetch when the selection meaningfully changes
+  
   const selectionKey = completedSelected.slice().sort().join(',');
   const prevKeyRef = useRef(null);
 
@@ -56,7 +56,7 @@ export default function EmptyState({ onSend }) {
     if (prevKeyRef.current === selectionKey) return;
     prevKeyRef.current = selectionKey;
     loadSuggestions(hasResources ? completedSelected : []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [selectionKey]);
 
   const handleSuggestionClick = (text) => {
@@ -67,7 +67,7 @@ export default function EmptyState({ onSend }) {
     <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 select-none overflow-y-auto">
       <div className="max-w-lg w-full">
 
-        {/* Heading */}
+        {}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-text-primary mb-2 tracking-tight">
             How can I help you?
@@ -79,7 +79,7 @@ export default function EmptyState({ onSend }) {
           )}
         </div>
 
-        {/* Resource Summary Card — only shown when sources are selected */}
+        {}
         {hasResources && (
           <div
             className="rounded-xl border p-4 mb-6"
@@ -136,7 +136,7 @@ export default function EmptyState({ onSend }) {
           </div>
         )}
 
-        {/* Suggested Questions */}
+        {}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-text-muted uppercase tracking-wider">

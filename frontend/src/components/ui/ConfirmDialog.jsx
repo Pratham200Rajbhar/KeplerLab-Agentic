@@ -19,7 +19,7 @@ export default function ConfirmDialog() {
     }
   }, [state]);
 
-  // Escape key to close
+  
   useEffect(() => {
     if (!state) return;
     const handleKey = (e) => { if (e.key === 'Escape') handleClose(); };
@@ -27,7 +27,7 @@ export default function ConfirmDialog() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [state, handleClose]);
 
-  // Focus trap
+  
   useEffect(() => {
     if (!state) return;
     const dialog = dialogRef.current;
@@ -51,16 +51,16 @@ export default function ConfirmDialog() {
 
   return (
     <div className="fixed inset-0 z-[9998] flex items-center justify-center" role="dialog" aria-modal="true" aria-label={state.title || 'Confirm'} ref={dialogRef}>
-      {/* Backdrop */}
+      {}
       <div
         className="absolute inset-0 bg-[var(--backdrop)] animate-fade-in"
         onClick={handleClose}
       />
 
-      {/* Dialog */}
+      {}
       <div className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] max-w-sm w-full mx-4 animate-slide-up">
         <div className="p-6">
-          {/* Header */}
+          {}
           <div className="flex items-start gap-4 mb-4">
             {(state.icon || isDanger) && (
               <div
@@ -85,7 +85,7 @@ export default function ConfirmDialog() {
             </div>
           </div>
 
-          {/* Prompt input */}
+          {}
           {state.prompt && (
             <div className="mb-5">
               <input
@@ -103,7 +103,7 @@ export default function ConfirmDialog() {
             </div>
           )}
 
-          {/* Actions */}
+          {}
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={handleClose}

@@ -4,19 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { Pause, Play, Check } from 'lucide-react';
 import { getVoicesForLanguage, getVoicePreviewUrl } from '@/lib/api/podcast';
 
-/**
- * Voice selector with inline preview playback.
- * Fetches voices per-language and plays a short preview clip.
- */
+
 export default function VoicePicker({ label, language, value, onChange }) {
   const [voices, setVoices] = useState([]);
   const [previewingId, setPreviewingId] = useState(null);
   const audioRef = useRef(typeof window !== 'undefined' ? new Audio() : null);
 
-  // Cleanup audio on unmount
+  
   useEffect(() => {
-    // Copy the ref value so the cleanup function always operates on the same
-    // Audio instance, even if the ref changes before cleanup runs.
+    
+    
     const audio = audioRef.current;
     return () => {
       if (audio) {

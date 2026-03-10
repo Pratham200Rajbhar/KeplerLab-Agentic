@@ -1,21 +1,3 @@
-#!/usr/bin/env python
-"""Download all non-LLM AI models to data/models/.
-
-Each model is saved to its own directory under MODELS_DIR using the naming
-convention ``{name.replace("/", "--")}`` (e.g. ``BAAI--bge-m3``).
-
-The service code always checks this local directory first before falling back
-to the HuggingFace hub, so running this script once pre-populates the cache
-for fully offline / air-gapped deployments.
-
-Usage
------
-    # From backend/
-    python -m cli.download_models                # download all models
-    python -m cli.download_models --list         # list registered models, exit
-    python -m cli.download_models --id embedding # download only one model by registry key
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -24,7 +6,6 @@ import sys
 import time
 from pathlib import Path
 
-# Allow running from repo root without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.config import settings                                   # noqa: E402
@@ -42,12 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cli.download_models")
 
-
-# ── Downloaders ───────────────────────────────────────────────────────────────
-
-
 def _resolve_model_name(cfg: ModelConfig) -> str:
-    """Return the effective model name (applies CPU fallback when no GPU)."""
     import torch
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -56,9 +32,7 @@ def _resolve_model_name(cfg: ModelConfig) -> str:
         return cfg.fallback_name
     return cfg.name
 
-
 def _download_sentence_transformer(model_name: str) -> Path:
-    """Download a SentenceTransformer (dense encoder) and save locally."""
     from sentence_transformers import SentenceTransformer
 
     local = get_local_model_path(model_name)
@@ -73,9 +47,7 @@ def _download_sentence_transformer(model_name: str) -> Path:
     logger.info("Saved to %s  (%.1fs)", local, time.time() - t0)
     return local
 
-
 def _download_cross_encoder(model_name: str) -> Path:
-    """Download a CrossEncoder (reranker) and save locally."""
     from sentence_transformers import CrossEncoder
 
     local = get_local_model_path(model_name)
@@ -90,12 +62,7 @@ def _download_cross_encoder(model_name: str) -> Path:
     logger.info("Saved to %s  (%.1fs)", local, time.time() - t0)
     return local
 
-
-# ── Dispatch ──────────────────────────────────────────────────────────────────
-
-
 def download_model(key: str, cfg: ModelConfig) -> bool:
-    """Download *one* model from the registry.  Returns True on success."""
     effective_name = _resolve_model_name(cfg)
     logger.info("─── [%s] %s (%s)", key, effective_name, cfg.type)
 
@@ -118,10 +85,6 @@ def download_model(key: str, cfg: ModelConfig) -> bool:
         logger.error("Failed to download %s: %s", effective_name, exc)
         return False
 
-
-# ── CLI entry-point ───────────────────────────────────────────────────────────
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Download AI models listed in the model registry to data/models/",
@@ -142,7 +105,6 @@ def main() -> int:
     models_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Models directory: %s", models_dir.resolve())
 
-    # ── --list mode ───────────────────────────────────────
     if args.list:
         print(f"\n{'KEY':<16} {'TYPE':<22} {'MODEL NAME':<45} {'LOCAL?'}")
         print("─" * 100)
@@ -155,7 +117,6 @@ def main() -> int:
         print()
         return 0
 
-    # ── Download mode ─────────────────────────────────────
     targets: dict[str, ModelConfig]
     if args.id:
         if args.id not in REQUIRED_MODELS:
@@ -170,7 +131,6 @@ def main() -> int:
     for key, cfg in targets.items():
         results[key] = download_model(key, cfg)
 
-    # ── Summary ───────────────────────────────────────────
     ok = sum(results.values())
     total = len(results)
     print()
@@ -180,7 +140,6 @@ def main() -> int:
     print(f"\n{ok}/{total} model(s) ready in {models_dir.resolve()}")
 
     return 0 if ok == total else 1
-
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -6,7 +6,6 @@ from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
 
-
 async def create_notebook(user_id: str, name: str, description: Optional[str]):
     notebook = await prisma.notebook.create(
         data={
@@ -18,7 +17,6 @@ async def create_notebook(user_id: str, name: str, description: Optional[str]):
     logger.info(f"Created notebook: {notebook.id} for user: {user_id}")
     return notebook
 
-
 async def get_user_notebooks(user_id: str, skip: int = 0, take: int = 50) -> list:
     return await prisma.notebook.find_many(
         where={"userId": user_id if isinstance(user_id, str) else str(user_id)},
@@ -27,7 +25,6 @@ async def get_user_notebooks(user_id: str, skip: int = 0, take: int = 50) -> lis
         take=take,
     )
 
-
 async def get_notebook_by_id(notebook_id: str, user_id: str):
     return await prisma.notebook.find_first(
         where={
@@ -35,7 +32,6 @@ async def get_notebook_by_id(notebook_id: str, user_id: str):
             "userId": str(user_id),
         }
     )
-
 
 async def update_notebook(
     notebook_id: str,
@@ -60,7 +56,6 @@ async def update_notebook(
         )
     return notebook
 
-
 async def delete_notebook(notebook_id: str, user_id: str) -> bool:
     notebook = await get_notebook_by_id(notebook_id, user_id)
     if not notebook:
@@ -70,7 +65,6 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
     uid = str(user_id)
 
     try:
-        # ── Bulk delete ChromaDB vectors for all materials in one call ──
         try:
             from app.db.chroma import get_collection
             collection = get_collection()
@@ -80,7 +74,6 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
         except Exception as chroma_exc:
             logger.warning("Failed to bulk-delete ChromaDB embeddings for notebook %s: %s", nid, chroma_exc)
 
-        # ── Delete material text files from disk ──
         materials = await prisma.material.find_many(
             where={"notebookId": nid, "userId": uid}
         )
@@ -91,21 +84,14 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
             except Exception:
                 pass
 
-        # ── Atomic DB transaction: chat data → content → materials → notebook ──
         async with prisma.tx() as tx:
-            # 1. ResponseBlocks (FK → ChatMessage)
             await tx.responseblock.delete_many(
                 where={"chatMessage": {"is": {"notebookId": nid}}}
             )
-            # 2. ChatMessages
             await tx.chatmessage.delete_many(where={"notebookId": nid})
-            # 3. ChatSessions
             await tx.chatsession.delete_many(where={"notebookId": nid})
-            # 4. GeneratedContent
             await tx.generatedcontent.delete_many(where={"notebookId": nid, "userId": uid})
-            # 5. Materials
             await tx.material.delete_many(where={"notebookId": nid, "userId": uid})
-            # 6. Notebook
             await tx.notebook.delete(where={"id": nid})
 
     except Exception as e:
@@ -115,10 +101,6 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
     logger.info("Deleted notebook and all associated data: %s", notebook_id)
     return True
 
-
-# ── Generated Content ─────────────────────────────────────────
-
-
 async def save_notebook_content(
     notebook_id: str,
     user_id: str,
@@ -127,7 +109,6 @@ async def save_notebook_content(
     data: dict,
     material_id: Optional[str],
 ):
-    """Persist a new GeneratedContent record."""
     import json
 
     create_data: dict = {
@@ -135,7 +116,6 @@ async def save_notebook_content(
         "userId": user_id,
         "contentType": content_type,
         "title": title,
-        # Prisma Python 0.15 requires json.dumps() for Json fields
         "data": json.dumps(data),
     }
     if material_id and material_id.strip():
@@ -145,19 +125,15 @@ async def save_notebook_content(
     logger.info("Saved %s content for notebook %s (id=%s)", content_type, notebook_id, content.id)
     return content
 
-
 async def get_notebook_content(notebook_id: str, user_id: str) -> list:
-    """Return all GeneratedContent records for *notebook_id* newest-first."""
     return await prisma.generatedcontent.find_many(
         where={"notebookId": notebook_id, "userId": user_id},
         order={"createdAt": "desc"},
     )
 
-
 async def delete_notebook_content(
     notebook_id: str, user_id: str, content_id: str
 ) -> bool:
-    """Delete a GeneratedContent record.  Returns False if not found."""
     content = await prisma.generatedcontent.find_first(
         where={"id": content_id, "notebookId": notebook_id, "userId": user_id}
     )
@@ -166,11 +142,9 @@ async def delete_notebook_content(
     await prisma.generatedcontent.delete(where={"id": content_id})
     return True
 
-
 async def update_notebook_content_title(
     notebook_id: str, user_id: str, content_id: str, title: str
 ):
-    """Update title of a GeneratedContent record.  Returns None if not found."""
     content = await prisma.generatedcontent.find_first(
         where={"id": content_id, "notebookId": notebook_id, "userId": user_id}
     )

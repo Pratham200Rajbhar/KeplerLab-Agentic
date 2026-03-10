@@ -1,12 +1,3 @@
-"""File storage abstraction layer.
-
-Provides unified interface for storing/loading material text files.
-Prepares for future S3/MinIO migration.
-
-Current implementation: Local filesystem
-Future: S3, MinIO, Azure Blob, etc.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -18,34 +9,18 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Storage directory for material text files — absolute path from settings
 MATERIAL_TEXT_DIR = Path(settings.UPLOAD_DIR).parent / "material_text"
 
-# UUID v4 pattern for material_id validation
 _UUID_RE = re.compile(r"^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$", re.I)
 
-
 def _validate_material_id(material_id: str) -> None:
-    """Validate material_id is a safe UUID to prevent path traversal."""
     if not material_id or not _UUID_RE.match(material_id):
         raise ValueError(f"Invalid material_id format: {material_id!r}")
 
-
 def _ensure_storage_dir() -> None:
-    """Ensure storage directory exists."""
     MATERIAL_TEXT_DIR.mkdir(parents=True, exist_ok=True)
 
-
 def save_material_text(material_id: str, text: str) -> bool:
-    """Save full material text to file storage.
-    
-    Args:
-        material_id: Unique material identifier (UUID)
-        text: Full extracted text content
-    
-    Returns:
-        True if saved successfully, False otherwise
-    """
     try:
         _validate_material_id(material_id)
         _ensure_storage_dir()
@@ -65,16 +40,7 @@ def save_material_text(material_id: str, text: str) -> bool:
         logger.error(f"Failed to save material text {material_id}: {e}")
         return False
 
-
 def load_material_text(material_id: str) -> Optional[str]:
-    """Load full material text from file storage.
-    
-    Args:
-        material_id: Unique material identifier (UUID)
-    
-    Returns:
-        Full text content, or None if not found
-    """
     try:
         _validate_material_id(material_id)
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
@@ -96,16 +62,7 @@ def load_material_text(material_id: str) -> Optional[str]:
         logger.error(f"Failed to load material text {material_id}: {e}")
         return None
 
-
 def delete_material_text(material_id: str) -> bool:
-    """Delete material text from file storage.
-    
-    Args:
-        material_id: Unique material identifier (UUID)
-    
-    Returns:
-        True if deleted successfully, False otherwise
-    """
     try:
         _validate_material_id(material_id)
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
@@ -125,23 +82,12 @@ def delete_material_text(material_id: str) -> bool:
         logger.error(f"Failed to delete material text {material_id}: {e}")
         return False
 
-
 def get_material_summary(text: str, max_chars: int = 1000) -> str:
-    """Extract summary from full text for database storage.
-    
-    Args:
-        text: Full text content
-        max_chars: Maximum characters for summary
-    
-    Returns:
-        Summary text (first N characters)
-    """
     if not text:
         return ""
     
     summary = text[:max_chars]
     
-    # Try to break at sentence boundary if possible
     if len(text) > max_chars:
         last_period = summary.rfind(". ")
         if last_period > max_chars // 2:
@@ -150,39 +96,7 @@ def get_material_summary(text: str, max_chars: int = 1000) -> str:
     
     return summary
 
-
-def get_storage_stats() -> dict:
-    """Get storage statistics.
-    
-    Returns:
-        Dict with file count and total size
-    """
-    try:
-        if not MATERIAL_TEXT_DIR.exists():
-            return {"file_count": 0, "total_size_mb": 0.0}
-        
-        files = list(MATERIAL_TEXT_DIR.glob("*.txt"))
-        total_size = sum(f.stat().st_size for f in files)
-        
-        return {
-            "file_count": len(files),
-            "total_size_mb": round(total_size / (1024 * 1024), 2),
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get storage stats: {e}")
-        return {"file_count": 0, "total_size_mb": 0.0, "error": str(e)}
-
-
 def delete_uploaded_file(file_path: str) -> bool:
-    """Delete an uploaded file from disk.
-
-    Args:
-        file_path: Absolute path to the file.
-
-    Returns:
-        True if deleted, False otherwise.
-    """
     try:
         p = Path(file_path)
         if p.exists() and p.is_file():

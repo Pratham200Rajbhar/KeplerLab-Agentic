@@ -1,16 +1,3 @@
-"""Cross-encoder reranker for semantic relevance scoring.
-
-After initial vector retrieval, this module applies a cross-encoder model
-to compute precise relevance scores between query and retrieved chunks.
-
-Optimized for production:
-- Thread-safe singleton initialization
-- Batch scoring with configurable batch size
-- torch.inference_mode() for faster inference
-- Mixed-precision via autocast (safer than manual .half())
-- Warm-up forward pass after loading
-"""
-
 from __future__ import annotations
 
 import logging
@@ -25,21 +12,13 @@ from app.models.model_schemas import get_local_model_path, is_model_local
 
 logger = logging.getLogger(__name__)
 
-# Thread-safe lazy-loaded singleton
 _reranker = None
 _reranker_lock = threading.Lock()
 
-# Performance constants
 _RERANKER_BATCH_SIZE = 16
-_MAX_LENGTH = 512  # Full context window for better accuracy
-
+_MAX_LENGTH = 512
 
 def get_reranker():
-    """Load and cache the reranker model (thread-safe singleton).
-    
-    Uses double-checked locking for thread safety.
-    Auto-selects smaller model on CPU for performance.
-    """
     global _reranker
     if _reranker is None:
         with _reranker_lock:
@@ -50,13 +29,11 @@ def get_reranker():
                     start_time = time.time()
                     device = "cuda" if torch.cuda.is_available() else "cpu"
                     
-                    # Use smaller model on CPU
                     model_name = settings.RERANKER_MODEL
                     if device == "cpu" and "large" in model_name:
                         model_name = "BAAI/bge-reranker-base"
                         logger.info("No GPU detected, using bge-reranker-base instead of large")
 
-                    # Prefer locally downloaded model (data/models/) over HF hub
                     load_path = (
                         str(get_local_model_path(model_name))
                         if is_model_local(model_name)
@@ -72,10 +49,9 @@ def get_reranker():
                         load_path,
                         device=device,
                         max_length=_MAX_LENGTH,
-                        trust_remote_code=False,  # Security: no arbitrary code
+                        trust_remote_code=False,
                     )
                     
-                    # Warm-up forward pass to trigger CUDA kernel compilation
                     if device == "cuda":
                         with torch.inference_mode():
                             _reranker.predict([["warmup query", "warmup document"]], show_progress_bar=False)
@@ -90,25 +66,11 @@ def get_reranker():
     
     return _reranker
 
-
 def rerank_chunks(
     query: str,
     chunks: List[str],
     top_k: Optional[int] = None,
 ) -> List[Tuple[str, float]]:
-    """Rerank chunks using cross-encoder model.
-    
-    Uses torch.autocast for safe mixed-precision on GPU.
-    Returns fallback uniform scores on any failure.
-    
-    Args:
-        query: User query text
-        chunks: List of text chunks to rerank
-        top_k: Number of top results to return (None = return all)
-    
-    Returns:
-        List of (chunk, score) tuples sorted by relevance (descending)
-    """
     if not chunks:
         return []
     
@@ -126,7 +88,6 @@ def rerank_chunks(
         pairs = [[query, chunk] for chunk in chunks]
         
         with torch.inference_mode():
-            # Use autocast for safe mixed-precision instead of manual .half()
             device_type = "cuda" if torch.cuda.is_available() else "cpu"
             ctx = torch.autocast(device_type=device_type, dtype=torch.float16) if device_type == "cuda" else nullcontext()
             
@@ -142,7 +103,6 @@ def rerank_chunks(
                     logger.warning("GPU OOM during reranking, falling back to CPU")
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
-                    # Retry with smaller batches
                     scores = reranker.predict(
                         pairs,
                         batch_size=max(1, _RERANKER_BATCH_SIZE // 4),

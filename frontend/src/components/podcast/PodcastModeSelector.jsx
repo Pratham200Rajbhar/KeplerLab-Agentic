@@ -49,7 +49,7 @@ export default function PodcastModeSelector() {
         await startGeneration(session.id);
       }
     } catch {
-      // error is set in store
+      
     }
   };
 
@@ -57,7 +57,7 @@ export default function PodcastModeSelector() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Back */}
+      {}
       <button
         onClick={() => setPhase('idle')}
         className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -74,7 +74,7 @@ export default function PodcastModeSelector() {
         </p>
       </div>
 
-      {/* Mode */}
+      {}
       <div>
         <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">Style</label>
         <div className="grid grid-cols-2 gap-2">
@@ -95,7 +95,7 @@ export default function PodcastModeSelector() {
         </div>
       </div>
 
-      {/* Topic */}
+      {}
       <div>
         <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
           Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
@@ -109,7 +109,7 @@ export default function PodcastModeSelector() {
         />
       </div>
 
-      {/* Language */}
+      {}
       <div>
         <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Language</label>
         <select
@@ -136,7 +136,7 @@ export default function PodcastModeSelector() {
         </select>
       </div>
 
-      {/* Voice picker */}
+      {}
       <div>
         <button
           onClick={() => setShowVoices(!showVoices)}
@@ -154,7 +154,7 @@ export default function PodcastModeSelector() {
         )}
       </div>
 
-      {/* Generate button */}
+      {}
       <button
         onClick={handleGenerate}
         disabled={!hasSources || loading}

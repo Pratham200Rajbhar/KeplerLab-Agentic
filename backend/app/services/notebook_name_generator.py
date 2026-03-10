@@ -1,5 +1,3 @@
-"""Generate a concise notebook name from content using the LLM."""
-
 from __future__ import annotations
 
 import logging
@@ -28,15 +26,11 @@ Content preview:
 
 Material title:"""
 
-
 def generate_notebook_name(content: str, filename: str | None = None) -> str:
-    """Return a 2-5 word notebook name derived from *content*."""
     preview = content[:2000]
-    # Retry logic for robustness
     for attempt in range(3):
         try:
             response = get_llm().invoke(_PROMPT.format(preview=preview))
-            # Works for both chat models (response.content) and plain-string LLMs
             name = (getattr(response, "content", None) or str(response)).strip().strip("\"'")[:50]
             if name and len(name) >= 3:
                 return name
@@ -46,19 +40,15 @@ def generate_notebook_name(content: str, filename: str | None = None) -> str:
             else:
                 logger.warning(f"Notebook name generation attempt {attempt + 1} failed: {e}")
 
-    # Fallback
     if filename:
         return filename.rsplit(".", 1)[0][:40]
     return "New Notebook"
 
 def generate_material_title(content: str, filename: str | None = None) -> str:
-    """Return a 3-8 word title for a material derived from *content*."""
     preview = content[:2000]
-    # Retry logic for robustness
     for attempt in range(3):
         try:
             response = get_llm().invoke(_PROMPT_MATERIAL.format(preview=preview))
-            # Works for both chat models (response.content) and plain-string LLMs
             title = (getattr(response, "content", None) or str(response)).strip().strip("\"'")[:100]
             if title and len(title) >= 3:
                 return title
@@ -68,7 +58,6 @@ def generate_material_title(content: str, filename: str | None = None) -> str:
             else:
                 logger.warning(f"Material title generation attempt {attempt + 1} failed: {e}")
 
-    # Fallback
     if filename:
         return filename.rsplit(".", 1)[0][:60]
     return "Untitled Material"

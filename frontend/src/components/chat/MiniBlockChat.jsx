@@ -19,7 +19,7 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
   useEffect(() => {
     if (action !== 'ask') handleSend();
     else inputRef.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [action]);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
             else if (l.startsWith('data: ')) dat = l.slice(6).trim();
           }
           if (evt === 'token') {
-            try { setResponse(p => p + (JSON.parse(dat).content || '')); } catch { /* skip */ }
+            try { setResponse(p => p + (JSON.parse(dat).content || '')); } catch {  }
           }
         }
       }

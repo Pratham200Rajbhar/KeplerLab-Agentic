@@ -9,7 +9,7 @@ import {
 import { setAccessToken as syncTokenToApi, onSessionExpired } from '@/lib/api/config';
 import { TIMERS } from '@/lib/utils/constants';
 
-// Module-level refs to avoid storing non-serializable values in Zustand state
+
 let _refreshTimer = null;
 let _accessTokenRef = null;
 let _initPromise = null;
@@ -28,9 +28,8 @@ const useAuthStore = create((set, get) => ({
   scheduleRefresh: () => {
     if (_refreshTimer) clearTimeout(_refreshTimer);
     _refreshTimer = setTimeout(async () => {
-      // Retry up to 3 times with exponential backoff before giving up.
-      // This handles transient network blips without prematurely logging the
-      // user out.
+      
+      
       const MAX_RETRIES = 3;
       let attempt = 0;
 
@@ -38,18 +37,18 @@ const useAuthStore = create((set, get) => ({
         try {
           const tokens = await refreshToken();
           get()._syncToken(tokens.access_token);
-          get().scheduleRefresh(); // reschedule on success
+          get().scheduleRefresh(); 
           return;
         } catch {
           attempt++;
           if (attempt < MAX_RETRIES) {
-            // Exponential back-off: 2s, 4s, 8s …
+            
             await new Promise((r) => setTimeout(r, 2000 * 2 ** (attempt - 1)));
           }
         }
       }
 
-      // All retries exhausted — session is genuinely expired.
+      
       set({ user: null, isAuthenticated: false });
       get()._syncToken(null);
       if (typeof window !== 'undefined') {
@@ -59,7 +58,7 @@ const useAuthStore = create((set, get) => ({
   },
 
   initAuth: async () => {
-    // Deduplicate concurrent init calls (React Strict Mode)
+    
     if (_initPromise) return _initPromise;
 
     _initPromise = (async () => {
@@ -112,7 +111,7 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await apiLogout(_accessTokenRef);
-    } catch { /* ignore logout API errors */ }
+    } catch {  }
 
     if (_refreshTimer) {
       clearTimeout(_refreshTimer);
@@ -130,7 +129,7 @@ const useAuthStore = create((set, get) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Register session expiry handler for soft redirects
+
 if (typeof window !== 'undefined') {
   onSessionExpired(() => {
     useAuthStore.getState().logout();

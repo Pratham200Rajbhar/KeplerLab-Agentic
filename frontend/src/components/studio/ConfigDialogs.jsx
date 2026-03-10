@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { X } from 'lucide-react';
 
-/* ─────────────────── Flashcard Config Dialog ─────────────────── */
+
 export function FlashcardConfigDialog({ onGenerate, onCancel }) {
   const onConfirm = onGenerate;
   const onClose = onCancel;
@@ -30,7 +30,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Topic */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
               Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
@@ -44,7 +44,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
             />
           </div>
 
-          {/* Card Count */}
+          {}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-[var(--text-secondary)]">Number of Cards</label>
@@ -82,7 +82,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
             )}
           </div>
 
-          {/* Difficulty */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Difficulty</label>
             <div className="flex gap-2">
@@ -102,7 +102,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
             </div>
           </div>
 
-          {/* Additional Instructions */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
               Additional Instructions <span className="text-[var(--text-muted)]">(optional)</span>
@@ -130,7 +130,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
   );
 }
 
-/* ─────────────────── Quiz Config Dialog ─────────────────── */
+
 export function QuizConfigDialog({ onGenerate, onCancel }) {
   const onConfirm = onGenerate;
   const onClose = onCancel;
@@ -156,7 +156,7 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Topic */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
               Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
@@ -170,7 +170,7 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
             />
           </div>
 
-          {/* Question Count */}
+          {}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-[var(--text-secondary)]">Number of Questions</label>
@@ -208,7 +208,7 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
             )}
           </div>
 
-          {/* Difficulty */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Difficulty</label>
             <div className="flex gap-2">
@@ -228,7 +228,7 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
             </div>
           </div>
 
-          {/* Additional Instructions */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
               Additional Instructions <span className="text-[var(--text-muted)]">(optional)</span>

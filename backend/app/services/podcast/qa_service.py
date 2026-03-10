@@ -1,15 +1,3 @@
-"""Q&A service for podcast interruptions.
-
-Handles questions during podcast playback — routes through RAG,
-generates answers, synthesizes answer audio.
-
-Optimisations:
-• asyncio.to_thread() for all blocking calls (no lambda-closure bugs).
-• RAG skips notebook filter when material_ids are present (matches
-  script_generator.py behaviour for unlinked materials).
-• Parallel RAG + prompt-build so TTS starts as early as possible.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -27,15 +15,12 @@ from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
 
-
 def _rag_for_question(
     user_id: str,
     question: str,
     material_ids: list,
     notebook_id: Optional[str],
 ) -> str:
-    """Synchronous RAG call — run via asyncio.to_thread."""
-    # Skip notebook filter when material_ids are given so unlinked materials work
     nb_filter = notebook_id if not material_ids else None
     ctx = secure_similarity_search_enhanced(
         user_id=user_id,
@@ -47,7 +32,6 @@ def _rag_for_question(
         return_formatted=True,
     )
     if not ctx or ctx == "No relevant context found.":
-        # Fallback without notebook filter
         ctx = secure_similarity_search_enhanced(
             user_id=user_id,
             query=question,
@@ -59,7 +43,6 @@ def _rag_for_question(
         )
     return ctx or "No relevant context available."
 
-
 async def handle_question(
     session_id: str,
     user_id: str,
@@ -67,10 +50,6 @@ async def handle_question(
     paused_at_segment: int,
     question_audio_url: Optional[str] = None,
 ) -> Dict:
-    """Process a listener question during podcast interruption.
-
-    Pipeline: RAG retrieval → LLM answer → TTS synthesis → DB persist.
-    """
     db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
@@ -83,13 +62,11 @@ async def handle_question(
         session_id, paused_at_segment, question_text[:80],
     )
 
-    # 1. RAG retrieval
     context = await asyncio.to_thread(
         _rag_for_question,
         user_id, question_text, session.materialIds, session.notebookId,
     )
 
-    # 2. Generate answer
     language_name = LANGUAGE_NAMES.get(session.language, "English")
     prompt = get_podcast_qa_prompt(
         language=language_name,
@@ -101,7 +78,6 @@ async def handle_question(
     response = await asyncio.to_thread(llm.invoke, prompt)
     answer_text = response.content if hasattr(response, "content") else str(response)
 
-    # 3. Synthesise answer audio (guest voice answers the question)
     answer_filename = f"qa_{uuid.uuid4().hex[:8]}.mp3"
     tts_result = await synthesize_single(
         session_id=session_id,
@@ -110,7 +86,6 @@ async def handle_question(
         filename=answer_filename,
     )
 
-    # 4. Persist doubt record
     doubt = await db.podcastdoubt.create(
         data={
             "sessionId": session_id,
@@ -133,9 +108,7 @@ async def handle_question(
         "pausedAtSegment": paused_at_segment,
     }
 
-
 async def get_doubts(session_id: str, user_id: str) -> list:
-    """Get all Q&A doubts for a session."""
     db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id}
@@ -162,9 +135,7 @@ async def get_doubts(session_id: str, user_id: str) -> list:
         for d in doubts
     ]
 
-
 async def resolve_doubt(doubt_id: str) -> None:
-    """Mark a doubt as resolved."""
     db = prisma
     await db.podcastdoubt.update(
         where={"id": doubt_id},

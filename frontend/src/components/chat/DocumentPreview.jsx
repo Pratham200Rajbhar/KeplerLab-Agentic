@@ -1,7 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Table, Code, FileText } from 'lucide-react';
+import {
+  Table, Code, FileText, FileCode, AlignLeft, Hash, Layers,
+  BookOpen, Database, Braces, Globe, SplitSquareHorizontal,
+} from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 
 const STRUCTURED_EXTS = ['csv', 'tsv', 'xlsx', 'xls', 'ods'];
@@ -103,17 +106,62 @@ function CodePreview({ text, language }) {
 
 function getTypeBadge(type) {
   const badges = {
-    pdf: { label: 'PDF Document', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
-    doc: { label: 'Word Document', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-    docx: { label: 'Word Document', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-    pptx: { label: 'Presentation', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-    ppt: { label: 'Presentation', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-    txt: { label: 'Plain Text', color: 'text-gray-400 bg-gray-500/10 border-gray-500/20' },
-    md: { label: 'Markdown', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-    rtf: { label: 'Rich Text', color: 'text-teal-400 bg-teal-500/10 border-teal-500/20' },
+    pdf:  { label: 'PDF Document',  color: 'text-red-400 bg-red-500/10 border-red-500/20',       icon: <FileText className="w-3 h-3" /> },
+    doc:  { label: 'Word Document', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',     icon: <FileText className="w-3 h-3" /> },
+    docx: { label: 'Word Document', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',     icon: <FileText className="w-3 h-3" /> },
+    pptx: { label: 'Presentation',  color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', icon: <Layers className="w-3 h-3" /> },
+    ppt:  { label: 'Presentation',  color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', icon: <Layers className="w-3 h-3" /> },
+    txt:  { label: 'Plain Text',    color: 'text-gray-400 bg-gray-500/10 border-gray-500/20',     icon: <AlignLeft className="w-3 h-3" /> },
+    md:   { label: 'Markdown',      color: 'text-purple-400 bg-purple-500/10 border-purple-500/20', icon: <Hash className="w-3 h-3" /> },
+    markdown: { label: 'Markdown',  color: 'text-purple-400 bg-purple-500/10 border-purple-500/20', icon: <Hash className="w-3 h-3" /> },
+    rtf:  { label: 'Rich Text',     color: 'text-teal-400 bg-teal-500/10 border-teal-500/20',     icon: <BookOpen className="w-3 h-3" /> },
+    json: { label: 'JSON',          color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', icon: <Braces className="w-3 h-3" /> },
+    xml:  { label: 'XML',           color: 'text-pink-400 bg-pink-500/10 border-pink-500/20',     icon: <Code className="w-3 h-3" /> },
+    html: { label: 'HTML',          color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', icon: <Globe className="w-3 h-3" /> },
+    csv:  { label: 'CSV Data',      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: <Database className="w-3 h-3" /> },
+    tsv:  { label: 'TSV Data',      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: <Database className="w-3 h-3" /> },
+    xlsx: { label: 'Spreadsheet',   color: 'text-green-400 bg-green-500/10 border-green-500/20',  icon: <Table className="w-3 h-3" /> },
+    xls:  { label: 'Spreadsheet',   color: 'text-green-400 bg-green-500/10 border-green-500/20',  icon: <Table className="w-3 h-3" /> },
+    ods:  { label: 'Spreadsheet',   color: 'text-green-400 bg-green-500/10 border-green-500/20',  icon: <Table className="w-3 h-3" /> },
+    py:   { label: 'Python',        color: 'text-sky-400 bg-sky-500/10 border-sky-500/20',         icon: <FileCode className="w-3 h-3" /> },
+    js:   { label: 'JavaScript',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', icon: <FileCode className="w-3 h-3" /> },
+    ts:   { label: 'TypeScript',    color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',     icon: <FileCode className="w-3 h-3" /> },
+    sql:  { label: 'SQL',           color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', icon: <SplitSquareHorizontal className="w-3 h-3" /> },
+    yaml: { label: 'YAML',          color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',     icon: <FileCode className="w-3 h-3" /> },
+    yml:  { label: 'YAML',          color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',     icon: <FileCode className="w-3 h-3" /> },
+    toml: { label: 'TOML',          color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',  icon: <FileCode className="w-3 h-3" /> },
+    sh:   { label: 'Shell Script',  color: 'text-gray-400 bg-gray-500/10 border-gray-500/20',    icon: <FileCode className="w-3 h-3" /> },
   };
-  const badge = badges[type] || { label: 'Document', color: 'text-gray-400 bg-gray-500/10 border-gray-500/20' };
-  return <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${badge.color}`}>{badge.label}</span>;
+  const badge = badges[type] || { label: 'Document', color: 'text-gray-400 bg-gray-500/10 border-gray-500/20', icon: <FileText className="w-3 h-3" /> };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${badge.color}`}>
+      {badge.icon}{badge.label}
+    </span>
+  );
+}
+
+function getDocStats(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const lines = text.split('\n').length;
+  const chars = text.length;
+  const sections = (text.match(/===\s*.+?\s*===/g) || []).length;
+  return { words, lines, chars, sections };
+}
+
+function DocStatsBar({ text }) {
+  const stats = useMemo(() => getDocStats(text), [text]);
+  return (
+    <div className="doc-preview-stats-bar">
+      <span>{stats.words.toLocaleString()} words</span>
+      <span className="doc-preview-stats-sep" />
+      <span>{stats.lines.toLocaleString()} lines</span>
+      <span className="doc-preview-stats-sep" />
+      <span>{stats.chars >= 1000 ? `${(stats.chars / 1000).toFixed(1)}k` : stats.chars} chars</span>
+      {stats.sections > 0 && (
+        <><span className="doc-preview-stats-sep" /><span>{stats.sections} sections</span></>
+      )}
+    </div>
+  );
 }
 
 function TextPreview({ text, type }) {
@@ -139,7 +187,10 @@ function TextPreview({ text, type }) {
 
   return (
     <div className="doc-preview-text-section">
-      <div className="doc-preview-type-badge">{getTypeBadge(type)}</div>
+      <div className="doc-preview-header-row">
+        <div className="doc-preview-type-badge">{getTypeBadge(type)}</div>
+        <DocStatsBar text={text} />
+      </div>
       <div className="doc-preview-text-content">
         {sections.map((section, i) => {
           if (section.type === 'header') {
@@ -167,10 +218,13 @@ export default function DocumentPreview({ content, filename }) {
       if (hasValidTables) {
         return (
           <div className="doc-preview-structured">
-            <div className="doc-preview-type-badge">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
-                <Table className="w-3.5 h-3.5" />Spreadsheet Data
-              </span>
+            <div className="doc-preview-header-row">
+              <div className="doc-preview-type-badge">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                  <Table className="w-3 h-3" />Spreadsheet Data
+                </span>
+              </div>
+              <DocStatsBar text={content} />
             </div>
             {tables.map((table, i) =>
               table.headers && table.headers.length >= 2
@@ -188,7 +242,10 @@ export default function DocumentPreview({ content, filename }) {
     if (MARKDOWN_EXTS.includes(ext)) {
       return (
         <div className="doc-preview-text-section">
-          <div className="doc-preview-type-badge">{getTypeBadge(ext)}</div>
+          <div className="doc-preview-header-row">
+            <div className="doc-preview-type-badge">{getTypeBadge(ext)}</div>
+            <DocStatsBar text={content} />
+          </div>
           <div className="doc-preview-text-block markdown-content"><MarkdownRenderer content={content} /></div>
         </div>
       );

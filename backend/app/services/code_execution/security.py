@@ -1,10 +1,3 @@
-"""Security — code validation and sanitisation for AI-generated Python.
-
-Provides:
-  - validate_code(code) → ValidationResult
-  - sanitize_code(code) → str
-"""
-
 from __future__ import annotations
 
 import ast
@@ -12,9 +5,6 @@ import re
 from dataclasses import dataclass, field
 from typing import List
 
-# ── Blocked patterns ──────────────────────────────────────────
-
-# Modules that should never be imported by generated code
 _BLOCKED_MODULES: set[str] = {
     "subprocess",
     "socket",
@@ -51,8 +41,6 @@ _BLOCKED_MODULES: set[str] = {
     "mmap",
 }
 
-# Dangerous built-in / attribute calls
-# High-risk patterns that BLOCK execution (is_safe = False)
 _HARD_BLOCKED_CALLS: List[str] = [
     r"\beval\s*\(",
     r"\bexec\s*\(",
@@ -72,7 +60,6 @@ _HARD_BLOCKED_CALLS: List[str] = [
     r"\bshutil\.rmtree\s*\(",
 ]
 
-# Lower-risk patterns that produce warnings only (potential false positives)
 _SOFT_BLOCKED_CALLS: List[str] = [
     r"\bos\.environ\b",
     r"\bos\.getenv\s*\(",
@@ -83,16 +70,14 @@ _SOFT_BLOCKED_CALLS: List[str] = [
     r"\bos\.mkdir\s*\(",
     r"\bos\.rename\s*\(",
     r"\bshutil\b",
-    r"\bopen\s*\(.*['\"]w['\"]",    # open(..., 'w') — writing
-    r"\bopen\s*\(.*['\"]a['\"]",    # open(..., 'a') — appending
-    r"\bopen\s*\(.*['\"]wb['\"]",   # open(..., 'wb')
-    r"\bopen\s*\(.*['\"]ab['\"]",   # open(..., 'ab')
+    r"\bopen\s*\(.*['\"]w['\"]",
+    r"\bopen\s*\(.*['\"]a['\"]",
+    r"\bopen\s*\(.*['\"]wb['\"]",
+    r"\bopen\s*\(.*['\"]ab['\"]",
 ]
 
 _HARD_BLOCKED_CALL_RES = [re.compile(p) for p in _HARD_BLOCKED_CALLS]
 _SOFT_BLOCKED_CALL_RES = [re.compile(p) for p in _SOFT_BLOCKED_CALLS]
-
-# ── Chart capture injection ───────────────────────────────────
 
 _CHART_CAPTURE_SNIPPET = """
 import matplotlib
@@ -112,36 +97,21 @@ def _capture_show():
 _plt_module.show = _capture_show
 """
 
-
 @dataclass
 class ValidationResult:
-    """Result of code security validation."""
 
     is_safe: bool = True
     violations: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
 
-
-# ── Public API ────────────────────────────────────────────────
-
-
 def validate_code(code: str) -> ValidationResult:
-    """Validate generated Python code for security violations.
-
-    Scans for blocked imports (AST-level) and dangerous call patterns
-    (regex-level).  Returns a ValidationResult with any findings.
-
-    The validation is intentionally non-blocking for mild issues (added as
-    warnings) while hard violations set ``is_safe = False``.
-    """
     result = ValidationResult()
 
-    # ── AST-level import check ────────────────────────────────
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         result.warnings.append(f"Syntax warning: {exc}")
-        return result  # Can't do further AST analysis on broken code
+        return result
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
@@ -162,8 +132,6 @@ def validate_code(code: str) -> ValidationResult:
                     )
                     result.is_safe = False
 
-    # ── Regex-level dangerous call check ─────────────────────
-    # Hard violations — these always block execution
     for pattern in _HARD_BLOCKED_CALL_RES:
         for match in pattern.finditer(code):
             result.violations.append(
@@ -171,7 +139,6 @@ def validate_code(code: str) -> ValidationResult:
             )
             result.is_safe = False
 
-    # Soft warnings — potentially dangerous but may be false positives
     for pattern in _SOFT_BLOCKED_CALL_RES:
         for match in pattern.finditer(code):
             result.warnings.append(
@@ -180,18 +147,9 @@ def validate_code(code: str) -> ValidationResult:
 
     return result
 
-
 def sanitize_code(code: str) -> str:
-    """Sanitise generated code before execution.
-
-    - Strips leading/trailing whitespace.
-    - Injects matplotlib chart capture so plt.show() saves a base64
-      PNG instead of trying to open a GUI window.
-    - Does NOT perform security checks (call validate_code first).
-    """
     code = code.strip()
 
-    # Inject chart capture before user code if matplotlib is referenced
     needs_capture = (
         "matplotlib" in code
         or "plt.show" in code

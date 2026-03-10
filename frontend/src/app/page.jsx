@@ -22,9 +22,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-/* ═══════════════════════════════════════════════════════
-   HOME / DASHBOARD — Production-grade layout
-   ═══════════════════════════════════════════════════════ */
 
 export default function HomePage() {
   const { user, logout, isAuthenticated, isLoading } = useAuthStore();
@@ -46,10 +43,7 @@ export default function HomePage() {
   const [deletingNotebook, setDeletingNotebook] = useState(null);
   const menuRef = useRef(null);
 
-  /* ── Data Loading ──
-   * loadNotebooks() updates state only inside .then/.catch callbacks (async),
-   * so it never triggers synchronous cascading renders from the effect body.
-   */
+  
   const loadNotebooks = useCallback(() => {
     getNotebooks()
       .then((data) => {
@@ -69,7 +63,7 @@ export default function HomePage() {
       router.replace('/auth');
       return;
     }
-    // loadNotebooks only calls setState inside async .then/.catch — not synchronously
+    
     loadNotebooks();
   }, [isAuthenticated, isLoading, loadNotebooks, router]);
 
@@ -95,7 +89,7 @@ export default function HomePage() {
     };
   }, []);
 
-  /* ── Actions ── */
+  
   const handleDelete = (notebookId, e) => {
     e?.stopPropagation();
     setActiveMenu(null);
@@ -144,7 +138,7 @@ export default function HomePage() {
 
   const userInitial = user?.username?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U';
 
-  /* ── Loading & Auth Guards ── */
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--surface)' }}>
@@ -154,16 +148,16 @@ export default function HomePage() {
   }
   if (!isAuthenticated) return null;
 
-  /* ═══ RENDER ═══ */
+  
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface)' }}>
-      {/* Ambient gradient glow */}
+      {}
       <div
         className="pointer-events-none fixed inset-x-0 top-0 h-[600px] z-0"
         style={{ background: 'radial-gradient(ellipse 60% 40% at 50% -10%, rgba(16,185,129,0.06) 0%, transparent 70%)' }}
       />
 
-      {/* ── Header ── */}
+      {}
       <header
         className="z-30 sticky top-0 flex items-center justify-between h-14 px-6"
         style={{
@@ -232,9 +226,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ── Main Content ── */}
+      {}
       <main className="relative z-10 max-w-[1200px] mx-auto px-6 pt-10 pb-16">
-        {/* Hero */}
+        {}
         <section className="mb-10">
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4"
@@ -258,7 +252,7 @@ export default function HomePage() {
           </p>
         </section>
 
-        {/* Section Header */}
+        {}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
@@ -273,7 +267,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Content States */}
+        {}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="loading-spinner w-6 h-6" />
@@ -284,7 +278,7 @@ export default function HomePage() {
             <button onClick={loadNotebooks} className="btn-primary text-sm px-5 py-2">Retry</button>
           </div>
         ) : notebooks.length === 0 ? (
-          /* Empty State */
+          
           <div className="mt-20 text-center">
             <div
               className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center"
@@ -308,7 +302,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* New Notebook Card */}
+            {}
             <button
               onClick={() => router.push('/notebook/draft')}
               className="notebook-card border-dashed flex flex-col items-center justify-center gap-3 group cursor-pointer transition-all duration-200"
@@ -332,7 +326,7 @@ export default function HomePage() {
               </div>
             </button>
 
-            {/* Existing Notebooks */}
+            {}
             {notebooks.map((notebook, i) => (
               <div
                 key={notebook.id}
@@ -365,7 +359,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Context Menu Trigger */}
+                {}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -377,7 +371,7 @@ export default function HomePage() {
                   <MoreVertical className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Context Menu Dropdown */}
+                {}
                 {activeMenu === notebook.id && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
@@ -420,7 +414,7 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* ── Rename Modal ── */}
+      {}
       {editingNotebook && (
         <div className="modal-backdrop" onClick={() => setEditingNotebook(null)}>
           <div className="modal w-full max-w-md mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
@@ -466,7 +460,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ── Delete Confirmation ── */}
+      {}
       {deletingNotebook && (
         <div className="modal-backdrop" onClick={() => setDeletingNotebook(null)}>
           <div className="modal w-full max-w-sm mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>

@@ -1,15 +1,6 @@
-"""Voice map configuration for AI Live Podcast.
-
-Maps languages to available edge-tts voices with gender, name, and preview text.
-"""
-
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
-# ── Voice Map ─────────────────────────────────────────────────
-# Each language maps to a list of voice entries.
-# Each entry: {id, name, gender, description, preview_text}
+from typing import Dict, List
 
 VOICE_MAP: Dict[str, List[dict]] = {
     "en": [
@@ -56,7 +47,6 @@ VOICE_MAP: Dict[str, List[dict]] = {
     ],
 }
 
-# Default voice pairs per language (host, guest)
 DEFAULT_VOICES: Dict[str, dict] = {
     "en": {"host": "en-US-GuyNeural", "guest": "en-US-JennyNeural"},
     "hi": {"host": "hi-IN-MadhurNeural", "guest": "hi-IN-SwaraNeural"},
@@ -70,14 +60,12 @@ DEFAULT_VOICES: Dict[str, dict] = {
     "pt": {"host": "pt-BR-AntonioNeural", "guest": "pt-BR-FranciscaNeural"},
 }
 
-# Language display names
 LANGUAGE_NAMES: Dict[str, str] = {
     "en": "English", "hi": "Hindi", "gu": "Gujarati", "es": "Spanish",
     "ar": "Arabic", "fr": "French", "de": "German", "ja": "Japanese",
     "zh": "Chinese", "pt": "Portuguese",
 }
 
-# Preview texts per language
 PREVIEW_TEXTS: Dict[str, str] = {
     "en": "Welcome to this podcast where we explore fascinating topics together.",
     "hi": "इस पॉडकास्ट में आपका स्वागत है जहाँ हम साथ मिलकर दिलचस्प विषयों की खोज करते हैं।",
@@ -91,23 +79,15 @@ PREVIEW_TEXTS: Dict[str, str] = {
     "pt": "Bem-vindos a este podcast onde exploramos temas fascinantes juntos.",
 }
 
-
 def get_voices_for_language(language: str) -> List[dict]:
-    """Return available voices for a language."""
     return VOICE_MAP.get(language, VOICE_MAP["en"])
 
-
 def get_default_voices(language: str) -> dict:
-    """Return default host/guest voice IDs for a language."""
     return DEFAULT_VOICES.get(language, DEFAULT_VOICES["en"])
 
-
 def get_preview_text(language: str) -> str:
-    """Return preview text for a language."""
     return PREVIEW_TEXTS.get(language, PREVIEW_TEXTS["en"])
 
-
 def validate_voice(voice_id: str, language: str) -> bool:
-    """Check if a voice ID is valid for the given language."""
     voices = get_voices_for_language(language)
     return any(v["id"] == voice_id for v in voices)

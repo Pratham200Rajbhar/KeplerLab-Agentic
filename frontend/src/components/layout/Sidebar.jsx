@@ -54,6 +54,7 @@ export default function Sidebar({ onNavigate }) {
 
   const [dragActive, setDragActive] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [modalText, setModalText] = useState('');
   const [modalFilename, setModalFilename] = useState('');
   const [modalSourceFilename, setModalSourceFilename] = useState('');
@@ -77,7 +78,7 @@ export default function Sidebar({ onNavigate }) {
           status: m.status, chunkCount: m.chunk_count, source_type: m.source_type,
         }));
         setMaterials(formatted);
-        // Only auto-select first material if none is currently selected in store
+        
         const store = useAppStore.getState();
         if (formatted.length > 0 && !store.currentMaterial) {
           setCurrentMaterial(formatted[0]);
@@ -101,7 +102,7 @@ export default function Sidebar({ onNavigate }) {
     loadMaterials(true);
   }, [currentNotebook?.id, loadMaterials]);
 
-  // WebSocket real-time updates
+  
   const handleWsMessage = useCallback((msg) => {
     if (msg.type?.startsWith('podcast_')) {
       handlePodcastWsEvent(msg);
@@ -111,7 +112,7 @@ export default function Sidebar({ onNavigate }) {
       if (currentNotebook?.id === msg.notebook_id) {
         setCurrentNotebook({ ...currentNotebook, name: msg.name });
       }
-      // Dispatch custom event for dashboard/NotebookNav to update its list
+      
       window.dispatchEvent(
         new CustomEvent('notebookNameUpdate', {
           detail: { id: msg.notebook_id, name: msg.name },
@@ -141,7 +142,7 @@ export default function Sidebar({ onNavigate }) {
 
   useMaterialUpdates(user?.id || null, handleWsMessage);
 
-  // Fallback polling for processing materials
+  
   useEffect(() => {
     const hasProcessing = materials.some((m) => m.status && !['completed', 'failed'].includes(m.status));
     if (!hasProcessing) return;
@@ -240,12 +241,25 @@ export default function Sidebar({ onNavigate }) {
     if (e.dataTransfer.files?.length) handleFileUpload(Array.from(e.dataTransfer.files));
   };
 
+  const closePreviewModal = useCallback(() => {
+    setModalVisible(false);
+    setTimeout(() => setShowTextModal(false), 280);
+  }, []);
+
+  useEffect(() => {
+    if (!showTextModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') closePreviewModal(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showTextModal, closePreviewModal]);
+
   const handleSeeText = async (source) => {
     setModalFilename(source.title || source.filename);
     setModalSourceFilename(source.filename || '');
     setModalText('');
     setModalLoading(true);
     setShowTextModal(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => setModalVisible(true)));
     try {
       const response = await getMaterialText(source.id);
       setModalText(response.text);
@@ -287,7 +301,7 @@ export default function Sidebar({ onNavigate }) {
         className="h-full overflow-hidden flex flex-col relative bg-surface/60 backdrop-blur-2xl text-text-primary"
         style={{ width: `${width}px`, minWidth: '260px' }}
       >
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between p-5 shrink-0 bg-surface/40">
           <div className="flex items-center gap-2.5">
             <span className="text-text-primary font-bold text-[13px] tracking-wide uppercase">Sources</span>
@@ -302,14 +316,14 @@ export default function Sidebar({ onNavigate }) {
           </button>
         </div>
 
-        {/* Add Source & Search */}
+        {}
         <div className="p-4 space-y-5 relative z-10">
           <button
             className="group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
             onClick={() => setShowUploadDialog(true)}
             disabled={loading.upload}
           >
-            {/* Animated Background Gradient */}
+            {}
             <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent-light opacity-90 group-hover:opacity-100 transition-opacity" />
             <div className="absolute inset-0 bg-gradient-to-r from-accent-light to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
@@ -323,7 +337,7 @@ export default function Sidebar({ onNavigate }) {
             <span className="relative z-10 text-[14px] font-semibold tracking-wide">Add sources</span>
           </button>
 
-          {/* Search Box */}
+          {}
           <div className="p-3.5 rounded-2xl space-y-3.5 relative bg-surface-raised/30 shadow-inner">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transform translate-x-12 -translate-y-12" />
             
@@ -381,7 +395,7 @@ export default function Sidebar({ onNavigate }) {
           </div>
         </div>
 
-        {/* Select All */}
+        {}
         <div className="px-5 pt-3 pb-2 flex justify-between items-center relative z-10">
           <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em]">All Sources</span>
           <button
@@ -401,7 +415,7 @@ export default function Sidebar({ onNavigate }) {
           </button>
         </div>
 
-        {/* Sources List */}
+        {}
         <div
           className={`flex-1 overflow-y-auto transition-colors ${dragActive ? 'bg-accent/5' : ''}`}
           onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
@@ -441,7 +455,7 @@ export default function Sidebar({ onNavigate }) {
           )}
         </div>
 
-        {/* Resize Handle */}
+        {}
         <div
           className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group hover:bg-accent/30"
           onMouseDown={startDrag}
@@ -453,25 +467,27 @@ export default function Sidebar({ onNavigate }) {
         </div>
       </aside>
 
-      {/* Text Modal */}
+      {}
       {showTextModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-backdrop backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowTextModal(false)}>
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-accent-subtle rounded-full blur-[60px] pointer-events-none" />
-            {/* Modal Content Header */}
-            <div className="p-4 sm:p-5 flex items-center justify-between bg-surface/80 backdrop-blur-xl z-10 shrink-0">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-all duration-[280ms] ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closePreviewModal}>
+          <div className={`bg-surface rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative shadow-[0_8px_60px_rgba(0,0,0,0.4)] transition-all duration-[280ms] ${modalVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-5'}`} onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-border bg-surface/90 backdrop-blur-xl z-10 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 rounded-lg bg-accent-subtle text-accent-light">
+                <div className="p-2 rounded-xl bg-accent-subtle text-accent-light shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-[15px] font-semibold text-text-primary truncate">{modalFilename}</h3>
-                  <p className="text-[13px] text-text-muted flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent" /> Document Preview
+                  <p className="text-[12px] text-text-muted flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    Document Preview
+                    {modalSourceFilename && !modalLoading && (
+                      <span className="text-text-muted/50">· {modalSourceFilename.split('.').pop()?.toUpperCase()}</span>
+                    )}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setShowTextModal(false)} className="p-2 mr-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors" aria-label="Close document preview">
+              <button onClick={closePreviewModal} className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors shrink-0" aria-label="Close document preview">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -490,8 +506,9 @@ export default function Sidebar({ onNavigate }) {
                 </div>
               )}
             </div>
-            <div className="p-4 bg-surface/95 backdrop-blur-xl flex justify-end z-10 rounded-b-2xl shrink-0">
-              <button onClick={() => setShowTextModal(false)} className="px-5 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close Preview</button>
+            <div className="px-4 py-3 bg-surface/95 backdrop-blur-xl flex items-center justify-between border-t border-border z-10 shrink-0">
+              <p className="text-[12px] text-text-muted">Press <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border text-[11px] font-mono">Esc</kbd> to close</p>
+              <button onClick={closePreviewModal} className="px-4 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close</button>
             </div>
           </div>
         </div>

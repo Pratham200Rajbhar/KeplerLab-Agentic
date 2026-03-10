@@ -1,8 +1,3 @@
-"""Sandbox environment — preinstalled packages and package management.
-
-Ensures all required packages are available for AI-generated code execution.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -14,8 +9,6 @@ import threading
 from typing import Dict, List
 
 logger = logging.getLogger(__name__)
-
-# ── Stdlib modules — never pip-install these ──────────────────
 
 SKIP_PACKAGES: set[str] = {
     "abc", "argparse", "ast", "asyncio", "base64", "bisect", "builtins",
@@ -38,23 +31,13 @@ SKIP_PACKAGES: set[str] = {
     "unicodedata", "unittest", "urllib", "uuid", "venv", "warnings",
     "wave", "weakref", "webbrowser", "xml", "xmlrpc", "zipfile",
     "zipimport", "zlib",
-    # Internal / private
     "__future__", "_thread", "_io",
 }
 
-# ── On-demand package installer ───────────────────────────────
-
 _installed_cache: set[str] = set()
-_install_lock = threading.Lock()  # Thread-safe install operations
-
+_install_lock = threading.Lock()
 
 def install_package_if_missing(pkg: str) -> bool:
-    """Try to import *pkg*; if missing, pip-install it (quietly).
-
-    Returns True if the package is available after this call.
-    Results are cached so each package is only checked/installed once
-    per process lifetime.  Thread-safe via _install_lock.
-    """
     if pkg in _installed_cache or pkg in SKIP_PACKAGES:
         return True
 
@@ -68,7 +51,6 @@ def install_package_if_missing(pkg: str) -> bool:
         pass
 
     with _install_lock:
-        # Double-check after acquiring lock (another thread may have installed it)
         if pkg in _installed_cache:
             return True
 
@@ -91,17 +73,9 @@ def install_package_if_missing(pkg: str) -> bool:
             logger.warning("[sandbox_env] Error installing %s: %s", pkg, exc)
             return False
 
-
 async def install_package_if_missing_async(pkg: str) -> bool:
-    """Async wrapper for install_package_if_missing — runs in thread pool.
-
-    Use this from async contexts to avoid blocking the event loop.
-    """
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, install_package_if_missing, pkg)
-
-
-# ── Preinstalled Packages ─────────────────────────────────────
 
 PREINSTALLED_PACKAGES: List[str] = [
     "pandas",
@@ -123,8 +97,6 @@ PREINSTALLED_PACKAGES: List[str] = [
     "jinja2",
 ]
 
-# ── Package → import statement mapping ────────────────────────
-
 PACKAGE_IMPORT_MAP: Dict[str, str] = {
     "pandas": "import pandas as pd",
     "numpy": "import numpy as np",
@@ -145,7 +117,6 @@ PACKAGE_IMPORT_MAP: Dict[str, str] = {
     "jinja2": "from jinja2 import Template",
 }
 
-# Map pip package name → importable module name (for packages where they differ)
 _PIP_TO_MODULE: Dict[str, str] = {
     "python-docx": "docx",
     "fpdf2": "fpdf",
@@ -153,18 +124,10 @@ _PIP_TO_MODULE: Dict[str, str] = {
     "pillow": "PIL",
 }
 
-
 def _get_import_name(package: str) -> str:
-    """Get the importable module name for a pip package."""
     return _PIP_TO_MODULE.get(package, package)
 
-
 async def ensure_packages() -> None:
-    """Install any missing preinstalled packages.
-
-    Runs pip install in quiet mode for each missing package.
-    Safe to call multiple times — skips already-installed packages.
-    """
     loop = asyncio.get_running_loop()
     missing: List[str] = []
 

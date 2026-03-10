@@ -49,7 +49,7 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Podcasts</h3>
@@ -70,7 +70,7 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
         </p>
       )}
 
-      {/* Session list */}
+      {}
       {sessions.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center">
           <Mic className="w-8 h-8 text-[var(--text-muted)] mb-3 opacity-40" />

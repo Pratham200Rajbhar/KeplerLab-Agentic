@@ -1,5 +1,3 @@
-"""Quiz generation route."""
-
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,7 +13,6 @@ from .utils import require_material_text, require_materials_text
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
-
 class QuizRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
@@ -23,7 +20,6 @@ class QuizRequest(BaseModel):
     mcq_count: Optional[int] = Field(10, ge=1, le=150)
     difficulty: DifficultyLevel = DifficultyLevel.medium
     additional_instructions: Optional[str] = Field(None, max_length=2000)
-
 
 @router.post("")
 async def create_quiz(

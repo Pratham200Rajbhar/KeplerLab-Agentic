@@ -1,44 +1,37 @@
 'use client';
 
 import { memo } from 'react';
-import { ExternalLink, Globe } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
-/**
- * WebSources — renders a list of clickable source citations.
- *
- * Props:
- *   sources: [{ title, url, domain, snippet, quality_score }]
- */
+
 function WebSources({ sources = [] }) {
   if (!sources.length) return null;
 
   return (
-    <div className="mt-3 space-y-1.5">
-      <div className="flex items-center gap-1.5 text-xs text-text-muted mb-1">
-        <Globe className="w-3 h-3" />
-        <span className="font-medium">Sources</span>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {sources.map((src, idx) => (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {sources.map((src, idx) => {
+        let domain = '';
+        try { domain = new URL(src.url).hostname.replace(/^www\./, ''); } catch {}
+        return (
           <a
             key={src.url || idx}
             href={src.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg
-              bg-surface-overlay/80 border border-border/20
-              text-text-secondary hover:text-accent hover:border-accent/30
-              transition-all duration-150 group max-w-[260px]"
-            title={src.snippet || src.title}
+            className="inline-flex items-center gap-1.5 text-[11px] pl-1.5 pr-2 py-1 rounded-md
+              bg-white/[0.04] border border-white/[0.06]
+              text-text-muted hover:text-text-primary hover:border-white/[0.12]
+              transition-colors group"
+            title={src.title || src.url}
           >
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-accent/10 text-accent text-[10px] font-bold shrink-0">
+            <span className="flex items-center justify-center w-4 h-4 rounded bg-accent/10 text-accent text-[10px] font-bold shrink-0">
               {idx + 1}
             </span>
-            <span className="truncate">{src.title || src.domain || src.url}</span>
-            <ExternalLink className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="truncate max-w-[140px]">{domain || src.title || 'Source'}</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
           </a>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

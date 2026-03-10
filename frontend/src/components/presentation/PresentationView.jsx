@@ -8,8 +8,7 @@ import {
 import Modal from '@/components/ui/Modal';
 import './PresentationView.css';
 
-/* ─────────────────── Slide Scale Hook ─────────────────── */
-// Slides are generated at 1920 × 1080 (16:9 widescreen).
+
 const SLIDE_W = 1920;
 const SLIDE_H = 1080;
 
@@ -22,7 +21,7 @@ function useSlideScale(containerRef) {
 
     const update = () => {
       const containerWidth = el.clientWidth;
-      // Scale the 1920-wide slide down to fit available width.
+      
       setScale(containerWidth / SLIDE_W);
     };
 
@@ -36,7 +35,7 @@ function useSlideScale(containerRef) {
   return scale;
 }
 
-/* ─────────────────── Inline Presentation View ─────────────────── */
+
 export default function InlinePresentationView({ presentation, onClose }) {
   const slides = presentation?.slides || presentation?.data?.slides || [];
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -53,7 +52,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
     setCurrentSlide((i) => Math.max(i - 1, 0));
   }, []);
 
-  // Keyboard navigation
+  
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
@@ -105,7 +104,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
 
   return (
     <div ref={containerRef} className={`presentation-viewer ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
-      {/* Controls bar */}
+      {}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <button
@@ -132,7 +131,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
         </div>
       </div>
 
-      {/* Overview grid */}
+      {}
       {showOverview ? (
         <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto animate-fade-in">
           {slides.map((s, i) => (
@@ -146,8 +145,8 @@ export default function InlinePresentationView({ presentation, onClose }) {
               }`}
             >
               {s.html ? (
-                // Thumbnail: render the complete standalone slide HTML in a
-                // scaled-down iframe so styles are preserved.
+                
+                
                 <div className="relative w-full" style={{ paddingTop: `${(SLIDE_H / SLIDE_W) * 100}%` }}>
                   <div className="absolute inset-0 overflow-hidden">
                     <iframe
@@ -179,7 +178,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
         </div>
       ) : (
         <>
-          {/* Main slide — the iframe is 1920×1080 and CSS-scaled to fit the container */}
+          {}
           <div
             className="slide-container relative rounded-xl border border-[var(--border)] overflow-hidden bg-black"
             style={{ paddingTop: `${(SLIDE_H / SLIDE_W) * 100}%` }}
@@ -187,10 +186,8 @@ export default function InlinePresentationView({ presentation, onClose }) {
             <div className="absolute inset-0">
               {slide.html ? (
                 <iframe
-                  // slide.html is already a complete standalone HTML document
-                  // (<!DOCTYPE html>…</html>) produced by slide_extractor.py.
-                  // Do NOT wrap it — that creates invalid nested <html> and strips
-                  // the embedded CSS, producing blank slides.
+                  
+                  
                   srcDoc={slide.html}
                   style={{
                     position: 'absolute',
@@ -213,7 +210,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
             </div>
           </div>
 
-          {/* Navigation */}
+          {}
           <div className="flex items-center justify-between mt-3">
             <button
               onClick={goPrev}
@@ -223,7 +220,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
               <ChevronLeft className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
 
-            {/* Progress dots */}
+            {}
             <div className="flex items-center gap-1 max-w-[60%] overflow-hidden">
               {slides.length <= 20
                 ? slides.map((_, i) => (
@@ -259,7 +256,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
   );
 }
 
-/* ─────────────────── Presentation Config Dialog ─────────────────── */
+
 export function PresentationConfigDialog({ onConfirm, onClose }) {
   const [maxSlides, setMaxSlides] = useState(10);
   const [theme, setTheme] = useState('modern');
@@ -287,7 +284,7 @@ export function PresentationConfigDialog({ onConfirm, onClose }) {
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Slide count */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Max Slides</label>
             <div className="flex items-center gap-3">
@@ -303,7 +300,7 @@ export function PresentationConfigDialog({ onConfirm, onClose }) {
             </div>
           </div>
 
-          {/* Theme */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Theme</label>
             <div className="grid grid-cols-3 gap-2">
@@ -325,7 +322,7 @@ export function PresentationConfigDialog({ onConfirm, onClose }) {
             </div>
           </div>
 
-          {/* Instructions */}
+          {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
               Additional Instructions <span className="text-[var(--text-muted)]">(optional)</span>

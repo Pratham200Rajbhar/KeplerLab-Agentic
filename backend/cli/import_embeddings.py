@@ -1,18 +1,3 @@
-#!/usr/bin/env python
-"""Import ChromaDB embeddings from a JSON file produced by ``export_embeddings``.
-
-Usage
------
-    # From backend/
-    python -m cli.import_embeddings backup.json
-    python -m cli.import_embeddings backup.json --dry-run
-    python -m cli.import_embeddings backup.json --skip-existing
-
-Records are inserted in batches.  If a record with the same ID already
-exists, ChromaDB will overwrite it unless ``--skip-existing`` is set, in
-which case the record is silently skipped.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -31,8 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cli.import")
 
-_BATCH = 256  # ChromaDB recommended max per upsert
-
+_BATCH = 256
 
 def _import(
     src: Path,
@@ -40,7 +24,6 @@ def _import(
     dry_run: bool = False,
     skip_existing: bool = False,
 ) -> int:
-    """Read *src* and insert records into the ChromaDB collection."""
 
     with src.open("r", encoding="utf-8") as fh:
         payload = json.load(fh)
@@ -62,7 +45,6 @@ def _import(
 
     collection = get_collection()
 
-    # If skip_existing, query existing IDs first so we can exclude them
     existing_ids: set[str] = set()
     if skip_existing:
         all_ids = collection.get(include=[])["ids"]
@@ -96,7 +78,6 @@ def _import(
         if not ids:
             continue
 
-        # Use upsert to safely handle duplicates when not skipping
         add_kwargs: dict = {
             "ids": ids,
             "documents": docs,
@@ -115,9 +96,6 @@ def _import(
 
     logger.info("Import complete: %d records written.", inserted)
     return inserted
-
-
-# ── CLI entry-point ───────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
@@ -152,7 +130,6 @@ def main(argv: list[str] | None = None) -> None:
         skip_existing=args.skip_existing,
     )
     print(f"✔ Imported {count} records from {args.input}")
-
 
 if __name__ == "__main__":
     main()

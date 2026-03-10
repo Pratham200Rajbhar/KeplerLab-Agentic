@@ -3,15 +3,7 @@
 import { memo, useState } from 'react';
 import { ChevronDown, ChevronUp, Code2, Terminal, Wrench } from 'lucide-react';
 
-/**
- * TechnicalDetails — collapsible section showing code and execution logs.
- * 
- * Props:
- *   code: { code: string, language: string }
- *   logs: [{ timestamp, type, message }]
- *   toolOutputs: [{ tool, output, duration }]
- *   defaultOpen: boolean
- */
+
 function TechnicalDetails({ code, logs = [], toolOutputs = [], defaultOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -23,7 +15,7 @@ function TechnicalDetails({ code, logs = [], toolOutputs = [], defaultOpen = fal
 
   return (
     <div className="technical-details mt-4">
-      {/* Toggle button */}
+      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors"
@@ -37,20 +29,20 @@ function TechnicalDetails({ code, logs = [], toolOutputs = [], defaultOpen = fal
         )}
       </button>
 
-      {/* Content */}
+      {}
       {isOpen && (
         <div className="mt-3 space-y-4 rounded-lg overflow-hidden shadow-sm">
-          {/* Generated code */}
+          {}
           {code && code.code && (
             <CodeSection code={code.code} language={code.language} />
           )}
 
-          {/* Tool outputs */}
+          {}
           {toolOutputs.length > 0 && (
             <ToolOutputsSection outputs={toolOutputs} />
           )}
 
-          {/* Execution logs */}
+          {}
           {logs.length > 0 && (
             <LogsSection logs={logs} />
           )}
@@ -60,9 +52,7 @@ function TechnicalDetails({ code, logs = [], toolOutputs = [], defaultOpen = fal
   );
 }
 
-/**
- * Code section with syntax highlighting placeholder.
- */
+
 function CodeSection({ code, language = 'python' }) {
   const [copied, setCopied] = useState(false);
 
@@ -72,7 +62,7 @@ function CodeSection({ code, language = 'python' }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      
       const ta = document.createElement('textarea');
       ta.value = code;
       document.body.appendChild(ta);
@@ -105,9 +95,7 @@ function CodeSection({ code, language = 'python' }) {
   );
 }
 
-/**
- * Tool outputs section.
- */
+
 function ToolOutputsSection({ outputs }) {
   return (
     <div>
@@ -136,9 +124,7 @@ function ToolOutputsSection({ outputs }) {
   );
 }
 
-/**
- * Execution logs section.
- */
+
 function LogsSection({ logs }) {
   return (
     <div>

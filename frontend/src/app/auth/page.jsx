@@ -5,9 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import useAuthStore from '@/stores/useAuthStore';
 import { Layers, CheckCircle, Brain, GraduationCap, Sparkles, BookOpen, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
-/* ═══════════════════════════════════════════════════════
-   AUTH — Premium split-screen (emerald accent)
-   ═══════════════════════════════════════════════════════ */
 
 const features = [
   {
@@ -30,7 +27,7 @@ const features = [
 function AuthLeftPanel() {
   return (
     <div className="auth-split-left">
-      {/* Brand */}
+      {}
       <div className="relative z-10 mb-10">
         <div className="flex items-center gap-3 mb-6">
           <div
@@ -55,7 +52,7 @@ function AuthLeftPanel() {
         </p>
       </div>
 
-      {/* Features List */}
+      {}
       <div className="relative z-10 space-y-4">
         {features.map(({ icon: Icon, title, desc }) => (
           <div
@@ -77,7 +74,7 @@ function AuthLeftPanel() {
         ))}
       </div>
 
-      {/* Badge */}
+      {}
       <div className="mt-10 relative z-10">
         <div
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
@@ -154,11 +151,11 @@ function AuthForm() {
 
   if (isAuthenticated) return null;
 
-  /* ═══ RENDER ═══ */
+  
   return (
     <div className="auth-split-right">
       <div className="w-full max-w-sm mx-auto">
-        {/* Success message */}
+        {}
         {signupDone && (
           <div
             className="mb-6 p-3.5 rounded-xl flex items-start gap-2.5 text-sm animate-fade-in"
@@ -173,7 +170,7 @@ function AuthForm() {
           </div>
         )}
 
-        {/* Session expired notice */}
+        {}
         {sessionExpired && !signupDone && (
           <div
             className="mb-6 p-3.5 rounded-xl flex items-start gap-2.5 text-sm animate-fade-in"
@@ -188,7 +185,7 @@ function AuthForm() {
           </div>
         )}
 
-        {/* Heading */}
+        {}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
             {isLogin ? 'Welcome back' : 'Create account'}
@@ -198,7 +195,7 @@ function AuthForm() {
           </p>
         </div>
 
-        {/* Error */}
+        {}
         {error && (
           <div
             className="mb-4 p-3 rounded-xl text-sm animate-fade-in"
@@ -212,7 +209,7 @@ function AuthForm() {
           </div>
         )}
 
-        {/* Form */}
+        {}
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="form-label">Email</label>
@@ -281,7 +278,7 @@ function AuthForm() {
           </button>
         </form>
 
-        {/* Switch */}
+        {}
         <p className="text-center mt-5 text-sm" style={{ color: 'var(--text-muted)' }}>
           {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
           <button

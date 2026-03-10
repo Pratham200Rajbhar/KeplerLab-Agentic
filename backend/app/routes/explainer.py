@@ -1,12 +1,3 @@
-"""Explainer video generation routes.
-
-Endpoints:
-  POST /explainer/check-presentations  — Find existing PPTs for materials
-  POST /explainer/generate             — Start explainer video generation
-  GET  /explainer/{id}/status          — Poll generation progress
-  GET  /explainer/{id}/video           — Download finished video
-"""
-
 from __future__ import annotations
 
 import json
@@ -26,14 +17,9 @@ from app.services.explainer.tts import get_voice_id, EDGE_TTS_VOICES
 logger = logging.getLogger("explainer.route")
 router = APIRouter(prefix="/explainer", tags=["explainer"])
 
-
-# ── Request / Response models ─────────────────────────────
-
-
 class CheckPresentationsRequest(BaseModel):
     material_ids: list[str] = Field(..., min_length=1)
     notebook_id: str
-
 
 class GenerateExplainerRequest(BaseModel):
     material_ids: list[str] = Field(..., min_length=1)
@@ -41,15 +27,10 @@ class GenerateExplainerRequest(BaseModel):
     ppt_language: str = Field(default="en", description="Language for PPT content")
     narration_language: str = Field(default="en", description="Language for voice narration")
     voice_gender: str = Field(default="female", pattern="^(male|female)$")
-    presentation_id: Optional[str] = None  # Reuse an existing presentation
+    presentation_id: Optional[str] = None
     create_new_ppt: bool = False
 
-
-# ── Helpers ───────────────────────────────────────────────
-
-
 SUPPORTED_LANGUAGES = list(EDGE_TTS_VOICES.keys())
-
 
 def _validate_language(lang: str, label: str) -> None:
     if lang not in SUPPORTED_LANGUAGES:
@@ -58,20 +39,13 @@ def _validate_language(lang: str, label: str) -> None:
             detail=f"Unsupported {label}: '{lang}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}",
         )
 
-
-# ── Routes ────────────────────────────────────────────────
-
-
 @router.post("/check-presentations")
 async def check_presentations(
     request: CheckPresentationsRequest,
     current_user=Depends(get_current_user),
 ):
-    """Check if presentations already exist for the given materials."""
     user_id = str(current_user.id)
 
-    # Find GeneratedContent with contentType='presentation' created by this user
-    # in this notebook, matching any of the material IDs.
     presentations = await prisma.generatedcontent.find_many(
         where={
             "userId": user_id,
@@ -81,16 +55,13 @@ async def check_presentations(
         order={"createdAt": "desc"},
     )
 
-    # Filter to only those that match the requested material_ids
     matching = []
     requested_set = set(request.material_ids)
     for pres in presentations:
-        # Check via materialId (single material) or materialIds array
         pres_materials = set(pres.materialIds or [])
         if pres.materialId and pres.materialId in requested_set:
             pres_materials.add(pres.materialId)
 
-        # Match if there's any overlap
         if pres_materials & requested_set:
             data = pres.data if isinstance(pres.data, dict) else {}
             matching.append({
@@ -106,18 +77,12 @@ async def check_presentations(
         "presentations": matching,
     }
 
-
 @router.post("/generate")
 async def generate_explainer(
     request: GenerateExplainerRequest,
     background_tasks: BackgroundTasks,
     current_user=Depends(get_current_user),
 ):
-    """Start an explainer video generation job.
-
-    If presentation_id is provided, reuses that presentation.
-    If create_new_ppt is True or no presentation_id given, generates a new one first.
-    """
     user_id = str(current_user.id)
 
     _validate_language(request.ppt_language, "PPT language")
@@ -125,13 +90,11 @@ async def generate_explainer(
 
     voice_id = get_voice_id(request.narration_language, request.voice_gender)
 
-    # ── Resolve or create presentation ────────────────────
     presentation = None
     presentation_data: dict = {}
     presentation_html: str = ""
 
     if request.presentation_id and not request.create_new_ppt:
-        # Reuse existing presentation
         presentation = await prisma.generatedcontent.find_first(
             where={
                 "id": request.presentation_id,
@@ -147,7 +110,6 @@ async def generate_explainer(
         if not presentation_html:
             raise HTTPException(status_code=400, detail="Presentation has no HTML content")
     else:
-        # Generate a new presentation first
         from app.services.ppt.generator import generate_presentation
         from app.routes.utils import require_materials_text, require_material_text
 
@@ -162,8 +124,6 @@ async def generate_explainer(
             user_id=user_id,
         )
 
-        # Save the generated presentation to DB
-        # Prisma Python requires json.dumps() for Json fields
         create_data: dict = {
             "notebookId": request.notebook_id,
             "userId": user_id,
@@ -182,7 +142,6 @@ async def generate_explainer(
 
     slide_count = presentation_data.get("slide_count", len(presentation_data.get("slides", [])))
 
-    # ── Create ExplainerVideo record ──────────────────────
     explainer = await prisma.explainervideo.create(
         data={
             "userId": user_id,
@@ -197,10 +156,8 @@ async def generate_explainer(
 
     explainer_id = str(explainer.id)
 
-    # ── Estimate time (faster with parallel processing) ───
     estimated_minutes = max(1, slide_count * 0.5)
 
-    # ── Launch background task ────────────────────────────
     background_tasks.add_task(
         process_explainer_video,
         explainer_id=explainer_id,
@@ -227,13 +184,11 @@ async def generate_explainer(
         "slide_count": slide_count,
     }
 
-
 @router.get("/{explainer_id}/status")
 async def get_explainer_status(
     explainer_id: str,
     current_user=Depends(get_current_user),
 ):
-    """Poll the status of an explainer video generation."""
     user_id = str(current_user.id)
 
     explainer = await prisma.explainervideo.find_first(
@@ -242,7 +197,6 @@ async def get_explainer_status(
     if not explainer:
         raise HTTPException(status_code=404, detail="Explainer video not found")
 
-    # Progress percentage based on status
     progress_map = {
         "pending": 0,
         "capturing_slides": 10,
@@ -265,13 +219,11 @@ async def get_explainer_status(
         "completed_at": explainer.completedAt.isoformat() if explainer.completedAt else None,
     }
 
-
 @router.get("/{explainer_id}/video")
 async def get_explainer_video(
     explainer_id: str,
     current_user=Depends(get_current_user),
 ):
-    """Download the finished explainer video."""
     user_id = str(current_user.id)
 
     explainer = await prisma.explainervideo.find_first(

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, UploadFile, Depends, Form, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List
 from urllib.parse import urlparse, parse_qs
 
@@ -33,17 +33,12 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 UPLOAD_DIR = settings.UPLOAD_DIR
 MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-# ── Allowed MIME types (server-side whitelist) ────────────────────
-# ── Unified error response ────────────────────────────────────────
-
-
 def _upload_error(
     status_code: int,
     error_code: str,
     message: str,
     details: str = "",
 ) -> JSONResponse:
-    """Return a structured upload error in the unified format."""
     return JSONResponse(
         status_code=status_code,
         content={
@@ -54,25 +49,11 @@ def _upload_error(
         },
     )
 
-
-# ── Validation helpers ────────────────────────────────────────────
-
-
 async def _validate_upload_file(file: UploadFile, temp_path: str) -> Optional[JSONResponse]:
-    """Run strict security validation on uploaded file.
-
-    Intentionally lightweight — only reads the file header (via python-magic)
-    and stat().  The sync call is offloaded to a thread-pool executor so it
-    never blocks the event loop.
-
-    Returns an error response on failure, or ``None`` if validation passes.
-    """
     file_size = os.path.getsize(temp_path)
     loop = asyncio.get_running_loop()
 
     try:
-        # python-magic reads a few hundred header bytes — sync I/O offloaded
-        # to thread pool so the event loop is never stalled.
         from functools import partial
         validation_result = await loop.run_in_executor(
             None,
@@ -98,21 +79,18 @@ async def _validate_upload_file(file: UploadFile, temp_path: str) -> Optional[JS
         logger.error("Unexpected validation error: %s", e)
         return _upload_error(500, "VALIDATION_ERROR", "Could not validate file", str(e))
 
-
 class URLUploadRequest(BaseModel):
     url: str
     notebook_id: Optional[str] = None
     auto_create_notebook: Optional[bool] = False
-    source_type: Optional[str] = "auto"  # 'auto', 'web', 'youtube'
+    source_type: Optional[str] = "auto"
     title: Optional[str] = None
-
 
 class TextUploadRequest(BaseModel):
     text: str
     title: str
     notebook_id: Optional[str] = None
     auto_create_notebook: Optional[bool] = False
-
 
 @router.post("", status_code=202)
 async def upload_file(
@@ -121,18 +99,6 @@ async def upload_file(
     auto_create_notebook: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
 ):
-    """Accept a file upload, validate it, and enqueue async processing.
-
-    Returns **HTTP 202 Accepted** immediately.  Heavy work (text extraction,
-    OCR, transcription, chunking, embedding) runs in the background worker.
-
-    Poll status via:
-      - ``GET /jobs/{job_id}``
-      - ``GET /materials`` (check ``status`` field on the material)
-
-    Status lifecycle:
-        pending → processing → [ocr_running | transcribing] → embedding → completed
-    """
     temp_path = None
     final_path = None
     try:
@@ -142,9 +108,6 @@ async def upload_file(
             file.filename, current_user.id,
         )
 
-        # ── 1. Stream file to temp path (chunked async write) ─────────────
-        # 1 MiB chunks → never loads full file into memory, never blocks
-        # the event loop. This delegates chunk writing to a thread-pool.
         _t_write = time.perf_counter()
         loop = asyncio.get_running_loop()
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
@@ -158,9 +121,6 @@ async def upload_file(
             file_write_time, file.filename, file_size_bytes,
         )
 
-        # ── 2. Lightweight validation (runs in thread pool) ────────────────
-        # python-magic reads only the file header — fast and non-blocking.
-        # No full-file read, no hash, no PDF structure inspection.
         _t_validate = time.perf_counter()
         validation_err = await _validate_upload_file(file, temp_path)
         if validation_err:
@@ -172,10 +132,8 @@ async def upload_file(
             (time.perf_counter() - _t_validate) * 1000, file.filename,
         )
 
-        # ── 3. Move to permanent storage with UUID-safe name ──────────────
         user_upload_dir = os.path.join(UPLOAD_DIR, str(current_user.id))
         os.makedirs(user_upload_dir, exist_ok=True)
-        # Sanitize filename to prevent path traversal — strip directory components
         safe_original_name = os.path.basename(file.filename or "upload")
         unique_name = f"{uuid.uuid4().hex}_{safe_original_name}"
         final_path = os.path.join(user_upload_dir, unique_name)
@@ -183,9 +141,6 @@ async def upload_file(
         temp_path = None
         logger.info("[UPLOAD] file_saved  path=%s", final_path)
 
-        # ── 4. Optional notebook auto-creation ────────────────────────────
-        # Instant: derive name from filename stem only — NO LLM, NO I/O.
-        # Worker will optionally improve the name after full processing.
         nb_id: Optional[str] = notebook_id or None
         created_notebook = None
         if auto_create_notebook == "true" and not nb_id:
@@ -195,8 +150,6 @@ async def upload_file(
             nb_id = created_notebook.id
             logger.info("[UPLOAD] auto_notebook  name='%s'  id=%s", notebook_name, nb_id)
 
-        # ── 5 & 6. Insert Material + BackgroundJob (both → pending) ───────
-        # Two fast DB inserts — nothing else happens in the request lifecycle.
         _t_db = time.perf_counter()
         material_id = await create_material_record(
             filename=file.filename,
@@ -221,14 +174,10 @@ async def upload_file(
             db_insert_time, material_id, job_id,
         )
 
-        # ── 7. Return HTTP 202 — done, worker takes it from here ──────────
-        # Wake the worker immediately instead of waiting for next poll cycle
         from app.services.worker import job_queue
         job_queue.notify()
 
         total_upload_time = (time.perf_counter() - _t_total) * 1000
-        # upload_request_time == total_upload_time: both measure the full
-        # synchronous slice of the HTTP request lifecycle seen by this handler.
         upload_request_time = total_upload_time
         logger.info(
             "[UPLOAD] upload_request_time=%.1fms  total_upload_time=%.1fms  "
@@ -268,19 +217,15 @@ async def upload_file(
         )
 
 async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_id: Optional[str]) -> dict:
-    """Process a single file within a batch upload concurrently."""
     temp_path = None
     try:
         _t_batch_file_start = time.perf_counter()
         
-        # ── Thread-pool offloaded file writing ──
-        # Prevent large files from blocking the main async loop
         loop = asyncio.get_running_loop()
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
             temp_path = tmp.name
             while chunk := await file.read(1024 * 1024):
-                # Write chunk to disk in a separate thread
                 await loop.run_in_executor(None, tmp.write, chunk)
                 
         logger.info(
@@ -289,7 +234,6 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
             file.filename, os.path.getsize(temp_path),
         )
 
-        # ── Validate File ──
         validation_err = await _validate_upload_file(file, temp_path)
         if validation_err:
             logger.warning("Validation failed for %s in batch", file.filename)
@@ -309,7 +253,6 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
                 "error": f"Unsupported file type: {file_info['extension']}",
             }
 
-        # ── Storage & DB ──
         user_upload_dir = os.path.join(UPLOAD_DIR, current_user_id)
         os.makedirs(user_upload_dir, exist_ok=True)
         safe_filename = os.path.basename(file.filename or "upload")
@@ -354,7 +297,6 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
                 pass
         return {"filename": file.filename, "status": "error", "error": str(e)}
 
-
 @router.post("/batch", status_code=202)
 async def upload_batch(
     files: List[UploadFile],
@@ -362,17 +304,11 @@ async def upload_batch(
     auto_create_notebook: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
 ):
-    """Accept a batch of file uploads and enqueue each for async processing concurrently.
-
-    Returns **HTTP 202 Accepted**.  Each entry in ``materials`` has
-    ``status: "pending"`` (or ``status: "error"`` if validation failed).
-    """
     logger.info("Batch upload started: %d files user=%s", len(files), current_user.id)
 
     nb_id: Optional[str] = notebook_id or None
     created_notebook = None
 
-    # ── 1. Optional single notebook for the whole batch ───────
     if auto_create_notebook == "true" and not nb_id and files:
         first_name = files[0].filename or "batch"
         stem = os.path.splitext(first_name)[0][:40].strip()
@@ -381,7 +317,6 @@ async def upload_batch(
         nb_id = created_notebook.id
         logger.info("Auto-created notebook '%s' id=%s for batch", notebook_name, nb_id)
 
-    # ── 2. Validate and enqueue each file concurrently ────────
     tasks = [
         _process_single_batch_file(file, str(current_user.id), nb_id)
         for file in files
@@ -394,26 +329,21 @@ async def upload_batch(
         response["notebook"] = {"id": str(created_notebook.id), "name": created_notebook.name}
     return JSONResponse(status_code=202, content=response)
 
-
 @router.post("/url", status_code=202)
 async def upload_url(
     request: URLUploadRequest,
     current_user=Depends(get_current_user),
 ):
-    """Upload and process content from a URL (web page or YouTube) asynchronously"""
     logger.info(f"URL upload started - {request.url} by user {current_user.id}")
 
-    # Validate URL format
     if not request.url.startswith(('http://', 'https://')):
         raise HTTPException(status_code=400, detail="Invalid URL format")
 
-    # SSRF protection: block requests to private/internal IPs
     try:
         parsed = urlparse(request.url)
         hostname = parsed.hostname
         if not hostname:
             raise HTTPException(status_code=400, detail="Invalid URL: no hostname")
-        # Resolve hostname to IP and check for private ranges (non-blocking)
         loop = asyncio.get_running_loop()
         resolved_ips = await loop.run_in_executor(
             None, socket.getaddrinfo, hostname, None
@@ -428,7 +358,6 @@ async def upload_url(
     except (socket.gaierror, ValueError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid URL: cannot resolve hostname")
 
-    # Determine source type
     source_type = request.source_type
     if source_type == "auto":
         youtube_service = YouTubeService()
@@ -440,12 +369,10 @@ async def upload_url(
     nb_id = request.notebook_id
     created_notebook = None
 
-    # Auto-create notebook if requested
     if request.auto_create_notebook and not nb_id:
         logger.info("Stage: Deriving notebook name from URL (no LLM)")
         try:
             if source_type == "youtube":
-                # Quick title-only for YouTube to avoid slow full metadata
                 vid = parse_qs(urlparse(request.url).query).get('v', [None])[0] or request.url.rstrip('/').split('/')[-1]
                 content_preview = f"YouTube video {vid}"
             else:
@@ -459,7 +386,6 @@ async def upload_url(
         nb_id = created_notebook.id
         logger.info(f"Stage: Created notebook '{notebook_name}' with id {nb_id}")
 
-    # Create Material Record
     material_id = await create_material_record(
         filename=request.url,
         user_id=current_user.id,
@@ -468,7 +394,6 @@ async def upload_url(
         title=request.title,
     )
     
-    # Enqueue Background Job
     job_id = await create_job(
         user_id=str(current_user.id),
         job_type="material_processing",
@@ -501,23 +426,19 @@ async def upload_url(
 
     return response
 
-
 @router.post("/text", status_code=202)
 async def upload_text(
     request: TextUploadRequest,
     current_user=Depends(get_current_user),
 ):
-    """Upload and process direct text content asynchronously"""
     logger.info(f"Text upload started - '{request.title}' by user {current_user.id}")
 
-    # Validate text content
     if not request.text or len(request.text.strip()) < 10:
         raise HTTPException(status_code=400, detail="Text content is too short (minimum 10 characters)")
 
     nb_id = request.notebook_id
     created_notebook = None
 
-    # Auto-create notebook if requested
     if request.auto_create_notebook and not nb_id:
         logger.info("Stage: Deriving notebook name from text title (no LLM)")
         notebook_name = (request.title or "")[:50].strip() or f"Notebook {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
@@ -525,7 +446,6 @@ async def upload_text(
         nb_id = created_notebook.id
         logger.info(f"Stage: Created notebook '{notebook_name}' with id {nb_id}")
 
-    # Create Material Record
     material_id = await create_material_record(
         filename=request.title,
         user_id=current_user.id,
@@ -533,7 +453,6 @@ async def upload_text(
         source_type="text",
     )
     
-    # Enqueue Background Job
     job_id = await create_job(
         user_id=str(current_user.id),
         job_type="material_processing",
@@ -567,10 +486,8 @@ async def upload_text(
 
     return response
 
-
 @router.get("/supported-formats")
 async def get_supported_formats():
-    """Get list of supported file formats and upload limits."""
     return {
         "max_upload_size_mb": settings.MAX_UPLOAD_SIZE_MB,
         "file_extensions": FileTypeDetector.get_supported_extensions(),

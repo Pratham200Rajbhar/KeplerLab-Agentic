@@ -1,27 +1,3 @@
-#!/usr/bin/env python
-"""Re-embed all materials while preserving tenant isolation.
-
-Usage
------
-    # From backend/
-    python -m cli.reindex                      # reindex every material
-    python -m cli.reindex --user-id <UUID>     # only one tenant
-    python -m cli.reindex --material-id <UUID> # only one material
-    python -m cli.reindex --dry-run            # preview without writing
-
-Pipeline per material:
-    1. Delete existing ChromaDB chunks for the material (by material_id)
-    2. Re-chunk ``originalText`` from the Prisma database
-    3. Re-embed and store with the current ``EMBEDDING_VERSION``
-    4. Update the Prisma ``chunkCount`` field
-
-Tenant isolation is preserved because:
-  - Each material's ``user_id`` and ``notebook_id`` are read from Prisma
-    and attached as ChromaDB metadata.
-  - Old entries are deleted by ``material_id`` filter **before** new ones
-    are inserted—never mixing versions.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -44,14 +20,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cli.reindex")
 
-_GET_BATCH = 5000  # For ChromaDB .get() pagination
-
+_GET_BATCH = 5000
 
 def _delete_material_chunks(collection, material_id: str) -> int:
-    """Remove all ChromaDB records whose ``material_id`` metadata matches.
-
-    Returns the count of deleted records.
-    """
     deleted = 0
     while True:
         result = collection.get(
@@ -66,7 +37,6 @@ def _delete_material_chunks(collection, material_id: str) -> int:
         deleted += len(ids)
     return deleted
 
-
 async def _reindex(
     *,
     user_id: str | None = None,
@@ -74,12 +44,10 @@ async def _reindex(
     dry_run: bool = False,
     include_failed: bool = False,
 ) -> dict:
-    """Run the reindex pipeline.  Returns summary stats."""
 
     await prisma.connect()
 
     try:
-        # ── Resolve materials ─────────────────────────────────
         statuses = ["completed"]
         if include_failed:
             statuses.append("failed")
@@ -122,17 +90,14 @@ async def _reindex(
                 continue
 
             try:
-                # 1. Delete old chunks
                 deleted = _delete_material_chunks(collection, mid)
                 logger.info(
                     "[%d/%d] Deleted %d old chunks for material=%s",
                     idx, stats["total"], deleted, mid,
                 )
 
-                # 2. Re-chunk
                 chunks = chunk_text(mat.originalText)
 
-                # 3. Re-embed & store (uses current EMBEDDING_VERSION via embedder)
                 embed_and_store(
                     chunks,
                     material_id=mid,
@@ -140,7 +105,6 @@ async def _reindex(
                     notebook_id=nid,
                 )
 
-                # 4. Update Prisma record
                 await prisma.material.update(
                     where={"id": mid},
                     data={"chunkCount": len(chunks), "status": "completed"},
@@ -162,9 +126,6 @@ async def _reindex(
 
     finally:
         await prisma.disconnect()
-
-
-# ── CLI entry-point ───────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
@@ -210,7 +171,6 @@ def main(argv: list[str] | None = None) -> None:
         f"skipped={stats['skipped']}  "
         f"failed={stats['failed']}"
     )
-
 
 if __name__ == "__main__":
     main()

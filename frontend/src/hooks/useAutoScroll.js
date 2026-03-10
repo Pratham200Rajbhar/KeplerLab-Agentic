@@ -2,13 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from 'react';
 
-/**
- * useAutoScroll — scrolls to bottom when new messages arrive,
- * unless the user has manually scrolled up.
- *
- * @param {Array} deps - Dependencies that trigger auto-scroll check (e.g. messages, isStreaming)
- * @returns {{ containerRef, scrollToBottom, isAtBottom }}
- */
+
 export default function useAutoScroll(deps = []) {
   const containerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -17,7 +11,7 @@ export default function useAutoScroll(deps = []) {
   const checkIsAtBottom = useCallback(() => {
     const el = containerRef.current;
     if (!el) return true;
-    // Consider "at bottom" if within 100px of the bottom
+    
     return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
   }, []);
 
@@ -29,7 +23,7 @@ export default function useAutoScroll(deps = []) {
     setIsAtBottom(true);
   }, []);
 
-  // Listen for user scroll events
+  
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -48,12 +42,12 @@ export default function useAutoScroll(deps = []) {
     return () => el.removeEventListener('scroll', handleScroll);
   }, [checkIsAtBottom]);
 
-  // Auto-scroll when deps change, if user hasn't scrolled up
+  
   useEffect(() => {
     if (!userScrolledRef.current) {
       scrollToBottom('smooth');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, deps);
 
   return { containerRef, scrollToBottom, isAtBottom };

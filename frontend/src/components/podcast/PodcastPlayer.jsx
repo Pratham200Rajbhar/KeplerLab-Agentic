@@ -58,10 +58,10 @@ export default function PodcastPlayer() {
   const [duration, setDuration]         = useState(0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
-  // Always read the live audio element from the store
+  
   const getAudio = () => usePodcastStore.getState()._audioEl;
 
-  // Track time updates
+  
   useEffect(() => {
     const audio = getAudio();
     if (!audio) return;
@@ -79,10 +79,10 @@ export default function PodcastPlayer() {
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('loadedmetadata', onLoadedMeta);
     };
-    // Re-run when the current segment changes to re-attach listeners to the same audio element
+    
   }, [currentSegmentIndex]);
 
-  // Seekbar click handler
+  
   const seekbarRef = useRef(null);
   const handleSeekbarClick = useCallback((e) => {
     const bar = seekbarRef.current;
@@ -92,12 +92,12 @@ export default function PodcastPlayer() {
     seekTo(pct * duration);
   }, [duration, seekTo]);
 
-  // Overall progress (for overview bar at very top)
+  
   const completedMs    = segments.slice(0, currentSegmentIndex).reduce((s, seg) => s + (seg.durationMs || 0), 0);
   const totalDurationMs = segments.reduce((s, seg) => s + (seg.durationMs || 0), 0);
   const overallPct     = totalDurationMs > 0 ? (completedMs / totalDurationMs) * 100 : 0;
 
-  // Segment seekbar progress
+  
   const segPct = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
 
   const currentSeg = segments[currentSegmentIndex];
@@ -113,7 +113,7 @@ export default function PodcastPlayer() {
   return (
     <div className="flex flex-col h-full animate-fade-in">
 
-      {/* ── Header ── */}
+      {}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--border)] shrink-0">
         <button onClick={() => setPhase('idle')} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
           <ChevronLeft className="w-4 h-4 text-[var(--text-muted)]" />
@@ -125,14 +125,14 @@ export default function PodcastPlayer() {
         <PodcastExportBar />
       </div>
 
-      {/* ── Overall progress strip ── */}
+      {}
       <div className="px-3 pt-2 shrink-0">
         <div className="h-0.5 rounded-full bg-[var(--surface-overlay)] overflow-hidden">
           <div className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" style={{ width: `${overallPct}%` }} />
         </div>
       </div>
 
-      {/* ── Now playing card ── */}
+      {}
       {currentSeg && (
         <div className="mx-3 mt-2.5 p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] shrink-0">
           <div className="flex items-center gap-2 mb-1.5">
@@ -153,33 +153,33 @@ export default function PodcastPlayer() {
         </div>
       )}
 
-      {/* ── Seek bar (per-segment) ── */}
+      {}
       <div className="px-3 mt-3 shrink-0">
-        {/* Track */}
+        {}
         <div
           ref={seekbarRef}
           onClick={handleSeekbarClick}
           className="relative h-2 rounded-full bg-[var(--surface-overlay)] cursor-pointer group"
         >
-          {/* Filled */}
+          {}
           <div
             className="h-full rounded-full bg-[var(--accent)] transition-none"
             style={{ width: `${segPct}%` }}
           />
-          {/* Thumb */}
+          {}
           <div
             className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-[var(--accent)] shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             style={{ left: `calc(${segPct}% - 6px)` }}
           />
         </div>
-        {/* Time labels */}
+        {}
         <div className="flex justify-between mt-1">
           <span className="text-[9px] text-[var(--text-muted)] tabular-nums">{formatTime(currentTime)}</span>
           <span className="text-[9px] text-[var(--text-muted)] tabular-nums">{formatTime(duration)}</span>
         </div>
       </div>
 
-      {/* ── Transport controls ── */}
+      {}
       <div className="flex items-center justify-center gap-4 px-3 py-2 shrink-0">
         <button
           onClick={prevSegment}
@@ -208,9 +208,9 @@ export default function PodcastPlayer() {
         </button>
       </div>
 
-      {/* ── Secondary controls ── */}
+      {}
       <div className="flex items-center justify-center gap-3 px-3 pb-3 shrink-0">
-        {/* Speed picker */}
+        {}
         <div className="relative">
           <button
             onClick={() => setShowSpeedMenu((v) => !v)}
@@ -256,7 +256,7 @@ export default function PodcastPlayer() {
         </button>
       </div>
 
-      {/* ── Tab bar ── */}
+      {}
       <div className="flex border-b border-[var(--border)] shrink-0">
         {buildTabs(doubts.length).map((tab) => (
           <button
@@ -274,7 +274,7 @@ export default function PodcastPlayer() {
         ))}
       </div>
 
-      {/* ── Tab content ── */}
+      {}
       <div className="flex-1 overflow-y-auto min-h-0">
         {activeTab === 'transcript' && (
           <PodcastTranscript segments={segments} currentIndex={currentSegmentIndex} onSegmentClick={(i) => playSegment(i)} />

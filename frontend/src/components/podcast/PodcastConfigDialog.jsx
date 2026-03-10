@@ -41,7 +41,7 @@ export default function PodcastConfigDialog({ onClose }) {
     if (error) toast.error(error);
   }, [error, toast]);
 
-  const [scope, setScope]         = useState('full');   // 'full' | 'topic'
+  const [scope, setScope]         = useState('full');   
   const [mode, setMode]           = useState('overview');
   const [topic, setTopic]         = useState('');
   const [language, setLanguage]   = useState('en');
@@ -74,7 +74,7 @@ export default function PodcastConfigDialog({ onClose }) {
       if (session?.id) await startGeneration(session.id);
       onClose?.();
     } catch {
-      // error handled by store
+      
     }
   };
 
@@ -82,7 +82,7 @@ export default function PodcastConfigDialog({ onClose }) {
 
   return (
     <Modal onClose={onClose} maxWidth="lg">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
           <Mic className="w-4 h-4 text-[var(--accent)]" />
@@ -98,7 +98,7 @@ export default function PodcastConfigDialog({ onClose }) {
 
       <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
 
-        {/* What to cover */}
+        {}
         <div>
           <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">What to Cover</label>
           <div className="grid grid-cols-2 gap-2.5">
@@ -155,7 +155,7 @@ export default function PodcastConfigDialog({ onClose }) {
           )}
         </div>
 
-        {/* Style / Mode */}
+        {}
         <div>
           <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Podcast Style</label>
           <div className="grid grid-cols-2 gap-2">
@@ -178,7 +178,7 @@ export default function PodcastConfigDialog({ onClose }) {
           </div>
         </div>
 
-        {/* Language */}
+        {}
         <div>
           <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Globe className="w-3 h-3" /> Language
@@ -195,7 +195,7 @@ export default function PodcastConfigDialog({ onClose }) {
           </select>
         </div>
 
-        {/* Voice Selection — both always visible */}
+        {}
         <div>
           <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Mic className="w-3 h-3" /> Host Voices
@@ -211,7 +211,7 @@ export default function PodcastConfigDialog({ onClose }) {
         </div>
       </div>
 
-      {/* Footer */}
+      {}
       <div className="flex items-center gap-2.5 px-5 py-4 border-t border-[var(--border)]">
         <button
           onClick={onClose}

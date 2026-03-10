@@ -4,23 +4,18 @@ import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 import useAutoScroll from '@/hooks/useAutoScroll';
 
-/**
- * MessageList — renders all messages with auto-scroll.
- * Passes notebookId + sessionId to MessageItem for CodeWorkspace.
- */
+
 export default function MessageList({ messages, isStreaming, error, onRetry, notebookId, sessionId }) {
   const lastMessage = messages[messages.length - 1];
   const showTyping =
     isStreaming &&
     lastMessage?.role === 'assistant' &&
     !lastMessage.content &&
-    !lastMessage.agentSteps?.length &&
     !lastMessage.codeBlocks?.length;
 
   const { containerRef, scrollToBottom, isAtBottom } = useAutoScroll([
     messages.length,
     lastMessage?.content?.length,
-    lastMessage?.agentSteps?.length,
     lastMessage?.codeBlocks?.length,
     isStreaming,
   ]);
@@ -47,7 +42,7 @@ export default function MessageList({ messages, isStreaming, error, onRetry, not
         {showTyping && <TypingIndicator />}
       </div>
 
-      {/* Scroll-to-bottom button */}
+      {}
       {!isAtBottom && (
         <button
           onClick={() => scrollToBottom()}

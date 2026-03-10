@@ -1,5 +1,3 @@
-"""Models API — status and reload of required AI models."""
-
 from fastapi import APIRouter, Depends, HTTPException
 from app.services.model_manager import model_manager
 from app.services.auth import get_current_user
@@ -12,10 +10,8 @@ from app.models.model_schemas import (
 
 router = APIRouter(prefix="/models", tags=["models"])
 
-
 @router.get("/status", response_model=ModelsStatusResponse)
 async def get_models_status(current_user=Depends(get_current_user)):
-    """Get status of all required models (requires authentication)."""
     info = model_manager.get_model_info()
     status_map: dict[str, ModelStatus] = {}
 
@@ -43,10 +39,8 @@ async def get_models_status(current_user=Depends(get_current_user)):
         ),
     )
 
-
 @router.post("/reload", response_model=ModelsReloadResponse)
 async def reload_models(current_user=Depends(get_current_user)):
-    """Reload and revalidate all models. Requires admin role."""
     if getattr(current_user, "role", None) != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
     results = await model_manager.validate_and_load_models()

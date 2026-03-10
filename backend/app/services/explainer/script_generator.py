@@ -1,15 +1,7 @@
-"""Slide-by-slide teaching script generator for explainer videos.
-
-Uses the LLM to generate a detailed narration script for each slide
-of a presentation, in the requested narration language.
-Now uses parallel generation for speed.
-"""
-
 from __future__ import annotations
 
 import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from app.services.llm_service.llm import get_llm
@@ -30,7 +22,6 @@ LANGUAGE_NAMES = {
     "bn": "Bengali",
 }
 
-# Teacher-style narration prompt — content-first, intelligent language handling
 _SLIDE_PROMPT_TEMPLATE = """You are a professional teacher delivering a clear, thorough narration for a presentation slide.
 
 SLIDE {slide_number}/{total_slides}:
@@ -58,7 +49,6 @@ STYLE:
 Output ONLY the spoken narration text. No headers, labels, or markdown.
 """
 
-
 def _build_slide_prompt(
     slide_number: int,
     total_slides: int,
@@ -66,7 +56,6 @@ def _build_slide_prompt(
     content: str,
     narration_language: str,
 ) -> str:
-    """Build the LLM prompt for a single slide."""
     lang_name = LANGUAGE_NAMES.get(narration_language, narration_language)
 
     return _SLIDE_PROMPT_TEMPLATE.format(
@@ -77,14 +66,12 @@ def _build_slide_prompt(
         narration_language=lang_name,
     )
 
-
 def _generate_single_script(
     slide: dict,
     idx: int,
     total: int,
     narration_language: str,
 ) -> dict[str, str]:
-    """Generate script for a single slide (called in thread pool)."""
     llm = get_llm(temperature=settings.LLM_TEMPERATURE_CREATIVE)
     
     title = slide.get("title", f"Slide {idx}")
@@ -109,28 +96,16 @@ def _generate_single_script(
         "script": script_text,
     }
 
-
 async def generate_slide_scripts_async(
     slides: list[dict[str, Any]],
     narration_language: str,
     max_concurrent: int = 3,
 ) -> list[dict[str, str]]:
-    """Generate narration scripts for all slides in parallel.
-
-    Args:
-        slides: List of slide dicts, each with 'title' and 'content'.
-        narration_language: ISO language code (e.g. 'en', 'hi').
-        max_concurrent: Max concurrent LLM calls (default 3).
-
-    Returns:
-        List of dicts: [{"slide_number": 1, "title": "...", "script": "..."}, ...]
-    """
     total = len(slides)
     logger.info("Generating scripts for %d slides (parallel, max %d concurrent)", total, max_concurrent)
 
     loop = asyncio.get_running_loop()
     
-    # Use semaphore to limit concurrency
     semaphore = asyncio.Semaphore(max_concurrent)
     
     async def generate_with_semaphore(slide: dict, idx: int) -> dict[str, str]:
@@ -141,7 +116,6 @@ async def generate_slide_scripts_async(
                 slide, idx, total, narration_language,
             )
     
-    # Launch all tasks
     tasks = [
         generate_with_semaphore(slide, idx)
         for idx, slide in enumerate(slides, start=1)
@@ -149,5 +123,4 @@ async def generate_slide_scripts_async(
     
     results = await asyncio.gather(*tasks)
     
-    # Sort by slide number to ensure order
     return sorted(results, key=lambda x: x["slide_number"])

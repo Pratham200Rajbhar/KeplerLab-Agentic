@@ -13,20 +13,6 @@ import {
 import ArtifactTablePreview from './ArtifactTablePreview';
 import ArtifactDownloadCard from './ArtifactDownloadCard';
 
-/**
- * ArtifactGallery — groups and displays artifacts by category.
- * 
- * Categories:
- * - charts: Images like PNG, JPG, SVG
- * - datasets: CSV, JSON data files
- * - models: Model files (pkl, pt, h5)
- * - reports: Documents (PDF, DOCX, MD)
- * - files: Other files
- *
- * Props:
- *   artifacts: [{ id, filename, mimeType, displayType, category, downloadUrl, size }]
- *   onDownload: (artifact) => void
- */
 
 const CATEGORY_CONFIG = {
   charts: {
@@ -66,24 +52,20 @@ const CATEGORY_CONFIG = {
   },
 };
 
-// Category display order
+
 const CATEGORY_ORDER = ['charts', 'datasets', 'models', 'reports', 'files'];
 
 function ArtifactGallery({ artifacts = [], onDownload }) {
-  // Group artifacts by category.
-  // Always use filename-based categorization as the primary source — the backend
-  // currently defaults to `category: "file"` for every artifact, so we cannot rely
-  // on the backend value.  Fall back to `artifact.category` only when filename-based
-  // detection returns the generic "files" bucket AND the backend supplies something
-  // more specific.
+  
+  
   const groupedArtifacts = useMemo(() => {
     const groups = {};
     
     for (const artifact of artifacts) {
       const filenameCategory = categorizeByFilename(artifact.filename);
       const backendCategory = artifact.category || artifact.backendCategory || null;
-      // Prefer filename-derived category; use backend only when it provides a known
-      // non-generic value and filename detection is inconclusive.
+      
+      
       const KNOWN_CATEGORIES = new Set(['charts', 'datasets', 'models', 'reports']);
       const category =
         filenameCategory !== 'files'
@@ -101,7 +83,7 @@ function ArtifactGallery({ artifacts = [], onDownload }) {
     return groups;
   }, [artifacts]);
 
-  // Get ordered categories that have artifacts
+  
   const activeCategories = useMemo(() => {
     return CATEGORY_ORDER.filter((cat) => groupedArtifacts[cat]?.length > 0);
   }, [groupedArtifacts]);
@@ -124,9 +106,7 @@ function ArtifactGallery({ artifacts = [], onDownload }) {
   );
 }
 
-/**
- * Section for a single category of artifacts.
- */
+
 function CategorySection({ category, artifacts, onDownload }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.files;
@@ -134,7 +114,7 @@ function CategorySection({ category, artifacts, onDownload }) {
 
   return (
     <div className="category-section rounded-lg bg-surface-raised/20 overflow-hidden shadow-sm">
-      {/* Header */}
+      {}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface-raised/50 hover:bg-surface-raised transition-colors"
@@ -155,7 +135,7 @@ function CategorySection({ category, artifacts, onDownload }) {
         )}
       </button>
 
-      {/* Content */}
+      {}
       {isExpanded && (
         <div className="p-3 space-y-3">
           {category === 'charts' ? (
@@ -171,9 +151,7 @@ function CategorySection({ category, artifacts, onDownload }) {
   );
 }
 
-/**
- * Grid layout for chart images.
- */
+
 function ChartGrid({ artifacts, onDownload }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -184,9 +162,7 @@ function ChartGrid({ artifacts, onDownload }) {
   );
 }
 
-/**
- * Single chart preview with click-to-expand.
- */
+
 function ChartPreview({ artifact, onDownload }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [error, setError] = useState(false);
@@ -208,7 +184,7 @@ function ChartPreview({ artifact, onDownload }) {
           className="aspect-video relative cursor-pointer"
           onClick={() => setFullscreen(true)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {}
           <img
             src={artifact.downloadUrl}
             alt={artifact.filename}
@@ -235,13 +211,13 @@ function ChartPreview({ artifact, onDownload }) {
         </div>
       </div>
 
-      {/* Fullscreen overlay */}
+      {}
       {fullscreen && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-pointer p-4"
           onClick={() => setFullscreen(false)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {}
           <img
             src={artifact.downloadUrl}
             alt={artifact.filename}
@@ -264,9 +240,7 @@ function ChartPreview({ artifact, onDownload }) {
   );
 }
 
-/**
- * List layout for dataset files with table preview.
- */
+
 function DatasetList({ artifacts, onDownload }) {
   return (
     <div className="space-y-3">
@@ -292,9 +266,7 @@ function DatasetList({ artifacts, onDownload }) {
   );
 }
 
-/**
- * Simple list for other file types.
- */
+
 function FileList({ artifacts, onDownload }) {
   return (
     <div className="space-y-2">
@@ -309,28 +281,26 @@ function FileList({ artifacts, onDownload }) {
   );
 }
 
-/**
- * Categorize artifact based on filename extension.
- */
+
 function categorizeByFilename(filename) {
   const ext = (filename || '').split('.').pop()?.toLowerCase() || '';
 
-  // Charts
+  
   if (['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp'].includes(ext)) {
     return 'charts';
   }
 
-  // Datasets
+  
   if (['csv', 'tsv', 'json', 'xlsx', 'xls', 'parquet'].includes(ext)) {
     return 'datasets';
   }
 
-  // Models
+  
   if (['pkl', 'pickle', 'joblib', 'h5', 'pt', 'pth', 'onnx', 'pb', 'keras'].includes(ext)) {
     return 'models';
   }
 
-  // Reports
+  
   if (['pdf', 'docx', 'doc', 'md', 'txt', 'html', 'rtf'].includes(ext)) {
     return 'reports';
   }

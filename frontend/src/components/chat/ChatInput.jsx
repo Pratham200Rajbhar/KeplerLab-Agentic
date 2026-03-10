@@ -1,21 +1,22 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
-import { Send, Square, X, Zap, Globe, Code2, Search } from 'lucide-react';
+import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles } from 'lucide-react';
 import { parseSlashCommand } from '@/lib/utils/parseSlashCommand';
+import PromptOptimizerDialog from './PromptOptimizerDialog';
 
 const COMMAND_META = {
-  agent:    { icon: Zap,    title: 'Agent Execution',  desc: 'Run multi-step reasoning and tools',      color: 'text-purple-400', bg: 'bg-purple-500/10' },
   research: { icon: Globe,  title: 'Research Mode',    desc: 'Deep web research and summarization',     color: 'text-blue-400',   bg: 'bg-blue-500/10' },
   code:     { icon: Code2,  title: 'Code Execution',   desc: 'Run Python analysis and generate charts', color: 'text-green-400',  bg: 'bg-green-500/10' },
   web:      { icon: Search, title: 'Web Search',       desc: 'Search latest information online',        color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  agent:    { icon: Bot,    title: 'Agent Mode',       desc: 'Autonomous multi-step reasoning agent',   color: 'text-purple-400', bg: 'bg-purple-500/10' },
 };
 
 const BADGE_COLORS = {
-  AGENT:          'bg-purple-500/15 text-purple-300 border-purple-500/30',
   WEB_RESEARCH:   'bg-blue-500/15 text-blue-300 border-blue-500/30',
   CODE_EXECUTION: 'bg-green-500/15 text-green-300 border-green-500/30',
   WEB_SEARCH:     'bg-orange-500/15 text-orange-300 border-orange-500/30',
+  AGENT:          'bg-purple-500/15 text-purple-300 border-purple-500/30',
 };
 
 const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disabled }) {
@@ -23,9 +24,10 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   const [activeCommand, setActiveCommand] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownIndex, setDropdownIndex] = useState(0);
+  const [showOptimizer, setShowOptimizer] = useState(false);
   const textareaRef = useRef(null);
 
-  // Auto-resize textarea
+  
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -33,12 +35,12 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [value]);
 
-  // Focus on mount
+  
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
 
-  // Parse command + dropdown visibility
+  
   useEffect(() => {
     const trimmed = value.trim();
     const parsed = parseSlashCommand(trimmed);
@@ -47,13 +49,13 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     } else {
       setActiveCommand(null);
     }
-    // Show dropdown while typing /xxx (no space = command not yet confirmed)
+    
     const isTypingCmd = trimmed.startsWith('/') && !trimmed.includes(' ');
     setShowDropdown(isTypingCmd);
     if (isTypingCmd) setDropdownIndex(0);
   }, [value]);
 
-  // Commands filtered by partial input
+  
   const filteredCommands = useMemo(() => {
     if (!value.startsWith('/')) return [];
     const partial = value.slice(1).toLowerCase();
@@ -82,7 +84,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
 
   const handleKeyDown = useCallback(
     (e) => {
-      // Dropdown keyboard navigation
+      
       if (showDropdown && filteredCommands.length > 0) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
@@ -131,7 +133,39 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     <div className="px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full sticky bottom-0 z-10 bg-gradient-to-t from-surface-50 via-surface-50/95 to-transparent">
       <div className="max-w-3xl w-full relative">
 
-        {/* Slash command suggestion dropdown */}
+        {/* Optimize Prompt button — above the input panel, left-aligned, visible only when there's text */}
+        {!isStreaming && value.trim().length > 0 && (() => {
+          const parsed = parseSlashCommand(value.trim());
+          const queryToOptimize = parsed.command ? parsed.query : value.trim();
+          const slashPrefix = parsed.command ? `/${parsed.command} ` : '';
+          return (
+            <div className="flex justify-start mb-2 px-1">
+              <button
+                onClick={() => setShowOptimizer(true)}
+                disabled={disabled || queryToOptimize.length <= 10}
+                className="inline-flex items-center gap-2 h-8 px-4 rounded-lg border transition-all duration-150
+                  bg-surface-overlay border-border text-text-secondary
+                  hover:bg-accent-muted hover:border-accent-border hover:text-accent
+                  disabled:opacity-40 disabled:cursor-not-allowed"
+                title={queryToOptimize.length <= 10 ? 'Type more than 10 characters to optimize' : 'Optimize your prompt with AI'}
+                aria-label="Optimize Prompt"
+              >
+                <Sparkles size={13} />
+                <span className="text-[13px] font-medium">Optimize Prompt</span>
+              </button>
+
+              {showOptimizer && (
+                <PromptOptimizerDialog
+                  originalPrompt={queryToOptimize}
+                  onSelect={(text) => setValue(slashPrefix + text)}
+                  onClose={() => setShowOptimizer(false)}
+                />
+              )}
+            </div>
+          );
+        })()}
+
+        {}
         {showDropdown && filteredCommands.length > 0 && (
           <div
             className="absolute bottom-full mb-2 left-0 right-0 rounded-xl border overflow-hidden shadow-2xl"
@@ -167,7 +201,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           </div>
         )}
 
-        {/* Active command badge */}
+        {}
         {activeCommand && !showDropdown && (
           <div className="flex items-center gap-2 mb-2 px-1">
             <span
@@ -187,7 +221,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           </div>
         )}
 
-        {/* Input box */}
+        {}
         <div
           className="flex items-end gap-2 rounded-2xl border px-4 py-2.5 transition-all duration-150"
           style={{
@@ -232,6 +266,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             </button>
           )}
         </div>
+
       </div>
     </div>
   );

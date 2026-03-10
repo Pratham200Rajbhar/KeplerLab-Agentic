@@ -1,9 +1,3 @@
-"""Prompt template loader.
-
-Each ``get_*_prompt`` function loads a ``.txt`` template from this
-package directory and substitutes placeholders.
-"""
-
 from __future__ import annotations
 
 import os
@@ -12,24 +6,16 @@ from typing import Dict
 
 _DIR = os.path.dirname(__file__)
 
-
 @lru_cache(maxsize=32)
 def _load(filename: str) -> str:
-    """Read a template file, caching the result."""
     with open(os.path.join(_DIR, filename), encoding="utf-8") as f:
         return f.read()
 
-
 def _render(filename: str, subs: Dict[str, str]) -> str:
-    """Load *filename* and apply all substitutions."""
     text = _load(filename)
     for key, val in subs.items():
         text = text.replace(key, val)
     return text
-
-
-# ── Public helpers ────────────────────────────────────────
-
 
 def get_flashcard_prompt(content_text: str, card_count: int = None, difficulty: str = "Medium", instructions: str = None) -> str:
     instructions_text = f"\nAdditional Instructions: {instructions}" if instructions else ""
@@ -42,7 +28,6 @@ def get_flashcard_prompt(content_text: str, card_count: int = None, difficulty: 
         "{{INSTRUCTIONS}}": instructions_text,
     })
 
-
 def get_quiz_prompt(content_text: str, mcq_count: int = None, difficulty: str = "Medium", instructions: str = None) -> str:
     instructions_text = f"\nAdditional Instructions: {instructions}" if instructions else ""
     count_instruction = f"with exactly {mcq_count} questions" if mcq_count else "with an appropriate number of questions"
@@ -54,7 +39,6 @@ def get_quiz_prompt(content_text: str, mcq_count: int = None, difficulty: str = 
         "{{INSTRUCTIONS}}": instructions_text,
     })
 
-
 def get_chat_prompt(context: str, chat_history: str, user_message: str) -> str:
     return _render("chat_prompt.txt", {
         "{{CONTEXT}}": context,
@@ -62,6 +46,11 @@ def get_chat_prompt(context: str, chat_history: str, user_message: str) -> str:
         "{{USER_MESSAGE}}": user_message,
     })
 
+def get_prompt_optimizer_prompt(user_prompt: str, count: int = 4) -> str:
+    return _render("prompt_optimizer_prompt.txt", {
+        "{{USER_PROMPT}}": user_prompt,
+        "{{COUNT}}": str(count),
+    })
 
 def get_presentation_intent_prompt(
     topic: str, audience: str, purpose: str,
@@ -75,7 +64,6 @@ def get_presentation_intent_prompt(
         "{{MATERIAL_EXCERPT}}": material_excerpt[:3000],
     })
 
-
 def get_presentation_strategy_prompt(
     intent_analysis: str, knowledge_map: str,
     material_context: str, slide_count: int,
@@ -86,7 +74,6 @@ def get_presentation_strategy_prompt(
         "{{MATERIAL_CONTEXT}}": material_context[:4000],
         "{{SLIDE_COUNT}}": str(slide_count),
     })
-
 
 def get_slide_content_prompt(
     slide_title: str, slide_purpose: str, layout_type: str,
@@ -106,12 +93,10 @@ def get_slide_content_prompt(
         "{{THEME_DESCRIPTION}}": theme_description,
     })
 
-
 def get_mindmap_prompt(material_text: str) -> str:
     return _render("mindmap_prompt.txt", {
         "{{MATERIAL_TEXT}}": material_text,
     })
-
 
 def get_ppt_prompt(
     material_text: str,
@@ -128,46 +113,36 @@ def get_ppt_prompt(
         "{{ADDITIONAL_INSTRUCTIONS}}": additional,
     })
 
-
 def get_code_repair_prompt(broken_code: str, stderr: str) -> str:
-    """Load and render the code repair prompt template."""
     return _render("code_repair_prompt.txt", {
         "{{BROKEN_CODE}}": broken_code,
         "{{STDERR}}": stderr,
     })
 
-
 def get_podcast_qa_prompt(language: str, context: str, question: str) -> str:
-    """Load and render the podcast Q&A answer prompt."""
     return _render("podcast_qa_prompt.txt", {
         "{{LANGUAGE}}": language,
         "{{CONTEXT}}": context,
         "{{QUESTION}}": question,
     })
 
-
 def get_podcast_script_prompt(language: str, mode_instruction: str, context: str) -> str:
-    """Load and render the podcast script generation prompt."""
     return _render("podcast_script_prompt.txt", {
         "{{LANGUAGE}}": language,
         "{{MODE_INSTRUCTION}}": mode_instruction,
         "{{CONTEXT}}": context,
     })
 
-
 def get_code_generation_prompt(user_request: str) -> str:
-    """Load and render the code generation prompt template."""
     return _render("code_generation_prompt.txt", {
         "{{USER_REQUEST}}": user_request,
     })
-
 
 def get_data_analysis_prompt(
     filename: str, shape: str, columns: str,
     dtypes: str, describe: str, user_request: str,
     dataset_profile: str = "",
 ) -> str:
-    """Load and render the data analysis prompt template."""
     return _render("data_analysis_prompt.txt", {
         "{{FILENAME}}": filename,
         "{{SHAPE}}": shape,

@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 
 const useChatStore = create((set, get) => ({
-  // ── State ──
+  
   messages: [],
   sessionId: null,
   isStreaming: false,
   error: null,
 
-  // ── Actions ──
+  
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
 

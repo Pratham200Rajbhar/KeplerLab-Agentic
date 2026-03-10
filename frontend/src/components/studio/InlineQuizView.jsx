@@ -53,7 +53,7 @@ export default function InlineQuizView({ quiz, onClose }) {
     );
   }
 
-  // Score Summary
+  
   if (completed) {
     const pct = Math.round((score / questions.length) * 100);
     return (
@@ -80,7 +80,7 @@ export default function InlineQuizView({ quiz, onClose }) {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Progress */}
+      {}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-1.5 rounded-full bg-[var(--surface)] overflow-hidden">
           <div
@@ -93,14 +93,14 @@ export default function InlineQuizView({ quiz, onClose }) {
         </span>
       </div>
 
-      {/* Question */}
+      {}
       <div>
         <p className="text-sm font-medium text-[var(--text-primary)] leading-relaxed">
           {question.question || question.text}
         </p>
       </div>
 
-      {/* Options */}
+      {}
       <div className="space-y-2">
         {(question.options || []).map((opt, i) => {
           const isSelected = selectedAnswer === i;
@@ -137,7 +137,7 @@ export default function InlineQuizView({ quiz, onClose }) {
         })}
       </div>
 
-      {/* Explanation */}
+      {}
       {hasAnswered && question.explanation && (
         <div className="animate-fade-in">
           <button
@@ -155,7 +155,7 @@ export default function InlineQuizView({ quiz, onClose }) {
         </div>
       )}
 
-      {/* Next button */}
+      {}
       {hasAnswered && (
         <button
           onClick={handleNext}

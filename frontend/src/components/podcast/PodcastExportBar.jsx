@@ -12,7 +12,7 @@ export default function PodcastExportBar() {
   const generateSummary = usePodcastStore((s) => s.generateSummary);
   const toast = useToast();
 
-  const [exporting, setExporting] = useState(null); // 'pdf' | 'json' | 'summary' | null
+  const [exporting, setExporting] = useState(null); 
   const [showMenu, setShowMenu] = useState(false);
 
   const handleExport = async (format) => {

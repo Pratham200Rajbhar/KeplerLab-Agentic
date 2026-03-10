@@ -4,23 +4,7 @@ import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Play, Copy, Check, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import OutputRenderer from './OutputRenderer';
 
-/**
- * CodePanel — Editable code block with Copy / Run actions.
- * Used in /code mode (CODE_EXECUTION intent).
- *
- * Props:
- *   code: string — initial generated code
- *   language: string — "python"
- *   status: "awaiting_run" | "executing" | "done" | "blocked" | "repaired"
- *   onRun: (code: string) => void — execute the code
- *   installPills: [{ package, status }]
- *   repairAttempt: number
- *   repairedCode: string | null
- *   repairedExplanation: string | null
- *   executionBlocked: string | null
- *   artifacts: [{ filename, mime, display_type, url, size }]
- *   exitCode: number | null
- */
+
 function CodePanel({
   code: initialCode,
   language = 'python',
@@ -38,7 +22,7 @@ function CodePanel({
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef(null);
 
-  // Sync internal state if initialCode or repairedCode props change
+  
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setCode(repairedCode || initialCode || '');
@@ -52,7 +36,7 @@ function CodePanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      
       const ta = document.createElement('textarea');
       ta.value = code;
       document.body.appendChild(ta);
@@ -77,7 +61,7 @@ function CodePanel({
 
   return (
     <div className="space-y-3">
-      {/* Repair badge */}
+      {}
       {repairAttempt > 0 && repairedCode && (
         <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 w-fit">
           <AlertTriangle className="w-3 h-3" />
@@ -88,16 +72,16 @@ function CodePanel({
         <p className="text-xs text-text-muted">{repairedExplanation}</p>
       )}
 
-      {/* Code block */}
+      {}
       <div className="rounded-lg overflow-hidden bg-[#1e1e2e] shadow-lg">
-        {/* Language label */}
+        {}
         <div className="flex items-center justify-between px-3 py-1.5 bg-surface-raised/50">
           <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
             {language}
           </span>
         </div>
 
-        {/* Code area */}
+        {}
         {isEditable ? (
           <textarea
             ref={textareaRef}
@@ -117,9 +101,9 @@ function CodePanel({
         )}
       </div>
 
-      {/* Action buttons */}
+      {}
       <div className="flex items-center gap-2">
-        {/* Copy button */}
+        {}
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border/40 bg-surface-raised hover:bg-surface-overlay transition-colors text-text-secondary"
@@ -137,7 +121,7 @@ function CodePanel({
           )}
         </button>
 
-        {/* Run button */}
+        {}
         {isRunning ? (
           <button
             disabled
@@ -166,7 +150,7 @@ function CodePanel({
         )}
       </div>
 
-      {/* Install pills */}
+      {}
       {installPills.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {installPills.map((pill, i) => (
@@ -189,7 +173,7 @@ function CodePanel({
         </div>
       )}
 
-      {/* Execution blocked */}
+      {}
       {executionBlocked && (
         <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-md border border-red-500/20">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -197,7 +181,7 @@ function CodePanel({
         </div>
       )}
 
-      {/* Artifacts */}
+      {}
       {artifacts.length > 0 && (
         <div className="space-y-2">
           {artifacts.map((art, i) => (

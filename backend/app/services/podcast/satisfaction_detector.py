@@ -1,23 +1,12 @@
-"""Satisfaction detection for podcast Q&A.
-
-Two-layer system:
-1. Heuristic — multilingual dictionary of satisfaction phrases (fast, no LLM)
-2. LLM classifier — only when Layer 1 is uncertain (~20% of responses)
-"""
-
 from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from typing import Optional, Tuple
 
 from app.services.llm_service.llm import get_llm
 
 logger = logging.getLogger(__name__)
-
-# ── Satisfaction phrase dictionaries per language ──────────────
-# Each entry: (phrase, confidence) — confidence ≥ 0.85 = auto-resume
 
 SATISFACTION_PHRASES = {
     "en": [
@@ -78,7 +67,6 @@ SATISFACTION_PHRASES = {
     ],
 }
 
-# Phrases that indicate the user wants to ask more
 FOLLOWUP_PHRASES = {
     "en": ["but", "what about", "can you explain", "why", "how", "tell me more",
            "what if", "also", "another question", "wait", "hold on", "actually"],
@@ -93,27 +81,16 @@ FOLLOWUP_PHRASES = {
     "ar": ["لكن", "لماذا", "كيف", "اشرح أكثر", "سؤال آخر"],
 }
 
-
 def detect_satisfaction_heuristic(
     message: str, language: str = "en"
 ) -> Tuple[Optional[bool], float]:
-    """Layer 1: Heuristic satisfaction detection.
-    
-    Returns:
-        (is_satisfied, confidence)
-        - (True, ≥0.85): User is satisfied → auto-resume
-        - (False, ≥0.85): User wants more → stay in Q&A
-        - (None, <0.85): Uncertain → escalate to Layer 2
-    """
     msg_lower = message.strip().lower()
 
-    # Check for follow-up phrases first (higher priority)
     followup_phrases = FOLLOWUP_PHRASES.get(language, FOLLOWUP_PHRASES["en"])
     for phrase in followup_phrases:
         if phrase.lower() in msg_lower:
             return (False, 0.90)
 
-    # Check satisfaction phrases
     phrases = SATISFACTION_PHRASES.get(language, SATISFACTION_PHRASES["en"])
     best_confidence = 0.0
     for phrase, confidence in phrases:
@@ -124,20 +101,13 @@ def detect_satisfaction_heuristic(
     if best_confidence >= 0.85:
         return (True, best_confidence)
 
-    # Check if the message looks like a question (uncertain)
     question_markers = ["?", "¿", "？", "吗", "か"]
     if any(m in message for m in question_markers):
         return (False, 0.90)
 
-    # Uncertain
     return (None, best_confidence)
 
-
 async def detect_satisfaction_llm(message: str, language: str = "en") -> bool:
-    """Layer 2: LLM classifier for ambiguous messages.
-    
-    Returns True if user appears satisfied, False otherwise.
-    """
     prompt = (
         "You are analyzing a listener's response during a podcast Q&A session.\n"
         f"The listener said: \"{message}\"\n\n"
@@ -155,21 +125,11 @@ async def detect_satisfaction_llm(message: str, language: str = "en") -> bool:
         return text.strip().lower().startswith("yes")
     except Exception as exc:
         logger.warning("LLM satisfaction detection failed: %s", exc)
-        return False  # Default to not satisfied (safer — user stays in Q&A)
-
+        return False
 
 async def detect_satisfaction(
     message: str, language: str = "en"
 ) -> Tuple[str, float]:
-    """Full two-layer satisfaction detection.
-    
-    Returns:
-        (action, confidence)
-        - ("auto_resume", confidence): Resume podcast
-        - ("stay", confidence): User wants more Q&A  
-        - ("prompt", confidence): Ask user what to do
-    """
-    # Layer 1: Heuristic
     is_satisfied, confidence = detect_satisfaction_heuristic(message, language)
 
     if is_satisfied is True and confidence >= 0.85:
@@ -178,12 +138,10 @@ async def detect_satisfaction(
     if is_satisfied is False and confidence >= 0.85:
         return ("stay", confidence)
 
-    # Layer 2: LLM (only for ambiguous ~20% of cases)
     logger.info("Satisfaction uncertain (conf=%.2f), escalating to LLM", confidence)
     llm_satisfied = await detect_satisfaction_llm(message, language)
 
     if llm_satisfied:
         return ("auto_resume", 0.75)
 
-    # Still uncertain — prompt user
     return ("prompt", 0.50)

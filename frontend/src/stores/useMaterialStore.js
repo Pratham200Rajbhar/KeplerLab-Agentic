@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
 const useMaterialStore = create((set, get) => ({
-  // ── State ── (selectedSources is a plain array for serializability)
+  
   materials: [],
   currentMaterial: null,
   selectedSources: [],
 
-  // ── Actions ──
+  
   setMaterials: (materialsOrUpdater) =>
     set((state) => ({
       materials:
@@ -53,7 +53,7 @@ const useMaterialStore = create((set, get) => ({
 
   deselectAllSources: () => set({ selectedSources: [] }),
 
-  // ── Selector ──
+  
   isSourceSelected: (id) => get().selectedSources.includes(id),
 
   setSelectedSources: (sourcesOrUpdater) =>

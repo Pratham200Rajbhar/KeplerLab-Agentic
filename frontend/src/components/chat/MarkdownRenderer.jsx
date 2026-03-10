@@ -28,9 +28,7 @@ const customCodeTheme = {
 const REMARK_PLUGINS = [remarkGfm, remarkMath];
 const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
 
-/**
- * Sanitize partially-streamed markdown so it doesn't break the renderer.
- */
+
 export function sanitizeStreamingMarkdown(text) {
   if (!text) return '';
   let result = text;

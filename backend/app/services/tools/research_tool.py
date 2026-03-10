@@ -1,9 +1,3 @@
-"""Research tool — Deep web research pipeline wrapper.
-
-Delegates to the existing research pipeline and adapts its output
-for the chat_v2 orchestrator.
-"""
-
 from __future__ import annotations
 
 import json
@@ -15,18 +9,12 @@ from app.services.chat_v2.streaming import sse_tool_start, sse_tool_result
 
 logger = logging.getLogger(__name__)
 
-
 async def execute(
     query: str,
     user_id: str,
     notebook_id: str,
     session_id: str,
 ) -> AsyncIterator[str | ToolResult]:
-    """Run deep web research and yield SSE events + final ToolResult.
-
-    Wraps ``stream_research`` from the existing research pipeline and
-    forwards all its SSE events, collecting the final response.
-    """
     yield sse_tool_start("research", label="Starting deep research…")
 
     try:
@@ -41,10 +29,8 @@ async def execute(
             notebook_id=notebook_id,
             session_id=session_id,
         ):
-            # Forward all pipeline events directly to the client
             yield event
 
-            # Capture tokens and citations for persistence
             if isinstance(event, str):
                 if event.startswith("event: token\n"):
                     for line in event.split("\n"):

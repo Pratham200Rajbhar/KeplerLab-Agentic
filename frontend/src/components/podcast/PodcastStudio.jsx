@@ -8,10 +8,7 @@ import PodcastGenerating from './PodcastGenerating';
 import PodcastPlayer from './PodcastPlayer';
 import PodcastModeSelector from './PodcastModeSelector';
 
-/**
- * Main podcast orchestrator.
- * Routes between: library → mode-select → generating → player
- */
+
 export default function PodcastStudio() {
   const phase = usePodcastStore((s) => s.phase);
   const session = usePodcastStore((s) => s.session);
@@ -20,14 +17,14 @@ export default function PodcastStudio() {
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const draftMode = useAppStore((s) => s.draftMode);
 
-  // Load sessions when notebook changes
+  
   useEffect(() => {
     if (currentNotebook?.id && !draftMode) {
       loadSessions(currentNotebook.id, draftMode);
     }
   }, [currentNotebook?.id, draftMode, loadSessions]);
 
-  // Show library by default
+  
   if (phase === 'idle' || phase === 'library') {
     return (
       <PodcastSessionLibrary

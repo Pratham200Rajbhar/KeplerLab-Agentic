@@ -14,20 +14,9 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-/**
- * ArtifactDownloadCard — displays a download card for artifacts.
- * 
- * Shows file icon, filename, size, and download button.
- * Handles download states: idle, downloading, success, error.
- *
- * Props:
- *   artifact: { id, filename, mimeType, downloadUrl, size }
- *   onDownload: (artifact) => Promise<void> | void
- *   error: string | null - external error message
- */
 
 const FILE_ICONS = {
-  // Images
+  
   png: FileImage,
   jpg: FileImage,
   jpeg: FileImage,
@@ -35,13 +24,13 @@ const FILE_ICONS = {
   svg: FileImage,
   webp: FileImage,
   
-  // Data
+  
   csv: FileSpreadsheet,
   xlsx: FileSpreadsheet,
   xls: FileSpreadsheet,
   json: FileCode,
   
-  // Models
+  
   pkl: FileBox,
   pickle: FileBox,
   h5: FileBox,
@@ -50,43 +39,43 @@ const FILE_ICONS = {
   onnx: FileBox,
   joblib: FileBox,
   
-  // Documents
+  
   pdf: FileText,
   docx: FileText,
   doc: FileText,
   txt: FileText,
   md: FileText,
   
-  // Code
+  
   py: FileCode,
   js: FileCode,
   html: FileCode,
 };
 
 const FILE_COLORS = {
-  // Images
+  
   png: 'text-blue-400',
   jpg: 'text-blue-400',
   jpeg: 'text-blue-400',
   
-  // Data
+  
   csv: 'text-emerald-400',
   xlsx: 'text-emerald-400',
   json: 'text-amber-400',
   
-  // Models
+  
   pkl: 'text-purple-400',
   h5: 'text-purple-400',
   pt: 'text-purple-400',
   
-  // Documents
+  
   pdf: 'text-red-400',
   docx: 'text-blue-400',
   txt: 'text-text-secondary',
 };
 
 function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
-  const [downloadState, setDownloadState] = useState('idle'); // idle, downloading, success, error
+  const [downloadState, setDownloadState] = useState('idle'); 
   const [error, setError] = useState(externalError || null);
 
   const ext = (artifact.filename || '').split('.').pop()?.toLowerCase() || '';
@@ -103,7 +92,7 @@ function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
       if (onDownload) {
         await onDownload(artifact);
       } else if (artifact.downloadUrl) {
-        // Direct download fallback
+        
         const link = document.createElement('a');
         link.href = artifact.downloadUrl;
         link.download = artifact.filename || 'download';
@@ -112,7 +101,7 @@ function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
         document.body.removeChild(link);
       }
       setDownloadState('success');
-      // Reset to idle after showing success
+      
       setTimeout(() => setDownloadState('idle'), 2000);
     } catch (err) {
       setError(err.message || 'Download failed');
@@ -128,12 +117,12 @@ function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
           : 'border-border/30 bg-surface-secondary/30 hover:bg-surface-overlay'
       }`}
     >
-      {/* File icon */}
+      {}
       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-surface-raised shrink-0">
         <Icon className={`w-5 h-5 ${error ? 'text-red-400' : iconColor}`} />
       </div>
 
-      {/* File info */}
+      {}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text-secondary font-medium truncate" title={artifact.filename}>
           {artifact.filename}
@@ -148,7 +137,7 @@ function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
         )}
       </div>
 
-      {/* Download button */}
+      {}
       <button
         onClick={handleDownload}
         disabled={downloadState === 'downloading'}
@@ -191,9 +180,7 @@ function ArtifactDownloadCard({ artifact, onDownload, error: externalError }) {
   );
 }
 
-/**
- * Format file size for display.
- */
+
 function formatSize(bytes) {
   if (!bytes || bytes <= 0) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -201,12 +188,10 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/**
- * Format mime type for display.
- */
+
 function formatMimeType(mime) {
   if (!mime) return '';
-  // Extract just the type part
+  
   const parts = mime.split('/');
   if (parts.length === 2) {
     return parts[1].replace('+', ' / ');
@@ -214,9 +199,7 @@ function formatMimeType(mime) {
   return mime;
 }
 
-/**
- * Compact variant for inline use.
- */
+
 export function ArtifactDownloadCompact({ artifact, onDownload }) {
   const ext = (artifact.filename || '').split('.').pop()?.toLowerCase() || '';
   const Icon = FILE_ICONS[ext] || File;

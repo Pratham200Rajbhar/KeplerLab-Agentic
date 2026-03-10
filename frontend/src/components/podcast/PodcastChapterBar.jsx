@@ -32,7 +32,7 @@ export default function PodcastChapterBar({ chapters = [], currentSegmentIndex, 
                 : 'hover:bg-[var(--surface-overlay)] border border-transparent'
             }`}
           >
-            {/* Chapter number */}
+            {}
             <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${
               isActive
                 ? 'bg-[var(--accent)] text-white'

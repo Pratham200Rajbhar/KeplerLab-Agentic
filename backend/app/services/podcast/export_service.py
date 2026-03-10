@@ -1,8 +1,3 @@
-"""Export service for podcast sessions — PDF and JSON.
-
-Both exports run as background operations; download URL is pushed via WebSocket.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -10,7 +5,6 @@ import json
 import logging
 import os
 import uuid
-from datetime import datetime
 from typing import Dict, Optional
 
 from app.db.prisma_client import prisma
@@ -23,13 +17,11 @@ _OUTPUT_BASE = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "output", "podcast")
 )
 
-
 async def create_export(
     session_id: str,
     user_id: str,
-    format: str,  # "pdf" or "json"
+    format: str,
 ) -> Dict:
-    """Create an export job for a podcast session."""
     db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id},
@@ -51,7 +43,6 @@ async def create_export(
         },
     )
 
-    # Run export in background
     asyncio.create_task(
         _run_export(export_record.id, session, user_id, format),
         name=f"podcast_export_{export_record.id}",
@@ -65,11 +56,9 @@ async def create_export(
         "fileUrl": None,
     }
 
-
 async def _run_export(
     export_id: str, session, user_id: str, format: str
 ) -> None:
-    """Execute the export (background task)."""
     db = prisma
     try:
         session_dir = os.path.join(_OUTPUT_BASE, session.id)
@@ -109,9 +98,7 @@ async def _run_export(
             "error": str(exc),
         })
 
-
 async def _export_json(session, session_dir: str) -> str:
-    """Export session as structured JSON."""
     filename = f"export_{uuid.uuid4().hex[:8]}.json"
     filepath = os.path.join(session_dir, filename)
 
@@ -162,9 +149,7 @@ async def _export_json(session, session_dir: str) -> str:
 
     return f"/podcast/export/file/{session.id}/{filename}"
 
-
 async def _export_pdf(session, session_dir: str) -> str:
-    """Export session as PDF with full transcript, doubts, and bookmarks."""
     filename = f"export_{uuid.uuid4().hex[:8]}.pdf"
     filepath = os.path.join(session_dir, filename)
 
@@ -174,7 +159,6 @@ async def _export_pdf(session, session_dir: str) -> str:
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
 
-        # Try to use NotoSans for Unicode support
         try:
             font_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "fonts")
             noto_path = os.path.join(font_dir, "NotoSans-Regular.ttf")
@@ -186,7 +170,6 @@ async def _export_pdf(session, session_dir: str) -> str:
         except Exception:
             pdf.set_font("Helvetica", size=10)
 
-        # Header page
         pdf.add_page()
         pdf.set_font_size(18)
         pdf.cell(0, 10, session.title or "Podcast Transcript", ln=True, align="C")
@@ -199,14 +182,12 @@ async def _export_pdf(session, session_dir: str) -> str:
         pdf.cell(0, 8, f"Created: {session.createdAt.strftime('%Y-%m-%d') if session.createdAt else 'N/A'}", ln=True, align="C")
         pdf.ln(10)
 
-        # Transcript
         pdf.set_font_size(14)
         pdf.cell(0, 10, "Transcript", ln=True)
         pdf.set_font_size(10)
 
         current_chapter = None
         for seg in (session.segments or []):
-            # Chapter divider
             if seg.chapter and seg.chapter != current_chapter:
                 current_chapter = seg.chapter
                 pdf.ln(5)
@@ -228,7 +209,6 @@ async def _export_pdf(session, session_dir: str) -> str:
             pdf.multi_cell(0, 5, seg.text)
             pdf.ln(2)
 
-        # Doubts section
         if session.doubts:
             pdf.add_page()
             pdf.set_font_size(14)
@@ -243,7 +223,6 @@ async def _export_pdf(session, session_dir: str) -> str:
                 pdf.multi_cell(0, 5, f"A: {d.answerText or 'No answer'}")
                 pdf.ln(2)
 
-        # Bookmarks
         if session.bookmarks:
             pdf.ln(10)
             pdf.set_font_size(14)
@@ -255,7 +234,6 @@ async def _export_pdf(session, session_dir: str) -> str:
         pdf.output(filepath)
 
     except ImportError:
-        # fpdf2 not installed — fallback to text file with .pdf extension
         logger.warning("fpdf2 not installed; generating plain text export as PDF fallback")
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(f"# {session.title or 'Podcast Transcript'}\n\n")
@@ -265,9 +243,7 @@ async def _export_pdf(session, session_dir: str) -> str:
 
     return f"/podcast/export/file/{session.id}/{filename}"
 
-
 async def get_export(export_id: str) -> Optional[Dict]:
-    """Get export record."""
     db = prisma
     export = await db.podcastexport.find_first(where={"id": export_id})
     if not export:
@@ -281,17 +257,13 @@ async def get_export(export_id: str) -> Optional[Dict]:
         "created_at": export.createdAt.isoformat() if export.createdAt else None,
     }
 
-
 def get_export_file_path(session_id: str, filename: str) -> Optional[str]:
-    """Get filesystem path for an export file."""
     path = os.path.join(_OUTPUT_BASE, session_id, filename)
     if os.path.isfile(path):
         return path
     return None
 
-
 async def generate_summary(session_id: str, user_id: str) -> str:
-    """Generate a summary card for a completed podcast session."""
     db = prisma
     session = await db.podcastsession.find_first(
         where={"id": session_id, "userId": user_id},
@@ -303,13 +275,11 @@ async def generate_summary(session_id: str, user_id: str) -> str:
     if not session:
         raise ValueError("Session not found")
 
-    # Build transcript text
     transcript = "\n".join(
         f"{'HOST' if s.speaker == 'host' else 'GUEST'}: {s.text}"
         for s in (session.segments or [])
     )
 
-    # Build doubts text
     doubts_text = ""
     if session.doubts:
         doubts_text = "\n\nQuestions asked:\n" + "\n".join(
@@ -332,7 +302,6 @@ async def generate_summary(session_id: str, user_id: str) -> str:
     )
     summary = response.content if hasattr(response, "content") else str(response)
 
-    # Save summary
     await db.podcastsession.update(
         where={"id": session_id},
         data={"summary": summary},

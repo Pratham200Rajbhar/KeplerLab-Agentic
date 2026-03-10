@@ -1,17 +1,3 @@
-"""Podcast script generation via LLM.
-
-Generates a structured two-persona dialogue from source material.
-
-Optimisations vs. the original:
-• Multi-angle RAG — fires 2–3 query variants in parallel so the LLM gets a
-  richer, more diverse context window without extra latency.
-• asyncio.to_thread() instead of run_in_executor(lambda:…) — avoids closure
-  capture bugs and is cleaner under Python 3.11.
-• Larger max_tokens budget (12 000) so longer scripts aren't truncated.
-• Robust JSON extraction with a second-pass repair attempt.
-• Per-mode query strategy so "debate", "deep-dive", etc. get relevant chunks.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -27,7 +13,6 @@ from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
 
-# Queries per mode: primary query + optional supplementary angles
 _MODE_QUERIES: Dict[str, List[str]] = {
     "overview": [
         "Comprehensive overview of all key topics, concepts, and findings",
@@ -49,21 +34,17 @@ _MODE_QUERIES: Dict[str, List[str]] = {
         "Comprehensive overview of all key topics, concepts, and findings",
         "Detailed analysis and supporting evidence",
     ],
-    "topic": [],  # filled dynamically from req.topic
+    "topic": [],
 }
 
-
 def _extract_json(text: str) -> dict:
-    """Extract JSON object from LLM response.  Tries progressively looser strategies."""
     text = text.strip()
 
-    # Strategy 1 — direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # Strategy 2 — strip markdown fences
     for pattern in (
         r"```json\s*\n?([\s\S]*?)\n?```",
         r"```\s*\n?([\s\S]*?)\n?```",
@@ -75,7 +56,6 @@ def _extract_json(text: str) -> dict:
             except json.JSONDecodeError:
                 pass
 
-    # Strategy 3 — grab outermost {...}
     m = re.search(r"\{[\s\S]*\}", text)
     if m:
         try:
@@ -83,7 +63,6 @@ def _extract_json(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    # Strategy 4 — fix common trailing-comma issues and retry
     candidate = re.sub(r",\s*([}\]])", r"\1", text)
     try:
         return json.loads(candidate)
@@ -95,7 +74,6 @@ def _extract_json(text: str) -> dict:
         f"({len(text)} chars): {text[:300]}…"
     )
 
-
 def _rag_search(
     user_id: str,
     query: str,
@@ -104,7 +82,6 @@ def _rag_search(
     use_mmr: bool = True,
     use_reranker: bool = True,
 ) -> str:
-    """Synchronous wrapper — run in a thread via asyncio.to_thread."""
     return secure_similarity_search_enhanced(
         user_id=user_id,
         query=query,
@@ -115,14 +92,12 @@ def _rag_search(
         return_formatted=True,
     )
 
-
 async def _gather_context(
     user_id: str,
     queries: List[str],
     material_ids: List[str],
     notebook_filter: Optional[str],
 ) -> str:
-    """Fire multiple RAG queries in parallel and merge unique chunks."""
     if not queries:
         return ""
 
@@ -138,7 +113,6 @@ async def _gather_context(
         return_exceptions=True,
     )
 
-    # Deduplicate chunks (split on double-newline, preserve order)
     seen: set[str] = set()
     merged: List[str] = []
     for res in results:
@@ -155,7 +129,6 @@ async def _gather_context(
 
     return "\n\n".join(merged)
 
-
 async def generate_podcast_script(
     user_id: str,
     material_ids: List[str],
@@ -164,21 +137,11 @@ async def generate_podcast_script(
     language: str = "en",
     notebook_id: Optional[str] = None,
 ) -> Dict:
-    """Generate a two-persona podcast script from source material.
-
-    Returns:
-        {
-            "segments": [{speaker, text, segment_index}],
-            "chapters": [{title, startSegment, summary}],
-            "title": str
-        }
-    """
     logger.info(
         "Generating podcast script: mode=%s language=%s materials=%d",
         mode, language, len(material_ids),
     )
 
-    # ── Build query list ──────────────────────────────────────────────────
     if mode == "topic" and topic:
         queries = [
             f'Detailed information about: "{topic}"',
@@ -187,24 +150,20 @@ async def generate_podcast_script(
     else:
         queries = _MODE_QUERIES.get(mode, _MODE_QUERIES["overview"])
 
-    # When material_ids are given, skip notebook filter — material may not be
-    # linked to this notebook yet (e.g. just uploaded).
     notebook_filter = notebook_id if not material_ids else None
 
-    # ── Phase A: Parallel multi-angle RAG ────────────────────────────────
     context = await _gather_context(user_id, queries, material_ids, notebook_filter)
 
     if not context:
-        # Fallback: single broad query without MMR/reranker
         logger.warning("Multi-angle RAG returned no context; falling back to basic search")
         context = await asyncio.to_thread(
             _rag_search,
             user_id,
             "All content and key information",
             material_ids,
-            None,      # no notebook filter
-            False,     # no MMR
-            False,     # no reranker
+            None,
+            False,
+            False,
         )
 
     if not context or context == "No relevant context found.":
@@ -212,7 +171,6 @@ async def generate_podcast_script(
 
     logger.info("Context gathered: %d chars from %d query angles", len(context), len(queries))
 
-    # ── Phase B: LLM script generation ───────────────────────────────────
     language_name = LANGUAGE_NAMES.get(language, "English")
     mode_instruction = (
         f'Focus specifically on: "{topic}". Only cover content related to this topic.'
@@ -238,20 +196,17 @@ async def generate_podcast_script(
     response_text = response.content if hasattr(response, "content") else str(response)
     logger.info("Script LLM response: %d chars", len(response_text))
 
-    # ── Phase C: Parse + validate ─────────────────────────────────────────
     result = _extract_json(response_text)
 
     segments: List[Dict] = result.get("segments", [])
     if not segments:
         raise ValueError("LLM returned empty segments list")
 
-    # Ensure sequential indices and valid speaker values
     for i, seg in enumerate(segments):
         seg["segment_index"] = i
         if seg.get("speaker", "").lower() not in ("host", "guest"):
             seg["speaker"] = "host" if i % 2 == 0 else "guest"
 
-    # Normalise chapters from either key convention
     raw_chapters: List[Dict] = result.get("chapters", [{"name": "Full Episode", "start_segment": 0}])
     chapters: List[Dict] = [
         {

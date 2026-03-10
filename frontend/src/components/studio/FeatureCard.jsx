@@ -3,12 +3,9 @@
 import { memo } from 'react';
 import { Loader2, X, ArrowRight } from 'lucide-react';
 
-/**
- * A card button for triggering content generation in the studio panel.
- * Shows loading spinner + cancel when generating.
- */
+
 export default memo(function FeatureCard({ icon, label, description, onClick, loading, onCancel, disabled, accent }) {
-  // accent can be a CSS color string like 'var(--accent)' or a tailwind-compatible color
+  
   const accentStyle = accent || 'var(--accent)';
 
   return (
@@ -23,7 +20,7 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
             : 'border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-overlay)] cursor-pointer'
       }`}
     >
-      {/* Loading shimmer bar */}
+      {}
       {loading && (
         <div className="absolute top-0 left-0 h-0.5 w-full overflow-hidden">
           <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
@@ -31,7 +28,7 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
       )}
 
       <div className="flex items-center gap-3 relative z-10">
-        {/* Icon badge */}
+        {}
         <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
           loading
             ? 'bg-[var(--accent-subtle)]'
@@ -61,7 +58,7 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
           )}
         </div>
 
-        {/* Right side actions */}
+        {}
         <div className="shrink-0 flex items-center gap-1">
           {loading && onCancel ? (
             <div

@@ -1,12 +1,3 @@
-"""Chat V2 — Chat service.
-
-Top-level service consumed by the API router:
-- Session management
-- Message dispatch to orchestrator
-- Block followup
-- Suggestions
-"""
-
 from __future__ import annotations
 
 import logging
@@ -18,27 +9,14 @@ from . import message_store, orchestrator
 
 logger = logging.getLogger(__name__)
 
-
-# ── Session management ────────────────────────────────────────
-
-
 async def create_session(notebook_id: str, user_id: str, title: str = "New Chat") -> str:
-    """Create a new chat session. Returns the session ID."""
     return await message_store.ensure_session(notebook_id, user_id, None, title)
 
-
 async def get_sessions(notebook_id: str, user_id: str) -> List[Dict[str, Any]]:
-    """List all chat sessions for a notebook."""
     return await message_store.get_sessions(notebook_id, user_id)
 
-
 async def delete_session(session_id: str, user_id: str) -> bool:
-    """Delete a chat session."""
     return await message_store.delete_session(session_id, user_id)
-
-
-# ── Chat dispatch ─────────────────────────────────────────────
-
 
 async def chat_stream(
     message: str,
@@ -48,19 +26,6 @@ async def chat_stream(
     material_ids: List[str],
     intent_override: Optional[str] = None,
 ) -> AsyncIterator[str]:
-    """Stream chat response via the orchestrator.
-
-    Args:
-        message: User's message.
-        notebook_id: Notebook context.
-        user_id: Owner.
-        session_id: Chat session (already ensured).
-        material_ids: Validated material IDs.
-        intent_override: Optional explicit capability override.
-
-    Yields:
-        SSE-formatted event strings.
-    """
     async for event in orchestrator.run(
         message=message,
         notebook_id=notebook_id,
@@ -71,37 +36,21 @@ async def chat_stream(
     ):
         yield event
 
-
-# ── History ───────────────────────────────────────────────────
-
-
 async def get_history(
     notebook_id: str, user_id: str, session_id: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    """Retrieve chat history."""
     return await message_store.get_history(notebook_id, user_id, session_id)
-
 
 async def clear_history(
     notebook_id: str, user_id: str, session_id: Optional[str] = None
 ) -> None:
-    """Clear chat history."""
     await message_store.clear_history(notebook_id, user_id, session_id)
-
-
-# ── Block followup ────────────────────────────────────────────
-
 
 async def block_followup_stream(
     block_id: str,
     action: str,
     question: str,
 ) -> AsyncIterator[str]:
-    """Stream an LLM response for a block-level follow-up action.
-
-    Supported actions: ask, simplify, translate, explain.
-    Yields raw text chunks.
-    """
     from app.db.prisma_client import prisma
 
     block = await prisma.responseblock.find_unique(where={"id": block_id})
@@ -135,14 +84,9 @@ async def block_followup_stream(
         if content:
             yield content
 
-
-# ── Suggestions ───────────────────────────────────────────────
-
-
 async def get_suggestions(
     partial_input: str, notebook_id: str, user_id: str
 ) -> List[Dict[str, Any]]:
-    """Generate smart prompt suggestions based on partial input."""
     from app.services.llm_service.structured_invoker import parse_json_robust
     from app.db.prisma_client import prisma
 
@@ -203,7 +147,6 @@ Rules for suggestions:
             if not suggestion_text:
                 continue
             llm_conf = float(item.get("confidence", 0.5))
-            # Simple lexical overlap
             suggestion_words = set(suggestion_text.lower().split())
             overlap = len(partial_words & suggestion_words) / max(len(partial_words), 1)
             final_conf = (llm_conf + overlap) / 2
@@ -217,9 +160,6 @@ Rules for suggestions:
     except Exception as exc:
         logger.error("get_suggestions failed: %s", exc)
         return []
-
-
-# ── Empty state suggestions ───────────────────────────────────
 
 _GENERAL_SUGGESTIONS = [
     "Explain how neural networks work",
@@ -238,17 +178,9 @@ _FALLBACK_RESOURCE_SUGGESTIONS = [
     "What questions would an exam ask about these documents?",
 ]
 
-
 async def get_empty_state_suggestions(
     material_ids: List[str], user_id: str
 ) -> Dict[str, Any]:
-    """Generate topics and question suggestions for the empty chat state.
-
-    If material_ids is empty, returns general AI suggestions.
-    Otherwise, analyses the selected material titles and returns:
-    - topics: 3-5 key topic areas
-    - suggestions: 4-6 clickable question prompts
-    """
     from app.services.llm_service.structured_invoker import parse_json_robust
     from app.db.prisma_client import prisma
 

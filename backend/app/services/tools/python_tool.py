@@ -1,14 +1,8 @@
-"""Code generation tool — generates code via LLM for review before execution.
-
-Detects the requested language from the user query and generates code in that
-language.  Phase 2 execution is handled by the /agent/execute-code endpoint.
-"""
-
 from __future__ import annotations
 
 import logging
 import re
-from typing import AsyncIterator, List, Optional
+from typing import AsyncIterator, List
 
 from app.core.config import settings
 from app.services.chat_v2.schemas import ToolResult
@@ -16,30 +10,24 @@ from app.services.chat_v2.streaming import sse_tool_start, sse_tool_result, sse_
 
 logger = logging.getLogger(__name__)
 
-# ── Language detection ────────────────────────────────────────
-
 _LANG_PATTERNS: List[tuple[str, str]] = [
-    # (pattern, canonical_language)
     (r"\b(javascript|js|node\.?js?)\b", "javascript"),
     (r"\b(typescript|ts)\b", "typescript"),
     (r"\b(c\+\+|cpp)\b", "cpp"),
-    (r"\bjava\b(?!\s*script)", "java"),   # java but not javascript
+    (r"\bjava\b(?!\s*script)", "java"),
     (r"\b(golang|go)\b", "go"),
     (r"\brust\b", "rust"),
     (r"\b(bash|shell|sh)\b", "bash"),
     (r"\bpython\b", "python"),
-    # C must be last to avoid false positives inside other words
     (r"\bin c\b|\bwrite c\b|\busing c\b", "c"),
 ]
 
 def _detect_language(query: str) -> str:
-    """Return the language requested in *query*, defaulting to 'python'."""
     q = query.lower()
     for pattern, lang in _LANG_PATTERNS:
         if re.search(pattern, q):
             return lang
     return "python"
-
 
 async def execute(
     query: str,
@@ -48,15 +36,6 @@ async def execute(
     notebook_id: str,
     session_id: str,
 ) -> AsyncIterator[str | ToolResult]:
-    """Generate code for the user's request in the appropriate language.
-
-    Detects the language from the query.  If the user says "write fibonacci in
-    javascript" the generated code will be JavaScript, not Python.
-
-    Yields:
-        SSE events (tool_start, code_block, tool_result) for streaming.
-        Final yield is always a ToolResult.
-    """
     language = _detect_language(query)
     yield sse_tool_start("python", label=f"Generating {language} code…")
 
@@ -64,9 +43,8 @@ async def execute(
         from app.services.llm_service.llm import get_llm
         from app.prompts import get_code_generation_prompt
 
-        # Optional RAG context for data-related queries (Python only — other
-        # languages typically don't use uploaded datasets)
         rag_context = ""
+        files_section = ""
         if material_ids and language == "python":
             try:
                 import asyncio
@@ -88,7 +66,15 @@ async def execute(
             except Exception:
                 pass
 
-        # Build prompt — request the specific language
+            # Resolve real uploaded filenames so the LLM uses the exact names
+            try:
+                from app.services.agent.material_files import get_material_file_map, build_files_prompt_section
+                file_map = await get_material_file_map(material_ids, user_id)
+                if file_map:
+                    files_section = build_files_prompt_section(file_map)
+            except Exception as exc:
+                logger.warning("Could not resolve material filenames: %s", exc)
+
         llm = get_llm(temperature=settings.LLM_TEMPERATURE_CODE)
         base_prompt = get_code_generation_prompt(query)
         lang_instruction = (
@@ -96,13 +82,15 @@ async def execute(
             f"Return only the raw {language} code — no markdown fences, no explanation."
         )
         prompt = base_prompt + lang_instruction
+        # Inject real filenames BEFORE rag context so LLM sees them prominently
+        if files_section:
+            prompt = f"{prompt}\n\n{files_section}"
         if rag_context:
             prompt = f"{prompt}\n\nAvailable context from uploaded materials:\n{rag_context}"
 
         code_response = await llm.ainvoke(prompt)
         code = getattr(code_response, "content", str(code_response)).strip()
 
-        # Strip markdown fences (model may still emit them despite instructions)
         for fence in (f"```{language}", "```python", "```javascript", "```typescript",
                       "```java", "```go", "```rust", "```bash", "```c", "```cpp", "```"):
             if code.startswith(fence):

@@ -1,21 +1,3 @@
-"""Unified text extraction from files, URLs, and YouTube.
-
-Every extraction method returns a standard ``ExtractionResult`` dict:
-
-    {
-      "text":        str,
-      "status":      "success" | "failed",
-      "source":      str,
-      "source_type": str,
-      "title":       str | None,
-      "metadata":    dict,
-      "error":       str | None,   # only on failure
-    }
-
-New formats supported (added in this revision):
-    EPUB, ODT, EML (email), MSG (Outlook), SVG, generic text fallback.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -29,15 +11,10 @@ from .file_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
-# Type alias
 ExtractionResult = Dict[str, Any]
 
-# ---------------------------------------------------------------------------
-# Process-level model singletons (lazy-loaded, never re-created)
-# ---------------------------------------------------------------------------
 _ocr_service_instance: Optional[Any] = None
 _transcription_service_instance: Optional[Any] = None
-
 
 def _get_ocr_service() -> Any:
     global _ocr_service_instance
@@ -47,7 +24,6 @@ def _get_ocr_service() -> Any:
         _ocr_service_instance = OCRService()
     return _ocr_service_instance
 
-
 def _get_transcription_service() -> Any:
     global _transcription_service_instance
     if _transcription_service_instance is None:
@@ -55,10 +31,6 @@ def _get_transcription_service() -> Any:
         logger.info("Initialising AudioTranscriptionService singleton — first use.")
         _transcription_service_instance = AudioTranscriptionService()
     return _transcription_service_instance
-
-
-# ── Result builders ───────────────────────────────────────────────────────────
-
 
 def _ok(
     text: str,
@@ -78,7 +50,6 @@ def _ok(
         "metadata":    metadata,
     }
 
-
 def _fail(source: str, error: str, source_type: str = "file") -> ExtractionResult:
     return {
         "text":        "",
@@ -89,20 +60,10 @@ def _fail(source: str, error: str, source_type: str = "file") -> ExtractionResul
         "metadata":    {},
     }
 
-
-# ── Extractor registry ────────────────────────────────────────────────────────
-
 _DOC_EXTRACTORS: Dict[str, Callable] = {}
 
-
 def _dataframe_summary(df: "pd.DataFrame", label: str = "Dataset") -> str:
-    """Build a RAG-friendly text representation of a DataFrame.
-
-    Includes schema, descriptive statistics, and head/tail samples —
-    enough for the LLM to reason about structure *and* content without
-    needing the full data.
-    """
-    import pandas as pd
+    pass
 
     lines: list[str] = [
         f"=== {label} ===",
@@ -121,22 +82,15 @@ def _dataframe_summary(df: "pd.DataFrame", label: str = "Dataset") -> str:
     ]
     return "\n".join(lines)
 
-
 def _register(*exts: str):
-    """Decorator: register an extractor for one or more file extensions."""
     def wrapper(fn):
         for ext in exts:
             _DOC_EXTRACTORS[ext] = fn
         return fn
     return wrapper
 
-
-# ── Format extractors ─────────────────────────────────────────────────────────
-
-
 @_register("pdf")
 def _extract_pdf(path: str) -> ExtractionResult:
-    """PDF — PyMuPDF primary, PDFPlumber tables, OCR fallback for image-only pages."""
     try:
         from .pdf_extractor import PDFExtractor
         from .resilient_runner import run_with_retry
@@ -160,9 +114,6 @@ def _extract_pdf(path: str) -> ExtractionResult:
             )
             if ocr_r.get("text"):
                 ocr_text = ocr_r["text"]
-                # For fully-scanned PDFs the digital layer is empty — use OCR
-                # text as-is so the chunker receives clean structured Markdown.
-                # For mixed PDFs, append OCR output after the digital content.
                 if text.strip():
                     text = text + "\n\n" + ocr_text
                 else:
@@ -185,10 +136,8 @@ def _extract_pdf(path: str) -> ExtractionResult:
             pass
         return _fail(path, str(exc))
 
-
 @_register("docx", "doc")
 def _extract_word(path: str) -> ExtractionResult:
-    """DOCX/DOC — unstructured primary, python-docx fallback."""
     try:
         from unstructured.partition.docx import partition_docx
         elements = partition_docx(filename=path)
@@ -227,10 +176,8 @@ def _extract_word(path: str) -> ExtractionResult:
             parts.append("\n" + "\n".join(rows) + "\n")
     return _ok("\n".join(parts), path, paragraphs=len(doc.paragraphs), method="python-docx")
 
-
 @_register("pptx", "ppt")
 def _extract_pptx(path: str) -> ExtractionResult:
-    """PPTX/PPT — unstructured primary, python-pptx fallback."""
     try:
         from unstructured.partition.pptx import partition_pptx
         elements = partition_pptx(filename=path)
@@ -266,10 +213,8 @@ def _extract_pptx(path: str) -> ExtractionResult:
             parts.extend(slide_texts)
     return _ok("\n".join(parts), path, slides=len(prs.slides), method="python-pptx")
 
-
 @_register("xlsx", "xls", "ods")
 def _extract_spreadsheet(path: str) -> ExtractionResult:
-    """Spreadsheets — structured extraction with parquet side-car."""
     import pandas as pd
     ext = Path(path).suffix.lower()
     try:
@@ -285,7 +230,6 @@ def _extract_spreadsheet(path: str) -> ExtractionResult:
         parquet_paths: dict[str, str] = {}
 
         for sheet_name, df in sheets.items():
-            # Save parquet side-car for python_tool
             parquet_path = f"{path}_{sheet_name}.parquet"
             try:
                 df.to_parquet(parquet_path)
@@ -308,15 +252,12 @@ def _extract_spreadsheet(path: str) -> ExtractionResult:
     except Exception as exc:
         return _fail(path, f"Spreadsheet extraction failed: {exc}")
 
-
 @_register("csv")
 def _extract_csv(path: str) -> ExtractionResult:
-    """CSV — structured extraction with parquet side-car."""
     import pandas as pd
     try:
         df = pd.read_csv(path, encoding_errors="replace")
 
-        # Save parquet side-car for python_tool
         parquet_path = path.rsplit(".", 1)[0] + "_data.parquet"
         try:
             df.to_parquet(parquet_path)
@@ -336,19 +277,15 @@ def _extract_csv(path: str) -> ExtractionResult:
     except Exception as exc:
         return _fail(path, f"CSV extraction failed: {exc}")
 
-
 @_register("txt", "md")
 def _extract_text_file(path: str) -> ExtractionResult:
-    """Plain text and Markdown."""
     raw = Path(path).read_bytes()
     enc = chardet.detect(raw).get("encoding") or "utf-8"
     text = raw.decode(enc, errors="replace")
     return _ok(text, path, encoding=enc, method="chardet")
 
-
 @_register("html", "htm")
 def _extract_html(path: str) -> ExtractionResult:
-    """HTML file — unstructured primary, BeautifulSoup fallback."""
     try:
         from unstructured.partition.html import partition_html
         elements = partition_html(filename=path)
@@ -379,10 +316,8 @@ def _extract_html(path: str) -> ExtractionResult:
         tag.decompose()
     return _ok(soup.get_text(separator=" ", strip=True), path, method="beautifulsoup")
 
-
 @_register("rtf")
 def _extract_rtf(path: str) -> ExtractionResult:
-    """RTF — striprtf library; falls back to raw decode."""
     try:
         from striprtf.striprtf import rtf_to_text
         raw = Path(path).read_bytes()
@@ -401,10 +336,8 @@ def _extract_rtf(path: str) -> ExtractionResult:
     text = raw.decode(enc, errors="replace")
     return _ok(text, path, method="chardet_fallback")
 
-
 @_register("epub")
 def _extract_epub(path: str) -> ExtractionResult:
-    """EPUB — ebooklib; falls back to unzip + raw text."""
     try:
         import ebooklib
         from ebooklib import epub as _epub
@@ -428,7 +361,6 @@ def _extract_epub(path: str) -> ExtractionResult:
     except Exception as exc:
         logger.warning("ebooklib EPUB extraction failed: %s", exc)
 
-    # Fallback: treat EPUB as ZIP, read HTML files inside
     try:
         import zipfile
         from bs4 import BeautifulSoup
@@ -443,15 +375,13 @@ def _extract_epub(path: str) -> ExtractionResult:
                         parts.append(t)
         if parts:
             return _ok("\n\n".join(parts), path, method="zip_fallback")
-    except Exception as exc:
+    except Exception:
         pass
 
     return _fail(path, "EPUB extraction failed — install ebooklib: pip install ebooklib")
 
-
 @_register("odt", "odp")
 def _extract_odt(path: str) -> ExtractionResult:
-    """ODT/ODP — odfpy; falls back to unzip + content.xml."""
     try:
         from odf import text as odf_text, teletype
         from odf.opendocument import load as odf_load
@@ -466,7 +396,6 @@ def _extract_odt(path: str) -> ExtractionResult:
     except Exception as exc:
         logger.warning("odfpy ODT extraction failed: %s", exc)
 
-    # Fallback: unzip and parse content.xml
     try:
         import zipfile
         from bs4 import BeautifulSoup
@@ -481,10 +410,8 @@ def _extract_odt(path: str) -> ExtractionResult:
 
     return _fail(path, "ODT extraction failed — install odfpy: pip install odfpy")
 
-
 @_register("eml")
 def _extract_eml(path: str) -> ExtractionResult:
-    """EML email files — Python stdlib email module."""
     import email as _email
     from email import policy
 
@@ -521,10 +448,8 @@ def _extract_eml(path: str) -> ExtractionResult:
     parts.append(body.strip())
     return _ok("\n".join(parts), path, subject=subject, method="email_stdlib")
 
-
 @_register("msg")
 def _extract_msg(path: str) -> ExtractionResult:
-    """Outlook MSG files — extract-msg library."""
     try:
         import extract_msg
         with extract_msg.openMsg(path) as msg:
@@ -541,17 +466,12 @@ def _extract_msg(path: str) -> ExtractionResult:
     except Exception as exc:
         return _fail(path, f"MSG extraction failed: {exc}")
 
-
-# ── Generic text fallback ─────────────────────────────────────────────────────
-
 def _generic_text_fallback(path: str) -> ExtractionResult:
-    """Last-resort: try to read any file as text. Fails if alpha ratio < 5%."""
     try:
         raw = Path(path).read_bytes()
         enc = chardet.detect(raw).get("encoding") or "utf-8"
         text = raw.decode(enc, errors="replace").replace("\x00", "")
 
-        # Quality check
         alpha = sum(c.isalpha() for c in text) / len(text) if text else 0
         if alpha < 0.05:
             return _fail(
@@ -563,18 +483,9 @@ def _generic_text_fallback(path: str) -> ExtractionResult:
     except Exception as exc:
         return _fail(path, f"Generic text extraction failed: {exc}")
 
-
-# ── Main extractor class ──────────────────────────────────────────────────────
-
-
 class EnhancedTextExtractor:
-    """Unified, format-agnostic text extractor for files, URLs, and YouTube."""
 
     def extract_text(self, source: str, source_type: str = "auto") -> ExtractionResult:
-        """Extract text from *source* (file path or URL).
-
-        source_type: "auto" | "file" | "url" | "youtube"
-        """
         try:
             if source_type == "auto":
                 source_type = self._detect_type(source)
@@ -594,8 +505,6 @@ class EnhancedTextExtractor:
         except Exception as exc:
             logger.error("Extraction failed for %s: %s", source, exc)
             return _fail(source, str(exc), source_type)
-
-    # ── Internal routing ──────────────────────────────────────────────────────
 
     @staticmethod
     def _detect_type(source: str) -> str:
@@ -617,7 +526,6 @@ class EnhancedTextExtractor:
 
         logger.info("Extracting file: %s  ext=%s  mime=%s  category=%s", path, ext, mime, category)
 
-        # ── OCR ───────────────────────────────────────────────────────────────
         if category == "image":
             from .resilient_runner import run_with_retry
             from app.core.config import settings
@@ -630,7 +538,6 @@ class EnhancedTextExtractor:
             return _ok(r["text"], path, source_type="file", method="ocr",
                        confidence=r.get("confidence"))
 
-        # ── Audio / Video → Whisper ───────────────────────────────────────────
         if category in ("audio", "video"):
             from .resilient_runner import run_with_retry
             from app.core.config import settings
@@ -643,7 +550,6 @@ class EnhancedTextExtractor:
             return _ok(r["text"], path, source_type="file", method="transcription",
                        language=r.get("language"), duration=r.get("duration"))
 
-        # ── Document — registered extractor ──────────────────────────────────
         extractor_fn = _DOC_EXTRACTORS.get(ext)
         if extractor_fn:
             try:
@@ -652,7 +558,6 @@ class EnhancedTextExtractor:
                 logger.warning("Registered extractor for %s failed: %s — trying generic fallback", ext, exc)
                 return _generic_text_fallback(path)
 
-        # ── Unknown type — generic text fallback ──────────────────────────────
         logger.info("No registered extractor for ext=%s — trying generic text fallback", ext)
         return _generic_text_fallback(path)
 
@@ -661,11 +566,9 @@ class EnhancedTextExtractor:
         from .web_scraping import WebScrapingService
         scraper = WebScrapingService()
 
-        # 1. Detect URL content type via HTTP headers
         url_info  = scraper.detect_url_type(url)
         category  = url_info.get("category", "unknown")
 
-        # 2. If header detection failed / returned unknown, try URL extension
         if category == "unknown" or category == "web":
             ext_cat = FileTypeDetector.detect_from_extension(url)
             if ext_cat and ext_cat not in ("web",):
@@ -675,7 +578,6 @@ class EnhancedTextExtractor:
                 )
                 category = ext_cat
 
-        # 3. If it's a downloadable file type, download → extract as file
         exts = FileTypeDetector.get_supported_extensions()
         _DOWNLOAD_CATS = set(exts) | {"image", "audio", "video", "document"}
         
@@ -697,7 +599,6 @@ class EnhancedTextExtractor:
                     except OSError:
                         pass
 
-        # 4. Fall back to web scraping
         r = scraper.extract_content_from_url(url)
         if r["status"] == "failed":
             return _fail(url, r.get("error", "Web scraping failed"), "url")
@@ -719,9 +620,5 @@ class EnhancedTextExtractor:
             transcript_lang=r.get("transcript_language"),
         )
 
-
-# ── Legacy shim ───────────────────────────────────────────────────────────────
-
 def extract_text(file_path: str) -> str:
-    """Legacy helper — returns plain text string."""
     return EnhancedTextExtractor().extract_text(file_path).get("text", "")

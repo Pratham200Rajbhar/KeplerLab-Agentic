@@ -34,11 +34,11 @@ export default function PodcastGenerating() {
 
   return (
     <div className="px-1 py-2 space-y-2 animate-fade-in">
-      {/* Stage + status row */}
+      {}
       <div className="flex items-center gap-2">
         <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin shrink-0" />
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {/* Script */}
+          {}
           <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
             stageIndex > 0 ? 'text-green-400' : stage === 'script' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
           }`}>
@@ -46,7 +46,7 @@ export default function PodcastGenerating() {
             Script
           </span>
           <div className="w-4 h-px bg-[var(--border)]" />
-          {/* Audio */}
+          {}
           <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
             stage === 'audio' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
           }`}>
@@ -57,7 +57,7 @@ export default function PodcastGenerating() {
         <span className="text-[10px] tabular-nums text-[var(--text-muted)] shrink-0">{Math.round(pct)}%</span>
       </div>
 
-      {/* Thin progress bar */}
+      {}
       <div className="h-1 rounded-full bg-[var(--surface)] overflow-hidden">
         <div
           className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
@@ -65,7 +65,7 @@ export default function PodcastGenerating() {
         />
       </div>
 
-      {/* Status message */}
+      {}
       <p className="text-[10px] text-[var(--text-muted)] truncate">{message}</p>
     </div>
   );

@@ -1,15 +1,9 @@
-"""RAG tool — Retrieves documents from vector DB and returns formatted context.
-
-Wraps the existing secure retriever and context builder into a clean
-tool interface for the chat_v2 orchestrator.
-"""
-
 from __future__ import annotations
 
 import asyncio
 import logging
 import re
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import AsyncIterator, List
 
 from app.core.config import settings
 from app.services.chat_v2.schemas import ToolResult
@@ -17,19 +11,12 @@ from app.services.chat_v2.streaming import sse_tool_start, sse_tool_result
 
 logger = logging.getLogger(__name__)
 
-
 async def execute(
     query: str,
     material_ids: List[str],
     user_id: str,
     notebook_id: str,
 ) -> AsyncIterator[str | ToolResult]:
-    """Run RAG retrieval and yield SSE events + final ToolResult.
-
-    Yields:
-        SSE event strings (tool_start, tool_result) for streaming.
-        The final yield is always a ToolResult with the retrieved context.
-    """
     yield sse_tool_start("rag", label="Searching your materials…")
 
     context = ""

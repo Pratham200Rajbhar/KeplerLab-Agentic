@@ -1,10 +1,6 @@
 from typing import Any
 
 def sanitize_null_bytes(data: Any) -> Any:
-    """
-    Recursively remove null bytes (x00) from strings, lists, and dictionaries.
-    Postgres TEXT and VARCHAR columns do not allow null bytes.
-    """
     if isinstance(data, str):
         return data.replace("\x00", "")
     elif isinstance(data, list):

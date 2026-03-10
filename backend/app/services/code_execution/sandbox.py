@@ -1,12 +1,3 @@
-"""Sandbox — subprocess-based isolated code execution.
-
-Supports Python, JavaScript, TypeScript, C, C++, Java, Go, Rust, Bash.
-
-Provides:
-  - ExecutionResult  dataclass
-  - run_in_sandbox() async function
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -17,22 +8,14 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Marker prefix injected by security.py chart capture
 _CHART_MARKER = "__CHART__:"
 
-# Maximum bytes of stdout we'll capture (16 MB)
 _MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 
-# ── Language configuration ────────────────────────────────────
-
-# Maps normalised language name → (file_extension, compile_cmd_template, run_cmd_template)
-# Templates use {script} for source file path and {binary} for compiled output path.
-# None compile_cmd means no compilation step.
 _LANG_CONFIG: Dict[str, Tuple[str, Optional[List[str]], List[str]]] = {
     "python": (".py", None, [sys.executable, "-u", "{script}"]),
     "javascript": (".js", None, ["node", "{script}"]),
@@ -55,16 +38,12 @@ _ALIASES: Dict[str, str] = {
     "shell": "bash",
 }
 
-
 def _normalise_language(language: str) -> str:
-    """Return the canonical language key or 'python' as the safe default."""
     lang = language.lower().strip()
     return _ALIASES.get(lang, lang if lang in _LANG_CONFIG else "python")
 
-
 @dataclass
 class ExecutionResult:
-    """Result from running code in the subprocess sandbox."""
 
     stdout: str = ""
     stderr: str = ""
@@ -75,7 +54,6 @@ class ExecutionResult:
     error: Optional[str] = None
     output_files: List[str] = field(default_factory=list)
 
-
 async def run_in_sandbox(
     code: str,
     work_dir: Optional[str] = None,
@@ -84,18 +62,6 @@ async def run_in_sandbox(
     language: str = "python",
     stdin: Optional[str] = None,
 ) -> ExecutionResult:
-    """Execute *code* in an isolated subprocess.
-
-    Supports multiple languages via ``language`` parameter.
-    Accepts program stdin via ``stdin`` string.
-
-    - Creates a temporary working directory if *work_dir* is not given.
-    - Streams stdout line-by-line through *on_stdout_line* if provided.
-    - Detects ``__CHART__:<base64>`` marker in stdout (Python only) and extracts it.
-    - Enforces *timeout* (seconds); sets ``timed_out=True`` on breach.
-
-    Returns an :class:`ExecutionResult` instance.
-    """
     t0 = time.perf_counter()
 
     _owns_work_dir = work_dir is None
@@ -106,7 +72,6 @@ async def run_in_sandbox(
     cfg = _LANG_CONFIG[lang]
     ext, compile_tpl, run_tpl = cfg
 
-    # Java requires the public class to be named exactly "Main" and file "Main.java"
     script_name = f"Main{ext}" if lang == "java" else f"_kepler_exec{ext}"
     script_path = os.path.join(work_dir, script_name)
     binary_path = os.path.join(work_dir, "_kepler_bin")
@@ -129,7 +94,6 @@ async def run_in_sandbox(
             for part in tpl
         ]
 
-    # ── Compilation step (C, C++, Java, Rust) ────────────────
     if compile_tpl is not None:
         compile_cmd = _render(compile_tpl)
         try:
@@ -163,7 +127,6 @@ async def run_in_sandbox(
                 elapsed_seconds=time.perf_counter() - t0,
             )
 
-    # ── Run step ─────────────────────────────────────────────
     run_cmd = _render(run_tpl)
 
     stdin_bytes: Optional[bytes] = stdin.encode("utf-8") if stdin else None
@@ -186,14 +149,12 @@ async def run_in_sandbox(
             env={**os.environ, "MPLBACKEND": "Agg"},
         )
 
-        # Feed stdin if provided
         if stdin_bytes is not None:
             proc.stdin.write(stdin_bytes)
             await proc.stdin.drain()
             proc.stdin.close()
 
         async def _read_stream(stream: asyncio.StreamReader, lines_buf: List[str], is_stdout: bool) -> None:
-            """Read a stream line-by-line, collect and optionally emit."""
             nonlocal chart_b64
             total = 0
             while True:
@@ -248,7 +209,6 @@ async def run_in_sandbox(
         error_msg = str(exc)
         logger.error("[sandbox] Subprocess error: %s", exc)
     finally:
-        # Clean up script and compiled binary
         for p in (script_path, binary_path):
             try:
                 os.remove(p)

@@ -1,8 +1,6 @@
 'use client';
 
-import { Download, FileText, FileSpreadsheet, FileCode, FileArchive } from 'lucide-react';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { Download, FileText, FileSpreadsheet, FileCode, FileArchive, Image as ImageIcon, ExternalLink } from 'lucide-react';
 
 const IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'image/webp']);
 const IMAGE_DISPLAY = new Set(['image', 'chart', 'plot', 'figure', 'heatmap']);
@@ -18,38 +16,53 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getFileColor(mime, displayType) {
+  if (mime?.includes('spread') || mime?.includes('excel') || displayType === 'csv_table') return { icon: 'text-green-400', bg: 'bg-green-400/10' };
+  if (mime?.includes('json') || displayType === 'json_tree') return { icon: 'text-blue-400', bg: 'bg-blue-400/10' };
+  if (mime?.includes('pdf') || displayType === 'pdf_embed') return { icon: 'text-red-400', bg: 'bg-red-400/10' };
+  if (mime?.includes('html') || displayType === 'html_preview') return { icon: 'text-orange-400', bg: 'bg-orange-400/10' };
+  if (mime?.includes('zip') || mime?.includes('tar')) return { icon: 'text-yellow-400', bg: 'bg-yellow-400/10' };
+  return { icon: 'text-text-muted', bg: 'bg-white/5' };
+}
+
 function FileIcon({ mime, displayType }) {
-  if (mime?.includes('spread') || mime?.includes('excel') || displayType === 'csv') return <FileSpreadsheet size={15} className="text-green-400" />;
-  if (mime?.includes('json') || mime?.includes('html') || displayType === 'code') return <FileCode size={15} className="text-blue-400" />;
-  if (mime?.includes('zip') || mime?.includes('tar')) return <FileArchive size={15} className="text-orange-400" />;
-  return <FileText size={15} className="text-text-muted" />;
+  if (mime?.includes('spread') || mime?.includes('excel') || displayType === 'csv_table') return <FileSpreadsheet size={16} className="text-green-400" />;
+  if (mime?.includes('json') || displayType === 'json_tree') return <FileCode size={16} className="text-blue-400" />;
+  if (mime?.includes('pdf') || displayType === 'pdf_embed') return <FileText size={16} className="text-red-400" />;
+  if (mime?.includes('html') || displayType === 'html_preview') return <FileCode size={16} className="text-orange-400" />;
+  if (mime?.includes('zip') || mime?.includes('tar')) return <FileArchive size={16} className="text-yellow-400" />;
+  if (mime?.startsWith('image/')) return <ImageIcon size={16} className="text-purple-400" />;
+  return <FileText size={16} className="text-text-muted" />;
 }
 
 function ArtifactCard({ artifact }) {
   const isImage = isImageArtifact(artifact);
-  const apiUrl = artifact.url ? `${API_BASE}${artifact.url}` : null;
+  // Use relative URL so Next.js API proxy handles routing — no hardcoded host needed
+  const apiUrl = artifact.url || null;
 
   if (isImage && apiUrl) {
     return (
-      <div
-        className="rounded-xl overflow-hidden border"
-        style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={apiUrl}
-          alt={artifact.filename || 'Generated image'}
-          className="w-full max-h-96 object-contain"
-          style={{ background: '#0a0a12' }}
-          onError={(e) => {
-            e.currentTarget.parentElement.style.display = 'none';
-          }}
-        />
-        <div
-          className="flex items-center justify-between px-3 py-2 border-t"
-          style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}
-        >
-          <span className="text-xs text-text-muted truncate">{artifact.filename}</span>
+      <div className="rounded-xl overflow-hidden border border-white/[0.08] group hover:border-white/[0.14] transition-colors">
+        <div className="relative bg-black/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={apiUrl}
+            alt={artifact.filename || 'Generated image'}
+            className="w-full max-h-[420px] object-contain"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.parentElement.style.display = 'none';
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.06] bg-black/20">
+          <div className="flex items-center gap-2 min-w-0">
+            <ImageIcon size={12} className="text-purple-400 shrink-0" />
+            <span className="text-xs text-text-muted truncate">{artifact.filename}</span>
+            {artifact.size > 0 && (
+              <span className="text-[10px] text-text-muted/60 shrink-0">{formatBytes(artifact.size)}</span>
+            )}
+          </div>
           {apiUrl && (
             <a
               href={apiUrl}
@@ -65,29 +78,31 @@ function ArtifactCard({ artifact }) {
     );
   }
 
-  // Generic file card
+  const colors = getFileColor(artifact.mime, artifact.display_type);
+
   return (
-    <div
-      className="flex items-center gap-3 px-3.5 py-3 rounded-xl border"
-      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
-    >
-      <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(255,255,255,0.05)' }}
-      >
+    <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.08] hover:border-white/[0.14] transition-colors bg-white/[0.02]">
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
         <FileIcon mime={artifact.mime} displayType={artifact.display_type} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-text-primary truncate">{artifact.filename}</div>
-        {artifact.size > 0 && (
-          <div className="text-xs text-text-muted mt-0.5">{formatBytes(artifact.size)}</div>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          {artifact.size > 0 && (
+            <span className="text-xs text-text-muted">{formatBytes(artifact.size)}</span>
+          )}
+          {artifact.display_type && (
+            <span className="text-[10px] text-text-muted/60 uppercase tracking-wider">
+              {artifact.display_type.replace('_', ' ')}
+            </span>
+          )}
+        </div>
       </div>
       {apiUrl && (
         <a
           href={apiUrl}
           download={artifact.filename}
-          className="shrink-0 flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors px-3 py-1.5 rounded-lg border border-accent/25 hover:bg-accent/10"
+          className="shrink-0 flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors px-3 py-1.5 rounded-lg border border-accent/25 hover:bg-accent/10"
         >
           <Download size={12} />
           Download
@@ -97,16 +112,25 @@ function ArtifactCard({ artifact }) {
   );
 }
 
-/**
- * ArtifactViewer — renders a list of agent/code-execution output artifacts.
- * Images are displayed inline; other files get download cards.
- */
+
 export default function ArtifactViewer({ artifacts }) {
   if (!artifacts?.length) return null;
 
+  const images = artifacts.filter(isImageArtifact);
+  const files = artifacts.filter(a => !isImageArtifact(a));
+
   return (
-    <div className="space-y-2">
-      {artifacts.map((art, i) => (
+    <div className="space-y-2.5">
+      {/* Images in a grid */}
+      {images.length > 0 && (
+        <div className={images.length === 1 ? '' : 'grid grid-cols-2 gap-2'}>
+          {images.map((art, i) => (
+            <ArtifactCard key={art.id || i} artifact={art} />
+          ))}
+        </div>
+      )}
+      {/* Files in a list */}
+      {files.map((art, i) => (
         <ArtifactCard key={art.id || i} artifact={art} />
       ))}
     </div>

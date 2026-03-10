@@ -1,34 +1,20 @@
-"""Playwright-based screenshot service for HTML presentations.
-
-Takes 16:9 widescreen screenshots (1920×1080) of each slide in the
-generated HTML presentation and saves them as PNG images.
-
-Slide detection strategy:
-  1. Try to find `.slide` elements and screenshot each one via clip.
-  2. Fall back to scroll-based capture if no `.slide` elements found.
-"""
-
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import tempfile
 import time
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 from playwright.async_api import async_playwright
 from app.core.config import settings
 
 logger = logging.getLogger("ppt.screenshots")
 
-# Fixed 16:9 widescreen dimensions
 SLIDE_WIDTH = 1920
 SLIDE_HEIGHT = 1080
 
-
 class ScreenshotService:
-    """Service for taking 16:9 screenshots of HTML presentation slides."""
 
     def __init__(self):
         self.output_dir = settings.PRESENTATIONS_OUTPUT_DIR
@@ -41,17 +27,6 @@ class ScreenshotService:
         presentation_id: str,
         slide_count: int,
     ) -> List[Dict[str, str]]:
-        """Take 1920×1080 screenshots of each slide and return metadata.
-
-        Args:
-            html_content: Complete HTML presentation (fixed 1920×1080 slides).
-            user_id: User ID for folder organization.
-            presentation_id: Unique ID for this presentation.
-            slide_count: Number of slides to capture.
-
-        Returns:
-            List of slide metadata dicts with file paths and URLs.
-        """
         t0 = time.time()
         logger.info(
             "Starting slide capture | user=%s | presentation_id=%s | expected_slides=%d",
@@ -60,7 +35,6 @@ class ScreenshotService:
             slide_count,
         )
 
-        # Create output directories
         ppt_dir = os.path.join(self.output_dir, user_id, presentation_id)
         os.makedirs(ppt_dir, exist_ok=True)
 
@@ -80,7 +54,6 @@ class ScreenshotService:
                 )
                 logger.debug("Browser launched successfully")
 
-                # Viewport MUST match our slide dimensions exactly
                 context = await browser.new_context(
                     viewport={"width": SLIDE_WIDTH, "height": SLIDE_HEIGHT},
                     device_scale_factor=1,
@@ -88,7 +61,6 @@ class ScreenshotService:
 
                 page = await context.new_page()
 
-                # Write HTML to temp file and load it
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".html", delete=False, encoding="utf-8"
                 ) as f:
@@ -103,10 +75,8 @@ class ScreenshotService:
                     )
                     logger.debug("Page loaded successfully")
 
-                    # Wait for CSS rendering (gradients, blur, fonts)
                     await page.wait_for_timeout(3000)
 
-                    # ── Detect actual slide elements ──────────────
                     actual_slide_count = await page.evaluate(
                         "document.querySelectorAll('.slide').length"
                     )
@@ -118,15 +88,12 @@ class ScreenshotService:
                         target_count,
                     )
 
-                    # ── Capture each slide ────────────────────────
                     for slide_num in range(1, target_count + 1):
                         slide_filename = f"slide_{slide_num}.png"
                         slide_path = os.path.join(ppt_dir, slide_filename)
 
                         try:
                             if actual_slide_count > 0:
-                                # Strategy A: clip-based capture using element position
-                                # This is more reliable than scroll-based capture
                                 bbox = await page.evaluate(
                                     f"""
                                     (() => {{
@@ -139,13 +106,11 @@ class ScreenshotService:
                                 )
 
                                 if bbox:
-                                    # Scroll the slide into view first
                                     await page.evaluate(
                                         f"document.querySelectorAll('.slide')[{slide_num - 1}].scrollIntoView({{behavior: 'instant', block: 'start'}})"
                                     )
                                     await page.wait_for_timeout(400)
 
-                                    # Capture the viewport (which should show exactly this slide)
                                     await page.screenshot(
                                         path=slide_path,
                                         full_page=False,
@@ -158,17 +123,14 @@ class ScreenshotService:
                                         },
                                     )
                                 else:
-                                    # Element not found — fall back to scroll
                                     await self._scroll_and_capture(
                                         page, slide_num, slide_path
                                     )
                             else:
-                                # Strategy B: scroll-based capture (fallback)
                                 await self._scroll_and_capture(
                                     page, slide_num, slide_path
                                 )
 
-                            # Verify screenshot
                             if os.path.exists(slide_path):
                                 file_size = os.path.getsize(slide_path)
                                 if file_size < 1000:
@@ -245,7 +207,6 @@ class ScreenshotService:
         slide_num: int,
         slide_path: str,
     ) -> None:
-        """Fallback: scroll to Nth slide position and take a viewport screenshot."""
         scroll_position = (slide_num - 1) * SLIDE_HEIGHT
         await page.evaluate(f"window.scrollTo(0, {scroll_position})")
         await page.wait_for_timeout(600)
@@ -261,24 +222,12 @@ class ScreenshotService:
             },
         )
 
-
 async def capture_presentation_slides(
     html_content: str,
     user_id: str,
     presentation_id: str,
     slide_count: int,
 ) -> List[Dict[str, str]]:
-    """Convenience function to capture slides using the ScreenshotService.
-
-    Args:
-        html_content: Complete HTML presentation (1920×1080 slides).
-        user_id: User ID for organization.
-        presentation_id: Unique presentation identifier.
-        slide_count: Number of slides expected.
-
-    Returns:
-        List of slide metadata.
-    """
     service = ScreenshotService()
     return await service.capture_slides(
         html_content, user_id, presentation_id, slide_count

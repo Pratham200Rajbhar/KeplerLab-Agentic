@@ -121,7 +121,7 @@ export default function ChatHistorySidebar({
         isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
       }`}
     >
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between p-5 shrink-0 bg-surface/50">
         <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
           Chat History
@@ -138,13 +138,13 @@ export default function ChatHistorySidebar({
         </button>
       </div>
 
-      {/* Main Actions & Search */}
+      {}
       <div className="p-5 flex flex-col gap-4 shrink-0 relative z-10">
         <button
           onClick={onCreateChat}
           className="group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white"
         >
-          {/* Animated Background Gradient */}
+          {}
           <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent-light opacity-90 group-hover:opacity-100 transition-opacity" />
           <div className="absolute inset-0 bg-gradient-to-r from-accent-light to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
@@ -173,9 +173,9 @@ export default function ChatHistorySidebar({
         </div>
       </div>
 
-      {/* Scrollable List */}
+      {}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-6 relative z-0">
-        {/* Top gradient fade */}
+        {}
         <div className="sticky top-0 h-4 bg-gradient-to-b from-surface/90 to-transparent z-10 pointer-events-none -mx-3 mb-2" />
 
         {sessions.length === 0 ? (

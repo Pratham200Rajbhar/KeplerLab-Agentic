@@ -1,26 +1,4 @@
-/**
- * Slash command definitions — shared between input UI and message display.
- *
- * Slash commands are the ONLY way intent is communicated to the backend.
- * No client-side intent inference. No fallback guessing.
- * Frontend sends what the user picked.
- *
- * When sending a chat message:
- *   - Active slash command → include `intent_override: command.intent` in request body
- *   - No active slash command → omit `intent_override` entirely (backend defaults to RAG)
- */
-
 export const SLASH_COMMANDS = [
-  {
-    command: '/agent',
-    intent: 'AGENT',
-    icon: '🤖',
-    label: 'Agent',
-    description: 'Multi-step autonomous task execution using tools',
-    placeholder: 'Describe a complex task for the agent...',
-    color: '#f59e0b',
-    bgClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  },
   {
     command: '/research',
     intent: 'WEB_RESEARCH',

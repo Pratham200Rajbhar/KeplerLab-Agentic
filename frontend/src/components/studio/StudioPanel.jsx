@@ -44,7 +44,7 @@ import {
   ContentHistory,
 } from './index';
 
-/* ── Lazy-load heavy components ── */
+
 const InlinePresentationView = dynamic(
   () => import('@/components/presentation/PresentationView'),
   { ssr: false, loading: () => <LoadingSpinner /> }
@@ -66,10 +66,9 @@ function LoadingSpinner() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════ */
 
 export default function StudioPanel() {
-  /* ── Store selectors ── */
+  
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const draftMode = useAppStore((s) => s.draftMode);
   const selectedSources = useAppStore((s) => s.selectedSources);
@@ -90,10 +89,10 @@ export default function StudioPanel() {
 
   const selectedMaterialIds = selectedSources;
 
-  /* ── View state ── */
+  
   const [activeView, setActiveView] = useState(null);
 
-  /* ── Generated content data ── */
+  
   const [flashcardsData, setFlashcardsData] = useState(null);
   const [quizData, setQuizData] = useState(null);
   const [presentationData, setPresentationData] = useState(null);
@@ -101,21 +100,21 @@ export default function StudioPanel() {
   const [mindmapData, setMindmapData] = useState(null);
   const [showMindmapCanvas, setShowMindmapCanvas] = useState(false);
 
-  /* ── Config dialog visibility ── */
+  
   const [showPresentationConfig, setShowPresentationConfig] = useState(false);
   const [showQuizConfig, setShowQuizConfig] = useState(false);
   const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
   const [showExplainerDialog, setShowExplainerDialog] = useState(false);
   const [showPodcastConfig, setShowPodcastConfig] = useState(false);
 
-  /* ── Content history ── */
+  
   const [contentHistory, setContentHistory] = useState([]);
   const [activeHistoryMenu, setActiveHistoryMenu] = useState(null);
   const [showRenameHistoryModal, setShowRenameHistoryModal] = useState(false);
   const [renamingHistoryItem, setRenamingHistoryItem] = useState(null);
   const [newHistoryTitle, setNewHistoryTitle] = useState('');
 
-  /* ── Panel resize ── */
+  
   const [width, setWidth] = useState(PANEL.STUDIO.DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef(null);
@@ -125,7 +124,7 @@ export default function StudioPanel() {
     abortControllerRef.current[type]?.abort();
   }, []);
 
-  /* ── Reset on notebook change ── */
+  
   useEffect(() => {
     setFlashcardsData(null);
     setQuizData(null);
@@ -174,10 +173,10 @@ export default function StudioPanel() {
       }
     };
     loadSavedContent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [currentNotebook?.id]);
 
-  /* ── Panel resize handlers ── */
+  
   const handleMouseMove = useCallback(
     (e) => {
       if (isResizing && panelRef.current) {
@@ -223,8 +222,7 @@ export default function StudioPanel() {
     }
   };
 
-  /* ═══════════════ Generation handlers ═══════════════ */
-
+  
   const handleFlashcardsClick = () => {
     setShowFlashcardConfig(true);
   };
@@ -382,8 +380,7 @@ export default function StudioPanel() {
     }
   };
 
-  /* ═══════════════ History item actions ═══════════════ */
-
+  
   const handleViewHistoryItem = (item) => {
     switch (item.content_type) {
       case 'flashcards':
@@ -516,8 +513,7 @@ export default function StudioPanel() {
     setShowRenameHistoryModal(true);
   };
 
-  /* ═══════════════ Podcast ═══════════════ */
-
+  
   const podcastGeneratingRef = useRef(false);
 
   const handlePodcastGenerate = async (config) => {
@@ -549,11 +545,10 @@ export default function StudioPanel() {
       podcast.loadSessions();
       setActiveView('podcast');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [podcast.phase]);
 
-  /* ═══════════════ Feature cards ═══════════════ */
-
+  
   const outputs = [
     {
       id: 'flashcards',
@@ -624,7 +619,7 @@ export default function StudioPanel() {
     podcast: 'AI Podcast',
   };
 
-  /* ── Inline content renderer ── */
+  
   const renderInlineContent = () => {
     switch (activeView) {
       case 'flashcards':
@@ -660,11 +655,10 @@ export default function StudioPanel() {
     }
   };
 
-  /* ═══════════════ Render ═══════════════ */
-
+  
   return (
     <>
-      {/* History Rename Modal */}
+      {}
       {showRenameHistoryModal && (
         <HistoryRenameModal
           item={renamingHistoryItem}
@@ -677,7 +671,7 @@ export default function StudioPanel() {
         />
       )}
 
-      {/* Config Modals */}
+      {}
       {showPresentationConfig && (
         <PresentationConfigDialog
           onConfirm={handleGeneratePresentation}
@@ -729,7 +723,7 @@ export default function StudioPanel() {
         style={{ width: `${width}px`, minWidth: `${PANEL.STUDIO.MIN_WIDTH}px` }}
         aria-label="Studio panel"
       >
-        {/* Resize Handle */}
+        {}
         <div
           className={`absolute top-0 left-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group ${isResizing ? 'bg-[var(--accent)]' : 'hover:bg-[var(--accent)]'
             }`}
@@ -741,7 +735,7 @@ export default function StudioPanel() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
-        {/* Header with Breadcrumb */}
+        {}
         <div className="panel-header">
           <div className="flex items-center gap-2">
             {activeView ? (
@@ -766,9 +760,9 @@ export default function StudioPanel() {
           </div>
         </div>
 
-        {/* Content Area */}
+        {}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Main scrollable area */}
+          {}
           <div className="flex-1 overflow-y-auto p-4 relative">
           {activeView ? (
             renderInlineContent()
@@ -815,7 +809,7 @@ export default function StudioPanel() {
                 ))}
               </div>
 
-              {/* Podcast generating progress */}
+              {}
               {podcast.phase === 'generating' && podcast.generationProgress && (
                 <div className="mt-3 p-3 rounded-xl border border-[var(--accent-border,var(--accent))] bg-[var(--accent-subtle)] animate-fade-in">
                   <div className="flex items-center gap-2 mb-2">
@@ -841,7 +835,7 @@ export default function StudioPanel() {
                 </div>
               )}
 
-              {/* Podcast error */}
+              {}
               {podcast.error && podcast.phase === 'idle' && (
                 <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
                   <div className="flex items-center gap-2">
@@ -873,15 +867,15 @@ export default function StudioPanel() {
               </p>
             </div>
           )}
-          </div>{/* end main scrollable */}
+          </div>{}
 
-          {/* ── Created ─ persistent section always visible when items exist ── */}
+          {}
           {contentHistory.length > 0 && (
             <div
               className="border-t border-[var(--border)] flex flex-col shrink-0"
               style={{ maxHeight: '42%' }}
             >
-              {/* Partition label */}
+              {}
               <div className="flex items-center gap-3 px-4 py-2 shrink-0">
                 <div className="flex-1 h-px bg-[var(--border)]" />
                 <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
@@ -899,7 +893,7 @@ export default function StudioPanel() {
               </div>
             </div>
           )}
-        </div>{/* end Content Area */}
+        </div>{}
       </aside>
     </>
   );

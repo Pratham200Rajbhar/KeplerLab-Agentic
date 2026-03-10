@@ -37,7 +37,7 @@ export default function UploadDialog({
   const toast = useToast();
   const dialogRef = useRef(null);
 
-  // Escape key to close
+  
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => { if (e.key === 'Escape' && !loading) onClose(); };
@@ -45,7 +45,7 @@ export default function UploadDialog({
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, loading, onClose]);
 
-  // Focus trap
+  
   useEffect(() => {
     if (!isOpen) return;
     const dialog = dialogRef.current;
@@ -204,8 +204,8 @@ export default function UploadDialog({
       ref={dialogRef}
     >
       <div className="relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in bg-surface-raised shadow-[0_25px_80px_rgba(0,0,0,0.5)] max-h-[88vh]">
-        {/* Header */}
-        {/* Header */}
+        {}
+        {}
         <div className="flex items-center justify-between px-6 py-5 bg-surface-overlay/30">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-accent-subtle">
@@ -221,7 +221,7 @@ export default function UploadDialog({
           </button>
         </div>
 
-        {/* Tabs */}
+        {}
         <div className="px-6 pt-4 pb-0">
           <div className="flex gap-1 p-1 rounded-xl bg-surface-overlay">
             {TABS.map((tab) => {
@@ -244,7 +244,7 @@ export default function UploadDialog({
           </div>
         </div>
 
-        {/* Content */}
+        {}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {activeTab === 'files' && (
             <div className="space-y-5">

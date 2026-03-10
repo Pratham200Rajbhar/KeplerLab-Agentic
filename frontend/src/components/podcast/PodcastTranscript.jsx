@@ -6,7 +6,7 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
   const activeRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Auto-scroll to current segment
+  
   useEffect(() => {
     if (activeRef.current) {
       activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -37,7 +37,7 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
             }`}
           >
             <div className="flex items-start gap-2">
-              {/* Speaker badge */}
+              {}
               <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${
                 (seg.speaker === 'host' || seg.speaker === 'HOST')
                   ? 'bg-blue-500/15 text-blue-400'
@@ -46,7 +46,7 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
                 {seg.speaker || 'Speaker'}
               </span>
 
-              {/* Text */}
+              {}
               <p className={`text-xs leading-relaxed ${
                 isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'
               }`}>

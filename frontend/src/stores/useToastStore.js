@@ -8,13 +8,13 @@ const useToastStore = create((set, get) => ({
   _timers: {},
 
   removeToast: (id) => {
-    // Mark as exiting for animation
+    
     set((state) => ({
       toasts: state.toasts.map((t) =>
         t.id === id ? { ...t, exiting: true } : t
       ),
     }));
-    // Remove after animation
+    
     setTimeout(() => {
       set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id),
@@ -28,7 +28,7 @@ const useToastStore = create((set, get) => ({
   },
 
   addToast: (message, type = 'info', duration = TIMERS.TOAST_DURATION) => {
-    // Normalise: Error objects, non-strings → readable string
+    
     if (message instanceof Error) message = message.message || 'An error occurred';
     else if (typeof message !== 'string') message = String(message);
 
@@ -43,18 +43,17 @@ const useToastStore = create((set, get) => ({
     return id;
   },
 
-  // Convenience methods
+  
   success: (msg, duration) => get().addToast(msg, 'success', duration),
   error: (msg, duration) => get().addToast(msg, 'error', duration),
   info: (msg, duration) => get().addToast(msg, 'info', duration),
   warning: (msg, duration) => get().addToast(msg, 'warning', duration),
 }));
 
-// Hook that returns a plain object with all toast methods.
-// Usage: const toast = useToast(); then call toast.success('msg'), toast.error('msg'), etc.
+
 export function useToast() {
   const store = useToastStore();
-  // Return a new object — never mutate the value returned from the hook.
+  
   return {
     toast: (message, type, duration) => store.addToast(message, type, duration),
     success: store.success,

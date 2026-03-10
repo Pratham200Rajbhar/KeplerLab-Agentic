@@ -1,5 +1,3 @@
-"""Flashcard generation route."""
-
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,10 +10,8 @@ from app.services.flashcard.generator import generate_flashcards
 from app.services.auth import get_current_user
 from .utils import require_material_text, require_materials_text
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/flashcard", tags=["flashcard"])
-
 
 class FlashcardRequest(BaseModel):
     material_id: Optional[str] = None
@@ -24,7 +20,6 @@ class FlashcardRequest(BaseModel):
     card_count: Optional[int] = Field(None, ge=1, le=150)
     difficulty: DifficultyLevel = DifficultyLevel.medium
     additional_instructions: Optional[str] = Field(None, max_length=2000)
-
 
 @router.post("")
 async def create_flashcards(

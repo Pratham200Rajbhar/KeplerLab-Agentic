@@ -1,17 +1,5 @@
 'use client';
 
-/**
- * FileViewerContent — renders a public file URL in-browser without forcing download.
- *
- * Route: /view?url=<encoded-https-url>
- *
- * Strategy by extension:
- *   .pdf                          → iframe → backend proxy (Content-Disposition: inline)
- *   .docx .doc .xlsx .xls .pptx
- *   .ppt .odt .ods .odp          → MS Office Online Viewer iframe
- *   .txt .csv .md .rtf            → backend proxy (renders as plain text)
- *   other                         → download fallback card
- */
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -61,7 +49,6 @@ function getDomain(url) {
   }
 }
 
-/* ── Sub-components ── */
 
 function TopBar({ filename, domain, fileUrl, onBack }) {
   return (
@@ -77,8 +64,8 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
 
       <div className="w-px h-5 bg-[var(--border)]" />
 
-      {/* Favicon + domain */}
-      {/* eslint-disable-next-line @next/next/no-img-element -- external Google favicon; domain is dynamic */}
+      {}
+      {}
       <img
         src={`https://www.google.com/s2/favicons?sz=32&domain=${domain}`}
         alt=""
@@ -93,12 +80,12 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
 
       <div className="w-px h-5 bg-[var(--border)] hidden sm:block" />
 
-      {/* Filename */}
+      {}
       <span className="text-sm text-[var(--text-primary)] truncate flex-1 min-w-0">
         {decodeURIComponent(filename)}
       </span>
 
-      {/* Action buttons */}
+      {}
       <div className="flex items-center gap-1.5 shrink-0">
         <a
           href={fileUrl}
@@ -199,14 +186,13 @@ function OtherFileCard({ fileUrl, filename, ext }) {
   );
 }
 
-/* ── Main component ── */
 
 export default function FileViewerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawUrl = searchParams.get('url') || '';
 
-  const [state, setState] = useState('loading'); // loading | validating | ready | error
+  const [state, setState] = useState('loading'); 
   const [errorMsg, setErrorMsg] = useState('');
   const [viewerInfo, setViewerInfo] = useState(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -257,7 +243,7 @@ export default function FileViewerContent() {
     validateAndLoad();
   }, [validateAndLoad]);
 
-  /* ── Derived display values ── */
+  
   const ext = viewerInfo?.ext ?? getExtension(rawUrl);
   const filename = viewerInfo?.filename ?? getFilename(rawUrl);
   const domain = getDomain(rawUrl);
@@ -265,7 +251,7 @@ export default function FileViewerContent() {
   const token = getAccessToken() || '';
   const proxyUrl = `${FILE_VIEWER_BASE}/file-viewer/proxy?url=${encodeURIComponent(rawUrl)}&token=${encodeURIComponent(token)}`;
 
-  /* ── Render ── */
+  
   return (
     <div className="h-screen flex flex-col bg-[var(--surface)] text-[var(--text-primary)] overflow-hidden">
       <TopBar

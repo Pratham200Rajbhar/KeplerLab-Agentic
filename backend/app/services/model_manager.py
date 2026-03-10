@@ -1,14 +1,6 @@
-"""Model Manager — validates and downloads required AI models on startup.
-
-Key fix: the original code loaded SentenceTransformer up to 3 times per
-validation cycle (_is_model_cached → _download → _verify). This version
-checks the cache by directory existence and only loads the model once.
-"""
-
 from __future__ import annotations
 
 import logging
-import os
 import asyncio
 from pathlib import Path
 from typing import Dict
@@ -18,24 +10,14 @@ from app.models.model_schemas import REQUIRED_MODELS, ModelConfig, get_local_mod
 
 logger = logging.getLogger(__name__)
 
-
 class ModelManager:
     def __init__(self):
         self.models_dir = Path(settings.MODELS_DIR)
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
-        # Registry loaded from app.models.model_schemas (single source of truth)
         self.required_models: Dict[str, ModelConfig] = REQUIRED_MODELS
 
-    # ── Public API ────────────────────────────────────────
-
     async def validate_and_load_models(self) -> Dict[str, bool]:
-        """Validate all required models; download missing ones.
-
-        Returns mapping of model_id → success.
-        Runs blocking model operations in a thread executor to avoid
-        blocking the async event loop during multi-GB downloads.
-        """
         logger.info("Starting model validation …")
         results: Dict[str, bool] = {}
         loop = asyncio.get_running_loop()
@@ -60,10 +42,7 @@ class ModelManager:
             "cache_size": self._human_cache_size(),
         }
 
-    # ── Internals ─────────────────────────────────────────
-
     def _ensure_model(self, cfg: dict) -> bool:
-        """Download if missing, then verify with a single load."""
         name = cfg["name"]
         mtype = cfg["type"]
 
@@ -72,12 +51,11 @@ class ModelManager:
         if mtype == "cross_encoder":
             return self._ensure_cross_encoder(name, cfg.get("fallback_name"))
         if mtype == "tts":
-            return True  # placeholder
+            return True
         logger.error(f"Unknown model type: {mtype}")
         return False
 
     def _ensure_sentence_transformer(self, name: str) -> bool:
-        """Load from local data/models/ if available; otherwise download + save."""
         try:
             from sentence_transformers import SentenceTransformer
 
@@ -90,7 +68,6 @@ class ModelManager:
 
             model = SentenceTransformer(load_path)
 
-            # Persist to local folder when loaded from HF for the first time
             if not is_model_local(name):
                 local = get_local_model_path(name)
                 model.save(str(local))
@@ -106,7 +83,6 @@ class ModelManager:
             return False
 
     def _ensure_cross_encoder(self, name: str, fallback_name: str | None = None) -> bool:
-        """Load from local data/models/ if available; otherwise download + save."""
         import torch
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -127,7 +103,6 @@ class ModelManager:
 
             model = CrossEncoder(load_path, max_length=512, trust_remote_code=False)
 
-            # Persist locally when loaded from HF for the first time
             if not is_model_local(model_name):
                 local = get_local_model_path(model_name)
                 model.save(str(local))
@@ -143,7 +118,6 @@ class ModelManager:
             return False
 
     def _is_model_cached(self, name: str) -> bool:
-        """Quick check without loading the model (used by /models/status)."""
         return is_model_local(name)
 
     @staticmethod
@@ -161,6 +135,4 @@ class ModelManager:
             total /= 1024.0
         return f"{total:.1f} TB"
 
-
-# Global singleton
 model_manager = ModelManager()

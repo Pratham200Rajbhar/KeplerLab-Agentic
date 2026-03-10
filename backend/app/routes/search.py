@@ -22,7 +22,6 @@ async def search_web(
     request: WebSearchRequest,
     current_user=Depends(get_current_user),
 ):
-    """Web search via DuckDuckGo."""
     query = request.query
     if request.file_type:
         query = f"{query} filetype:{request.file_type}"
@@ -42,6 +41,6 @@ async def search_web(
             )
             for r in results
         ]
-    except Exception as e:
+    except Exception:
         logger.exception("Web search failed")
         raise HTTPException(status_code=500, detail="Search failed")

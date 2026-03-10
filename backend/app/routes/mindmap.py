@@ -1,5 +1,3 @@
-"""Mind map generation route."""
-
 import json
 import logging
 
@@ -14,13 +12,11 @@ from app.db.prisma_client import prisma
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/mindmap", tags=["mindmap"])
 
-
 @router.post("")
 async def create_mindmap(
     request: MindMapRequest,
     current_user=Depends(get_current_user),
 ):
-    """Generate a mind map from selected materials."""
     if not request.material_ids:
         raise HTTPException(status_code=400, detail="No materials selected")
 
@@ -29,7 +25,6 @@ async def create_mindmap(
         current_user.id, request.notebook_id, request.material_ids,
     )
 
-    # Verify notebook belongs to user
     notebook = await prisma.notebook.find_first(
         where={"id": request.notebook_id, "userId": str(current_user.id)}
     )
@@ -64,13 +59,11 @@ async def create_mindmap(
         )
         raise HTTPException(status_code=500, detail="Failed to generate mind map")
 
-
 @router.get("/{notebook_id}")
 async def get_mindmap(
     notebook_id: str,
     current_user=Depends(get_current_user),
 ):
-    """Retrieve saved mind map for a notebook."""
     content = await prisma.generatedcontent.find_first(
         where={
             "notebookId": notebook_id,
@@ -82,17 +75,14 @@ async def get_mindmap(
         raise HTTPException(status_code=404, detail="Mind map not found")
 
     data = content.data if isinstance(content.data, dict) else (json.loads(content.data) if content.data else {})
-    # Expose the GeneratedContent record UUID as `id` so callers (e.g. DELETE) can use it
     data["id"] = content.id
     return JSONResponse(content=data)
-
 
 @router.delete("/{id}")
 async def delete_mindmap(
     id: str,
     current_user=Depends(get_current_user),
 ):
-    """Delete a mind map."""
     content = await prisma.generatedcontent.find_first(
         where={
             "id": id,

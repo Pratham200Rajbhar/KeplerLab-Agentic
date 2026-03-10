@@ -2,10 +2,7 @@
 
 import { Bot } from 'lucide-react';
 
-/**
- * TypingIndicator — shown while the assistant is generating
- * but no tokens or agent steps have arrived yet.
- */
+
 export default function TypingIndicator() {
   return (
     <div className="px-4 sm:px-6 py-4">

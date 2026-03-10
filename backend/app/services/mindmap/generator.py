@@ -1,5 +1,3 @@
-"""Mind map generation service."""
-
 from __future__ import annotations
 
 import json
@@ -15,31 +13,18 @@ from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
 
-
 def generate_mindmap_sync(combined_text: str) -> dict:
-    """Synchronous LLM invocation for mind map generation (runs in executor)."""
     prompt = get_mindmap_prompt(combined_text)
     result = invoke_structured(prompt, MindMapResponse, max_retries=2)
     return result.model_dump()
-
 
 async def generate_mindmap(
     material_ids: list[str],
     notebook_id: str,
     user_id: str,
 ) -> dict:
-    """Generate a mind map from the given materials.
-
-    1. Read material text for each material_id
-    2. Concatenate all texts
-    3. Call LLM for structured mind map
-    4. Post-process: set has_children flags
-    5. Upsert into GeneratedContent via Prisma
-    6. Return MindMapResponse dict
-    """
     import asyncio
 
-    # ── Step 1-2: Collect and concatenate material text ────
     parts: list[str] = []
     for mid in material_ids:
         text = await get_material_text(str(mid), str(user_id))
@@ -50,23 +35,19 @@ async def generate_mindmap(
 
     combined_text = "\n\n".join(parts)
 
-    # ── Step 3: Call LLM (blocking — run in executor) ─────
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, generate_mindmap_sync, combined_text)
 
-    # ── Step 4: Post-process — set has_children flags ─────
     parent_ids = {n["parent_id"] for n in result["nodes"] if n.get("parent_id")}
     for node in result["nodes"]:
         node["has_children"] = node["id"] in parent_ids
 
-    # Fill in metadata
     mindmap_id = str(uuid.uuid4())
     result["id"] = mindmap_id
     result["notebook_id"] = notebook_id
     result["material_ids"] = material_ids
     result["created_at"] = datetime.now(timezone.utc).isoformat()
 
-    # ── Step 5: Upsert into GeneratedContent ──────────────
     existing = await prisma.generatedcontent.find_first(
         where={
             "notebookId": notebook_id,
@@ -92,5 +73,4 @@ async def generate_mindmap(
     else:
         await prisma.generatedcontent.create(data=data_payload)
 
-    # ── Step 6: Return ────────────────────────────────────
     return result

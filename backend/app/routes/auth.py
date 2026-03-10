@@ -18,7 +18,6 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-
 class SignupRequest(BaseModel):
     email: EmailStr
     username: str
@@ -44,16 +43,13 @@ class SignupRequest(BaseModel):
             raise ValueError("Username must be between 2 and 50 characters")
         return v
 
-
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-
 class AccessTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-
 
 class UserResponse(BaseModel):
     id: str
@@ -64,9 +60,7 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 def _set_refresh_cookie(response: Response, token: str) -> None:
-    """Set the refresh token as an HttpOnly Secure cookie."""
     response.set_cookie(
         key=settings.COOKIE_NAME,
         value=token,
@@ -75,12 +69,10 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         samesite=settings.COOKIE_SAMESITE,
         domain=settings.COOKIE_DOMAIN,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/",  # Sent with all requests so Next.js middleware can read it
+        path="/",
     )
 
-
 def _clear_refresh_cookie(response: Response) -> None:
-    """Clear the refresh token cookie."""
     response.delete_cookie(
         key=settings.COOKIE_NAME,
         httponly=True,
@@ -89,7 +81,6 @@ def _clear_refresh_cookie(response: Response) -> None:
         domain=settings.COOKIE_DOMAIN,
         path="/",
     )
-
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(request: SignupRequest):
@@ -103,7 +94,6 @@ async def signup(request: SignupRequest):
         role=user.role
     )
 
-
 @router.post("/login", response_model=AccessTokenResponse)
 async def login(request: LoginRequest, response: Response):
     logger.info(f"Login attempt for email: {request.email}")
@@ -116,25 +106,20 @@ async def login(request: LoginRequest, response: Response):
             detail="Invalid email or password"
         )
 
-    # Create token family for rotation tracking
     family = str(uuid.uuid4())
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)}, family=family)
 
-    # Store refresh token hash in DB
     await store_refresh_token(str(user.id), refresh_token, family)
 
-    # Set refresh token as HttpOnly cookie
     _set_refresh_cookie(response, refresh_token)
 
     logger.info(f"User logged in successfully: {user.id}")
     return AccessTokenResponse(access_token=access_token)
 
-
 @router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh_token_endpoint(request: Request, response: Response):
-    """Refresh access token using HttpOnly cookie. Implements token rotation."""
     token = request.cookies.get(settings.COOKIE_NAME)
     if not token:
         raise HTTPException(
@@ -153,18 +138,14 @@ async def refresh_token_endpoint(request: Request, response: Response):
     user_id = result["user_id"]
     family = result["family"]
 
-    # Create new rotated tokens
     access_token = create_access_token(data={"sub": user_id})
     new_refresh_token = create_refresh_token(data={"sub": user_id}, family=family)
 
-    # Store new refresh token
     await store_refresh_token(user_id, new_refresh_token, family)
 
-    # Set new refresh cookie
     _set_refresh_cookie(response, new_refresh_token)
 
     return AccessTokenResponse(access_token=access_token)
-
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user=Depends(get_current_user)):
@@ -175,14 +156,12 @@ async def get_me(current_user=Depends(get_current_user)):
         role=current_user.role
     )
 
-
 @router.post("/logout")
 async def logout(
     request: Request,
     response: Response,
     current_user=Depends(get_current_user),
 ):
-    """Logout: revoke all refresh tokens for user and clear cookie."""
     await revoke_user_tokens(str(current_user.id))
     _clear_refresh_cookie(response)
     logger.info(f"User logged out: {current_user.id}")

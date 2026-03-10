@@ -30,7 +30,7 @@ function MindMapNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-[var(--border)] !w-2 !h-2 !border-0" />
 
       <div className="flex items-center gap-1.5">
-        {/* Collapse toggle */}
+        {}
         {data.onToggleCollapse && (
           <button
             onClick={(e) => {

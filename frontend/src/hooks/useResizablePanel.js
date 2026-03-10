@@ -3,18 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PANEL } from '@/lib/utils/constants';
 
-/**
- * Handles drag-to-resize for Sidebar and StudioPanel.
- *
- * @param {'left'|'right'} side - Which edge to resize from
- * @param {object} opts
- * @param {number} opts.defaultWidth - Initial width
- * @param {number} [opts.minWidth] - Minimum width
- * @param {number} [opts.maxWidth] - Maximum width
- * @param {boolean} [opts.collapsible] - Allow collapsing below min threshold
- * @param {number} [opts.collapseThreshold] - Width below which it collapses
- * @returns {{ width, collapsed, startDrag, toggle, setWidth }}
- */
+
 export default function useResizablePanel(
   side = 'left',
   {

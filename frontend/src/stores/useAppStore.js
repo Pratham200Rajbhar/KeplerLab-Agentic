@@ -1,52 +1,52 @@
 import { create } from 'zustand';
 import { generateId } from '@/lib/utils/helpers';
 
-// ── Re-export focused stores for gradual migration ──
+
 export { default as useChatStore } from './useChatStore';
 export { default as useMaterialStore } from './useMaterialStore';
 export { default as useNotebookStore } from './useNotebookStore';
 export { default as useUIStore } from './useUIStore';
 
-// Shared ref for routing podcast WS events
+
 const _podcastWsHandlerRef = { current: null };
 
 const useAppStore = create((set, get) => ({
-  // ── Notebook state ──
+  
   currentNotebook: null,
   draftMode: false,
   newlyCreatedNotebookId: null,
 
-  // ── Material state ──
+  
   currentMaterial: null,
   materials: [],
   selectedSources: [],
 
-  // ── Chat state ──
+  
   sessionId: null,
   messages: [],
 
-  // ── Generated content ──
+  
   flashcards: null,
   quiz: null,
   notes: [],
 
-  // ── Mind map → chat bridge ──
+  
   pendingChatMessage: null,
 
-  // ── UI state ──
+  
   loading: {},
   error: null,
   activePanel: 'chat',
 
-  // ── Podcast WS bridge ──
+  
   podcastWsHandlerRef: _podcastWsHandlerRef,
 
-  // ── Notebook actions ──
+  
   setCurrentNotebook: (notebook) => set({ currentNotebook: notebook }),
   setDraftMode: (mode) => set({ draftMode: mode }),
   setNewlyCreatedNotebookId: (id) => set({ newlyCreatedNotebookId: id }),
 
-  // ── Material actions ──
+  
   setCurrentMaterial: (material) => set({ currentMaterial: material }),
   setMaterials: (materialsOrUpdater) =>
     set((state) => ({
@@ -63,7 +63,7 @@ const useAppStore = create((set, get) => ({
       currentMaterial: state.currentMaterial || material,
     })),
 
-  // ── Source selection ──
+  
   setSelectedSources: (sourcesOrUpdater) =>
     set((state) => ({
       selectedSources:
@@ -91,7 +91,7 @@ const useAppStore = create((set, get) => ({
     return state.selectedSources.includes(id);
   },
 
-  // ── Chat actions ──
+  
   setSessionId: (id) => set({ sessionId: id }),
   setMessages: (messagesOrUpdater) =>
     set((state) => ({
@@ -114,7 +114,7 @@ const useAppStore = create((set, get) => ({
   },
   clearMessages: () => set({ messages: [], sessionId: null }),
 
-  // ── Generated content actions ──
+  
   setFlashcards: (flashcards) => set({ flashcards }),
   setQuiz: (quiz) => set({ quiz }),
   setNotes: (notes) => set({ notes }),
@@ -129,10 +129,10 @@ const useAppStore = create((set, get) => ({
     return note;
   },
 
-  // ── Mind map ──
+  
   setPendingChatMessage: (msg) => set({ pendingChatMessage: msg }),
 
-  // ── UI actions ──
+  
   setLoadingState: (key, value) =>
     set((state) => ({
       loading: { ...state.loading, [key]: value },
@@ -140,7 +140,7 @@ const useAppStore = create((set, get) => ({
   setError: (error) => set({ error }),
   setActivePanel: (panel) => set({ activePanel: panel }),
 
-  // ── Notebook switch cleanup ──
+  
   resetForNotebookSwitch: () => {
     set({
       selectedSources: [],
@@ -157,7 +157,7 @@ const useAppStore = create((set, get) => ({
     });
   },
 
-  // ── Full reset ──
+  
   resetWorkspace: () => {
     set({
       currentNotebook: null,

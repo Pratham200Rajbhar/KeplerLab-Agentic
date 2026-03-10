@@ -7,13 +7,13 @@ export default function Modal({
   children,
   onClose,
   maxWidth = 'md',
-  size,       // alias for maxWidth (backward compat)
+  size,       
   isOpen,
   title,
   icon,
   footer,
 }) {
-  // Allow callers to control visibility via isOpen (undefined = always render)
+  
   if (isOpen === false) return null;
 
   const effectiveMaxWidth = size || maxWidth;
@@ -44,7 +44,7 @@ export default function Modal({
 function ModalInner({ children, onClose, widthClass, title, icon, footer }) {
   const dialogRef = useRef(null);
 
-  // ESC key to close
+  
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose?.();
@@ -53,7 +53,7 @@ function ModalInner({ children, onClose, widthClass, title, icon, footer }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Focus trap
+  
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -84,18 +84,18 @@ function ModalInner({ children, onClose, widthClass, title, icon, footer }) {
       aria-label={title || 'Dialog'}
       ref={dialogRef}
     >
-      {/* Backdrop */}
+      {}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-[2px] animate-fade-in"
         onClick={onClose}
         role="presentation"
       />
-      {/* Content */}
+      {}
       <div
         className={`relative ${widthClass} w-full bg-surface-raised rounded-2xl shadow-glow-sm animate-slide-up overflow-hidden flex flex-col max-h-[90vh] mx-auto`}
         style={{ border: '1px solid rgba(255,255,255,0.06)' }}
       >
-        {/* Header */}
+        {}
         {(title || icon) && (
           <div className="flex items-center gap-3 px-6 py-4 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             {icon && <span className="text-accent">{icon}</span>}
@@ -112,12 +112,12 @@ function ModalInner({ children, onClose, widthClass, title, icon, footer }) {
           </div>
         )}
 
-        {/* Body */}
+        {}
         <div className={`flex-1 overflow-auto ${title ? 'px-6 py-4' : ''}`}>
           {children}
         </div>
 
-        {/* Footer */}
+        {}
         {footer && (
           <div className="px-6 py-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
             {footer}

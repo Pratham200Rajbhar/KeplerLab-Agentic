@@ -10,10 +10,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 import OutputRenderer from './OutputRenderer';
 import BlockHoverMenu from './BlockHoverMenu';
 import CommandBadge from './CommandBadge';
-import AgentExecutionView from './AgentExecutionView';
 import ArtifactGallery from './ArtifactGallery';
-import ResultSummary from './ResultSummary';
-import TechnicalDetails from './TechnicalDetails';
 import CodePanel from './CodePanel';
 import WebSources from './WebSources';
 import WebSearchStrip from './WebSearchStrip';
@@ -38,7 +35,7 @@ function tryParseDataAnalysis(content) {
   try {
     const parsed = JSON.parse(trimmed);
     if ('stdout' in parsed || 'explanation' in parsed) return parsed;
-  } catch { /* skip */ }
+  } catch {  }
   return null;
 }
 
@@ -66,7 +63,7 @@ function tryParseResearchJSON(content) {
       });
     }
     return lines.join('\n');
-  } catch { /* skip */ }
+  } catch {  }
   return null;
 }
 
@@ -82,7 +79,7 @@ function tryParseMultiSource(content) {
     const tool = m[1].trim();
     const body = m[2].trim();
     let json = null;
-    if (body.startsWith('{') && body.endsWith('}')) { try { json = JSON.parse(body); } catch { /* skip */ } }
+    if (body.startsWith('{') && body.endsWith('}')) { try { json = JSON.parse(body); } catch {  } }
     blocks.push({ tool, raw: body, json });
   }
   return blocks.length > 0 ? blocks : null;
@@ -115,12 +112,9 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
   const isUser = message.role === 'user';
   const blocks = message.blocks || [];
   const agentMeta = message.agentMeta || null;
-  const isAgentMode = !!agentMeta;
-  const stepLog = agentMeta?.step_log || message.stepLog || [];
-  // Unified artifacts from SSE or persisted in message
   const allArtifacts = message.artifacts || [];
 
-  /* ── User message edit state ── */
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.content || '');
 
@@ -198,13 +192,13 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
     );
   };
 
-  // Handle artifact download - must be before early return for user messages
+  
   const handleArtifactDownload = useCallback(async (artifact) => {
     try {
       await downloadArtifactSecure(artifact);
     } catch (err) {
       console.error('Download failed:', err);
-      // Fallback to direct download
+      
       if (artifact.downloadUrl) {
         const link = document.createElement('a');
         link.href = artifact.downloadUrl;
@@ -276,15 +270,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
 
   const intent = agentMeta?.intent;
 
-  // Extract agent-specific data
-  const agentSteps = agentMeta?.steps || agentMeta?.step_log || [];
-  const agentSummary = agentMeta?.summary || null;
-  const agentCode = agentMeta?.code_block || agentMeta?.generated_code || null;
-  const agentLogs = agentMeta?.logs || [];
-  const agentToolOutputs = agentMeta?.tool_outputs || [];
-  const totalTime = agentMeta?.total_time || 0;
-
-  // Normalize artifacts — ensure URLs are absolute
+  
   const normalizedArtifacts = allArtifacts.map((art, idx) => {
     const rawUrl = art.url || art.download_url || art.downloadUrl || '';
     const absoluteUrl = rawUrl && rawUrl.startsWith('/') ? `${apiConfig.baseUrl}${rawUrl}` : rawUrl;
@@ -304,25 +290,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
       <div className="flex gap-3 w-full">
         <div className="ai-avatar shrink-0 mt-0.5"><Lightbulb className="w-4 h-4" strokeWidth={1.5} /></div>
         <div className="flex-1 min-w-0">
-          {/* ── AGENT mode: step-by-step execution view ── */}
-          {intent === 'AGENT' && agentSteps.length > 0 && (
-            <AgentExecutionView
-              steps={agentSteps.map((step, idx) => ({
-                id: step.id || `step-${idx}`,
-                label: step.label || step.tool || (typeof step === 'string' ? step : ''),
-                // Force 'running' → 'completed' since this is a committed (finished) message
-                status: step.status === 'error' ? 'error' : 'completed',
-              }))}
-              isExecuting={false}
-            />
-          )}
-
-          {/* ── AGENT mode: result summary ── */}
-          {intent === 'AGENT' && agentSummary && (
-            <ResultSummary summary={agentSummary} totalTime={totalTime} />
-          )}
-
-          {/* ── Code mode: code block ── */}
+          {}
           {intent === 'CODE_EXECUTION' && agentMeta?.code_block && (
             <CodePanel
               code={agentMeta.code_block.code}
@@ -333,19 +301,11 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             />
           )}
 
-          {/* ── Response text content ── */}
+          {}
           {renderAIContent()}
 
-          {/* ── AGENT mode: artifact gallery (charts, datasets, models, reports) ── */}
-          {intent === 'AGENT' && normalizedArtifacts.length > 0 && (
-            <ArtifactGallery
-              artifacts={normalizedArtifacts}
-              onDownload={handleArtifactDownload}
-            />
-          )}
-
-          {/* ── Non-agent mode: inline artifacts by display_type ── */}
-          {intent !== 'AGENT' && allArtifacts.length > 0 && (
+          {}
+          {allArtifacts.length > 0 && (
             <div className="mt-4 space-y-3">
               {allArtifacts.map((art, idx) => (
                 <OutputRenderer key={art.artifact_id || idx} artifact={art} />
@@ -353,26 +313,17 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             </div>
           )}
 
-          {/* ── AGENT mode: technical details (collapsed by default) ── */}
-          {intent === 'AGENT' && (agentCode || agentLogs.length > 0 || agentToolOutputs.length > 0) && (
-            <TechnicalDetails
-              code={agentCode}
-              logs={agentLogs}
-              toolOutputs={agentToolOutputs}
-            />
-          )}
-
-          {/* ── Web search mode: sources ── */}
+          {}
           {intent === 'WEB_SEARCH' && agentMeta?.web_sources?.length > 0 && (
             <WebSources sources={agentMeta.web_sources} />
           )}
 
-          {/* ── Research mode: sources ── */}
+          {}
           {intent === 'WEB_RESEARCH' && agentMeta?.research_sources?.length > 0 && (
             <WebSources sources={agentMeta.research_sources} />
           )}
 
-          {/* Legacy citations */}
+          {}
           {message.citations?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {message.citations.map((citation, idx) => (
@@ -381,7 +332,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             </div>
           )}
 
-          {/* Action bar */}
+          {}
           <div className="ai-action-bar opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-2 flex items-center gap-0.5">
             <CopyActionButton content={message.content} />
             <ActionButton label="Good response" icon={<ThumbsUp className="w-3.5 h-3.5" />} />

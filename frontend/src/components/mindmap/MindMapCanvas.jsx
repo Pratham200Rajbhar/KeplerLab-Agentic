@@ -24,22 +24,22 @@ const nodeTypes = { mindmap: MindMapNode };
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 50;
 
-/* ─── Dagre layout ─── */
+
 function layoutNodes(mapData) {
   if (!mapData?.nodes?.length) return { nodes: [], edges: [] };
 
-  // ── Derive edges from parent_id when no explicit edges array provided ──
+  
   const edgesList = Array.isArray(mapData.edges) && mapData.edges.length > 0
     ? mapData.edges
     : mapData.nodes
         .filter((n) => n.parent_id)
         .map((n) => ({ source: n.parent_id, target: n.id }));
 
-  // ── Derive depth from parent_id hierarchy ──
+  
   const depthMap = {};
   const getDepth = (nodeId, visited = new Set()) => {
     if (depthMap[nodeId] !== undefined) return depthMap[nodeId];
-    if (visited.has(nodeId)) { depthMap[nodeId] = 0; return 0; } // cycle guard
+    if (visited.has(nodeId)) { depthMap[nodeId] = 0; return 0; } 
     visited.add(nodeId);
     const node = mapData.nodes.find((n) => n.id === nodeId);
     if (!node || !node.parent_id) { depthMap[nodeId] = 0; return 0; }
@@ -88,7 +88,7 @@ function layoutNodes(mapData) {
   return { nodes: rfNodes, edges: rfEdges };
 }
 
-/* ─── Inner Canvas (needs ReactFlow provider) ─── */
+
 function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   const toggleCollapseRef = useRef(null);
   const edgesRef = useRef([]);
@@ -102,10 +102,10 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   const setPendingChatMessage = useAppStore((s) => s.setPendingChatMessage);
   const toast = useToast();
 
-  // Keep edgesRef in sync without adding edges to other effect deps
+  
   useEffect(() => { edgesRef.current = edges; }, [edges]);
 
-  // Search highlighting
+  
   useEffect(() => {
     if (!searchTerm.trim()) {
       setNodes((nds) =>
@@ -125,7 +125,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
     );
   }, [searchTerm, setNodes]);
 
-  // Collapse/expand — stable ref avoids stale closure in effect
+  
   const toggleCollapse = useCallback((nodeId) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
@@ -135,14 +135,12 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
     });
   }, []);
 
-  // Keep the ref in sync with the latest toggleCollapse callback.
-  // Must run in an effect — not during render — to avoid React skipping updates.
+  
   useEffect(() => {
     toggleCollapseRef.current = toggleCollapse;
   }, [toggleCollapse]);
 
-  // Apply collapse visibility — uses edgesRef to avoid edges in dep array
-  // so setNodes → onNodesChange → edges change does NOT re-trigger this
+  
   useEffect(() => {
     const currentEdges = edgesRef.current;
     if (!collapsedIds.size) {
@@ -181,9 +179,9 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
       }))
     );
     setEdges((eds) => eds.map((e) => ({ ...e, hidden: hiddenSet.has(e.target) })));
-  }, [collapsedIds, setNodes, setEdges]); // ← no `edges` dep → breaks infinite loop
+  }, [collapsedIds, setNodes, setEdges]); 
 
-  // Node click → send to chat
+  
   const onNodeClick = useCallback(
     (_, node) => {
       setPendingChatMessage(`Tell me more about: ${node.data.label}`);
@@ -191,7 +189,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
     [setPendingChatMessage]
   );
 
-  // Export PNG
+  
   const handleExport = useCallback(async () => {
     const el = containerRef.current?.querySelector('.react-flow__viewport');
     if (!el) return;
@@ -209,11 +207,11 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   }, [toast]);
 
   return (
-    /* Always a fixed full-screen dialog — same pattern as original project */
+    
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--surface)' }}>
-      {/* Toolbar */}
+      {}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
-        {/* Left: close + title */}
+        {}
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -226,9 +224,9 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
           </h3>
         </div>
 
-        {/* Right: actions */}
+        {}
         <div className="flex items-center gap-2">
-          {/* Search */}
+          {}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <input
@@ -269,7 +267,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
         </div>
       </div>
 
-      {/* React Flow canvas — flex-1 so it fills remaining screen */}
+      {}
       <div ref={containerRef} className="flex-1">
         <ReactFlow
           nodes={nodes}
@@ -301,7 +299,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   );
 }
 
-/* ─── Wrapper with Provider ─── */
+
 export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
   return (
     <ReactFlowProvider>

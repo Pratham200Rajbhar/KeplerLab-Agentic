@@ -10,7 +10,7 @@ import Header from '@/components/layout/Header';
 import { PanelErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { X, Menu } from 'lucide-react';
 
-// Lazy-load heavy panels
+
 const Sidebar = dynamic(() => import('@/components/layout/Sidebar'), { ssr: false });
 const ChatPanel = dynamic(() => import('@/components/chat/ChatPanel'), { ssr: false });
 const StudioPanel = dynamic(() => import('@/components/studio/StudioPanel'), { ssr: false });
@@ -33,12 +33,12 @@ export default function NotebookPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // Load notebook data from URL param
+  
   useEffect(() => {
     let cancelled = false;
 
     const loadNotebook = async () => {
-      // Prevent resetting state while transitioning to newly created notebook
+      
       if (newlyCreatedNotebookId) {
         if (id === 'draft') {
           setLoaded(true);
@@ -46,7 +46,7 @@ export default function NotebookPage() {
         }
         if (id === newlyCreatedNotebookId) {
           setNewlyCreatedNotebookId(null);
-          // Let it fall through, currentNotebook.id === id will be true so fetch is skipped
+          
         }
       }
 
@@ -97,7 +97,7 @@ export default function NotebookPage() {
     <div className="h-screen flex flex-col overflow-hidden bg-surface">
       <Header user={user} onBack={handleBack} />
       <div className="flex-1 flex overflow-hidden workspace-panels">
-        {/* Mobile sidebar overlay */}
+        {}
         <div
           className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
           onClick={() => setSidebarOpen(false)}
@@ -118,7 +118,7 @@ export default function NotebookPage() {
         </PanelErrorBoundary>
       </div>
 
-      {/* Mobile sidebar toggle */}
+      {}
       <button
         className="sidebar-toggle"
         onClick={() => setSidebarOpen((v) => !v)}

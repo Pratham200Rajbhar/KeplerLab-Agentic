@@ -7,8 +7,7 @@ from urllib.parse import urlparse, quote
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
-from typing import Optional
+from fastapi.responses import JSONResponse, Response
 import logging
 
 from app.services.auth import get_current_user
@@ -17,9 +16,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1")
 
-# ── Constants ────────────────────────────────────────────────────────────────
-
-# Headers to strip so files / pages can be embedded in an iframe
 RESTRICTED_HEADERS = {
     "x-frame-options",
     "content-security-policy",
@@ -29,35 +25,23 @@ RESTRICTED_HEADERS = {
     "x-content-type-options",
 }
 
-# Private / loopback CIDR ranges (SSRF protection)
 _PRIVATE_NETWORKS = [
     ipaddress.ip_network("10.0.0.0/8"),
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
     ipaddress.ip_network("127.0.0.0/8"),
-    ipaddress.ip_network("169.254.0.0/16"),  # link-local
-    ipaddress.ip_network("::1/128"),          # IPv6 loopback
-    ipaddress.ip_network("fc00::/7"),         # IPv6 ULA
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
 ]
 
-# Office file extensions that should use MS Office Online Viewer
 OFFICE_EXTENSIONS = {".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".odt", ".ods", ".odp"}
 
-# Extensions we will proxy directly with Content-Disposition: inline
 INLINE_EXTENSIONS = {".pdf"}
 
-# All viewable extensions (file viewer page will handle)
 VIEWABLE_EXTENSIONS = INLINE_EXTENSIONS | OFFICE_EXTENSIONS | {".txt", ".csv", ".md", ".rtf"}
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 async def _validate_url(url: str) -> str:
-    """
-    Parse, validate and normalise a file URL.
-    Raises HTTPException 400 for disallowed URLs.
-    Returns the cleaned URL string.
-    """
-    # Must be HTTPS only (no http, no ftp, no javascript: etc.)
     if not url.startswith("https://"):
         raise HTTPException(
             status_code=400,
@@ -70,17 +54,14 @@ async def _validate_url(url: str) -> str:
     if not hostname:
         raise HTTPException(status_code=400, detail="Invalid URL: missing hostname.")
 
-    # Reject localhost variants
     if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
         raise HTTPException(status_code=400, detail="Access to local addresses is not allowed.")
 
-    # Reject numeric IPs that fall in private ranges (SSRF protection)
     try:
         ip = ipaddress.ip_address(hostname)
         if any(ip in net for net in _PRIVATE_NETWORKS):
             raise HTTPException(status_code=400, detail="Access to private network addresses is not allowed.")
     except ValueError:
-        # Not a numeric IP — try DNS resolution check (non-blocking)
         try:
             loop = asyncio.get_running_loop()
             resolved = await loop.run_in_executor(
@@ -90,13 +71,11 @@ async def _validate_url(url: str) -> str:
             if any(resolved_ip in net for net in _PRIVATE_NETWORKS):
                 raise HTTPException(status_code=400, detail="Resolved IP is in a private range.")
         except (socket.gaierror, OSError):
-            pass  # DNS failure will surface as a 502 later
+            pass
 
     return url
 
-
 def _detect_file_type(url: str) -> dict:
-    """Return metadata about the viewable file type from its URL path."""
     parsed = urlparse(url)
     path = parsed.path.lower()
     ext = os.path.splitext(path)[1]
@@ -113,20 +92,12 @@ def _detect_file_type(url: str) -> dict:
 
     return {"kind": kind, "ext": ext, "filename": filename}
 
-
-# ── Routes ───────────────────────────────────────────────────────────────────
-
 @router.api_route("/proxy", methods=["GET", "HEAD"])
 async def proxy_webpage(
     request: Request,
     url: str = Query(..., description="URL to proxy"),
     current_user=Depends(get_current_user),
 ):
-    """
-    Fetches a webpage and strips headers that prevent iframe embedding.
-    Requires authentication. Only HTTPS URLs are allowed (SSRF protection).
-    """
-    # Validate URL — enforce HTTPS and block private networks
     url = await _validate_url(url)
 
     try:
@@ -163,17 +134,11 @@ async def proxy_webpage(
         logger.error(f"Unexpected error proxying {url}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
 @router.get("/file-viewer/info")
 async def file_viewer_info(
     url: str = Query(..., description="Public HTTPS file URL"),
     current_user=Depends(get_current_user),
 ):
-    """
-    Validate a public file URL and return viewer metadata.
-    Tells the frontend which viewer strategy to use (pdf / office / text / other).
-    Also provides the MS Office Online Viewer embed URL for office documents.
-    """
     url = await _validate_url(url)
     meta = _detect_file_type(url)
 
@@ -190,18 +155,12 @@ async def file_viewer_info(
 
     return JSONResponse(content=result)
 
-
 @router.api_route("/file-viewer/proxy", methods=["GET", "HEAD"])
 async def file_viewer_proxy(
     request: Request,
     url: str = Query(..., description="Public HTTPS PDF/text URL"),
     current_user=Depends(get_current_user),
 ):
-    """
-    Proxy a PDF or plain-text file and serve it with Content-Disposition: inline
-    so the browser renders it directly instead of forcing a download.
-    Only allows HTTPS non-private URLs.
-    """
     url = await _validate_url(url)
     meta = _detect_file_type(url)
 
@@ -223,7 +182,6 @@ async def file_viewer_proxy(
 
             content_type = response.headers.get("content-type", "application/octet-stream")
 
-            # Force content-type for known types so the browser doesn't sniff
             if meta["ext"] == ".pdf":
                 content_type = "application/pdf"
 
@@ -244,7 +202,6 @@ async def file_viewer_proxy(
                 status_code=200,
                 media_type=content_type,
                 headers={
-                    # inline = render in browser, not save
                     "Content-Disposition": f'inline; filename="{filename_safe}"',
                     "Access-Control-Allow-Origin": "*",
                 },

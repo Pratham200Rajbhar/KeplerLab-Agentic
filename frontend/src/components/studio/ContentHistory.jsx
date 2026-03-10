@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils/helpers';
 
-/* ── Icon map ── */
+
 function contentTypeIcon(type) {
   const icons = {
     flashcards: <Layers className="w-3.5 h-3.5 text-blue-400" />,
@@ -70,10 +70,10 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
                 : 'hover:bg-[var(--surface-overlay)] border border-transparent'
             }`}
           >
-            {/* Icon */}
+            {}
             <div className="shrink-0">{contentTypeIcon(item.content_type)}</div>
 
-            {/* Text */}
+            {}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                 {item.title || `${item.content_type} ${item.id?.slice(0, 6)}`}
@@ -83,7 +83,7 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
               </p>
             </div>
 
-            {/* 3-dot menu */}
+            {}
             <div className="relative shrink-0">
               <button
                 onClick={(e) => {

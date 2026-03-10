@@ -3,11 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useToast } from '@/stores/useToastStore';
 
-/**
- * Provides microphone recording via MediaRecorder.
- * Returns raw audio chunks as a Blob and a text transcript
- * (using the Web Speech API when available).
- */
+
 export default function useMicInput({ onTranscript } = {}) {
   const toast = useToast();
   const [isRecording, setIsRecording] = useState(false);
@@ -33,7 +29,7 @@ export default function useMicInput({ onTranscript } = {}) {
       recorder.start(250);
       setIsRecording(true);
 
-      // Optional: start Web Speech API for live transcript
+      
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();

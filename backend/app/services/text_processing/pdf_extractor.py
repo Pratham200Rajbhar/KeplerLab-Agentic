@@ -1,48 +1,8 @@
-"""PDF text extraction — PyMuPDF primary, PDFPlumber tables, OCR for image pages.
-
-Complete rewrite.
-
-Extraction strategy
--------------------
-1.  Sample the first 3 pages.  If average extractable characters per page
-    exceeds DIGITAL_CHARS_THRESHOLD (150) the document is *digital*;
-    otherwise it is *scanned*.
-
-2.  **Digital PDFs**: extract every page with PyMuPDF block-level API,
-    converting font/position metadata to Markdown (H1/H2/H3 headings,
-    code blocks, paragraphs).  Per-page fallback to OCR when a page has
-    < 50 extractable characters (image slide, figure-only page, etc.).
-    PDFPlumber table extraction runs in a separate pass and is appended.
-
-3.  **Scanned PDFs**: skip all text extraction.  Every page is added to
-    ``ocr_needed_pages`` so that ``extractor.py`` can hand them to
-    ``OCRService``.
-
-Return value of ``extract_text()``
------------------------------------
-::
-
-    {
-        "status":          "success" | "failed",
-        "text":            str,            # may be "" for fully-scanned PDFs
-        "metadata":        {               # always present on success
-            "page_count":      int,
-            "tables_detected": int,
-            "equations_detected": int,
-            "ocr_pages":       int,
-            "method":          str,
-        },
-        "ocr_needed_pages": List[int],     # 0-based page indices
-        "error":           str | None,
-    }
-"""
-
 from __future__ import annotations
 
 import logging
-import re
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import fitz
@@ -50,15 +10,11 @@ import pdfplumber
 
 logger = logging.getLogger(__name__)
 
-# A page is considered *digital* if it yields more than this many characters.
 DIGITAL_CHARS_THRESHOLD = 150
-# Pages with fewer characters than this are sent to OCR even in digital mode.
 SPARSE_PAGE_THRESHOLD = 50
-
 
 @dataclass
 class _Block:
-    """One line of text extracted from a PyMuPDF block."""
     text: str
     x0: float
     y0: float
@@ -69,43 +25,25 @@ class _Block:
     is_bold: bool = False
     page_num: int = 0
 
-
 @dataclass
 class _Meta:
-    """Running counters updated during extraction."""
     page_count: int = 0
     tables_detected: int = 0
     equations_detected: int = 0
     ocr_pages: int = 0
     method: str = "pymupdf"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 class PDFExtractor:
-    """Layout-aware PDF text extractor."""
 
     def __init__(self) -> None:
         self._meta = _Meta()
 
-    # ── Public API ────────────────────────────────────────────────────────────
-
     def extract_text(self, pdf_path: str) -> Dict[str, Any]:
-        """Extract structured text from a PDF file.
-
-        Returns a dict conforming to the schema documented in the module
-        docstring.  Never raises — all exceptions are caught and reported
-        via ``status="failed"``.
-        """
         try:
             self._meta = _Meta()
             with fitz.open(pdf_path) as doc:
                 self._meta.page_count = len(doc)
 
-                # ── Detect document type ──────────────────────────────────────────
-                # Sample up to 5 pages spread across the document for a more
-                # reliable digital-vs-scanned classification.
                 sample_indices = sorted(set([
                     0,
                     len(doc) // 4,
@@ -129,8 +67,6 @@ class PDFExtractor:
                         "Scanned PDF detected (avg %.0f chars/page), routing all pages to OCR",
                         avg_chars,
                     )
-                    # No point doing block extraction on a scanned PDF.
-                    # Let OCRService produce the structured Markdown.
                     text = ""
                     ocr_pages = list(range(len(doc)))
                     self._meta.method = "ocr"
@@ -160,15 +96,9 @@ class PDFExtractor:
                 "error": str(exc),
             }
 
-    # ── Digital extraction ────────────────────────────────────────────────────
-
     def _extract_digital(
         self, doc: fitz.Document, pdf_path: str
     ) -> Tuple[str, List[int]]:
-        """Extract text from a digital PDF page by page.
-
-        Returns ``(markdown_text, ocr_needed_pages)``.
-        """
         page_texts: List[str] = []
         ocr_pages: List[int] = []
 
@@ -178,7 +108,6 @@ class PDFExtractor:
             total_chars = sum(len(b.text) for b in blocks)
 
             if total_chars < SPARSE_PAGE_THRESHOLD:
-                # Image/figure-only page — delegate to OCR
                 ocr_pages.append(page_num)
                 continue
 
@@ -186,7 +115,6 @@ class PDFExtractor:
             if page_md.strip():
                 page_texts.append(page_md)
 
-        # Table extraction (PDFPlumber, digital only)
         tables_md = self._extract_tables(pdf_path)
 
         combined = "\n\n".join(page_texts)
@@ -195,15 +123,12 @@ class PDFExtractor:
 
         return self._normalize(combined), ocr_pages
 
-    # ── Block extraction ──────────────────────────────────────────────────────
-
     def _extract_blocks(self, page: fitz.Page, page_num: int) -> List[_Block]:
-        """Extract styled text blocks from one PyMuPDF page."""
         blocks: List[_Block] = []
         try:
             text_dict = page.get_text("dict")
             for block in text_dict.get("blocks", []):
-                if block.get("type") != 0:  # skip image blocks
+                if block.get("type") != 0:
                     continue
                 for line in block.get("lines", []):
                     line_text = ""
@@ -238,14 +163,10 @@ class PDFExtractor:
             logger.warning("Block extraction failed on page %d: %s", page_num, exc)
         return blocks
 
-    # ── Markdown conversion ───────────────────────────────────────────────────
-
     def _blocks_to_markdown(self, blocks: List[_Block]) -> str:
-        """Convert a list of styled blocks to Markdown."""
         if not blocks:
             return ""
 
-        # Sort top-to-bottom, left-to-right
         blocks = sorted(blocks, key=lambda b: (b.y0, b.x0))
 
         sizes = [b.font_size for b in blocks]
@@ -255,7 +176,6 @@ class PDFExtractor:
         prev_y1 = 0.0
 
         for b in blocks:
-            # Heading classification
             if b.font_size > avg_size * 1.5:
                 output.append(f"\n# {b.text}\n")
             elif b.font_size > avg_size * 1.2 or b.is_bold:
@@ -268,7 +188,6 @@ class PDFExtractor:
                 self._meta.equations_detected += 1
                 output.append(f"\n[EQUATION] {b.text}\n")
             else:
-                # Paragraph break when there is an unusual vertical gap
                 if prev_y1 > 0 and (b.y0 - prev_y1) > avg_size * 1.5:
                     output.append("")
                 output.append(b.text)
@@ -282,10 +201,7 @@ class PDFExtractor:
         markers = {"∫", "∑", "∂", "√", "π", "α", "β", "γ", "δ", "θ", "λ", "μ", "σ"}
         return any(m in text for m in markers)
 
-    # ── Table extraction ──────────────────────────────────────────────────────
-
     def _extract_tables(self, pdf_path: str) -> str:
-        """Extract tables with PDFPlumber and convert to Markdown."""
         parts: List[str] = []
         try:
             with pdfplumber.open(pdf_path) as pdf:
@@ -307,7 +223,6 @@ class PDFExtractor:
         page_num: int,
         idx: int,
     ) -> str:
-        """Convert a pdfplumber table to a Markdown table string."""
         try:
             header = [str(c).strip() if c else "" for c in table[0]]
             rows: List[str] = [
@@ -318,7 +233,6 @@ class PDFExtractor:
                 if not row:
                     continue
                 cells = [str(c).strip() if c else "" for c in row]
-                # Pad / trim to header width
                 cells = (cells + [""] * len(header))[: len(header)]
                 rows.append("| " + " | ".join(cells) + " |")
             return f"\n**Table {idx + 1} (Page {page_num + 1})**\n\n" + "\n".join(rows)
@@ -326,11 +240,8 @@ class PDFExtractor:
             logger.warning("Failed to render table: %s", exc)
             return ""
 
-    # ── Post-processing ───────────────────────────────────────────────────────
-
     @staticmethod
     def _normalize(text: str) -> str:
-        """Collapse multiple blank lines; remove high-frequency short noise lines."""
         if not text:
             return ""
 
@@ -348,7 +259,6 @@ class PDFExtractor:
                 out.append(line)
                 prev_blank = False
 
-        # Remove repeated short lines (page headers / footers)
         counts = Counter(l for l in out if l and len(l) <= 60)
         noise = {l for l, n in counts.items() if n > 5}
         if noise:

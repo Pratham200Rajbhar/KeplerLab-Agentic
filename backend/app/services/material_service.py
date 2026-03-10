@@ -1,23 +1,3 @@
-"""Material lifecycle management — upload, process, query, delete.
-
-All three ingestion paths (file, URL, text) share a common pipeline:
-  1. Create a ``pending`` record in Prisma
-  2. Extract text  (status → ``processing`` / ``ocr_running`` / ``transcribing``)
-  3. Chunk text
-  4. Embed & store chunks in ChromaDB  (status → ``embedding``)
-  5. Update the record to ``completed``
-
-If any step fails the record is marked ``failed``, the failure reason is
-persisted in the ``error`` column, and the exception is **not** re-raised
-so that the caller (route handler / background worker) never crashes due
-to a single document failure.
-
-STORAGE ARCHITECTURE:
-  - Full text is stored in file system: data/material_text/{material_id}.txt
-  - Database stores only: summary (first 1000 chars), metadata, chunkCount
-  - Use get_material_text() to retrieve full text when needed for generation
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -40,21 +20,11 @@ from app.services.storage_service import (
     get_material_summary,
 )
 
-# File extensions that should bypass chunking and be passed raw to the LLM
 _STRUCTURED_SOURCE_TYPES = frozenset({"csv", "excel", "xlsx", "xls", "tsv", "ods"})
 
 logger = logging.getLogger(__name__)
 
-
-# ── Status helpers ────────────────────────────────────────────
-
-
 async def _emit_material_ws(user_id: str, material_id: str, status: str, **extra) -> None:
-    """Best-effort push of a material_update event via WebSocket.
-
-    Never raises — if the user has no open WS connection the event is
-    silently dropped (the client can always poll /jobs/{job_id} as fallback).
-    """
     try:
         from app.services.ws_manager import ws_manager
         payload: dict = {"type": "material_update", "material_id": material_id, "status": status}
@@ -64,13 +34,7 @@ async def _emit_material_ws(user_id: str, material_id: str, status: str, **extra
     except Exception as exc:
         logger.debug("WS emit skipped (material=%s status=%s): %s", material_id, status, exc)
 
-
 async def _set_status(material_id: str, status: str, user_id: Optional[str] = None, **extra) -> None:
-    """Persist a status transition (and optional extra fields) safely.
-
-    If *user_id* is provided the new status is also pushed to any open
-    WebSocket connections for that user (best-effort; never raises).
-    """
     data: dict = {"status": status, **extra}
     try:
         await prisma.material.update(where={"id": material_id}, data=data)
@@ -80,30 +44,11 @@ async def _set_status(material_id: str, status: str, user_id: Optional[str] = No
     if user_id:
         await _emit_material_ws(user_id, material_id, status, **extra)
 
-
 async def _fail_material(material_id: str, reason: str, user_id: Optional[str] = None) -> None:
-    """Mark a material as ``failed`` and store the reason."""
     logger.error("Material %s failed: %s", material_id, reason)
     await _set_status(material_id, "failed", user_id=user_id, error=reason)
 
-
-# ── Structured data helpers ───────────────────────────────────
-
 def _make_structured_summary_chunk(raw_file_path: str, fallback_text: str) -> tuple:
-    """Build a (full_data_string, [summary_chunk]) pair for CSV/Excel files.
-
-    Returns
-    -------
-    full_data_string:
-        ``df.to_string()`` of every sheet — saved to ``data/material_text/``
-        so the LLM receives the *complete* dataset on retrieval.
-    summary_chunks:
-        A single-element list containing a chunk whose ``text`` is a compact
-        schema header (column names + dtypes + shape + first 5 rows) suitable
-        for semantic indexing.  The chunk is tagged ``chunk_type=structured_summary``
-        and ``is_structured=true`` so the retriever knows to swap in the full
-        data at query time.
-    """
     import uuid
     import pandas as pd
     from pathlib import Path
@@ -164,14 +109,9 @@ def _make_structured_summary_chunk(raw_file_path: str, fallback_text: str) -> tu
         "chunk_type": "structured_summary",
         "chunk_index": 0,
         "total_chunks": 1,
-        # Internal keys (stripped before ChromaDB storage):
         "_raw_file_path": raw_file_path,
     }
     return full_text, [chunk]
-
-
-# ── Internal pipeline helper ──────────────────────────────────
-
 
 async def _process_material(
     material_id: str,
@@ -184,22 +124,6 @@ async def _process_material(
     extraction_metadata: Optional[dict] = None,
     source_type: str = "prose",
 ):
-    """Shared pipeline: chunk → embed → update record.
-
-    On failure the material is marked ``failed`` with a persisted error
-    message.  The exception is **not** re-raised — the worker stays alive.
-    
-    STORAGE: Full text saved to file storage (data/material_text/{material_id}.txt),
-             only summary (first 1000 chars) stored in database.
-    
-    Args:
-        material_id: Material record ID
-        text: Extracted text content
-        user_id: User ID
-        notebook_id: Optional notebook ID
-        title: Optional title
-        extraction_metadata: Optional metadata from extraction (tables_detected, ocr_pages, etc.)
-    """
     try:
         if not text or len(text.strip()) < 10:
             await _fail_material(material_id, "Extracted text is too short (< 10 chars)", user_id=user_id)
@@ -208,12 +132,6 @@ async def _process_material(
         _t_total = time.perf_counter()
         loop = asyncio.get_running_loop()
 
-        # ── Structured data short-circuit (CSV / Excel / TSV / ODS) ──────────
-        # Bypass RecursiveCharacterTextSplitter entirely.  Instead:
-        #   • Re-read the raw file with pandas and store the FULL df.to_string()
-        #     so the LLM receives the complete dataset on context retrieval.
-        #   • Create exactly ONE summary chunk (schema + first 5 rows) for
-        #     semantic indexing — row-by-row chunking destroys tabular structure.
         _pre_computed_chunks = None
         if source_type in _STRUCTURED_SOURCE_TYPES:
             raw_path = (extraction_metadata or {}).get("upload_path", "")
@@ -222,7 +140,7 @@ async def _process_material(
                 None,
                 _partial(_make_structured_summary_chunk, raw_path, text),
             )
-            text = full_data  # save the full df.to_string() to material_text/
+            text = full_data
             if extraction_metadata is None:
                 extraction_metadata = {}
             extraction_metadata.setdefault("raw_file_path", raw_path)
@@ -233,7 +151,6 @@ async def _process_material(
                 material_id, raw_path,
             )
 
-        # ── Save full text to file storage (I/O — offloaded to thread pool) ──
         try:
             _t0 = time.perf_counter()
             await loop.run_in_executor(None, partial(save_material_text, material_id, text))
@@ -246,15 +163,13 @@ async def _process_material(
             await _fail_material(material_id, f"Failed to save text to storage: {e}", user_id=user_id)
             return None
 
-        # ── Chunking (CPU-bound — offloaded to thread pool) ───────────────────
         _t0 = time.perf_counter()
         if _pre_computed_chunks is not None:
-            # Structured file: pre-computed single summary chunk — skip splitter
             chunks = _pre_computed_chunks
         else:
             chunks = await loop.run_in_executor(
                 None,
-                partial(chunk_text, text, True, source_type),  # semantic chunking ON
+                partial(chunk_text, text, True, source_type),
             )
         logger.info(
             "PERF chunking: %.1fms  chunks=%d  material=%s",
@@ -270,14 +185,10 @@ async def _process_material(
             )
             return None
 
-        # ── Embedding step (CPU-bound — thread pool) ──────────────────────────
         await _set_status(material_id, "embedding", user_id=user_id)
 
-        # ── Store summary instead of full text ────────────────────────────────
         summary = get_material_summary(text, max_chars=1000)
 
-        # ── Run embedding AND AI title generation in parallel ──────────────────
-        # Fetch the db record first (fast) to get the filename for title generation.
         _title_filename = filename
         if not title and not _title_filename:
             try:
@@ -301,11 +212,6 @@ async def _process_material(
                 ),
             )
 
-        # ── Critical path: embedding only — complete immediately ─────────────
-        # Title generation is decoupled into a background task so the material
-        # becomes "completed" as soon as the vectors are stored, letting users
-        # start chatting without waiting for the LLM title call (which can
-        # take 10–90 seconds on local inference backends).
         await _embed()
 
         embed_ms = (time.perf_counter() - _t0) * 1000
@@ -314,7 +220,6 @@ async def _process_material(
             embed_ms, len(chunks), material_id,
         )
 
-        # Fast placeholder title derived from filename (no LLM needed).
         fast_title: str
         if title:
             fast_title = title
@@ -324,14 +229,13 @@ async def _process_material(
             fast_title = "Untitled Material"
 
         update_data: dict = {
-            "originalText": sanitize_null_bytes(summary),  # Store only summary
+            "originalText": sanitize_null_bytes(summary),
             "chunkCount": len(chunks),
             "status": "completed",
-            "error": None,          # clear any previous error
+            "error": None,
             "title": sanitize_null_bytes(fast_title),
         }
 
-        # Store extraction metadata as JSON string (sanitize for null bytes)
         if extraction_metadata:
             import json
             sanitized_meta = sanitize_null_bytes(extraction_metadata)
@@ -341,15 +245,12 @@ async def _process_material(
             where={"id": material_id},
             data=update_data,
         )
-        # Eagerly populate the context_formatter filename cache so citations
-        # show human-readable names immediately after processing completes.
         if filename:
             try:
                 from app.services.rag.context_formatter import set_material_name
                 set_material_name(material_id, filename)
             except Exception:
                 pass
-        # Push completed event via WebSocket IMMEDIATELY — user can now chat.
         if user_id:
             await _emit_material_ws(user_id, material_id, "completed", chunk_count=len(chunks))
 
@@ -358,10 +259,6 @@ async def _process_material(
             (time.perf_counter() - _t_total) * 1000, material_id,
         )
 
-        # ── Background task: AI title generation (non-blocking) ───────────────
-        # Runs after "completed" is emitted so the UI doesn't wait for it.
-        # On completion it updates the DB and re-emits a WS event so the
-        # sidebar refreshes the displayed title.
         if not title:
             _bg_text = text[:2000]
             _bg_filename = _title_filename
@@ -384,21 +281,17 @@ async def _process_material(
                         "Background AI title updated: material=%s  title='%s'",
                         _bg_material_id, ai_title,
                     )
-                    # Re-emit completed so the sidebar calls loadMaterials()
-                    # and shows the new title without a page refresh.
                     if _bg_user_id:
                         await _emit_material_ws(
                             _bg_user_id, _bg_material_id, "completed",
                             title=ai_title,
                         )
                     
-                    # ── Auto-Name Notebooks based on Material ──
                     if notebook_id and notebook_id != "draft":
                         notebook = await prisma.notebook.find_unique(where={"id": notebook_id})
                         if notebook:
                             import datetime
                             now = datetime.datetime.now(datetime.timezone.utc)
-                            # Prisma returns UTC datetime for createdAt
                             time_diff = now - notebook.createdAt.replace(tzinfo=datetime.timezone.utc)
                             
                             import os
@@ -411,7 +304,6 @@ async def _process_material(
                                 (stem and notebook.name == stem)
                             )
                             
-                            # Only rename if created within last 5 minutes AND has default name
                             if time_diff.total_seconds() < 300 and is_default_name:
                                 ai_notebook_name = await loop.run_in_executor(
                                     None,
@@ -427,7 +319,6 @@ async def _process_material(
                                     notebook_id, ai_notebook_name,
                                 )
                                 
-                                # Send WS event so the frontend updates the notebook name in the UI
                                 if _bg_user_id:
                                     try:
                                         from app.services.ws_manager import ws_manager
@@ -453,10 +344,6 @@ async def _process_material(
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=user_id)
         return None
 
-
-# ── Public ingestion API ──────────────────────────────────────
-
-
 async def create_material_record(
     filename: str,
     user_id,
@@ -464,11 +351,6 @@ async def create_material_record(
     source_type: str = "file",
     title: Optional[str] = None,
 ) -> str:
-    """Create a Material DB record in ``pending`` state and return its ID.
-
-    Call this from the upload route **before** enqueuing a background job.
-    The background worker will later call :func:`process_material_by_id`.
-    """
     uid = str(user_id)
     nid = str(notebook_id) if notebook_id and notebook_id != "draft" else None
     data: dict = {
@@ -485,7 +367,6 @@ async def create_material_record(
     logger.info("Created material record %s (pending) for user %s", material.id, uid)
     return str(material.id)
 
-
 async def process_material_by_id(
     material_id: str,
     file_path: str,
@@ -493,21 +374,6 @@ async def process_material_by_id(
     user_id: str,
     notebook_id: Optional[str] = None,
 ) -> None:
-    """Run the full document processing pipeline for a file already on disk.
-
-    This is called by the background worker **after** the upload route has
-    already created the Material record (status ``pending``).
-
-    Pipeline:
-      1. ``pending``    → ``processing``  (or ``ocr_running`` / ``transcribing``)
-      2. Extract text   (run in thread-pool executor — CPU-bound)
-      3. ``processing`` → ``embedding``
-      4. Chunk + embed  (run in thread-pool executor — CPU-bound)
-      5.               → ``completed``
-
-    On any failure the record is updated to ``failed`` with the error message.
-    The exception is **not** re-raised so the worker loop stays alive.
-    """
     uid = str(user_id)
     nid = str(notebook_id) if notebook_id and notebook_id != "draft" else None
     loop = asyncio.get_running_loop()
@@ -519,7 +385,6 @@ async def process_material_by_id(
         from app.services.text_processing.extractor import EnhancedTextExtractor
         from app.services.text_processing.file_detector import FileTypeDetector
 
-        # Choose a granular transient status based on file category
         file_info = FileTypeDetector.detect_file_type(file_path)
         category = file_info.get("category", "document")
         if category == "image":
@@ -527,7 +392,6 @@ async def process_material_by_id(
         elif category in ("audio", "video"):
             await _set_status(material_id, "transcribing", user_id=uid)
 
-        # Text extraction is CPU/IO-bound — run in thread pool
         extractor = EnhancedTextExtractor()
         _t_extract = time.perf_counter()
         result = await loop.run_in_executor(
@@ -545,8 +409,6 @@ async def process_material_by_id(
             return
 
         extraction_metadata = result.get("metadata", {})
-        # Persist the original upload path so downstream tools (data_profiler,
-        # workspace_builder) can locate the raw file without re-deriving the path.
         extraction_metadata["upload_path"] = file_path
         await _process_material(
             material_id,
@@ -555,8 +417,6 @@ async def process_material_by_id(
             nid,
             filename=filename,
             extraction_metadata=extraction_metadata,
-            # source_type lives at the top level of the extraction result, NOT
-            # inside result["metadata"], so we must read it from result directly.
             source_type=result.get("source_type") or extraction_metadata.get("source_type", "prose"),
         )
         logger.info(
@@ -568,33 +428,17 @@ async def process_material_by_id(
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
 
-
 async def filter_completed_material_ids(
     material_ids: List[str],
     user_id: str,
 ) -> List[str]:
-    """Return only the material IDs that are ``completed`` and owned by *user_id*.
-
-    Insert this guard before every RAG call so that partially-processed or
-    failed materials are never searched.
-
-    Args:
-        material_ids: Candidate IDs supplied by the client.
-        user_id:      The authenticated user — authorisation check included.
-
-    Returns:
-        Filtered list preserving original order.
-    """
     if not material_ids:
         return []
-    # status is an enum in Prisma; pass the string value
     materials = await prisma.material.find_many(
         where={"id": {"in": material_ids}, "userId": str(user_id), "status": "completed"},
     )
     completed_set = {str(m.id) for m in materials}
-    # Preserve caller order
     return [mid for mid in material_ids if mid in completed_set]
-
 
 async def process_url_material_by_id(
     material_id: str,
@@ -603,7 +447,6 @@ async def process_url_material_by_id(
     notebook_id: Optional[str] = None,
     source_type: str = "auto",
 ):
-    """Process a URL material that already has a pending DB record."""
     uid, nid = str(user_id), str(notebook_id) if notebook_id and notebook_id != "draft" else None
     
     try:
@@ -624,7 +467,6 @@ async def process_url_material_by_id(
 
         title = result.get("title", url)
         extraction_metadata = result.get("metadata", {})
-        # Use title or the URL domain as the human-readable filename
         from urllib.parse import urlparse as _urlparse
         _parsed = _urlparse(url)
         url_filename = title or _parsed.netloc or url
@@ -644,7 +486,6 @@ async def process_url_material_by_id(
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
 
-
 async def process_text_material_by_id(
     material_id: str,
     text_content: str,
@@ -652,7 +493,6 @@ async def process_text_material_by_id(
     user_id: str,
     notebook_id: Optional[str] = None,
 ):
-    """Process direct text input that already has a pending DB record."""
     uid, nid = str(user_id), str(notebook_id) if notebook_id and notebook_id != "draft" else None
 
     try:
@@ -662,40 +502,20 @@ async def process_text_material_by_id(
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
 
-
-# ── Query helpers ─────────────────────────────────────────────
-
-
 async def get_material(material_id: str):
     return await prisma.material.find_unique(where={"id": material_id})
-
 
 async def get_material_for_user(material_id: str, user_id):
     return await prisma.material.find_first(
         where={"id": str(material_id), "userId": str(user_id)}
     )
 
-
 async def get_material_text(material_id: str, user_id: str) -> Optional[str]:
-    """Retrieve full text for a material from file storage.
-    
-    Use this helper when you need the full text for generation tasks
-    (PPT, flashcards, quiz, etc.).
-    
-    Args:
-        material_id: Material ID
-        user_id: User ID (for authorization)
-    
-    Returns:
-        Full text content or None if not found/unauthorized
-    """
-    # Verify ownership
     material = await get_material_for_user(material_id, user_id)
     if not material:
         logger.warning(f"Material {material_id} not found or unauthorized for user {user_id}")
         return None
     
-    # Load from storage (sync I/O → thread pool)
     try:
         loop = asyncio.get_running_loop()
         text = await loop.run_in_executor(None, load_material_text, material_id)
@@ -707,7 +527,6 @@ async def get_material_text(material_id: str, user_id: str) -> Optional[str]:
         logger.error(f"Failed to load text for material {material_id}: {e}")
         return None
 
-
 async def get_user_materials(user_id, notebook_id=None) -> list:
     where: dict = {"userId": str(user_id)}
     if notebook_id and notebook_id != "draft":
@@ -716,14 +535,12 @@ async def get_user_materials(user_id, notebook_id=None) -> list:
         where["notebookId"] = None
     return await prisma.material.find_many(where=where, order={"createdAt": "desc"})
 
-
 async def update_material(
     material_id: str,
     user_id,
     filename: Optional[str] = None,
     title: Optional[str] = None,
 ):
-    """Update material metadata. Returns updated record or ``None``."""
     material = await get_material_for_user(material_id, user_id)
     if not material:
         return None
@@ -736,16 +553,7 @@ async def update_material(
         return material
     return await prisma.material.update(where={"id": material.id}, data=data)
 
-
 async def delete_material(material_id: str, user_id) -> bool:
-    """Delete material record and clean up ALL associated storage.
-
-    Atomic 3-step cleanup with reverse compensation on failure:
-      Step 1: ChromaDB vectors (thread pool)
-      Step 2: File from disk (text + upload)
-      Step 3: DB record
-    On any step failure: log the exact step, attempt compensation, return error.
-    """
     material = await get_material_for_user(material_id, user_id)
     if not material:
         return False
@@ -754,7 +562,6 @@ async def delete_material(material_id: str, user_id) -> bool:
     step_completed = {"chroma": False, "files": False, "db": False}
 
     try:
-        # Step 1: Delete ChromaDB embeddings
         try:
             from app.db.chroma import get_collection
             collection = get_collection()
@@ -767,7 +574,6 @@ async def delete_material(material_id: str, user_id) -> bool:
             logger.error("Step 1 FAILED (ChromaDB delete) for material %s: %s", material_id, e)
             raise RuntimeError(f"ChromaDB delete failed: {e}") from e
 
-        # Step 2: Delete files from disk
         try:
             await loop.run_in_executor(None, delete_material_text, material_id)
             if material.filename:
@@ -787,7 +593,6 @@ async def delete_material(material_id: str, user_id) -> bool:
             logger.error("Step 2 FAILED (file delete) for material %s: %s", material_id, e)
             raise RuntimeError(f"File delete failed: {e}") from e
 
-        # Step 3: Delete DB record
         try:
             await prisma.material.delete(where={"id": material.id})
             step_completed["db"] = True
@@ -799,12 +604,10 @@ async def delete_material(material_id: str, user_id) -> bool:
         return True
 
     except RuntimeError as exc:
-        # ── Reverse compensation: attempt to restore consistency ──
         logger.error(
             "Material delete partial failure for %s — completed steps: %s — error: %s",
             material_id, step_completed, exc,
         )
-        # If ChromaDB was deleted but DB wasn't, mark material as failed
         if step_completed["chroma"] and not step_completed["db"]:
             try:
                 await prisma.material.update(

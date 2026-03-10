@@ -1,10 +1,8 @@
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Any, AsyncIterator, Dict, List
-from urllib.parse import urlparse
+from typing import AsyncIterator
 
-from app.core.config import settings
 from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import (
     sse_tool_start,
@@ -15,20 +13,12 @@ from app.services.chat_v2.streaming import (
 
 logger = logging.getLogger(__name__)
 
-
 async def execute(
     query: str,
     user_id: str,
 ) -> AsyncIterator[str | ToolResult]:
-    """Clean, robust multi-query web search + scrape + synthesis.
-
-    Yields:
-        SSE events for streaming progress.
-        Final ToolResult.
-    """
     yield sse_tool_start("web_search", label="Searching the web…")
     
-    # State tracking for unified updates
     search_state = {
         "status": "searching",
         "queries": [],
@@ -36,7 +26,6 @@ async def execute(
     }
 
     try:
-        # 1. Query Generation
         from app.services.llm_service.llm import get_llm
         llm = get_llm(temperature=0)
         
@@ -49,7 +38,6 @@ async def execute(
         try:
             resp = await llm.ainvoke(prompt)
             content = getattr(resp, "content", str(resp)).strip()
-            # Basic JSON extraction
             if "```" in content:
                 content = content.split("```")[1].strip()
                 if content.startswith("json"):
@@ -65,33 +53,35 @@ async def execute(
         search_state["queries"] = queries
         yield sse_web_search_update(**search_state)
 
-        # 2. Search (DuckDuckGo)
         from app.core.web_search import ddg_search, fetch_url_content
         
         all_results = []
         seen_urls = set()
 
-        for q in queries:
+        # Run all search queries in parallel
+        async def _search_one(q):
             try:
-                hits = await ddg_search(q, max_results=5)
-                for h in hits:
-                    url = h.get("url")
-                    if url and url not in seen_urls:
-                        seen_urls.add(url)
-                        all_results.append({
-                            "title": h.get("title", ""),
-                            "url": url,
-                            "snippet": h.get("snippet", ""),
-                        })
+                return await ddg_search(q, max_results=5)
             except Exception as e:
                 logger.error("DDG search error for %s: %s", q, e)
+                return []
+
+        batch = await asyncio.gather(*(_search_one(q) for q in queries))
+        for hits in batch:
+            for h in hits:
+                url = h.get("url")
+                if url and url not in seen_urls:
+                    seen_urls.add(url)
+                    all_results.append({
+                        "title": h.get("title", ""),
+                        "url": url,
+                        "snippet": h.get("snippet", ""),
+                    })
 
         if not all_results:
             raise Exception("No search results found.")
 
-        # 3. Scraping
         search_state["status"] = "reading"
-        # Initialize scraping status for top 5
         to_scrape = all_results[:5]
         search_state["scraping_urls"] = [{"url": r["url"], "status": "fetching"} for r in to_scrape]
         yield sse_web_search_update(**search_state)
@@ -114,20 +104,13 @@ async def execute(
                     search_state["scraping_urls"][index]["status"] = "failed"
             except Exception:
                 search_state["scraping_urls"][index]["status"] = "failed"
-            
-            # Yield update after each scrape task finishes
-            # Note: Since this is an async iterator, we can't easily yield from inside a task
-            # unless we use a queue or similar. For simplicity, we'll just run them serially 
-            # or update after each await.
 
-        for i, item in enumerate(to_scrape):
-            await scrape_one(i, item)
-            yield sse_web_search_update(**search_state)
+        # Scrape URLs in parallel for better performance
+        await asyncio.gather(*(scrape_one(i, item) for i, item in enumerate(to_scrape)))
+        yield sse_web_search_update(**search_state)
 
-        # 4. Success / Context Build
         scraped_data = scraped_data[:5]
         if not scraped_data:
-            # Fallback to snippets if scraping failed for all
             scraped_data = [{
                 "title": r["title"], "url": r["url"], 
                 "content": r["snippet"], "snippet": r["snippet"]

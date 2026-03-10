@@ -28,7 +28,7 @@ export const SESSION_STATUS = {
 };
 
 const usePodcastStore = create((set, get) => ({
-  // ── Session state ──
+  
   session: null,
   sessions: [],
   segments: [],
@@ -37,24 +37,21 @@ const usePodcastStore = create((set, get) => ({
   bookmarks: [],
   annotations: [],
 
-  // ── Playback state ──
+  
   currentSegmentIndex: 0,
   isPlaying: false,
   playbackSpeed: 1,
   currentTime: 0,
   totalElapsed: 0,
 
-  // ── UI state ──
-  phase: 'idle', // idle | generating | player
+  
+  phase: 'idle', 
   interruptOpen: false,
   generationProgress: null,
   error: null,
   loading: false,
 
-  // ── Audio refs removed — managed via useRef in usePodcastPlayer.js ──
-  // External refs: audioElRef, audioCacheRef are passed to playback actions
-
-  // ── Audio ref holders (set by usePodcastPlayer hook) ──
+  
   _audioElRef: { current: null },
   _audioCacheRef: { current: new Map() },
 
@@ -62,7 +59,7 @@ const usePodcastStore = create((set, get) => ({
     set({ _audioElRef: audioElRef, _audioCacheRef: audioCacheRef });
   },
 
-  // ── Cleanup ──
+  
   resetPodcast: () => {
     const { _audioElRef, _audioCacheRef } = get();
     if (_audioElRef.current) {
@@ -89,7 +86,7 @@ const usePodcastStore = create((set, get) => ({
     });
   },
 
-  // ── Load sessions ──
+  
   loadSessions: async (notebookId, isDraft) => {
     if (!notebookId || isDraft) return;
     try {
@@ -100,7 +97,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // ── Load session ──
+  
   loadSession: async (sessionId) => {
     try {
       set({ loading: true });
@@ -129,7 +126,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // ── Create session ──
+  
   _creating: false,
   create: async ({ mode, topic, language, hostVoice, guestVoice }, notebookId, selectedSources) => {
     if (!notebookId || get()._creating) return;
@@ -154,7 +151,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // ── Start generation ──
+  
   startGeneration: async (sessionId) => {
     try {
       set({
@@ -168,7 +165,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // ── Playback ──
+  
   playSegment: async (index) => {
     const { segments, playbackSpeed, _audioElRef, _audioCacheRef } = get();
     if (!segments[index]) return;
@@ -207,7 +204,7 @@ const usePodcastStore = create((set, get) => ({
     try {
       const blobUrl = await fetchAudioObjectUrl(seg.audioPath);
       audioCache.set(seg.audioPath, blobUrl);
-    } catch { /* non-fatal */ }
+    } catch {  }
   },
 
   pause: () => {
@@ -251,7 +248,7 @@ const usePodcastStore = create((set, get) => ({
     if (_audioElRef.current) _audioElRef.current.playbackRate = speed;
   },
 
-  // ── Q&A ──
+  
   askQuestion: async (questionText) => {
     const { session, currentSegmentIndex, pause: pauseFn } = get();
     if (!session?.id) return;
@@ -281,7 +278,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // ── Bookmarks ──
+  
   addBookmark: async (segmentIndex, label) => {
     const { session } = get();
     if (!session?.id) return;
@@ -297,7 +294,7 @@ const usePodcastStore = create((set, get) => ({
     set((s) => ({ bookmarks: s.bookmarks.filter(b => b.id !== bookmarkId) }));
   },
 
-  // ── Annotations ──
+  
   addAnnotation: async (segmentIndex, text) => {
     const { session } = get();
     if (!session?.id) return;
@@ -313,7 +310,7 @@ const usePodcastStore = create((set, get) => ({
     set((s) => ({ annotations: s.annotations.filter(a => a.id !== annotationId) }));
   },
 
-  // ── Delete session ──
+  
   removeSession: async (sessionId) => {
     await deletePodcastSession(sessionId);
     set((s) => ({
@@ -322,7 +319,7 @@ const usePodcastStore = create((set, get) => ({
     }));
   },
 
-  // ── Export ──
+  
   exportSession: async (format) => {
     const { session } = get();
     if (!session?.id) return;
@@ -335,7 +332,7 @@ const usePodcastStore = create((set, get) => ({
     return generatePodcastSummary(session.id);
   },
 
-  // ── WS event handler ──
+  
   handleWsEvent: (event) => {
     const { type, ...rest } = event;
     switch (type) {
@@ -380,7 +377,7 @@ const usePodcastStore = create((set, get) => ({
     }
   },
 
-  // Setters
+  
   setPhase: (phase) => set({ phase }),
   setSession: (session) => set({ session }),
   setInterruptOpen: (open) => set({ interruptOpen: open }),
@@ -393,7 +390,7 @@ const usePodcastStore = create((set, get) => ({
   setDoubts: (doubts) => set({ doubts }),
   setCurrentTime: (time) => set({ currentTime: time }),
 
-  // ── Computed ──
+  
   get totalDuration() {
     return get().segments.reduce((sum, s) => sum + (s.durationMs || 0), 0);
   },

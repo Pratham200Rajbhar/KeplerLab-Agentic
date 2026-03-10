@@ -23,7 +23,7 @@ export default function CopyButton({ code }) {
         document.body.removeChild(textarea);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      } catch { /* silent */ }
+      } catch {  }
     }
   };
 

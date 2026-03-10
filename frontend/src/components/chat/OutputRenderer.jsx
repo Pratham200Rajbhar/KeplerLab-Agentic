@@ -5,18 +5,6 @@ import { FileText, AlertCircle } from 'lucide-react';
 
 import DocViewerRenderer from '../viewer/DocViewerRenderer';
 
-/**
- * OutputRenderer — renders ALL agent-produced files inline inside the message bubble.
- *
- * Props:
- *   artifact: { filename, mime, display_type, url, size }
- *
- * Rules:
- *   - NEVER render a download button
- *   - NEVER render a save button
- *   - Show filename only as a non-clickable label
- *   - All fetch() calls handle errors gracefully
- */
 
 function formatSize(bytes) {
   if (!bytes) return '';
@@ -42,7 +30,7 @@ function FileLabel({ filename }) {
   );
 }
 
-/* ── Image Renderer ── */
+
 function ImageRenderer({ url, filename }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [error, setError] = useState(false);
@@ -55,7 +43,7 @@ function ImageRenderer({ url, filename }) {
         className="rounded-lg overflow-hidden border border-border/30 cursor-pointer"
         onClick={() => setFullscreen(true)}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {}
         <img
           src={url}
           alt={filename}
@@ -64,13 +52,13 @@ function ImageRenderer({ url, filename }) {
         />
       </div>
 
-      {/* Fullscreen overlay */}
+      {}
       {fullscreen && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer"
           onClick={() => setFullscreen(false)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {}
           <img
             src={url}
             alt={filename}
@@ -82,7 +70,7 @@ function ImageRenderer({ url, filename }) {
   );
 }
 
-/* ── CSV Table Renderer ── */
+
 function CsvTableRenderer({ url, filename }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
@@ -140,7 +128,7 @@ function CsvTableRenderer({ url, filename }) {
   );
 }
 
-/* ── JSON Tree Renderer ── */
+
 function JsonTreeRenderer({ url, filename }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
@@ -170,7 +158,7 @@ function JsonTreeRenderer({ url, filename }) {
   );
 }
 
-/* ── Text Preview Renderer ── */
+
 function TextPreviewRenderer({ url, filename }) {
   const [text, setText] = useState(null);
   const [error, setError] = useState(false);
@@ -203,7 +191,7 @@ function TextPreviewRenderer({ url, filename }) {
   );
 }
 
-/* ── HTML Preview Renderer ── */
+
 function HtmlPreviewRenderer({ url, filename }) {
   return (
     <div>
@@ -219,7 +207,7 @@ function HtmlPreviewRenderer({ url, filename }) {
   );
 }
 
-/* ── Document Embed Renderer ── */
+
 function DocEmbedRenderer({ url, filename }) {
   return (
     <div>
@@ -231,7 +219,7 @@ function DocEmbedRenderer({ url, filename }) {
   );
 }
 
-/* ── Audio Player Renderer ── */
+
 function AudioPlayerRenderer({ url, filename }) {
   return (
     <div>
@@ -241,7 +229,7 @@ function AudioPlayerRenderer({ url, filename }) {
   );
 }
 
-/* ── Video Player Renderer ── */
+
 function VideoPlayerRenderer({ url, filename }) {
   return (
     <div>
@@ -255,7 +243,7 @@ function VideoPlayerRenderer({ url, filename }) {
   );
 }
 
-/* ── File Card (generic fallback) ── */
+
 function FileCardRenderer({ filename, mime, size }) {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-secondary/30 shadow-sm transition-all hover:bg-surface-secondary/50">
@@ -270,7 +258,7 @@ function FileCardRenderer({ filename, mime, size }) {
   );
 }
 
-/* ── Main OutputRenderer ── */
+
 function OutputRenderer({ artifact }) {
   if (!artifact) return null;
 

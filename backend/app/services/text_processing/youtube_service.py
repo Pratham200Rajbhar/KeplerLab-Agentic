@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
 import yt_dlp
@@ -9,12 +9,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 class YouTubeService:
-    """Service for extracting transcripts and metadata from YouTube videos"""
     
     def __init__(self):
         self.formatter = TextFormatter()
         self.ytt_api = YouTubeTranscriptApi()
-        # Configure yt-dlp options
         self.ydl_opts = {
             'quiet': True,
             'no_warnings': True,
@@ -22,29 +20,15 @@ class YouTubeService:
         }
     
     def extract_transcript_from_url(self, url: str, language: str = 'en') -> Dict[str, Any]:
-        """
-        Extract transcript from YouTube URL
-        
-        Args:
-            url: YouTube video URL
-            language: Preferred language code (default: 'en')
-            
-        Returns:
-            Dict with transcript text and metadata
-        """
         try:
-            # Extract video ID from URL
             video_id = self._extract_video_id(url)
             if not video_id:
                 raise ValueError(f"Could not extract video ID from URL: {url}")
             
-            # Get video metadata
             metadata = self._get_video_metadata(url)
             
-            # Try to get transcript
             transcript_result = self._get_transcript(video_id, language)
             
-            # Combine results
             result = {
                 'url': url,
                 'video_id': video_id,
@@ -77,7 +61,6 @@ class YouTubeService:
             }
     
     def _extract_video_id(self, url: str) -> Optional[str]:
-        """Extract YouTube video ID from various URL formats"""
         patterns = [
             r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([^&\n?#]+)',
             r'youtube\.com/v/([^&\n?#]+)',
@@ -92,9 +75,7 @@ class YouTubeService:
         return None
     
     def _get_transcript(self, video_id: str, preferred_language: str = 'en') -> Dict[str, Any]:
-        """Get transcript for a YouTube video using v1.x API"""
         try:
-            # v1.x API: use instance method fetch() directly
             fetched = self.ytt_api.fetch(video_id, languages=[preferred_language])
             text = self.formatter.format_transcript(fetched)
             clean_text = self._clean_transcript_text(text)
@@ -108,25 +89,21 @@ class YouTubeService:
         except Exception as e:
             logger.warning(f"Failed to fetch transcript with preferred language '{preferred_language}' for {video_id}: {e}")
         
-        # Fallback: try listing all available transcripts
         try:
             transcript_list = self.ytt_api.list(video_id)
             
-            # Try manually created first
             transcript = None
             try:
                 transcript = transcript_list.find_manually_created_transcript([preferred_language, 'en'])
             except Exception:
                 pass
             
-            # Then try auto-generated
             if not transcript:
                 try:
                     transcript = transcript_list.find_generated_transcript([preferred_language, 'en'])
                 except Exception:
                     pass
             
-            # Try any available transcript
             if not transcript:
                 try:
                     available = list(transcript_list)
@@ -157,7 +134,6 @@ class YouTubeService:
         }
     
     def _get_video_metadata(self, url: str) -> Dict[str, Any]:
-        """Get video metadata using yt-dlp"""
         try:
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
@@ -180,21 +156,16 @@ class YouTubeService:
             return {}
     
     def _clean_transcript_text(self, text: str) -> str:
-        """Clean transcript text"""
-        # Remove excessive whitespace
         text = re.sub(r'\s+', ' ', text)
         
-        # Remove common transcript artifacts
-        text = re.sub(r'\[.*?\]', '', text)  # Remove [Music], [Applause], etc.
-        text = re.sub(r'\(.*?\)', '', text)  # Remove (inaudible), etc.
+        text = re.sub(r'\[.*?\]', '', text)
+        text = re.sub(r'\(.*?\)', '', text)
         
-        # Clean up spacing
         text = re.sub(r'\s+', ' ', text).strip()
         
         return text
     
     def get_video_info(self, url: str) -> Dict[str, Any]:
-        """Get basic video information without transcript"""
         try:
             video_id = self._extract_video_id(url)
             if not video_id:
@@ -222,13 +193,11 @@ class YouTubeService:
             }
     
     def is_youtube_url(self, url: str) -> bool:
-        """Check if URL is a valid YouTube URL"""
         youtube_domains = ['youtube.com', 'youtu.be', 'm.youtube.com', 'www.youtube.com']
         parsed = urlparse(url)
         return any(domain in parsed.netloc.lower() for domain in youtube_domains)
     
     def get_available_transcripts(self, url: str) -> List[Dict[str, Any]]:
-        """Get list of available transcripts for a video"""
         try:
             video_id = self._extract_video_id(url)
             if not video_id:

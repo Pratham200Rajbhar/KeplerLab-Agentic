@@ -1,5 +1,3 @@
-"""FastAPI application entry point."""
-
 from __future__ import annotations
 
 import asyncio
@@ -10,8 +8,6 @@ import sys
 import time
 import uuid
 from contextlib import asynccontextmanager
-
-# ── Logging configuration (done once, before any app imports) ─
 
 _LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(_LOG_DIR, exist_ok=True)
@@ -25,7 +21,6 @@ _file_handler = logging.handlers.RotatingFileHandler(
 _file_handler.setFormatter(_fmt)
 
 logging.basicConfig(level=logging.INFO, handlers=[_stream_handler, _file_handler])
-# Quieten noisy third-party loggers
 for _noisy in ("httpx", "httpcore", "uvicorn.access"):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
@@ -54,7 +49,7 @@ from app.routes.search import router as search_router
 from app.routes.proxy import router as proxy_router
 from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
-from app.routes.agent import router as agent_router
+from app.routes.code_execution import router as code_execution_router
 from app.routes.artifacts import router as artifacts_router
 
 from app.services.rate_limiter import rate_limit_middleware
@@ -62,23 +57,14 @@ from app.services.performance_logger import performance_monitoring_middleware
 
 logger = logging.getLogger("main")
 
-# Module-level task reference — keeps the job_processor alive (prevents GC)
 _job_processor_task: asyncio.Task | None = None
-
-
-# ── Lifespan ──────────────────────────────────────────────
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _job_processor_task
 
-    # 1. Connect to Prisma / PostgreSQL
     await connect_db()
 
-    # 2. Warm up the embedding model AND reranker in a thread-pool executor so
-    #    the first request does not stall for model-load time.
-    #    Both calls are blocking/CPU-bound — must NOT run on the event loop.
     loop = asyncio.get_running_loop()
     try:
         from app.services.rag.embedder import warm_up_embeddings
@@ -95,12 +81,10 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Reranker preload failed (non-fatal, will load on first use): %s", exc)
 
-    # 3. Start the background document processing worker
     from app.services.worker import job_processor
     _job_processor_task = asyncio.create_task(job_processor(), name="job_processor")
     logger.info("Background job processor task created.")
 
-    # 4. Ensure sandbox packages are installed
     try:
         from app.services.code_execution.sandbox_env import ensure_packages
         logger.info("Ensuring sandbox packages are installed…")
@@ -108,7 +92,6 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Sandbox package setup failed (non-fatal): %s", exc)
 
-    # 4b. Cleanup stale sandbox temp directories from previous crashes
     try:
         import glob
         import shutil
@@ -120,14 +103,11 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Sandbox temp cleanup failed (non-fatal): %s", exc)
 
-    # 5. Create output directories (use resolved absolute paths from settings)
     for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers"), os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "podcast")]:
         os.makedirs(_dir, exist_ok=True)
     os.makedirs(settings.ARTIFACTS_DIR, exist_ok=True)
     logger.info("Output directories ensured.")
 
-    # 6. Purge expired refresh tokens left over from previous sessions.
-    #    Keeps the auth table clean and avoids stale records accumulating.
     try:
         from app.services.auth.service import cleanup_expired_tokens
         deleted = await cleanup_expired_tokens()
@@ -138,7 +118,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # ── Shutdown ──────────────────────────────────────────
     if _job_processor_task and not _job_processor_task.done():
         from app.services.worker import graceful_shutdown, _SHUTDOWN_TIMEOUT
         await graceful_shutdown()
@@ -151,21 +130,11 @@ async def lifespan(app: FastAPI):
 
     await disconnect_db()
 
-
-# ── App ───────────────────────────────────────────────────
-
-
 app = FastAPI(lifespan=lifespan, title="Study Assistant API", version="2.0.0")
 
-
-# ── Middleware ────────────────────────────────────────────
-
-# Performance monitoring (first to capture full request time)
 app.middleware("http")(performance_monitoring_middleware)
 
-# Rate limiting (before request processing)
 app.middleware("http")(rate_limit_middleware)
-
 
 @app.middleware("http")
 async def log_requests(request, call_next):
@@ -183,7 +152,6 @@ async def log_requests(request, call_next):
         logger.error("%s %s ERROR %s %.2fs [%s]", request.method, request.url.path, type(e).__name__, dt, request_id)
         raise
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -193,7 +161,6 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Trusted host validation (prevents host-header attacks)
 if settings.ENVIRONMENT == "production":
     from urllib.parse import urlparse as _urlparse
     _allowed_hosts = (
@@ -206,14 +173,6 @@ if settings.ENVIRONMENT == "production":
         allowed_hosts=_allowed_hosts or ["*"],
     )
 
-
-# Request body size limit removed — no upload size restrictions
-
-
-# ── Error handlers ────────────────────────────────────────
-# CORSMiddleware doesn't add headers to error responses, so we must.
-
-
 def _cors_headers(origin: str | None = None) -> dict:
     allowed = origin if origin in settings.CORS_ORIGINS else (settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "*")
     return {
@@ -223,7 +182,6 @@ def _cors_headers(origin: str | None = None) -> dict:
         "Access-Control-Allow-Headers": "*",
     }
 
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     return JSONResponse(
@@ -231,7 +189,6 @@ async def http_exception_handler(request, exc):
         content={"detail": exc.detail},
         headers=_cors_headers(request.headers.get("origin")),
     )
-
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -243,16 +200,10 @@ async def global_exception_handler(request, exc):
         headers=_cors_headers(request.headers.get("origin")),
     )
 
-
-# ── Routes ────────────────────────────────────────────────
-# Prefix and tags are set on each APIRouter instance directly.
-
-# Public
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(models_router)
 
-# Protected
 app.include_router(notebook_router)
 app.include_router(upload_router)
 app.include_router(materials_router)
@@ -266,8 +217,7 @@ app.include_router(search_router)
 app.include_router(proxy_router)
 app.include_router(explainer_router)
 app.include_router(podcast_live_router)
-app.include_router(agent_router)
+app.include_router(code_execution_router)
 app.include_router(artifacts_router)
 
-# WebSocket channels (no REST replacement — live state push only)
 app.include_router(ws_router)

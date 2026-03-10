@@ -3,15 +3,7 @@
 import { memo } from 'react';
 import { CheckCircle2, BarChart3, Clock, Cpu } from 'lucide-react';
 
-/**
- * ResultSummary — displays the agent execution summary.
- * 
- * Shows summary text and optional metrics like accuracy, duration, etc.
- *
- * Props:
- *   summary: { text: string, metrics?: { [key]: value } }
- *   totalTime: number (ms)
- */
+
 function ResultSummary({ summary, totalTime }) {
   if (!summary) {
     return null;
@@ -21,7 +13,7 @@ function ResultSummary({ summary, totalTime }) {
     ? summary
     : summary.text || summary.description || summary.title || null;
 
-  // key_results as bullet list if no text but has key_results
+  
   const keyResults = typeof summary === 'object' ? (summary.key_results || []) : [];
   const metrics = typeof summary === 'object' ? summary.metrics : null;
 
@@ -31,7 +23,7 @@ function ResultSummary({ summary, totalTime }) {
 
   return (
     <div className="result-summary mb-4 rounded-lg bg-surface-overlay/30 overflow-hidden shadow-sm">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border-b border-emerald-500/20">
         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
         <span className="text-sm font-medium text-emerald-400">Result Summary</span>
@@ -42,7 +34,7 @@ function ResultSummary({ summary, totalTime }) {
         )}
       </div>
 
-      {/* Summary text */}
+      {}
       {text && (
         <div className="px-3 py-3">
           <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
@@ -51,7 +43,7 @@ function ResultSummary({ summary, totalTime }) {
         </div>
       )}
 
-      {/* Key results as bullet list */}
+      {}
       {keyResults.length > 0 && (
         <div className="px-3 py-2">
           <ul className="space-y-1">
@@ -65,7 +57,7 @@ function ResultSummary({ summary, totalTime }) {
         </div>
       )}
 
-      {/* Metrics */}
+      {}
       {metrics && Object.keys(metrics).length > 0 && (
         <div className="px-3 py-2 bg-surface-raised/50">
           <div className="flex flex-wrap gap-4">
@@ -79,14 +71,12 @@ function ResultSummary({ summary, totalTime }) {
   );
 }
 
-/**
- * Single metric badge display.
- */
+
 function MetricBadge({ label, value }) {
   const formattedValue = formatMetricValue(label, value);
   const lowerLabel = label.toLowerCase();
   
-  // Determine which icon to use based on label
+  
   const isScoreMetric = lowerLabel.includes('accuracy') || lowerLabel.includes('score') || lowerLabel.includes('f1');
   const isTimeMetric = lowerLabel.includes('time') || lowerLabel.includes('duration');
   const isModelMetric = lowerLabel.includes('model') || lowerLabel.includes('algorithm');
@@ -107,9 +97,7 @@ function MetricBadge({ label, value }) {
   );
 }
 
-/**
- * Format metric label for display.
- */
+
 function formatLabel(label) {
   return label
     .replace(/_/g, ' ')
@@ -117,13 +105,11 @@ function formatLabel(label) {
     .trim();
 }
 
-/**
- * Format metric value based on type.
- */
+
 function formatMetricValue(label, value) {
   const lowerLabel = label.toLowerCase();
 
-  // Percentage values
+  
   if (
     lowerLabel.includes('accuracy') ||
     lowerLabel.includes('precision') ||
@@ -136,14 +122,14 @@ function formatMetricValue(label, value) {
     }
   }
 
-  // Time values
+  
   if (lowerLabel.includes('time') || lowerLabel.includes('duration')) {
     if (typeof value === 'number') {
       return formatDuration(value);
     }
   }
 
-  // Default formatting
+  
   if (typeof value === 'number') {
     if (Number.isInteger(value)) return value.toLocaleString();
     return value.toFixed(4);
@@ -152,9 +138,7 @@ function formatMetricValue(label, value) {
   return String(value);
 }
 
-/**
- * Format duration in ms to human readable.
- */
+
 function formatDuration(ms) {
   if (ms < 1000) return `${ms}ms`;
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
@@ -163,9 +147,7 @@ function formatDuration(ms) {
   return `${mins}m ${secs}s`;
 }
 
-/**
- * Compact variant for inline display.
- */
+
 export function ResultSummaryCompact({ summary, totalTime }) {
   const text = typeof summary === 'string' ? summary : summary?.text;
 

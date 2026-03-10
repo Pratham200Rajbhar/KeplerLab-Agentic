@@ -69,7 +69,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
       }
     >
       <div className="flex h-[68vh] min-h-[520px] -mx-6 -mt-2 overflow-hidden relative">
-        {/* Left: Results */}
+        {}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10 w-full transition-all duration-500 overflow-hidden">
           <div className="flex justify-between items-center px-6 pb-4 pt-2 shrink-0">
             <p className="text-[13px] font-medium text-text-muted">
@@ -128,7 +128,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                         <h3 className={`text-[15px] font-bold leading-tight transition-colors line-clamp-1 ${isSelected || isPreviewed ? 'text-text-primary' : 'text-text-primary/80'}`}>{result.title}</h3>
                         <div className="flex items-center gap-2.5">
                           {domain && (
-                            // eslint-disable-next-line @next/next/no-img-element -- external favicon URL; domain is dynamic
+                            
                             <img src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`} alt="" className="shrink-0 w-4 h-4 rounded-sm object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
                           )}
                           <div className="flex items-center gap-2 truncate">
@@ -146,7 +146,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
           </div>
         </div>
 
-        {/* Right: Preview Panel */}
+        {}
         {previewResult && (
           <div className="w-[500px] shrink-0 h-full bg-[#161618] relative overflow-hidden animate-in slide-in-from-right-10 fade-in duration-500 shadow-2xl rounded-xl my-2 mr-2">
             <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
@@ -155,7 +155,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
               <div className="px-8 pt-8 pb-10 flex-1 overflow-y-auto custom-scrollbar relative">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="p-3 bg-black/40 rounded-2xl shadow-inner group hover:bg-black/60 transition-all">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- external favicon URL; domain is dynamic */}
+                    {}
                     <img src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`} alt="" className="w-8 h-8 rounded-md object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
                   </div>
                   <h4 className="text-[12px] font-bold text-text-muted tracking-[0.3em] uppercase">{getDomain(previewResult.link)}</h4>
@@ -168,7 +168,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                 </div>
               </div>
 
-              {/* Action Floating Bar */}
+              {}
               <div className="p-6 pt-0 mt-auto bg-gradient-to-t from-[#161618] to-transparent">
                 {isFileUrl(previewResult.link) ? (
                   <a href={viewerHref(previewResult.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 w-full px-6 py-4 bg-white text-black text-[15px] font-black rounded-2xl transition-all shadow-[0_8px_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98] group">

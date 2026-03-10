@@ -3,12 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import usePodcastStore from '@/stores/usePodcastStore';
 
-/**
- * Manages segment-level audio playback with lookahead prefetch,
- * speed control, and seek/skip helpers.
- *
- * Owns Audio element and cache via useRef (not stored in Zustand for serializability).
- */
+
 export default function usePodcastPlayer() {
   const {
     session,
@@ -28,16 +23,16 @@ export default function usePodcastPlayer() {
     setAudioRefs,
   } = usePodcastStore();
 
-  // ── Audio refs owned by this hook (not in store) ──
+  
   const audioElRef = useRef(typeof window !== 'undefined' ? new Audio() : null);
   const audioCacheRef = useRef(new Map());
 
-  // Register refs with store so playback actions can access them
+  
   useEffect(() => {
     setAudioRefs(audioElRef, audioCacheRef);
   }, [setAudioRefs]);
 
-  // ── Cleanup audio on unmount ──
+  
   useEffect(() => {
     const audio = audioElRef.current;
     const cache = audioCacheRef.current;
@@ -53,7 +48,7 @@ export default function usePodcastPlayer() {
     };
   }, []);
 
-  // Prefetch cache: keep next 2 segments in browser cache
+  
   const prefetchedRef = useRef(new Set());
 
   const prefetchAhead = useCallback(() => {
@@ -71,12 +66,12 @@ export default function usePodcastPlayer() {
     prefetchAhead();
   }, [prefetchAhead]);
 
-  // Reset prefetch cache on session change
+  
   useEffect(() => {
     prefetchedRef.current.clear();
   }, [session?.id]);
 
-  // ── Track segment duration via event listener (avoids reading ref during render) ──
+  
   const [segmentDuration, setSegmentDuration] = useState(0);
 
   useEffect(() => {
@@ -91,7 +86,7 @@ export default function usePodcastPlayer() {
     };
   }, []);
 
-  // ── Auto-advance: when a segment ends, play the next one ──
+  
   useEffect(() => {
     const audio = audioElRef.current;
     if (!audio) return;
@@ -110,7 +105,7 @@ export default function usePodcastPlayer() {
     return () => audio.removeEventListener('ended', onEnded);
   }, []);
 
-  // Seek within the current segment.
+  
   const seekTo = useCallback(
     (timeInSeconds) => {
       if (audioElRef.current) {
@@ -120,7 +115,7 @@ export default function usePodcastPlayer() {
     [],
   );
 
-  // Skip forward/back by N seconds
+  
   const skip = useCallback(
     (deltaSeconds) => {
       if (audioElRef.current) {
@@ -130,7 +125,7 @@ export default function usePodcastPlayer() {
     [],
   );
 
-  // Jump to a specific segment by index
+  
   const jumpToSegment = useCallback(
     (index) => {
       if (index >= 0 && index < segments.length) {

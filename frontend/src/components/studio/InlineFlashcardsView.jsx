@@ -7,7 +7,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
   const cards = useMemo(() => flashcards?.flashcards || flashcards?.cards || (Array.isArray(flashcards) ? flashcards : []), [flashcards]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [viewMode, setViewMode] = useState('card'); // card | list
+  const [viewMode, setViewMode] = useState('card'); 
   const containerRef = useRef(null);
 
   const card = cards[currentIndex];
@@ -26,7 +26,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
     }
   }, [currentIndex]);
 
-  // Keyboard navigation
+  
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'n') goNext();
@@ -83,7 +83,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
 
   return (
     <div ref={containerRef} className="space-y-4 animate-fade-in">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <button
@@ -111,7 +111,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
 
       {viewMode === 'card' ? (
         <>
-          {/* Card view — proper 3D flip */}
+          {}
           <div
             onClick={() => setFlipped(!flipped)}
             className="relative h-52 rounded-xl border border-[var(--border)] bg-[var(--surface)] cursor-pointer select-none hover:border-[var(--accent)] transition-colors"
@@ -121,7 +121,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
               className="w-full h-full transition-transform duration-500 relative"
               style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
             >
-              {/* Front face */}
+              {}
               <div
                 className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center rounded-xl bg-[var(--surface)]"
                 style={{ backfaceVisibility: 'hidden' }}
@@ -132,7 +132,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
                   <RotateCw className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                 </div>
               </div>
-              {/* Back face */}
+              {}
               <div
                 className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center rounded-xl"
                 style={{
@@ -148,7 +148,7 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
             </div>
           </div>
 
-          {/* Navigation */}
+          {}
           <div className="flex items-center justify-between">
             <button
               onClick={goPrev}
@@ -171,13 +171,13 @@ export default function InlineFlashcardsView({ flashcards, onClose }) {
             </button>
           </div>
 
-          {/* Keyboard hint */}
+          {}
           <p className="text-[10px] text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
             <Keyboard className="w-3 h-3" /> Space to flip, arrows to navigate
           </p>
         </>
       ) : (
-        /* List view */
+        
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {cards.map((c, i) => (
             <div key={c.id || c.front || c.question || i} className="p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)]">

@@ -3,26 +3,12 @@
 import { memo, useState, useEffect, useCallback } from 'react';
 import { Table2, ChevronDown, ChevronUp, Download, AlertCircle, Loader2 } from 'lucide-react';
 
-/**
- * ArtifactTablePreview — displays a preview of CSV/JSON data as a table.
- * 
- * Features:
- * - Shows first 10 rows by default
- * - Expandable to show more rows
- * - Scrollable for wide tables
- * - Download button
- *
- * Props:
- *   artifact: { id, filename, downloadUrl, size }
- *   onDownload: (artifact) => void
- *   maxPreviewRows: number (default: 10)
- */
 
 const MAX_PREVIEW_ROWS = 10;
 const MAX_EXPANDED_ROWS = 100;
 
 function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVIEW_ROWS }) {
-  // Initialize loading state based on whether we have a URL
+  
   const hasUrl = Boolean(artifact.downloadUrl);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(hasUrl);
@@ -32,7 +18,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
   const isCSV = artifact.filename?.toLowerCase().endsWith('.csv');
   const isJSON = artifact.filename?.toLowerCase().endsWith('.json');
 
-  // Fetch and parse data
+  
   useEffect(() => {
     if (!artifact.downloadUrl) {
       return;
@@ -73,12 +59,12 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
     onDownload?.(artifact);
   }, [artifact, onDownload]);
 
-  // Handle case where there's no download URL
+  
   if (!artifact.downloadUrl) {
     return <DownloadFallback artifact={artifact} onDownload={handleDownload} />;
   }
 
-  // Loading state
+  
   if (loading) {
     return (
       <div className="rounded-lg border border-border/30 p-4">
@@ -90,7 +76,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
     );
   }
 
-  // Error state
+  
   if (error) {
     return (
       <div className="rounded-lg border border-border/30 p-4">
@@ -117,7 +103,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
 
   return (
     <div className="rounded-lg border border-border/30 overflow-hidden">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between px-3 py-2 bg-surface-raised/50 border-b border-border/20">
         <div className="flex items-center gap-2">
           <Table2 className="w-4 h-4 text-emerald-400" />
@@ -139,7 +125,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
         )}
       </div>
 
-      {/* Table */}
+      {}
       <div className="overflow-x-auto" style={{ maxHeight: isExpanded ? '500px' : '320px' }}>
         <table className="w-full text-xs font-mono">
           <thead className="sticky top-0 bg-surface-raised z-10">
@@ -181,7 +167,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
         </table>
       </div>
 
-      {/* Footer with expand/collapse */}
+      {}
       {(canExpand || hasMore) && (
         <div className="flex items-center justify-between px-3 py-2 bg-surface-raised/30 border-t border-border/20">
           {hasMore && (
@@ -213,9 +199,7 @@ function ArtifactTablePreview({ artifact, onDownload, maxPreviewRows = MAX_PREVI
   );
 }
 
-/**
- * Fallback download card when preview fails.
- */
+
 function DownloadFallback({ artifact, onDownload }) {
   return (
     <button
@@ -232,14 +216,12 @@ function DownloadFallback({ artifact, onDownload }) {
   );
 }
 
-/**
- * Parse CSV text to table data.
- */
+
 function parseCSVToTable(text) {
   const lines = text.split('\n').filter((line) => line.trim());
   if (lines.length === 0) return { headers: [], rows: [] };
 
-  // Simple CSV parsing (handles basic cases)
+  
   const parseRow = (line) => {
     const result = [];
     let current = '';
@@ -266,22 +248,20 @@ function parseCSVToTable(text) {
   return { headers, rows };
 }
 
-/**
- * Parse JSON to table data.
- */
+
 function parseJSONToTable(json) {
   let data = json;
 
-  // Handle wrapped JSON
+  
   if (typeof data === 'object' && !Array.isArray(data)) {
-    // Look for common data keys
+    
     const dataKey = Object.keys(data).find((k) =>
       ['data', 'rows', 'records', 'items', 'results'].includes(k.toLowerCase())
     );
     if (dataKey && Array.isArray(data[dataKey])) {
       data = data[dataKey];
     } else {
-      // Convert single object to single-row table
+      
       data = [data];
     }
   }
@@ -290,10 +270,10 @@ function parseJSONToTable(json) {
     return { headers: [], rows: [] };
   }
 
-  // Extract headers from first object
+  
   const headers = Object.keys(data[0] || {});
 
-  // Convert objects to rows
+  
   const rows = data.map((item) =>
     headers.map((h) => (item && item[h] !== undefined ? item[h] : ''))
   );
@@ -301,14 +281,12 @@ function parseJSONToTable(json) {
   return { headers, rows };
 }
 
-/**
- * Format cell value for display.
- */
+
 function formatCell(value) {
   if (value === null || value === undefined) return '';
   if (typeof value === 'object') return JSON.stringify(value);
   if (typeof value === 'number') {
-    // Format numbers nicely
+    
     if (Number.isInteger(value)) return value.toLocaleString();
     return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
   }

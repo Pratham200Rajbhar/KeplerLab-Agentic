@@ -26,7 +26,7 @@ export default function PodcastInterruptDrawer() {
 
   useEffect(() => {
     inputRef.current?.focus();
-    // Copy the ref value so cleanup always operates on the same Audio node
+    
     const answerAudio = answerAudioRef.current;
     return () => {
       answerAudio?.pause();
@@ -44,7 +44,7 @@ export default function PodcastInterruptDrawer() {
       setAnswer(result);
       setQuestion('');
 
-      // Auto-play answer audio
+      
       if (result?.audioPath) {
         try {
           const url = await fetchAudioObjectUrl(result.audioPath);
@@ -56,7 +56,7 @@ export default function PodcastInterruptDrawer() {
             URL.revokeObjectURL(url);
           };
         } catch {
-          // silent
+          
         }
       }
     } catch (err) {
@@ -85,7 +85,7 @@ export default function PodcastInterruptDrawer() {
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 animate-slide-up">
       <div className="bg-[var(--surface-raised)] border-t border-[var(--border)] rounded-t-2xl shadow-lg p-4">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-[var(--text-primary)]">Ask a Question</h4>
           <button onClick={handleClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
@@ -93,7 +93,7 @@ export default function PodcastInterruptDrawer() {
           </button>
         </div>
 
-        {/* Answer display */}
+        {}
         {answer && (
           <div className="mb-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] animate-fade-in">
             <div className="flex items-center gap-2 mb-1.5">
@@ -114,7 +114,7 @@ export default function PodcastInterruptDrawer() {
           </div>
         )}
 
-        {/* Input area */}
+        {}
         <div className="flex items-center gap-2">
           <button
             onClick={isRecording ? stopMic : startMic}

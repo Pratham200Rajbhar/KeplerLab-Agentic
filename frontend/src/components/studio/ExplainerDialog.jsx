@@ -17,27 +17,25 @@ export default function ExplainerDialog({ onClose, onComplete }) {
   const selectedSources = useAppStore((s) => s.selectedSources);
   const toast = useToast();
 
-  const [step, setStep] = useState('select'); // select | configure | generating | complete
+  const [step, setStep] = useState('select'); 
   const [presentations, setPresentations] = useState([]);
   const [selectedPptId, setSelectedPptId] = useState(null);
   const [createNewPpt, setCreateNewPpt] = useState(false);
   const [loadingPpts, setLoadingPpts] = useState(true);
 
-  // Config
+  
   const [pptLanguage, setPptLanguage] = useState('en');
   const [narrationLanguage, setNarrationLanguage] = useState('en');
   const [voiceGender, setVoiceGender] = useState('female');
 
-  // Generation
+  
   const [progress, setProgress] = useState({ message: 'Starting...', pct: 0 });
   const [explainerId, setExplainerId] = useState(null);
   const [result, setResult] = useState(null);
   const pollRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Load presentations for the selected sources.
-  // All setState calls happen inside async .then/.catch callbacks — never synchronously
-  // in the effect body — to avoid cascading renders.
+  
   useEffect(() => {
     if (!currentNotebook?.id) return;
 
@@ -45,7 +43,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // If no sources are selected resolve immediately with an empty list
+    
     const fetchPromise = materialIds.length
       ? checkExplainerPresentations(materialIds, currentNotebook.id, { signal: controller.signal })
       : Promise.resolve({ presentations: [] });
@@ -64,7 +62,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
     return () => controller.abort();
   }, [currentNotebook?.id, selectedSources]);
 
-  // Poll status during generation
+  
   useEffect(() => {
     if (step !== 'generating' || !explainerId) return;
 
@@ -86,7 +84,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
           });
         }
       } catch {
-        // transient error, keep polling
+        
       }
     };
 
@@ -150,7 +148,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         </button>
       </div>
 
-      {/* Step indicator */}
+      {}
       <div className="flex items-center gap-1 px-6 pt-4">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-1">
@@ -163,7 +161,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
       </div>
 
       <div className="px-6 py-5 min-h-[300px]">
-        {/* Step: Select Presentation */}
+        {}
         {step === 'select' && (
           <div className="space-y-4 animate-fade-in">
             <div>
@@ -177,7 +175,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* Create new option */}
+                {}
                 <button
                   onClick={() => { setCreateNewPpt(true); setSelectedPptId(null); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
@@ -194,7 +192,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
                   {createNewPpt && <Check className="w-4 h-4 text-[var(--accent)] ml-auto" />}
                 </button>
 
-                {/* Existing presentations */}
+                {}
                 {presentations.map((ppt) => (
                   <button
                     key={ppt.id}
@@ -228,7 +226,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
           </div>
         )}
 
-        {/* Step: Configure */}
+        {}
         {step === 'configure' && (
           <div className="space-y-4 animate-fade-in">
             <div>
@@ -236,7 +234,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
               <p className="text-xs text-[var(--text-muted)]">Customize your explainer video</p>
             </div>
 
-            {/* PPT Language */}
+            {}
             <div>
               <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
                 <Globe className="inline w-3.5 h-3.5 mr-1" /> Slide Language
@@ -254,7 +252,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
               </select>
             </div>
 
-            {/* Narration Language */}
+            {}
             <div>
               <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
                 <Mic className="inline w-3.5 h-3.5 mr-1" /> Narration Language
@@ -272,7 +270,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
               </select>
             </div>
 
-            {/* Voice */}
+            {}
             <div>
               <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Voice</label>
               <div className="flex gap-2">
@@ -309,7 +307,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
           </div>
         )}
 
-        {/* Step: Generating */}
+        {}
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center py-10 animate-fade-in">
             <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin mb-4" />
@@ -324,7 +322,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
           </div>
         )}
 
-        {/* Step: Complete */}
+        {}
         {step === 'complete' && (
           <div className="flex flex-col items-center justify-center py-10 animate-fade-in">
             <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-4">

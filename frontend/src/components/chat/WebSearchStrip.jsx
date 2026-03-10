@@ -3,13 +3,7 @@
 import { memo } from 'react';
 import { Globe, Loader2, FileText, Sparkles } from 'lucide-react';
 
-/**
- * WebSearchStrip — shows web search progress status.
- *
- * Props:
- *   status: "idle" | "searching" | "streaming" | "done"
- *   label: string — current status line
- */
+
 function WebSearchStrip({ status, label }) {
   if (status === 'idle' || status === 'done') return null;
 

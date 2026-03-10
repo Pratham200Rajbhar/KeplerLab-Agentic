@@ -1,9 +1,3 @@
-"""Presentation (PPT) generation route.
-
-Supports both synchronous generation and background-job-based generation.
-All parameters except material_id are optional — the AI decides sensible defaults.
-"""
-
 from __future__ import annotations
 
 import json
@@ -20,17 +14,12 @@ from app.services.ppt.generator import generate_presentation
 from app.services.auth import get_current_user
 from app.services.job_service import create_job, update_job_status
 from app.core.config import settings
-from .utils import require_material, require_material_text, require_materials_text, safe_path
+from .utils import require_material_text, require_materials_text, safe_path
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/presentation", tags=["presentation"])
 
-
-# ── Request / Response models ─────────────────────────────
-
-
 class PresentationRequest(BaseModel):
-    """All fields except material_id are optional — AI picks smart defaults."""
 
     material_id: Optional[str] = None
     material_ids: Optional[list[str]] = None
@@ -49,19 +38,11 @@ class PresentationRequest(BaseModel):
         description="Extra guidance for the AI, e.g. 'focus on key statistics', 'make it executive-level'.",
     )
 
-
-# ── Synchronous endpoint ──────────────────────────────────
-
-
 @router.post("")
 async def generate_ppt(
     request: PresentationRequest,
     current_user=Depends(get_current_user),
 ):
-    """Generate an HTML presentation from a material's full text.
-
-    Returns the complete presentation data including HTML.
-    """
     logger.info(
         "PPT request received | user=%s | material=%s | max_slides=%s | theme=%s",
         current_user.id,
@@ -111,21 +92,12 @@ async def generate_ppt(
         )
         raise HTTPException(status_code=500, detail=f"Failed to generate presentation: {str(e)}")
 
-
-# ── Background job endpoint ───────────────────────────────
-
-
 @router.post("/async")
 async def generate_ppt_async(
     request: PresentationRequest,
     background_tasks: BackgroundTasks,
     current_user=Depends(get_current_user),
 ):
-    """Start presentation generation as a background job.
-
-    Returns a job_id that can be polled via GET /jobs/{job_id}.
-    Accepts material_ids list, identical to sync version.
-    """
     ids = request.material_ids or ([request.material_id] if request.material_id else [])
     if not ids:
         raise HTTPException(status_code=400, detail="No material selected")
@@ -156,7 +128,6 @@ async def generate_ppt_async(
 
     return {"job_id": job_id, "status": "pending"}
 
-
 async def _run_ppt_job(
     job_id: str,
     text: str,
@@ -165,7 +136,6 @@ async def _run_ppt_job(
     additional_instructions: str | None,
     user_id: str,
 ) -> None:
-    """Async background task — runs inside the running event loop via BackgroundTasks."""
     logger.info("PPT background job STARTED | job_id=%s | user=%s", job_id, user_id)
     try:
         await update_job_status(job_id, "processing")
@@ -192,10 +162,6 @@ async def _run_ppt_job(
         )
         await update_job_status(job_id, "failed", error=str(exc))
 
-
-# ── Slide image serving endpoint ──────────────────────────
-
-
 @router.get("/slides/{user_id}/{presentation_id}/{filename}")
 async def get_slide_image(
     user_id: str,
@@ -203,15 +169,9 @@ async def get_slide_image(
     filename: str,
     current_user=Depends(get_current_user)
 ):
-    """Serve individual slide images.
-    
-    Only allows users to access their own slide images for security.
-    """
-    # Verify user can only access their own slides
     if str(current_user.id) != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Construct and validate file path
     presentations_dir = settings.PRESENTATIONS_OUTPUT_DIR
     slide_path = safe_path(presentations_dir, user_id, presentation_id, filename)
     

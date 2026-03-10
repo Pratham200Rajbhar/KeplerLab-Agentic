@@ -3,11 +3,7 @@
 import usePodcastStore from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
 
-/**
- * Convenience hook that provides the full podcast interface
- * by combining usePodcastStore with app-level state.
- * Replaces the old PodcastContext.
- */
+
 export default function usePodcast() {
   const podcast = usePodcastStore();
   const currentNotebook = useAppStore((s) => s.currentNotebook);

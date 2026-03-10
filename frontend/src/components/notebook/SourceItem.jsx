@@ -137,14 +137,14 @@ export default memo(function SourceItem({
         ${checked ? 'bg-accent/5 ring-0 shadow-sm' : 'hover:bg-surface-100'}
         ${isProcessing ? 'bg-surface-overlay/50' : ''}`}
     >
-      {/* Icon */}
+      {}
       <div className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
         <div className="scale-90 flex items-center justify-center drop-shadow-md">
           {getSourceIcon(sourceType, source.filename)}
         </div>
       </div>
 
-      {/* Name */}
+      {}
       <div className="flex-1 min-w-0 flex flex-col justify-center pt-0.5 max-w-full">
         <p className={`text-[13px] truncate leading-tight ${active ? 'text-text-primary font-medium' : isFailed ? 'text-danger line-through' : 'text-text-secondary font-medium'}`}>
           {displayName}
@@ -169,7 +169,7 @@ export default memo(function SourceItem({
         )}
       </div>
 
-      {/* Context menu */}
+      {}
       <div className="relative flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
         <button
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
@@ -197,7 +197,7 @@ export default memo(function SourceItem({
         )}
       </div>
 
-      {/* Checkbox / Spinner */}
+      {}
       {isProcessing ? (
         <div className="shrink-0 w-4 h-4 flex items-center justify-center mt-0.5">
           <div className={`w-4 h-4 loading-spinner ${statusStyle.text}`} />
