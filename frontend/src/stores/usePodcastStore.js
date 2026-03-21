@@ -14,6 +14,7 @@ import {
   deletePodcastSession,
   triggerPodcastExport,
   generatePodcastSummary,
+  updatePodcastSession,
 } from '@/lib/api/podcast';
 
 export const SESSION_STATUS = {
@@ -317,6 +318,21 @@ const usePodcastStore = create((set, get) => ({
       sessions: s.sessions.filter(s2 => s2.id !== sessionId),
       ...(s.session?.id === sessionId ? { session: null, phase: 'idle' } : {}),
     }));
+  },
+
+  updateSessionTitle: async (sessionId, title) => {
+    try {
+      await updatePodcastSession(sessionId, { title });
+      set((s) => ({
+        sessions: s.sessions.map((sess) =>
+          sess.id === sessionId ? { ...sess, title } : sess
+        ),
+        session: s.session?.id === sessionId ? { ...s.session, title } : s.session,
+      }));
+    } catch (err) {
+      set({ error: err.message });
+      throw err;
+    }
   },
 
   

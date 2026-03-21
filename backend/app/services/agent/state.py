@@ -33,6 +33,7 @@ class AgentState:
     session_id: str
     material_ids: List[str] = field(default_factory=list)
 
+    task_type: str = "general_chat"
     plan: List[PlanStep] = field(default_factory=list)
     current_step_index: int = 0
     observations: List[Dict[str, Any]] = field(default_factory=list)

@@ -1,0 +1,8 @@
+{
+  "intent": "AGENT",
+  "task_type": "web_research",
+  "steps_executed": 3,
+  "tool_calls": 3,
+  "finish_reason": "artifact_produced",
+  "elapsed": 133.55
+}

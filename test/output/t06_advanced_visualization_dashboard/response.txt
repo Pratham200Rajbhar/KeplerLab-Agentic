@@ -1,0 +1,10 @@
+**executive_dashboard.png** has been generated as a high-resolution (1600×1200) professional dark-themed dashboard containing all six requested panels:
+
+1. **YoY Revenue Growth Waterfall Chart** — Visualizes year-over-year revenue changes with positive/negative contributors clearly labeled.
+2. **2025 Product Market Share Donut Chart** — Shows percentage distribution of sales across products for 2025.
+3. **Region Performance Grouped Bar Chart** — Compares revenue and units sold across regions side-by-side.
+4. **Monthly Units Sold with 3-Month Rolling Average** — Time-series plot highlighting trend smoothing.
+5. **Profit Margin by Product Box Plot** — Displays distribution statistics (median, IQR, outliers) per product.
+6. **6-Month Revenue Forecast (Linear Regression)** — Projects future revenue based on historical trend.
+
+The dashboard uses a cohesive dark theme with professional color palettes (e.g., deep blue/grey backgrounds, high-contrast accent colors for clarity). All visual elements are annotated with titles, legends, and axis labels for executive readability.

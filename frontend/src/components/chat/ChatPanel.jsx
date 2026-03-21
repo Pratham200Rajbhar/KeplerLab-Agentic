@@ -13,6 +13,7 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ChatHistorySidebar from './ChatHistorySidebar';
 import EmptyState from './EmptyState';
+import SelectionMenu from './SelectionMenu';
 
 
 export default function ChatPanelWithParams() {
@@ -95,13 +96,13 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
   
   useEffect(() => {
-    if (!currentNotebook?.id || currentNotebook.isDraft || draftMode) {
-      setSessions([]);
-      return;
-    }
-
     let cancelled = false;
     (async () => {
+      if (!currentNotebook?.id || currentNotebook.isDraft || draftMode) {
+        setSessions([]);
+        return;
+      }
+      
       const data = await loadSessions();
       if (cancelled) return;
       setSessions(data);
@@ -115,8 +116,13 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
     })();
 
     return () => { cancelled = true; };
-    
-  }, [currentNotebook?.id, draftMode]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, loadSessions]);
+
+  useEffect(() => {
+    if (sessions.length > 0 && !currentSessionId) {
+      setCurrentSessionId(sessions[0].id);
+    }
+  }, [sessions, currentSessionId, setCurrentSessionId]);
 
   
   useEffect(() => {
@@ -128,7 +134,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
     loadHistory(currentSessionId);
     
-  }, [currentNotebook?.id, currentSessionId, draftMode]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, currentSessionId, draftMode, clearMessages, isStreaming, loadHistory]);
 
   
   const handleCreateSession = useCallback(async () => {
@@ -337,6 +343,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
           isStreaming={isStreaming}
           disabled={false}
         />
+        <SelectionMenu />
       </div>
     </main>
   );

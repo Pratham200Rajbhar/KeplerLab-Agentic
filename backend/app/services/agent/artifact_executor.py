@@ -35,6 +35,9 @@ _FILE_KEYWORDS = {
     "generate", "create", "make", "build", "export", "produce", "save",
     "write", "download", "output", "give", "show", "plot", "visualize",
     "draw", "display",
+    # Additional common verbs people use when requesting file outputs:
+    "compile", "convert", "prepare", "put", "turn", "format", "organize",
+    "assemble", "summarize", "summarise", "collect", "gather",
 }
 
 _FORMAT_KEYWORDS = {
@@ -42,7 +45,16 @@ _FORMAT_KEYWORDS = {
     "powerpoint", "pptx", "html", "report", "file", "image", "chart",
     "png", "jpg", "svg", "scatter", "plot", "histogram", "graph", "figure",
     "heatmap", "boxplot", "visualization", "bar chart", "line chart",
+    "note", "notes",
 }
+
+# Matches "into a PDF", "into an Excel file", "into a structured report", etc.
+import re as _re
+_INTO_FORMAT_PATTERN = _re.compile(
+    r"\binto\s+(?:a\s+|an\s+|the\s+)?(?:\w+\s+)*"
+    r"(?:pdf|csv|excel|xlsx|docx|word|pptx|powerpoint|html|report|document|spreadsheet|chart)\b",
+    _re.IGNORECASE,
+)
 
 
 def detect_file_generation_intent(goal: str) -> bool:
@@ -50,8 +62,9 @@ def detect_file_generation_intent(goal: str) -> bool:
     lower = goal.lower()
     has_action = any(kw in lower for kw in _FILE_KEYWORDS)
     has_format = any(kw in lower for kw in _FORMAT_KEYWORDS)
-    has_as     = " as " in lower  # "… as pdf", "… as csv"
-    return (has_action and has_format) or has_as
+    has_as     = " as " in lower        # "… as pdf", "… as csv"
+    has_into   = bool(_INTO_FORMAT_PATTERN.search(lower))  # "… into a PDF document"
+    return (has_action and has_format) or has_as or has_into
 
 
 # ── Artifact helpers (mirrors code_execution.py logic) ────────────────
@@ -96,27 +109,35 @@ def _detect_output_files(
     """
     if not work_dir or not os.path.isdir(work_dir):
         return []
-    skip = {"_kepler_exec.py", "__pycache__"}
+    skip = {"_kepler_exec.py", "_kepler_bin", "__pycache__", "Main.java"}
     if skip_filenames:
         skip.update(skip_filenames)
     results: List[Dict[str, Any]] = []
-    for fname in os.listdir(work_dir):
-        if fname in skip or fname.startswith("__"):
-            continue
-        fpath = os.path.join(work_dir, fname)
-        if not os.path.isfile(fpath):
-            continue
-        size = os.path.getsize(fpath)
-        if size == 0:
-            continue
-        mime = _guess_mime(fname)
-        results.append({
-            "filename": fname,
-            "mime": mime,
-            "display_type": _classify_display_type(fname, mime),
-            "path": fpath,
-            "size": size,
-        })
+    for root, dirs, files in os.walk(work_dir):
+        # Prune hidden / cache dirs in-place
+        dirs[:] = [d for d in dirs if not d.startswith("__") and not d.startswith(".")]
+        for fname in files:
+            if fname in skip or fname.startswith("__") or fname.startswith("."):
+                continue
+            # Also skip the script files (.py, .js etc.) by prefix
+            if fname.startswith("_kepler_exec"):
+                continue
+            fpath = os.path.join(root, fname)
+            if not os.path.isfile(fpath):
+                continue
+            size = os.path.getsize(fpath)
+            if size == 0:
+                continue
+            mime = _guess_mime(fname)
+            # Use a relative path as display name (e.g. "output/chart.png")
+            display_name = os.path.relpath(fpath, work_dir)
+            results.append({
+                "filename": display_name,
+                "mime": mime,
+                "display_type": _classify_display_type(fname, mime),
+                "path": fpath,
+                "size": size,
+            })
     return results
 
 
@@ -201,13 +222,18 @@ ORIGINAL CODE:
 {code}
 ```
 
-Fix the code so it runs without errors. Common fixes:
-- Missing imports (add them at the top)
-- Wrong file paths (use files in the current directory)
-- Library API changes
-- Syntax errors
+Fix the code so it runs without errors and PRODUCES the output file. Key rules:
+- For PDF (fpdf2):
+  • set_font style MUST be "" or "B"/"I"/"U"/"BI". NEVER "Normal"/"Regular"
+  • ALWAYS use multi_cell(0, h, text) — w=0 means full page width, prevents "not enough space" errors
+  • Sanitize ALL text: unicodedata.normalize('NFKD', str(s)).encode('latin-1','replace').decode('latin-1')
+  • Keep default margins, font size <= 18 for title, <= 13 for headers, <= 11 for body
+- For charts: plt.savefig() then plt.close(), NEVER plt.show()
+- Use relative filenames only (no subdirectories)
+- print("SAVED: <filename>") after writing each file
+- Do NOT wrap in try/except that silently swallows errors — let errors propagate so they can be diagnosed
 
-Return ONLY the corrected code — no markdown fences, no explanation.
+Return ONLY the corrected {language} code — no markdown fences, no explanation.
 """
 
 
@@ -245,7 +271,7 @@ async def execute_code_and_collect_artifacts(
     notebook_id: str,
     session_id: str,
     language: str = "python",
-    timeout: int = 60,
+    timeout: int = 600,
     material_ids: Optional[List[str]] = None,
 ) -> AsyncIterator[str | ToolResult]:
     """
@@ -261,6 +287,7 @@ async def execute_code_and_collect_artifacts(
 
     validation = validate_code(code)
     if not validation.is_safe:
+        logger.warning("Code validation failed: %s", validation.violations)
         yield ToolResult(
             tool_name="python",
             success=False,
@@ -269,7 +296,7 @@ async def execute_code_and_collect_artifacts(
         )
         return
 
-    code = sanitize_code(code)
+    code = sanitize_code(code, ensure_file_output=True)
     work_dir = tempfile.mkdtemp(prefix="kepler_agent_")
 
     try:
@@ -297,26 +324,51 @@ async def execute_code_and_collect_artifacts(
                 current_code, work_dir=work_dir, timeout=timeout, language=language,
             )
 
-            if result.exit_code == 0:
-                break
+            # Determine if this attempt truly succeeded
+            is_hard_fail = result.exit_code != 0
+            is_silent_fail = False
+            if not is_hard_fail:
+                # Code exited 0 — check for "silent failure" where a try/except
+                # caught the real error and no files were produced.
+                _stdout_lower = (result.stdout or "").lower()
+                _error_hints = ("error", "traceback", "exception", "failed", "not enough")
+                _has_error = any(kw in _stdout_lower for kw in _error_hints)
+                _has_output = any(
+                    os.path.isfile(os.path.join(work_dir, f))
+                    and os.path.getsize(os.path.join(work_dir, f)) > 0
+                    and not f.startswith("_kepler")
+                    for f in os.listdir(work_dir)
+                )
+                if _has_error and not _has_output:
+                    is_silent_fail = True
 
-            # Attempt repair if we have retries left
+            if not is_hard_fail and not is_silent_fail:
+                break  # genuine success
+
+            # Attempt repair if retries remain
             if attempt < MAX_CODE_REPAIR_ATTEMPTS:
-                error_msg = result.stderr or result.error or "unknown error"
-                logger.info("Code execution failed (attempt %d), attempting repair…", attempt + 1)
+                if is_hard_fail:
+                    error_msg = result.stderr or result.error or "unknown error"
+                else:
+                    error_msg = (result.stdout or "")[-1500:]
+                logger.error(
+                    "Code execution %s (attempt %d) exit_code=%d\n--- OUTPUT ---\n%s\n--- END ---",
+                    "failed" if is_hard_fail else "silent-failed",
+                    attempt + 1, result.exit_code, error_msg[:2000],
+                )
+                logger.info("Attempting code repair (attempt %d)…", attempt + 1)
                 yield sse("agent_status", {
                     "phase": "executing",
-                    "message": f"Code failed, repairing (attempt {attempt + 2})…",
+                    "message": f"Code issue detected, repairing (attempt {attempt + 2})…",
                 })
-
                 fixed = await _attempt_code_repair(current_code, error_msg, language)
                 if fixed:
                     repair_validation = validate_code(fixed)
                     if repair_validation.is_safe:
-                        current_code = sanitize_code(fixed)
+                        current_code = sanitize_code(fixed, ensure_file_output=True)
                         continue
-                # Repair failed or invalid — break out
-                break
+            # Repair failed or out of retries — break
+            break
 
         if result.exit_code != 0:
             yield ToolResult(
@@ -329,6 +381,34 @@ async def execute_code_and_collect_artifacts(
 
         # Detect output files — exclude input material files
         output_files = _detect_output_files(work_dir, skip_filenames=input_filenames)
+
+        # Cross-check: parse stdout "SAVED: <filename>" and verify those files exist
+        if result.stdout:
+            import re as _re
+            saved_mentions = _re.findall(r"(?:SAVED|Saved):\s*(\S+)", result.stdout)
+            detected_names = {of["filename"] for of in output_files}
+            for mentioned in saved_mentions:
+                mentioned = mentioned.strip().strip("'\"")
+                if mentioned not in detected_names:
+                    fpath = os.path.join(work_dir, mentioned)
+                    if os.path.isfile(fpath) and os.path.getsize(fpath) > 0:
+                        mime = _guess_mime(mentioned)
+                        output_files.append({
+                            "filename": mentioned,
+                            "mime": mime,
+                            "display_type": _classify_display_type(mentioned, mime),
+                            "path": fpath,
+                            "size": os.path.getsize(fpath),
+                        })
+                        logger.info("  → stdout cross-check found: %s", mentioned)
+
+        logger.info(
+            "Artifact detection: found %d output file(s) in %s",
+            len(output_files), work_dir,
+        )
+        for of in output_files:
+            logger.info("  → %s (%d bytes, %s)", of["filename"], of["size"], of["mime"])
+
         registered: List[Dict[str, Any]] = []
 
         for art in output_files:
@@ -336,6 +416,8 @@ async def execute_code_and_collect_artifacts(
             if record:
                 registered.append(record)
                 yield sse("agent_artifact", record)
+            else:
+                logger.warning("Failed to register artifact: %s", art.get("filename"))
 
         content_parts = []
         if result.stdout:
@@ -343,12 +425,33 @@ async def execute_code_and_collect_artifacts(
         if registered:
             filenames = ", ".join(r["filename"] for r in registered)
             content_parts.append(f"Generated file(s): {filenames}")
+        elif not registered and output_files:
+            content_parts.append("Files were produced but could not be registered as artifacts.")
+        elif not output_files:
+            # Log debugging info when no files detected despite successful execution
+            logger.warning(
+                "Code executed OK but no output files found in %s. "
+                "Stdout (last 500 chars): %s",
+                work_dir, (result.stdout or "")[-500:]
+            )
+            # List what IS in the directory for debugging
+            try:
+                all_entries = os.listdir(work_dir)
+                logger.warning("  Work dir contents: %s", all_entries)
+            except Exception:
+                pass
 
         yield ToolResult(
             tool_name="python",
             success=True,
-            content="\n".join(content_parts) or "Code executed successfully.",
-            metadata={"code": current_code, "language": language, "phase": "executed"},
+            content="\n".join(content_parts) or "Code executed successfully (no output files detected).",
+            metadata={
+                "code": current_code,
+                "language": language,
+                "phase": "executed",
+                "output_file_count": len(output_files),
+                "registered_count": len(registered),
+            },
             artifacts=registered,
         )
     except Exception as exc:

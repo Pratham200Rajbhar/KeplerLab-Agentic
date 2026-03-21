@@ -8,6 +8,9 @@ import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import { ChevronDown, ChevronRight, ExternalLink, Loader2, Search, Globe, CheckCircle2 } from 'lucide-react';
 import { sanitizeStreamingMarkdown } from './MarkdownRenderer';
+import MarkdownRenderer from './MarkdownRenderer';
+import CollapsibleActionBlock from './CollapsibleActionBlock';
+import AnnotatedText from './AnnotatedText';
 
 
 const CitationCtx = createContext({ citations: [], activeCite: null, onCite: () => {} });
@@ -110,45 +113,11 @@ function ResearchProgressPanel({ researchState }) {
 }
 
 
-/* ── Citation badge ── */
-function CiteChip({ 'data-n': rawN }) {
-  const { citations, activeCite, onCite } = useContext(CitationCtx);
-  const [hovered, setHovered] = useState(false);
-  const num = parseInt(rawN, 10);
-  if (!num) return <span>[{rawN}]</span>;
-
-  const src = citations[num - 1];
-  const domain = src?.domain || tryHostname(src?.url) || `Source ${num}`;
-  const title = src?.title || domain;
-  const isActive = activeCite === num;
-
-  return (
-    <span className="relative inline-flex items-center align-middle mx-0.5">
-      <button
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={() => onCite(num)}
-        className={`inline-flex items-center text-[10px] font-mono leading-none px-1 py-0.5 rounded transition-colors ${
-          isActive
-            ? 'bg-accent/20 text-accent border border-accent/30'
-            : 'bg-white/[0.06] text-text-muted border border-white/[0.08] hover:bg-white/[0.1] hover:text-text-secondary'
-        }`}
-      >
-        {num}
-      </button>
-      {hovered && src && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-max max-w-[200px] bg-surface-raised border border-white/[0.1] rounded-lg shadow-xl px-2.5 py-1.5 pointer-events-none">
-          <span className="block text-[11px] font-medium text-text-secondary truncate leading-snug">{title}</span>
-          <span className="block text-[10px] text-text-muted mt-0.5">{domain}</span>
-        </span>
-      )}
-    </span>
-  );
-}
+// function CiteChip({ 'data-n': rawN }) { ... } removed
 
 
 const MD_COMPONENTS = {
-  cite: CiteChip,
+  // cite: CiteChip,
   h1: ({ children }) => <h1 className="md-heading md-h1">{children}</h1>,
   h2: ({ children }) => <h2 className="md-heading md-h2">{children}</h2>,
   h3: ({ children }) => <h3 className="md-heading md-h3">{children}</h3>,
@@ -190,11 +159,11 @@ const MD_COMPONENTS = {
 /* ── Markdown renderer ── */
 function ResearchMarkdown({ content, isDone }) {
   const text = isDone ? content : sanitizeStreamingMarkdown(content);
-  const withCites = injectCiteTags(text);
+  // const withCites = injectCiteTags(text);
   return (
     <div className="text-sm text-text-primary leading-relaxed">
       <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MD_COMPONENTS}>
-        {withCites}
+        {text}
       </ReactMarkdown>
       {!isDone && (
         <span className="inline-block w-[2px] h-[1em] bg-text-muted/50 ml-0.5 align-text-bottom animate-pulse" aria-hidden="true" />
@@ -324,6 +293,7 @@ function ResearchReport({
   isDone = false,
   isStreaming = false,
   researchState = null,
+  messageBlocks = [],
 }) {
   const [activeCite, setActiveCite] = useState(null);
 
@@ -350,25 +320,67 @@ function ResearchReport({
           <ResearchProgressPanel researchState={researchState} />
         )}
 
-        {/* Done sources summary */}
-        {isDone && (
-          <ResearchSummaryPanel sources={sources} citations={citations} />
-        )}
+        {/* Done sources summary removed */}
 
         {/* Markdown report */}
         {hasContent && (
-          <ResearchMarkdown content={streamingContent} isDone={isDone} />
+          isDone && messageBlocks.length > 0 ? (
+            <div className="space-y-6">
+              {(() => {
+                const parents = [];
+                const annotationsByParent = {};
+                const orphanedAnnotations = [];
+                const seenAnnotations = new Set();
+
+                messageBlocks.forEach(block => {
+                  const match = block.text.match(/^\[(translate|ask|simplify|explain):([^:]+):?([^\]]*)\]\s*(.*)/s);
+                  if (match) {
+                    const [, action, parentId, selection, body] = match;
+                    const uniqueKey = `${action}:${parentId}:${selection}:${body.trim()}`;
+                    
+                    if (!seenAnnotations.has(uniqueKey)) {
+                      seenAnnotations.add(uniqueKey);
+                      if (!annotationsByParent[parentId]) annotationsByParent[parentId] = [];
+                      annotationsByParent[parentId].push(block);
+                    }
+                  } else {
+                    parents.push(block);
+                  }
+                });
+
+                const parentIds = new Set(parents.map(p => p.id));
+                Object.keys(annotationsByParent).forEach(pid => {
+                  if (!parentIds.has(pid)) {
+                    orphanedAnnotations.push(...annotationsByParent[pid]);
+                    delete annotationsByParent[pid];
+                  }
+                });
+
+                return (
+                  <>
+                    {parents.map((block) => (
+                      <div key={block.id} data-block-id={block.id}>
+                        <AnnotatedText 
+                          content={block.text} 
+                          annotations={annotationsByParent[block.id] || []} 
+                        />
+                      </div>
+                    ))}
+                    {orphanedAnnotations.map((block) => (
+                      <div key={block.id} data-block-id={block.id}>
+                        <CollapsibleActionBlock content={block.text} />
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <ResearchMarkdown content={streamingContent} isDone={isDone} />
+          )
         )}
 
-        {/* Citation source bubbles at bottom */}
-        {isDone && hasContent && (
-          <SourceBubbles
-            citations={citations}
-            sources={sources}
-            activeCite={activeCite}
-            onCite={handleCite}
-          />
-        )}
+        {/* Citation source bubbles removed */}
       </div>
     </CitationCtx.Provider>
   );

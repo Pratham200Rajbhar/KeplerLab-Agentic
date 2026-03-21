@@ -35,6 +35,23 @@ async def execute_tool(
     step = state.current_step
     query = step.description if step else state.goal
 
+    # Enrich query with prior observations so later steps see earlier results
+    # (e.g. step 2 python_auto sees step 1 web_search context)
+    if state.observations and state.current_step_index > 0:
+        prev_context = state.summary_of_observations(max_chars=6000)
+        query = (
+            f"{query}\n\n"
+            f"── Context from previous steps ──\n"
+            f"{prev_context}"
+        )
+
+    # Inject multi-turn conversation history for generative/code tools only.
+    # Do NOT inject into search tools (web_search, rag) — that would corrupt the search query.
+    _HISTORY_AWARE_TOOLS = {"python_auto", "research"}
+    if tool_name in _HISTORY_AWARE_TOOLS and memory.chat_history:
+        chat_ctx = memory.format_chat_history(max_turns=8, max_chars_per_msg=300)
+        query = f"{query}\n\n── Prior conversation ──\n{chat_ctx}"
+
     kwargs = {
         "query": query,
         "user_id": state.user_id,

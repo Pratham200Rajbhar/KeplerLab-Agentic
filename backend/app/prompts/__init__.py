@@ -138,6 +138,14 @@ def get_code_generation_prompt(user_request: str) -> str:
         "{{USER_REQUEST}}": user_request,
     })
 
+def get_agent_codegen_prompt(step_goal: str, prior_context: str) -> str:
+    """Prompt for generating Python code from previously-collected research data
+    (e.g. step 2 in a web_search → python_auto pipeline)."""
+    return _render("agent_codegen_prompt.txt", {
+        "{{STEP_GOAL}}": step_goal,
+        "{{PRIOR_CONTEXT}}": prior_context,
+    })
+
 def get_data_analysis_prompt(
     filename: str, shape: str, columns: str,
     dtypes: str, describe: str, user_request: str,

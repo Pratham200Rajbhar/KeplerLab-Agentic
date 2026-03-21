@@ -1,0 +1,11 @@
+{
+  "test_id": 4,
+  "name": "t04_research_ai_news_pdf",
+  "description": "Deep research on recent AI news \u2192 structured PDF",
+  "finish_reason": "unknown",
+  "steps_executed": 0,
+  "artifacts_count": 0,
+  "artifacts_downloaded": 0,
+  "downloaded_files": [],
+  "response_length": 3665
+}

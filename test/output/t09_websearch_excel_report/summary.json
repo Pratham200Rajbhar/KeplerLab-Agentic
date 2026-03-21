@@ -1,0 +1,15 @@
+{
+  "test_id": 9,
+  "name": "t09_websearch_excel_report",
+  "description": "Web search on tech stocks \u2192 structured Excel + chart",
+  "finish_reason": "artifact_produced",
+  "steps_executed": 2,
+  "artifacts_count": 3,
+  "artifacts_downloaded": 3,
+  "downloaded_files": [
+    "chart.png",
+    "stock_analysis.xlsx",
+    "stock_analysis_report.pdf"
+  ],
+  "response_length": 1476
+}

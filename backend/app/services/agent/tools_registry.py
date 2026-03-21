@@ -84,6 +84,8 @@ async def _run_python_auto(
             yield item
 
     if not generated_code:
+        logger.error("python_auto: code generation returned empty code for query: %s",
+                      query[:200])
         yield ToolResult(
             tool_name="python",
             success=False,
@@ -91,6 +93,8 @@ async def _run_python_auto(
             metadata={"error": "no_code_generated"},
         )
         return
+
+    logger.info("python_auto: generated %d chars of %s code", len(generated_code), language)
 
     # Step 2: Auto-execute the generated code + register artifacts
     async for item in execute_code_and_collect_artifacts(

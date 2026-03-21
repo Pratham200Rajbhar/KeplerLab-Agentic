@@ -13,13 +13,13 @@ from app.services.llm_service.llm import get_llm
 logger = logging.getLogger(__name__)
 
 # ── Deep research constants ──
-# Target: 70-80 websites across multiple search rounds
-_FETCH_TIMEOUT = 30          # per-URL timeout (seconds)
+# Target: 30-50 websites across multiple search rounds
+_FETCH_TIMEOUT = 15          # per-URL timeout (seconds)
 _RESULTS_PER_QUERY = 10      # DDG results per search query
-_URLS_PER_ROUND = 15          # max URLs to fetch per round
-_MAX_ROUNDS = 5               # search → fetch rounds
-_INITIAL_SUB_QUESTIONS = 8    # sub-questions on first decomposition
-_FOLLOWUP_QUERIES = 4         # follow-up queries per gap round
+_URLS_PER_ROUND = 10          # max URLs to fetch per round
+_MAX_ROUNDS = 3               # search → fetch rounds
+_INITIAL_SUB_QUESTIONS = 5    # sub-questions on first decomposition
+_FOLLOWUP_QUERIES = 3         # follow-up queries per gap round
 _SOURCE_TEXT_LIMIT = 4000     # chars kept per fetched page
 
 
@@ -228,7 +228,7 @@ async def stream_research(
                 return
 
             # Check if we have enough sources or need more rounds
-            if len(all_sources) >= 70 or rnd >= _MAX_ROUNDS:
+            if len(all_sources) >= 30 or rnd >= _MAX_ROUNDS:
                 break
 
             # Find gaps for next round
@@ -273,14 +273,14 @@ async def stream_research(
             "- Cover every aspect, sub-topic, perspective, and nuance found in the sources.\n"
             "- Use markdown headers (##, ###) to organize sections clearly.\n"
             "- Include specific data, numbers, statistics, names, dates from the sources.\n"
-            "- Reference sources using [1], [2], etc. inline.\n"
             "- The report should be at least 2000-3000 words. Be thorough.\n"
             "- Include: introduction, detailed analysis of each angle, comparisons, "
             "real-world implications, expert opinions found in sources, conclusion.\n"
             "- DO NOT start with 'Here is' or 'I found'. Write directly as a report.\n"
             "- DO NOT include any URLs, hyperlinks, or web addresses anywhere in the report.\n"
-            "- Cite sources inline using only bracketed numbers like [1], [2], [3].\n"
-            "- End with a 'Sources' section listing only: '1. Title — domain' (no URLs).\n"
+            "- DO NOT include any inline citations, bracketed numbers (like [1], [2]), or source references.\n"
+            "- DO NOT include a 'Sources' or 'References' section at the end.\n"
+            "- Focus purely on the content and analysis, providing a clean, professional report.\n"
         )
 
         full_report = []

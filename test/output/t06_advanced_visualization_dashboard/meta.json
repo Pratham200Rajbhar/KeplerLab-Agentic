@@ -1,0 +1,8 @@
+{
+  "intent": "AGENT",
+  "task_type": "dataset_analysis",
+  "steps_executed": 1,
+  "tool_calls": 1,
+  "finish_reason": "artifact_produced",
+  "elapsed": 64.23
+}

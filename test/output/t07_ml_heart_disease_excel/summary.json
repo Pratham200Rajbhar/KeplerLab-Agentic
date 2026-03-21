@@ -1,0 +1,14 @@
+{
+  "test_id": 7,
+  "name": "t07_ml_heart_disease_excel",
+  "description": "Heart disease dataset \u2192 gradient boosting + report Excel",
+  "finish_reason": "artifact_produced",
+  "steps_executed": 1,
+  "artifacts_count": 2,
+  "artifacts_downloaded": 2,
+  "downloaded_files": [
+    "heart_disease_report.xlsx",
+    "roc_curve.png"
+  ],
+  "response_length": 1195
+}

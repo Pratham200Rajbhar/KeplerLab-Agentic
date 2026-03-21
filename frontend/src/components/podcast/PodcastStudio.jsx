@@ -9,7 +9,7 @@ import PodcastPlayer from './PodcastPlayer';
 import PodcastModeSelector from './PodcastModeSelector';
 
 
-export default function PodcastStudio() {
+export default function PodcastStudio({ onClose, onRequestNew }) {
   const phase = usePodcastStore((s) => s.phase);
   const session = usePodcastStore((s) => s.session);
   const loadSessions = usePodcastStore((s) => s.loadSessions);
@@ -25,28 +25,18 @@ export default function PodcastStudio() {
   }, [currentNotebook?.id, draftMode, loadSessions]);
 
   
-  if (phase === 'idle' || phase === 'library') {
-    return (
-      <PodcastSessionLibrary
-        onNewPodcast={() => setPhase('mode-select')}
-        onSelectSession={(sessionId) => {
-          usePodcastStore.getState().loadSession(sessionId);
-        }}
-      />
-    );
-  }
-
-  if (phase === 'mode-select') {
-    return <PodcastModeSelector />;
-  }
-
   if (phase === 'generating') {
     return <PodcastGenerating />;
   }
 
   if (phase === 'player' && session) {
-    return <PodcastPlayer />;
+    return <PodcastPlayer onClose={onClose} />;
   }
 
-  return null;
+  return (
+    <div className="flex flex-col items-center justify-center p-8 text-center gap-4">
+      <p className="text-sm text-[var(--text-muted)]">No active podcast session.</p>
+      <button onClick={onRequestNew} className="btn-primary">Create New Podcast</button>
+    </div>
+  );
 }

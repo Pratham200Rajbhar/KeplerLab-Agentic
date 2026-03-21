@@ -21,14 +21,12 @@ export default function NotebookPage() {
   const id = params.id;
   const { user } = useAuthStore();
 
-  const {
-    currentNotebook,
-    setCurrentNotebook,
-    setDraftMode,
-    resetForNotebookSwitch,
-    newlyCreatedNotebookId,
-    setNewlyCreatedNotebookId,
-  } = useAppStore();
+  const currentNotebook = useAppStore((s) => s.currentNotebook);
+  const setCurrentNotebook = useAppStore((s) => s.setCurrentNotebook);
+  const setDraftMode = useAppStore((s) => s.setDraftMode);
+  const resetForNotebookSwitch = useAppStore((s) => s.resetForNotebookSwitch);
+  const newlyCreatedNotebookId = useAppStore((s) => s.newlyCreatedNotebookId);
+  const setNewlyCreatedNotebookId = useAppStore((s) => s.setNewlyCreatedNotebookId);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);

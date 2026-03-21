@@ -40,13 +40,23 @@ export default function Sidebar({ onNavigate }) {
   const { user } = useAuthStore();
   const toast = useToast();
 
-  const {
-    materials, setMaterials, currentMaterial, setCurrentMaterial,
-    addMaterial, setLoadingState, loading, currentNotebook, setCurrentNotebook,
-    selectedSources, setSelectedSources, toggleSourceSelection, selectAllSources,
-    deselectAllSources, newlyCreatedNotebookId, setNewlyCreatedNotebookId,
-    draftMode, setDraftMode,
-  } = useAppStore();
+  const materials = useAppStore((s) => s.materials);
+  const setMaterials = useAppStore((s) => s.setMaterials);
+  const currentMaterial = useAppStore((s) => s.currentMaterial);
+  const setCurrentMaterial = useAppStore((s) => s.setCurrentMaterial);
+  const addMaterial = useAppStore((s) => s.addMaterial);
+  const setLoadingState = useAppStore((s) => s.setLoadingState);
+  const loading = useAppStore((s) => s.loading);
+  const currentNotebook = useAppStore((s) => s.currentNotebook);
+  const setCurrentNotebook = useAppStore((s) => s.setCurrentNotebook);
+  const selectedSources = useAppStore((s) => s.selectedSources);
+  const setSelectedSources = useAppStore((s) => s.setSelectedSources);
+  const toggleSourceSelection = useAppStore((s) => s.toggleSourceSelection);
+  const selectAllSources = useAppStore((s) => s.selectAllSources);
+  const deselectAllSources = useAppStore((s) => s.deselectAllSources);
+  const setNewlyCreatedNotebookId = useAppStore((s) => s.setNewlyCreatedNotebookId);
+  const draftMode = useAppStore((s) => s.draftMode);
+  const setDraftMode = useAppStore((s) => s.setDraftMode);
 
   const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
 
@@ -138,7 +148,7 @@ export default function Sidebar({ onNavigate }) {
         }
       }
     }
-  }, [setMaterials, loadMaterials, setSelectedSources, handlePodcastWsEvent]);
+  }, [setMaterials, loadMaterials, setSelectedSources, handlePodcastWsEvent, currentNotebook, setCurrentNotebook]);
 
   useMaterialUpdates(user?.id || null, handleWsMessage);
 

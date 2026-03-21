@@ -129,11 +129,12 @@ async def block_followup(
                             order={"blockIndex": "desc"},
                         )
                         next_idx = (max_block.blockIndex + 1) if max_block else 0
+                        prefix = f"[{request.action}:{request.block_id}{f':{request.selection}' if request.selection else ''}]"
                         await prisma.responseblock.create(
                             data={
                                 "chatMessageId": block.chatMessageId,
                                 "blockIndex": next_idx,
-                                "text": f"[{request.action}] {full_response}",
+                                "text": f"{prefix} {full_response}",
                             }
                         )
                 except Exception as persist_err:

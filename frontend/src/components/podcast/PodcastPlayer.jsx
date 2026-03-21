@@ -30,7 +30,7 @@ function buildTabs(doubtsCount) {
   ];
 }
 
-export default function PodcastPlayer() {
+export default function PodcastPlayer({ onClose }) {
   const session      = usePodcastStore((s) => s.session);
   const segments     = usePodcastStore((s) => s.segments);
   const chapters     = usePodcastStore((s) => s.chapters);
@@ -115,7 +115,7 @@ export default function PodcastPlayer() {
 
       {}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--border)] shrink-0">
-        <button onClick={() => setPhase('idle')} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
           <ChevronLeft className="w-4 h-4 text-[var(--text-muted)]" />
         </button>
         <div className="flex-1 min-w-0">

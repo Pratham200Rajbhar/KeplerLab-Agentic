@@ -83,36 +83,24 @@ class AgentMemory:
             lines.append(f"\nRecommended tool routing:\n{rec}")
         return "\n".join(lines)
 
-    def build_context_for_reflection(self) -> str:
-        parts = [f"Goal: {self._state.goal}"]
-
-        completed = self._state.completed_steps_summary()
-        if completed:
-            parts.append(f"Completed steps:\n{completed}")
-
-        observations = self._state.summary_of_observations(max_chars=4000)
-        if observations:
-            parts.append(f"Observations:\n{observations}")
-
-        if self._state.artifacts:
-            artifact_list = ", ".join(a.get("filename", "unknown") for a in self._state.artifacts)
-            parts.append(f"Generated artifacts: {artifact_list}")
-
-        return "\n\n".join(parts)
-
-    def build_context_for_tool(self) -> str:
-        parts = [f"Goal: {self._state.goal}"]
-
-        step = self._state.current_step
-        if step:
-            parts.append(f"Current step: {step.description}")
-
-        observations = self._state.summary_of_observations(max_chars=3000)
-        if observations:
-            parts.append(f"Previous observations:\n{observations}")
-
-        return "\n\n".join(parts)
-
     @property
     def chat_history(self) -> List[Dict[str, str]]:
         return self._chat_history
+
+    def format_chat_history(self, max_turns: int = 10, max_chars_per_msg: int = 400) -> str:
+        """Return chat history as a formatted string for inclusion in prompts."""
+        if not self._chat_history:
+            return "No prior conversation."
+        recent = self._chat_history[-max_turns:]
+        lines = []
+        for m in recent:
+            role = m.get("role", "user").capitalize()
+            content = (m.get("content") or "").strip()[:max_chars_per_msg]
+            lines.append(f"{role}: {content}")
+        return "\n".join(lines)
+
+    def format_session_artifacts(self) -> str:
+        """Return artifact filenames generated this session for history context."""
+        if not self._state.artifacts:
+            return "None"
+        return ", ".join(a.get("filename", "unknown") for a in self._state.artifacts)

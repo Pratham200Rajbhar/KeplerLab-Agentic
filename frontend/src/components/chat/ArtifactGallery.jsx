@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { memo, useMemo, useState } from 'react';
 import {
   Image as ImageIcon,
@@ -185,12 +186,13 @@ function ChartPreview({ artifact, onDownload }) {
           onClick={() => setFullscreen(true)}
         >
           {}
-          <img
+          <Image
             src={artifact.downloadUrl}
             alt={artifact.filename}
-            className="w-full h-full object-contain"
+            fill
+            className="object-contain"
             onError={() => setError(true)}
-            loading="lazy"
+            unoptimized
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
             <span className="opacity-0 group-hover:opacity-100 text-xs text-white bg-black/50 px-2 py-1 rounded">
@@ -218,10 +220,12 @@ function ChartPreview({ artifact, onDownload }) {
           onClick={() => setFullscreen(false)}
         >
           {}
-          <img
+          <Image
             src={artifact.downloadUrl}
             alt={artifact.filename}
-            className="max-w-full max-h-full object-contain"
+            fill
+            className="object-contain"
+            unoptimized
           />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
             <span className="text-sm text-white/80">{artifact.filename}</span>

@@ -1,0 +1,8 @@
+The Lorenz system has been solved numerically with parameters σ=10, ρ=28, β=8/3 and initial conditions (1,1,1) over t=[0,50]. The following files have been generated and are available for download:
+
+- **lorenz_3d.png**: 3D visualization of the Lorenz attractor, showing the characteristic butterfly-shaped chaotic trajectory.
+- **lorenz_timeseries.png**: Time series plots of x(t), y(t), and z(t) over the integration interval, demonstrating the aperiodic oscillatory behavior.
+- **lorenz_phase.png**: Three 2D phase space projections — x-y, x-z, and y-z — revealing the planar slices of the attractor structure.
+- **lorenz_model.pkl**: Serialized Python model containing the numerical solution (t, x, y, z arrays) for further analysis.
+
+The largest Lyapunov exponent estimate is **0.7993**, confirming chaotic dynamics (positive exponent indicates sensitive dependence on initial conditions).

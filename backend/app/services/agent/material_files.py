@@ -97,25 +97,61 @@ def copy_materials_to_workdir(
     return copied
 
 
+def _read_file_schema(fname: str, fpath: str, ext: str) -> str:
+    """Read columns, dtypes, and sample rows directly from a structured file."""
+    try:
+        import pandas as pd
+        if ext == ".csv":
+            df = pd.read_csv(fpath, nrows=5, encoding_errors="replace")
+        elif ext in (".xlsx", ".xls"):
+            df = pd.read_excel(fpath, nrows=5)
+        elif ext == ".tsv":
+            df = pd.read_csv(fpath, sep="\t", nrows=5, encoding_errors="replace")
+        elif ext == ".parquet":
+            import pyarrow.parquet as pq  # noqa: F401
+            df = pd.read_parquet(fpath).head(5)
+        elif ext == ".ods":
+            df = pd.read_excel(fpath, engine="odf", nrows=5)
+        else:
+            return ""
+        parts = [f"    Schema ({len(df.columns)} columns):"]
+        parts.append(f"    Columns: {', '.join(str(c) for c in df.columns)}")
+        dtypes_str = ", ".join(f"{c}({t})" for c, t in df.dtypes.items())
+        parts.append(f"    Types:   {dtypes_str}")
+        sample = df.head(3).to_string(index=False)
+        indented = "\n".join("    " + line for line in sample.splitlines())
+        parts.append(f"    Sample (first 3 rows):\n{indented}")
+        return "\n".join(parts)
+    except Exception as exc:
+        logger.debug("Could not read schema for '%s': %s", fname, exc)
+        return ""
+
+
 def build_files_prompt_section(file_map: Dict[str, str]) -> str:
-    """Build the prompt section listing available dataset files."""
+    """Build the prompt section listing available dataset files with inline schema."""
     if not file_map:
         return ""
     lines = ["AVAILABLE DATASET FILES (already in working directory — use these exact names):"]
-    for fname in file_map:
+    for fname, fpath in file_map.items():
         ext = os.path.splitext(fname)[1].lower()
-        hint = ""
-        if ext in (".csv",):
-            hint = "  → load with: pd.read_csv('{name}')".format(name=fname)
+        if ext == ".csv":
+            hint = f"  → pd.read_csv('{fname}')"
         elif ext in (".xlsx", ".xls"):
-            hint = "  → load with: pd.read_excel('{name}')".format(name=fname)
-        elif ext in (".parquet",):
-            hint = "  → load with: pd.read_parquet('{name}')".format(name=fname)
-        elif ext in (".json",):
-            hint = "  → load with: pd.read_json('{name}')".format(name=fname)
+            hint = f"  → pd.read_excel('{fname}')"
+        elif ext == ".parquet":
+            hint = f"  → pd.read_parquet('{fname}')"
+        elif ext == ".json":
+            hint = f"  → pd.read_json('{fname}')"
+        else:
+            hint = ""
         lines.append(f"  - {fname}{hint}")
+        if ext in (".csv", ".xlsx", ".xls", ".tsv", ".ods", ".parquet"):
+            schema = _read_file_schema(fname, fpath, ext)
+            if schema:
+                lines.append(schema)
     lines.append(
         "\nCRITICAL: Use ONLY the filenames listed above. "
-        "Do NOT invent filenames like 'dataset.csv' or 'data.csv'."
+        "Do NOT invent filenames like 'dataset.csv' or 'data.csv'. "
+        "Reference the exact column names shown in the schema above."
     )
     return "\n".join(lines)

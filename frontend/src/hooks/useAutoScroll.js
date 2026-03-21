@@ -20,7 +20,6 @@ export default function useAutoScroll(deps = []) {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior });
     userScrolledRef.current = false;
-    setIsAtBottom(true);
   }, []);
 
   
@@ -42,13 +41,13 @@ export default function useAutoScroll(deps = []) {
     return () => el.removeEventListener('scroll', handleScroll);
   }, [checkIsAtBottom]);
 
-  
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!userScrolledRef.current) {
       scrollToBottom('smooth');
     }
-    
-  }, deps);
+  }, [...deps, scrollToBottom]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   return { containerRef, scrollToBottom, isAtBottom };
 }

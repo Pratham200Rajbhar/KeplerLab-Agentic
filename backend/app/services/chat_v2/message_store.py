@@ -15,21 +15,42 @@ async def ensure_session(
     session_id: Optional[str],
     title: str = "New Chat",
 ) -> str:
+    """
+    Guarantee that a ChatSession row exists and return its ID.
+
+    When *session_id* is provided:
+      - If the row already exists → optionally update the title and return it.
+      - If the row does NOT exist → create it with that exact ID (upsert).
+    When *session_id* is None → create a brand-new session and return the new ID.
+    """
+    title_trunc = title[:100]
     if session_id:
         try:
             existing = await prisma.chatsession.find_unique(where={"id": session_id})
-            if existing and (not existing.title or existing.title in ("", "New Chat")):
+            if existing is None:
+                # Session ID was provided (e.g. by API client) but the row doesn't
+                # exist yet — create it so subsequent FK references don't fail.
+                await prisma.chatsession.create(
+                    data={
+                        "id": session_id,
+                        "notebookId": notebook_id,
+                        "userId": user_id,
+                        "title": title_trunc,
+                    }
+                )
+                logger.info("ensure_session: created missing session %s", session_id)
+            elif not existing.title or existing.title in ("", "New Chat"):
                 new_title = title[:30] + ("..." if len(title) > 30 else "")
                 await prisma.chatsession.update(
                     where={"id": session_id}, data={"title": new_title}
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error("ensure_session failed for id=%s: %s", session_id, exc)
         return session_id
 
     try:
         session = await prisma.chatsession.create(
-            data={"notebookId": notebook_id, "userId": user_id, "title": title[:100]}
+            data={"notebookId": notebook_id, "userId": user_id, "title": title_trunc}
         )
         return str(session.id)
     except Exception as exc:

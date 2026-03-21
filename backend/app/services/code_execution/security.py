@@ -84,14 +84,21 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as _plt_module
 _original_show = _plt_module.show
+_kepler_chart_counter = 0
 
 def _capture_show():
-    import io, base64
+    import io, base64, os
+    global _kepler_chart_counter
     buf = io.BytesIO()
-    _plt_module.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+    _plt_module.savefig(buf, format='png', dpi=150, bbox_inches='tight')
     buf.seek(0)
     encoded = base64.b64encode(buf.read()).decode('utf-8')
     print(f"__CHART__:{encoded}")
+    # Also save to file so agent artifact detection finds it
+    _kepler_chart_counter += 1
+    _fname = f'chart_output_{_kepler_chart_counter}.png'
+    _plt_module.savefig(_fname, dpi=150, bbox_inches='tight')
+    print(f"SAVED: {_fname}")
     _plt_module.close('all')
 
 _plt_module.show = _capture_show
@@ -147,7 +154,14 @@ def validate_code(code: str) -> ValidationResult:
 
     return result
 
-def sanitize_code(code: str) -> str:
+def sanitize_code(code: str, ensure_file_output: bool = False) -> str:
+    """Sanitize generated code before sandbox execution.
+
+    Args:
+        code: Raw generated code.
+        ensure_file_output: If True (agent mode), also replace bare plt.show()
+            calls with savefig + close to guarantee chart files on disk.
+    """
     code = code.strip()
 
     needs_capture = (
@@ -157,5 +171,29 @@ def sanitize_code(code: str) -> str:
     )
     if needs_capture:
         code = _CHART_CAPTURE_SNIPPET.strip() + "\n\n" + code
+
+    # In agent mode, replace any remaining bare plt.show() calls (where the
+    # programmer forgot to savefig) with explicit file saves.  The chart capture
+    # snippet already saves to file, but this catches edge cases where show()
+    # is called in unusual ways.
+    if ensure_file_output and needs_capture:
+        # Also ensure matplotlib doesn't try to open a display
+        if "plt.ion()" in code:
+            code = code.replace("plt.ion()", "plt.ioff()")
+
+    # Always neutralize plotly .show() since it tries to open a browser.
+    # Inject a monkey-patch that replaces show() with write_html() automatically.
+    if "plotly" in code and ".show()" in code:
+        _plotly_shim = (
+            "import plotly.graph_objects as _pg\n"
+            "_orig_show = _pg.Figure.show\n"
+            "def _safe_show(self, *a, **kw):\n"
+            "    import os, hashlib\n"
+            "    name = 'plotly_' + hashlib.md5(str(id(self)).encode()).hexdigest()[:8] + '.html'\n"
+            "    self.write_html(name)\n"
+            "    print(f'SAVED: {name}')\n"
+            "_pg.Figure.show = _safe_show\n"
+        )
+        code = _plotly_shim + code
 
     return code

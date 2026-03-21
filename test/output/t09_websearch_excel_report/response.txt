@@ -1,0 +1,14 @@
+The Excel workbook **stock_analysis.xlsx** and bar chart **stock_comparison.png** have been generated and are available for download.
+
+**stock_analysis.xlsx** contains:
+- **Sheet 1 (Raw Data)**: Includes company, price, 52-week high, 52-week low, PE ratio, and analyst rating for NVIDIA, Microsoft, Google (Alphabet), Apple, and Meta.
+- **Sheet 2 (Formatted Summary)**: Conditional formatting applied to highlight overbought/undervalued metrics (e.g., price near 52w high, low PE ratio, strong analyst ratings).
+
+**stock_comparison.png**: A vertical bar chart comparing key metrics across the five companies — price, PE ratio, and distance from 52-week high/low — enabling quick visual benchmarking.
+
+Key data points extracted from the search results [1][2][3]:
+- **NVIDIA**: Closed at $180.99 (as of Dec 20, 2025), with analysts citing historically cheap valuation relative to the semiconductor index; Truist and Bernstein maintain Buy/Outperform ratings with $275 price targets [1].
+- **Google & Meta**: Collaborating to improve TPU–PyTorch compatibility, potentially reducing reliance on NVIDIA’s CUDA ecosystem [1].
+- **Valuation context**: NVIDIA and Meta are emerging as value plays in 2026, seen as undervalued vs. the S&P 500 index [3].
+
+Note: Full price, PE, and 52w high/low values for all five companies were not fully specified in the search snippets; the workbook reflects the best available data with placeholders where exact figures were omitted in the sources.

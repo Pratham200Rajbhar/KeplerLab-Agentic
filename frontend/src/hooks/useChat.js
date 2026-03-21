@@ -231,7 +231,13 @@ export default function useChat({ notebookId, materialIds = [] }) {
               }));
             },
             meta: () => {},
-            blocks: () => {},
+            blocks: (data) => {
+              if (!data?.blocks) return;
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                blocks: data.blocks,
+              }));
+            },
 
             // Agent events
             agent_status: (data) => {
@@ -347,7 +353,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
         abortRef.current = null;
       }
     },
-    [notebookId, materialIds, isStreaming, addMessage, setStreaming, setError, setSessionId, updateLastMessage],
+    [notebookId, materialIds, isStreaming, addMessage, setStreaming, setError, setSessionId],
   );
 
   
@@ -417,6 +423,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 createdAt: new Date(msg.created_at).getTime(),
                 intentOverride,
                 agentState,
+                blocks: msg.blocks,
                 artifacts: msg.artifacts?.length ? msg.artifacts : undefined,
                 codeBlocks,
               };

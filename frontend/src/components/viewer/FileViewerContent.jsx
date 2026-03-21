@@ -63,9 +63,8 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
       </button>
 
       <div className="w-px h-5 bg-[var(--border)]" />
-
-      {}
-      {}
+ 
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://www.google.com/s2/favicons?sz=32&domain=${domain}`}
         alt=""

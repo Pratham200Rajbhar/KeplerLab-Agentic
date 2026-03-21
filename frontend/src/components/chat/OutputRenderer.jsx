@@ -43,7 +43,7 @@ function ImageRenderer({ url, filename }) {
         className="rounded-lg overflow-hidden border border-border/30 cursor-pointer"
         onClick={() => setFullscreen(true)}
       >
-        {}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
           alt={filename}
@@ -51,14 +51,14 @@ function ImageRenderer({ url, filename }) {
           onError={() => setError(true)}
         />
       </div>
-
-      {}
+ 
+      {/* Fullscreen view */}
       {fullscreen && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer"
           onClick={() => setFullscreen(false)}
         >
-          {}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={url}
             alt={filename}

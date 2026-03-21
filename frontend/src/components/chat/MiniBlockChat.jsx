@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { getBlockFollowup } from '@/lib/api/chat';
 import MarkdownRenderer from './MarkdownRenderer';
 
-export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang = '' }) {
+export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang = '', selection = '' }) {
   const [question, setQuestion] = useState(
     action === 'simplify' ? 'Simplify this' :
     action === 'explain' ? 'Explain in more depth' :
@@ -15,27 +15,14 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
   const [streaming, setStreaming] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
+  const hasFired = useRef(false);
 
-  useEffect(() => {
-    if (action !== 'ask') handleSend();
-    else inputRef.current?.focus();
-    
-  }, [action]);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) onClose?.();
-    };
-    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 100);
-    return () => { clearTimeout(timer); document.removeEventListener('mousedown', handler); };
-  }, [onClose]);
-
-  const handleSend = async (text = question) => {
+  const handleSend = useCallback(async (text = question) => {
     if (!text.trim() || streaming) return;
     setStreaming(true);
     setResponse('');
     try {
-      const res = await getBlockFollowup(blockId, text, action);
+      const res = await getBlockFollowup(blockId, text, action, selection);
       if (!res.body) throw new Error('No response');
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -63,7 +50,16 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
     } finally {
       setStreaming(false);
     }
-  };
+  }, [action, blockId, question, selection, streaming]);
+
+  useEffect(() => {
+    if (action !== 'ask' && !hasFired.current) {
+        hasFired.current = true;
+        handleSend();
+    } else if (action === 'ask') {
+        inputRef.current?.focus();
+    }
+  }, [action, handleSend]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }

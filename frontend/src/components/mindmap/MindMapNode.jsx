@@ -2,67 +2,79 @@
 
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
-const DEPTH_COLORS = [
-  { bg: 'bg-[var(--accent)]', border: 'border-[var(--accent)]', text: 'text-[var(--accent)]' },
-  { bg: 'bg-blue-500/15', border: 'border-blue-500/30', text: 'text-blue-400' },
-  { bg: 'bg-purple-500/15', border: 'border-purple-500/30', text: 'text-purple-400' },
-  { bg: 'bg-green-500/15', border: 'border-green-500/30', text: 'text-green-400' },
-  { bg: 'bg-orange-500/15', border: 'border-orange-500/30', text: 'text-orange-400' },
-  { bg: 'bg-pink-500/15', border: 'border-pink-500/30', text: 'text-pink-400' },
-];
-
+/**
+ * MindMapNode (Scratch Redesign)
+ * Standardized pill-shaped node with explicitly placed handles as direct children.
+ * This ensures React Flow can calculate the connection points accurately.
+ */
 function MindMapNode({ id, data }) {
-  const depth = Math.min(data.depth || 0, DEPTH_COLORS.length - 1);
-  const colors = DEPTH_COLORS[depth];
   const isHighlighted = data.highlighted;
   const isCollapsed = data.collapsed;
+  const hasChildren = data.hasChildren;
+  const depth = data.depth || 0;
 
   return (
     <div
-      className={`group relative px-4 py-2.5 rounded-xl border transition-all cursor-pointer min-w-[120px] max-w-[220px] ${
-        isHighlighted
-          ? 'border-yellow-400 bg-yellow-400/10 ring-2 ring-yellow-400/30 shadow-lg shadow-yellow-400/10'
-          : `${colors.bg} ${colors.border} hover:shadow-md`
-      }`}
+      onClick={() => hasChildren && data.onToggleCollapse?.(id)}
+      className={`
+        group relative px-6 py-2.5 rounded-full border transition-all duration-300 
+        cursor-pointer min-w-[120px] max-w-[320px] flex items-center justify-between gap-3
+        ${isHighlighted 
+          ? 'bg-[#3b4252] border-blue-400/50 shadow-[0_0_15px_rgba(96,165,250,0.2)]' 
+          : 'bg-[#2e3440] border-[#4c566a] hover:border-[#81a1c1]'
+        }
+      `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-[var(--border)] !w-2 !h-2 !border-0" />
+      {/* Target Handle (Input) - Placed as direct child for coordinate accuracy */}
+      {depth > 0 && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!opacity-0 !w-4 !h-4 !border-0"
+          style={{ left: '0px', top: '50%', transform: 'translateY(-50%)' }}
+        />
+      )}
 
-      <div className="flex items-center gap-1.5">
-        {}
-        {data.onToggleCollapse && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              data.onToggleCollapse(id);
-            }}
-            className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
-          >
-            {isCollapsed ? (
-              <ChevronRight className={`w-3 h-3 ${colors.text}`} />
-            ) : (
-              <ChevronDown className={`w-3 h-3 ${colors.text}`} />
-            )}
-          </button>
-        )}
-
-        <span
-          className={`text-xs font-medium leading-snug ${
-            isHighlighted ? 'text-yellow-300' : 'text-[var(--text-primary)]'
-          }`}
-        >
+      {/* Label Container */}
+      <div className="flex-1 min-w-0 py-1">
+        <span className="text-[13px] font-medium text-[#eceff4] text-center block leading-tight tracking-tight">
           {data.label}
         </span>
       </div>
 
-      {data.description && (
-        <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed">
-          {data.description}
-        </p>
+      {/* Source Handle (Output) - Placed as direct child for coordinate accuracy */}
+      {/* It's positioned behind the chevron button hub */}
+      {hasChildren && !isCollapsed && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!opacity-0 !w-4 !h-4 !border-0"
+          style={{ right: '0px', top: '50%', transform: 'translateY(-50%)' }}
+        />
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-[var(--border)] !w-2 !h-2 !border-0" />
+      {/* Visual Hub (Chevron Toggle) */}
+      {hasChildren && (
+        <div className="relative flex items-center justify-center mr-[-10px] shrink-0 pointer-events-none">
+          <div 
+            className={`
+              w-7 h-7 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300
+              ${isCollapsed 
+                ? 'bg-[#3b4252] text-[#81a1c1] border-[#4c566a]' 
+                : 'bg-[#81a1c1] text-[#2e3440] border-[#81a1c1]'
+              }
+            `}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { memo, useState, useMemo } from 'react';
 import {
   Clock, FileText, Layers, BookOpen, Mic, Presentation,
   MoreVertical, Pencil, Trash2, Brain
@@ -39,7 +39,7 @@ function contentSubtitle(item) {
   }
 }
 
-export default function ContentHistory({ items = [], activeId, onSelect, onDelete, onRename, filter }) {
+const ContentHistory = memo(({ items = [], activeId, onSelect, onDelete, onRename, filter }) => {
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   const filtered = useMemo(() => {
@@ -70,10 +70,10 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
                 : 'hover:bg-[var(--surface-overlay)] border border-transparent'
             }`}
           >
-            {}
+            {/* Type Icon */}
             <div className="shrink-0">{contentTypeIcon(item.content_type)}</div>
 
-            {}
+            {/* Title & Info */}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                 {item.title || `${item.content_type} ${item.id?.slice(0, 6)}`}
@@ -83,7 +83,7 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
               </p>
             </div>
 
-            {}
+            {/* Menu */}
             <div className="relative shrink-0">
               <button
                 onClick={(e) => {
@@ -129,4 +129,6 @@ export default function ContentHistory({ items = [], activeId, onSelect, onDelet
       })}
     </div>
   );
-}
+});
+
+export default ContentHistory;

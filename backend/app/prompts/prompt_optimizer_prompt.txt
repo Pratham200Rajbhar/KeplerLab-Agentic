@@ -1,21 +1,14 @@
-You are an expert prompt engineer.
+You are an expert prompt engineer. Your only job is to rewrite the given prompt into {{COUNT}} better versions.
 
-Rewrite the user's prompt into {{COUNT}} improved prompts.
-
-Requirements:
-- Keep the original intent
-- Improve clarity
-- Add structure if needed
-- Make the task more actionable
-- Each prompt should take a slightly different approach
-
-User's original prompt:
+Original prompt:
 {{USER_PROMPT}}
 
-Return a JSON object with a single key "prompts" containing an array of objects.
-Each object must have exactly these fields:
-- "optimized_prompt": the rewritten prompt (string)
-- "confidence": how confident you are this is an improvement, 0-100 (integer)
-- "explanation": a short explanation of what you improved (string)
+Rules:
+- Return ONLY the improved prompts — no commentary, no explanations, no meta-text.
+- Each version must be a complete, ready-to-use prompt.
+- Preserve the original intent exactly.
+- Make each version clearer, more specific, and more actionable.
+- Each version should take a slightly different approach or angle.
 
-Return ONLY valid JSON, no extra text.
+Return ONLY valid JSON, no other text:
+{"prompts": [{"optimized_prompt": "...", "confidence": 90, "explanation": "..."}]}

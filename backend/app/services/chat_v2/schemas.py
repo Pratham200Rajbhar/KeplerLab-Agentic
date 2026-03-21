@@ -28,6 +28,7 @@ class BlockFollowupRequest(BaseModel):
     block_id: str
     question: str = Field(..., min_length=1, max_length=10000)
     action: str = "ask"
+    selection: Optional[str] = None
 
 class SuggestionRequest(BaseModel):
     partial_input: str = Field(..., min_length=1, max_length=1000)

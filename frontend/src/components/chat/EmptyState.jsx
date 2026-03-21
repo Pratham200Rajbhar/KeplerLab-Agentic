@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { BookOpen, Loader2, RefreshCw } from 'lucide-react';
 import { getEmptySuggestions } from '@/lib/api/chat';
 import useAppStore from '@/stores/useAppStore';
 
-export default function EmptyState({ onSend }) {
+const EmptyState = memo(({ onSend }) => {
   const selectedSources = useAppStore((s) => s.selectedSources);
   const materials = useAppStore((s) => s.materials);
 
@@ -13,14 +13,12 @@ export default function EmptyState({ onSend }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  
   const completedSelected = selectedSources.filter((id) => {
     const mat = materials.find((m) => m.id === id);
     return mat && mat.status === 'completed';
   });
   const hasResources = completedSelected.length > 0;
 
-  
   const selectionKey = completedSelected.slice().sort().join(',');
   const prevKeyRef = useRef(null);
 
@@ -56,8 +54,7 @@ export default function EmptyState({ onSend }) {
     if (prevKeyRef.current === selectionKey) return;
     prevKeyRef.current = selectionKey;
     loadSuggestions(hasResources ? completedSelected : []);
-    
-  }, [selectionKey]);
+  }, [selectionKey, loadSuggestions, hasResources, completedSelected]);
 
   const handleSuggestionClick = (text) => {
     onSend?.(text);
@@ -66,8 +63,6 @@ export default function EmptyState({ onSend }) {
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 select-none overflow-y-auto">
       <div className="max-w-lg w-full">
-
-        {}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-text-primary mb-2 tracking-tight">
             How can I help you?
@@ -79,7 +74,6 @@ export default function EmptyState({ onSend }) {
           )}
         </div>
 
-        {}
         {hasResources && (
           <div
             className="rounded-xl border p-4 mb-6"
@@ -136,7 +130,6 @@ export default function EmptyState({ onSend }) {
           </div>
         )}
 
-        {}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
@@ -183,8 +176,9 @@ export default function EmptyState({ onSend }) {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
-}
+});
+
+export default EmptyState;

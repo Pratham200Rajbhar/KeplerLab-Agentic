@@ -183,7 +183,7 @@ export default function ChatHistorySidebar({
             <div className="w-16 h-16 rounded-3xl bg-surface-raised shadow-sm flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
               <MessageCircle className="w-6 h-6 text-text-muted" />
             </div>
-            <h3 className="text-[15px] text-text-primary font-medium mb-1">It's quiet here</h3>
+            <h3 className="text-[15px] text-text-primary font-medium mb-1">It&apos;s quiet here</h3>
             <p className="text-[13px] text-text-secondary leading-relaxed max-w-[200px]">
               Start a new conversation to begin exploring topics.
             </p>

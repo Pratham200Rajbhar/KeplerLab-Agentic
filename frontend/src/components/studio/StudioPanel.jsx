@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Layers,
@@ -18,7 +18,7 @@ import {
 import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
-import usePodcast from '@/hooks/usePodcast';
+import usePodcastStore from '@/stores/usePodcastStore';
 import { generateFlashcards, generateQuiz, generatePresentation } from '@/lib/api/generation';
 import { generateMindMap } from '@/lib/api/mindmap';
 import {
@@ -67,6 +67,34 @@ function LoadingSpinner() {
 }
 
 
+const PodcastProgress = memo(({ phase, progress }) => {
+  if (phase !== 'generating' || !progress) return null;
+  return (
+    <div className="mt-3 p-3 rounded-xl border border-[var(--accent-border,var(--accent))] bg-[var(--accent-subtle)] animate-fade-in">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="loading-spinner w-3.5 h-3.5" />
+        <span className="text-xs font-medium text-[var(--text-primary)] flex-1 truncate">
+          {progress.message || 'Generating podcast\u2026'}
+        </span>
+        <span className="text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
+          {Math.round(progress.pct || 0)}%
+        </span>
+      </div>
+      <div
+        className="h-1.5 rounded-full bg-[var(--surface-overlay)] overflow-hidden"
+        role="progressbar"
+        aria-valuenow={Math.round(progress.pct || 0)}
+        aria-valuemax={100}
+      >
+        <div
+          className="h-full rounded-full bg-[var(--accent)] transition-all duration-700 ease-out"
+          style={{ width: `${Math.max(progress.pct || 0, 3)}%` }}
+        />
+      </div>
+    </div>
+  );
+});
+
 export default function StudioPanel() {
   
   const currentNotebook = useAppStore((s) => s.currentNotebook);
@@ -78,7 +106,17 @@ export default function StudioPanel() {
   const setQuiz = useAppStore((s) => s.setQuiz);
   const setLoadingState = useAppStore((s) => s.setLoadingState);
 
-  const podcast = usePodcast();
+  const podcastPhase = usePodcastStore((s) => s.phase);
+  const podcastSessions = usePodcastStore((s) => s.sessions);
+  const podcastProgress = usePodcastStore((s) => s.generationProgress);
+  const podcastError = usePodcastStore((s) => s.error);
+  const loadPodcastSessions = usePodcastStore((s) => s.loadSessions);
+  const loadPodcastSession = usePodcastStore((s) => s.loadSession);
+  const removePodcastSession = usePodcastStore((s) => s.removeSession);
+  const createPodcast = usePodcastStore((s) => s.create);
+  const startPodcastGeneration = usePodcastStore((s) => s.startGeneration);
+  const setPodcastError = usePodcastStore((s) => s.setError);
+
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -125,7 +163,13 @@ export default function StudioPanel() {
   }, []);
 
   
+  const prevNotebookId = useRef(null);
+  
   useEffect(() => {
+    const notebookId = currentNotebook?.id;
+    if (notebookId === prevNotebookId.current) return;
+    prevNotebookId.current = notebookId;
+
     setFlashcardsData(null);
     setQuizData(null);
     setPresentationData(null);
@@ -139,8 +183,11 @@ export default function StudioPanel() {
     setQuiz(null);
     setActiveView(null);
 
-    podcast.loadSessions();
-
+    // Use notebook ID and draft state to control loading
+    if (currentNotebook?.id) {
+      loadPodcastSessions(currentNotebook.id, currentNotebook.isDraft || draftMode);
+    }
+ 
     const loadSavedContent = async () => {
       if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
         try {
@@ -173,8 +220,14 @@ export default function StudioPanel() {
       }
     };
     loadSavedContent();
-    
-  }, [currentNotebook?.id]);
+      }, [
+      currentNotebook?.id, 
+      currentNotebook?.isDraft, 
+      draftMode, 
+      loadPodcastSessions, 
+      setFlashcards, 
+      setQuiz
+    ]);
 
   
   const handleMouseMove = useCallback(
@@ -405,20 +458,31 @@ export default function StudioPanel() {
         setMindmapData(item.data);
         setShowMindmapCanvas(true);
         break;
+      case 'podcast':
+        loadPodcastSession(item.id);
+        setActiveView('podcast');
+        break;
     }
   };
 
   const handleHistoryRename = async (newTitle) => {
     if (!newTitle?.trim() || !renamingHistoryItem || !currentNotebook) return;
     try {
-      const updated = await updateGeneratedContent(
-        currentNotebook.id,
-        renamingHistoryItem.id,
-        newTitle.trim()
-      );
-      setContentHistory((prev) =>
-        prev.map((item) => (item.id === renamingHistoryItem.id ? updated : item))
-      );
+      if (renamingHistoryItem.content_type === 'podcast') {
+        const { updateSessionTitle } = usePodcastStore.getState();
+        await updateSessionTitle(renamingHistoryItem.id, newTitle.trim());
+        // Podcast title update is reflected via store reload or local state update
+        loadPodcastSessions(currentNotebook.id);
+      } else {
+        const updated = await updateGeneratedContent(
+          currentNotebook.id,
+          renamingHistoryItem.id,
+          newTitle.trim()
+        );
+        setContentHistory((prev) =>
+          prev.map((item) => (item.id === renamingHistoryItem.id ? updated : item))
+        );
+      }
       setShowRenameHistoryModal(false);
       setRenamingHistoryItem(null);
       setNewHistoryTitle('');
@@ -439,8 +503,12 @@ export default function StudioPanel() {
     if (!ok || !currentNotebook) return;
 
     try {
-      await deleteGeneratedContent(currentNotebook.id, item.id);
-      setContentHistory((prev) => prev.filter((c) => c.id !== item.id));
+      if (item.content_type === 'podcast') {
+        await removePodcastSession(item.id);
+      } else {
+        await deleteGeneratedContent(currentNotebook.id, item.id);
+        setContentHistory((prev) => prev.filter((c) => c.id !== item.id));
+      }
 
       if (activeView === item.content_type) {
         switch (item.content_type) {
@@ -513,6 +581,19 @@ export default function StudioPanel() {
     setShowRenameHistoryModal(true);
   };
 
+  const combinedHistory = useMemo(() => {
+    const podcastItems = (podcastSessions || []).map((s) => ({
+      id: s.id,
+      content_type: 'podcast',
+      title: s.title || 'AI Podcast',
+      created_at: s.createdAt,
+      data: s,
+    }));
+    return [...contentHistory, ...podcastItems].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+  }, [contentHistory, podcastSessions]);
+
   
   const podcastGeneratingRef = useRef(false);
 
@@ -522,9 +603,9 @@ export default function StudioPanel() {
     setShowPodcastConfig(false);
     setLoadingState('podcast', true);
     try {
-      const session = await podcast.create(config);
+      const session = await createPodcast(config, currentNotebook?.id, selectedSources);
       if (session?.id) {
-        await podcast.startGeneration(session.id);
+        await startPodcastGeneration(session.id);
       }
     } catch (err) {
       toast.error(err.message || 'Failed to start podcast generation.');
@@ -534,19 +615,16 @@ export default function StudioPanel() {
   };
 
   useEffect(() => {
-    const { phase: podPhase } = podcast;
-    if (podPhase === 'generating') {
+    if (podcastPhase === 'generating') {
       setLoadingState('podcast', true);
     } else {
       setLoadingState('podcast', false);
       podcastGeneratingRef.current = false;
     }
-    if (podPhase === 'player') {
-      podcast.loadSessions();
-      setActiveView('podcast');
+    if (podcastPhase === 'player' && !activeView) {
+      loadPodcastSessions(currentNotebook?.id);
     }
-    
-  }, [podcast.phase]);
+  }, [podcastPhase, loadPodcastSessions, setLoadingState, activeView, currentNotebook?.id]);
 
   
   const outputs = [
@@ -585,12 +663,12 @@ export default function StudioPanel() {
       id: 'podcast',
       title: 'AI Podcast',
       description:
-        podcast.phase === 'generating'
-          ? podcast.generationProgress?.message || 'Generating\u2026'
+        podcastPhase === 'generating'
+          ? podcastProgress?.message || 'Generating\u2026'
           : 'Two-host AI podcast from your sources',
       icon: <Mic className="w-5 h-5" />,
       onClick: () => {
-        if (podcast.phase !== 'generating') setShowPodcastConfig(true);
+        if (podcastPhase !== 'generating') setShowPodcastConfig(true);
       },
     },
     {
@@ -603,7 +681,7 @@ export default function StudioPanel() {
     },
   ];
 
-  const completedPodcastSessions = (podcast.sessions || []).filter(
+  const completedPodcastSessions = (podcastSessions || []).filter(
     (s) =>
       s.status === 'ready' ||
       s.status === 'playing' ||
@@ -648,7 +726,7 @@ export default function StudioPanel() {
       case 'explainer':
         return <InlineExplainerView explainer={explainerData} onClose={() => setActiveView(null)} />;
       case 'podcast':
-        return <PodcastStudio onRequestNew={() => setShowPodcastConfig(true)} />;
+        return <PodcastStudio onClose={() => setActiveView(null)} onRequestNew={() => setShowPodcastConfig(true)} />;
 
       default:
         return null;
@@ -769,11 +847,11 @@ export default function StudioPanel() {
           ) : effectiveMaterial ? (
             <>
               <p className="text-[11.5px] text-text-muted mb-4 leading-relaxed">
-                {selectedSources.size > 1 ? (
+                {selectedSources.length > 1 ? (
                   <>
                     Generating from{' '}
                     <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
-                      {selectedSources.size} sources
+                      {selectedSources.length} sources
                     </span>
                   </>
                 ) : (
@@ -810,47 +888,46 @@ export default function StudioPanel() {
               </div>
 
               {}
-              {podcast.phase === 'generating' && podcast.generationProgress && (
-                <div className="mt-3 p-3 rounded-xl border border-[var(--accent-border,var(--accent))] bg-[var(--accent-subtle)] animate-fade-in">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="loading-spinner w-3.5 h-3.5" />
-                    <span className="text-xs font-medium text-[var(--text-primary)] flex-1 truncate">
-                      {podcast.generationProgress.message || 'Generating podcast…'}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
-                      {Math.round(podcast.generationProgress.pct || 0)}%
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 rounded-full bg-[var(--surface-overlay)] overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={Math.round(podcast.generationProgress.pct || 0)}
-                    aria-valuemax={100}
-                  >
-                    <div
-                      className="h-full rounded-full bg-[var(--accent)] transition-all duration-700 ease-out"
-                      style={{ width: `${Math.max(podcast.generationProgress.pct || 0, 3)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+              <PodcastProgress phase={podcastPhase} progress={podcastProgress} />
 
               {}
-              {podcast.error && podcast.phase === 'idle' && (
+              {podcastError && podcastPhase === 'idle' && (
                 <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
-                    <span className="text-xs text-[var(--danger)]">{podcast.error}</span>
+                    <span className="text-xs text-[var(--danger)]">{podcastError}</span>
                   </div>
                   <button
                     onClick={() => {
-                      podcast.setError(null);
+                      setPodcastError(null);
                       setShowPodcastConfig(true);
                     }}
                     className="mt-2 text-xs text-[var(--danger)] hover:underline"
                   >
                     Try Again
                   </button>
+                </div>
+              )}
+
+              {}
+              {combinedHistory.length > 0 && (
+                <div className="mt-10 flex flex-col">
+                  {}
+                  <div className="flex items-center gap-3 py-2 shrink-0">
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                    <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                      Created
+                    </span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+                  <div className="pb-2">
+                    <ContentHistory
+                      items={combinedHistory}
+                      onSelect={handleViewHistoryItem}
+                      onRename={openHistoryRenameModal}
+                      onDelete={handleHistoryDelete}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -868,31 +945,6 @@ export default function StudioPanel() {
             </div>
           )}
           </div>{}
-
-          {}
-          {contentHistory.length > 0 && (
-            <div
-              className="border-t border-[var(--border)] flex flex-col shrink-0"
-              style={{ maxHeight: '42%' }}
-            >
-              {}
-              <div className="flex items-center gap-3 px-4 py-2 shrink-0">
-                <div className="flex-1 h-px bg-[var(--border)]" />
-                <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
-                  Created
-                </span>
-                <div className="flex-1 h-px bg-[var(--border)]" />
-              </div>
-              <div className="overflow-y-auto px-2 pb-2">
-                <ContentHistory
-                  items={contentHistory}
-                  onSelect={handleViewHistoryItem}
-                  onRename={openHistoryRenameModal}
-                  onDelete={handleHistoryDelete}
-                />
-              </div>
-            </div>
-          )}
         </div>{}
       </aside>
     </>

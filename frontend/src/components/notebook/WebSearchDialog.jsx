@@ -128,8 +128,13 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                         <h3 className={`text-[15px] font-bold leading-tight transition-colors line-clamp-1 ${isSelected || isPreviewed ? 'text-text-primary' : 'text-text-primary/80'}`}>{result.title}</h3>
                         <div className="flex items-center gap-2.5">
                           {domain && (
-                            
-                            <img src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`} alt="" className="shrink-0 w-4 h-4 rounded-sm object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+                              alt=""
+                              className="shrink-0 w-4 h-4 rounded-sm object-contain"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
                           )}
                           <div className="flex items-center gap-2 truncate">
                             <span className="text-[11px] font-bold uppercase tracking-widest text-text-secondary truncate max-w-[120px]">{domain}</span>
@@ -155,7 +160,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
               <div className="px-8 pt-8 pb-10 flex-1 overflow-y-auto custom-scrollbar relative">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="p-3 bg-black/40 rounded-2xl shadow-inner group hover:bg-black/60 transition-all">
-                    {}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`} alt="" className="w-8 h-8 rounded-md object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
                   </div>
                   <h4 className="text-[12px] font-bold text-text-muted tracking-[0.3em] uppercase">{getDomain(previewResult.link)}</h4>

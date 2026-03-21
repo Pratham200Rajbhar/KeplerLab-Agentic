@@ -23,6 +23,20 @@ _WEB_SEARCH_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Tasks that need code execution even when materials are selected.
+# These should route to AGENT (which runs python_auto), not RAG.
+_DATA_ANALYSIS_KEYWORDS = re.compile(
+    r"\b(plot|chart|graph|histogram|scatter|heatmap|boxplot|bar chart|"
+    r"pie chart|line chart|visuali[sz]e|visualization|dashboard|"
+    r"train model|predict|regression|classif|cluster|correlation|"
+    r"machine learning|random forest|xgboost|logistic|"
+    r"EDA|exploratory data|statistics|distribution|"
+    r"generate .{0,30}(?:pdf|csv|excel|xlsx|docx|report|pptx)|"
+    r"create .{0,30}(?:pdf|csv|excel|xlsx|docx|report|pptx)|"
+    r"export .{0,20}(?:pdf|csv|excel|xlsx|docx|report)|confusion matrix)\b",
+    re.IGNORECASE,
+)
+
 def route_capability(
     message: str,
     material_ids: List[str],
@@ -41,7 +55,13 @@ def route_capability(
         logger.info("Capability routed to AGENT (/agent prefix)")
         return Capability.AGENT
 
+    # When materials are selected AND the task needs code execution
+    # (charts, ML, file generation), route to AGENT — not RAG.
+    # RAG is only for text-based Q&A over documents.
     if material_ids:
+        if _DATA_ANALYSIS_KEYWORDS.search(message) or _CODE_KEYWORDS.search(message):
+            logger.info("Capability routed to AGENT (materials + data analysis task)")
+            return Capability.AGENT
         logger.info("Capability routed to RAG (materials selected: %d)", len(material_ids))
         return Capability.RAG
 
