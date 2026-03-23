@@ -3,14 +3,23 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
-from app.prompts import get_chat_prompt
+from app.prompts import compose_prompt, get_chat_prompt
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = (
-    "You are **KeplerLab AI** — a brilliant, knowledgeable assistant. "
-    "Be thorough when depth matters; concise when it doesn't. "
-    "Use Markdown (headers, bullets, code blocks, bold) to make responses scannable."
+_SYSTEM_PROMPT = compose_prompt(
+    [
+        "system/base_system.md",
+        "shared/style.md",
+        "shared/formatting.md",
+        "chat/chat_base.md",
+    ],
+    {
+        "mode": "chat",
+        "question": "",
+        "conversation_history": "",
+        "instructions": "",
+    },
 )
 
 def build_messages(

@@ -45,6 +45,8 @@ class CreateSessionRequest(BaseModel):
 class OptimizePromptsRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=5000)
     count: int = Field(default=4, ge=2, le=6)
+    material_ids: Optional[List[str]] = Field(default_factory=list)
+    notebook_id: Optional[str] = None
 
 class ToolResult(BaseModel):
 

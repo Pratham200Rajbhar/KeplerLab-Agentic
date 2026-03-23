@@ -4,6 +4,7 @@ import logging
 import time
 from typing import Any, AsyncIterator, Dict, List, Optional
 
+from app.prompts import get_web_search_synthesis_prompt
 from app.services.llm_service.llm import get_llm, extract_chunk_content
 
 from . import context_builder, message_store
@@ -86,12 +87,9 @@ async def run(
             rag_context=tool_result.content,
         )
     elif capability == Capability.WEB_SEARCH and tool_result and tool_result.content:
-        synth_prompt = (
-            f"Based on these web search results, answer the user's question. "
-            f"Cite sources inline with [1] [2] [3] format.\n\n"
-            f"Search Results:\n{tool_result.content}\n\n"
-            f"User Question: {message}\n\n"
-            f"Provide a clear, comprehensive answer with inline citations:"
+        synth_prompt = get_web_search_synthesis_prompt(
+            search_results=tool_result.content,
+            question=message,
         )
         messages = [{"role": "user", "content": synth_prompt}]
     else:

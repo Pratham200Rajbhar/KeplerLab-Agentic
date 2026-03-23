@@ -71,13 +71,13 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
       <div className="flex h-[68vh] min-h-[520px] -mx-6 -mt-2 overflow-hidden relative">
         {}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10 w-full transition-all duration-500 overflow-hidden">
-          <div className="flex justify-between items-center px-6 pb-4 pt-2 shrink-0">
+          <div className="flex justify-between items-center px-6 pb-6 pt-2 shrink-0">
             <p className="text-[13px] font-medium text-text-muted">
-              Results found for <span className="text-accent font-bold px-2.5 py-1 rounded-lg bg-accent/10 ml-1">&quot;{query}&quot;</span>
+              Results found for <span className="text-[#10B981] font-bold px-3 py-1.5 rounded-lg bg-[#10B981]/15 ml-2">&quot;{query}&quot;</span>
             </p>
             {results.length > 0 && (
-              <button className="text-[11px] uppercase tracking-[0.15em] text-text-muted hover:text-accent font-bold transition-all p-1" onClick={handleSelectAll}>
-                {selectedResults.size === results.length ? 'Deselect All' : 'Select All'}
+              <button className="text-[11px] uppercase tracking-[0.15em] text-text-muted/70 hover:text-text-primary font-bold transition-all p-1" onClick={handleSelectAll}>
+                {selectedResults.size === results.length ? 'DESELECT ALL' : 'SELECT ALL'}
               </button>
             )}
           </div>
@@ -114,32 +114,32 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                     key={result.link}
                     onMouseEnter={() => setPreviewResult(result)}
                     onClick={() => { toggleSelection(result); setPreviewResult(result); }}
-                    className={`relative p-4 rounded-2xl transition-all duration-300 cursor-pointer group ${
+                    className={`relative py-3 px-4 rounded-2xl transition-all duration-300 cursor-pointer group ${
                       isSelected 
-                        ? 'bg-surface-raised shadow-lg -translate-y-0.5' 
-                        : 'bg-transparent hover:bg-surface-raised/50 hover:-translate-y-0.5'
-                    } ${isPreviewed && !isSelected ? 'bg-surface-raised/30' : ''}`}
+                        ? 'bg-surface-raised shadow-lg' 
+                        : 'bg-transparent hover:bg-surface-raised/40'
+                    } ${isPreviewed && !isSelected ? 'bg-surface-raised/20' : ''}`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-text-primary text-surface shadow-md' : 'bg-[#18181A] shadow-inner group-hover:bg-[#252528] cursor-pointer'}`}>
-                        {isSelected && <Check className="w-3.5 h-3.5" strokeWidth={4} />}
+                    <div className="flex items-center gap-5">
+                      <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-[#10B981] shadow-md border-none' : 'border border-white/10 group-hover:border-white/20 bg-transparent cursor-pointer'}`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
                       </div>
-                      <div className="flex-1 min-w-0 flex flex-col gap-1">
-                        <h3 className={`text-[15px] font-bold leading-tight transition-colors line-clamp-1 ${isSelected || isPreviewed ? 'text-text-primary' : 'text-text-primary/80'}`}>{result.title}</h3>
+                      <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                        <h3 className={`text-[16px] font-bold leading-tight transition-colors line-clamp-2 ${isSelected || isPreviewed ? 'text-white' : 'text-white/90'}`}>{result.title}</h3>
                         <div className="flex items-center gap-2.5">
                           {domain && (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
                               alt=""
-                              className="shrink-0 w-4 h-4 rounded-sm object-contain"
+                              className="shrink-0 w-3.5 h-3.5 rounded-sm object-contain opacity-70"
                               onError={(e) => { e.target.style.display = 'none'; }}
                             />
                           )}
                           <div className="flex items-center gap-2 truncate">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-text-secondary truncate max-w-[120px]">{domain}</span>
-                            <span className="text-text-muted/30 shrink-0">•</span>
-                            <span className="text-[11px] font-medium text-text-muted truncate" title={result.link}>{result.link}</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-[#8a8a8e] truncate max-w-[140px]">{domain}</span>
+                            <span className="text-[10px] text-[#48484a] shrink-0">●</span>
+                            <span className="text-[12px] font-medium text-[#636366] truncate" title={result.link}>{result.link}</span>
                           </div>
                         </div>
                       </div>
@@ -153,40 +153,40 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
 
         {}
         {previewResult && (
-          <div className="w-[500px] shrink-0 h-full bg-[#161618] relative overflow-hidden animate-in slide-in-from-right-10 fade-in duration-500 shadow-2xl rounded-xl my-2 mr-2">
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-            
+          <div className="w-[500px] shrink-0 h-full bg-[#1A1A1C] relative overflow-hidden animate-in slide-in-from-right-10 fade-in duration-500 shadow-2xl rounded-2xl my-2 mr-2 border border-white/5">
             <div className="flex flex-col h-full relative z-10">
               <div className="px-8 pt-8 pb-10 flex-1 overflow-y-auto custom-scrollbar relative">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-black/40 rounded-2xl shadow-inner group hover:bg-black/60 transition-all">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center shadow-inner">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`} alt="" className="w-8 h-8 rounded-md object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                    <img src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`} alt="" className="w-5 h-5 object-contain opacity-80" onError={(e) => { e.target.style.display = 'none'; }} />
                   </div>
-                  <h4 className="text-[12px] font-bold text-text-muted tracking-[0.3em] uppercase">{getDomain(previewResult.link)}</h4>
+                  <h4 className="text-[12px] font-bold text-[#8a8a8e] tracking-[0.2em] uppercase">{getDomain(previewResult.link)}</h4>
                 </div>
                 
-                <h3 className="text-[24px] font-black text-white mb-8 leading-[1.3] tracking-tighter decoration-white/20 decoration-4 underline-offset-8 transition-all">{previewResult.title}</h3>
+                <h3 className="text-[28px] font-extrabold text-white mb-6 leading-[1.2] tracking-tight">{previewResult.title}</h3>
                 
-                <div className="mb-10 relative pl-6">
-                  <p className="text-[15.5px] text-text-secondary font-medium leading-[1.7] antialiased drop-shadow-sm">{previewResult.snippet || 'No additional snippet available for this resource.'}</p>
+                <div className="mb-10 relative">
+                  <p className="text-[16px] text-[#a1a1aa] font-medium leading-[1.6] antialiased">{previewResult.snippet || 'No additional snippet available for this resource.'}</p>
                 </div>
               </div>
 
               {}
-              <div className="p-6 pt-0 mt-auto bg-gradient-to-t from-[#161618] to-transparent">
+              <div className="p-6 pt-0 mt-auto bg-gradient-to-t from-[#1A1A1C] to-transparent">
                 {isFileUrl(previewResult.link) ? (
-                  <a href={viewerHref(previewResult.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 w-full px-6 py-4 bg-white text-black text-[15px] font-black rounded-2xl transition-all shadow-[0_8px_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98] group">
-                    <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={2.5}/>
-                    <span className="tracking-tight uppercase">Open Document Preview</span>
-                    <span className="ml-auto text-[10px] font-black bg-black/10 px-2 py-0.5 rounded-md tracking-tighter shadow-sm">{getFileExt(previewResult.link).slice(1)}</span>
+                  <a href={viewerHref(previewResult.link)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full px-7 py-4 bg-white text-black rounded-2xl transition-all shadow-lg hover:bg-gray-100 active:scale-[0.98] group">
+                    <div className="flex items-center gap-4">
+                      <Eye className="w-5 h-5" strokeWidth={2.5}/>
+                      <span className="text-[14px] font-black uppercase tracking-wide">Open Document Preview</span>
+                    </div>
+                    <span className="text-[11px] font-bold bg-black/10 text-black px-3 py-1 rounded-full uppercase tracking-widest">{getFileExt(previewResult.link).slice(1)}</span>
                   </a>
                 ) : (
-                  <a href={previewResult.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 w-full px-6 py-4 bg-[#2C2C2E] hover:bg-[#3C3C3E] text-white text-[15px] font-black rounded-2xl transition-all shadow-xl group">
-                    <div className="p-2 bg-white/10 rounded-xl text-white group-hover:scale-110 transition-transform">
-                      <ExternalLink className="w-5 h-5" strokeWidth={2.5}/>
+                  <a href={previewResult.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full px-7 py-4 bg-[#2C2C2E] hover:bg-[#3C3C3E] text-white rounded-2xl transition-all shadow-xl active:scale-[0.98] group">
+                    <div className="flex items-center gap-4">
+                      <ExternalLink className="w-5 h-5 text-white/80" strokeWidth={2.5}/>
+                      <span className="text-[14px] font-black uppercase tracking-wide">Visit Website</span>
                     </div>
-                    <span className="tracking-tight uppercase">Visit Website</span>
                   </a>
                 )}
               </div>

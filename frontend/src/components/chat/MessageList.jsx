@@ -5,7 +5,7 @@ import TypingIndicator from './TypingIndicator';
 import useAutoScroll from '@/hooks/useAutoScroll';
 
 
-export default function MessageList({ messages, isStreaming, error, onRetry, notebookId, sessionId }) {
+export default function MessageList({ messages, isStreaming, error, onRetry, onEdit, onDelete, notebookId, sessionId }) {
   const lastMessage = messages[messages.length - 1];
   const showTyping =
     isStreaming &&
@@ -33,6 +33,8 @@ export default function MessageList({ messages, isStreaming, error, onRetry, not
               message={msg}
               isStreaming={isLastAssistant && isStreaming}
               onRetry={!isStreaming && msg.role === 'assistant' ? onRetry : undefined}
+              onEdit={onEdit}
+              onDelete={onDelete}
               notebookId={notebookId}
               sessionId={sessionId}
             />
@@ -42,7 +44,7 @@ export default function MessageList({ messages, isStreaming, error, onRetry, not
         {showTyping && <TypingIndicator />}
       </div>
 
-      {}
+      { }
       {!isAtBottom && (
         <button
           onClick={() => scrollToBottom()}

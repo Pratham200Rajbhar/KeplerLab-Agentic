@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import useChatStore from '@/stores/useChatStore';
-import { streamChat, getChatHistory, getChatSessions, createChatSession, deleteChatSession, clearChatHistory } from '@/lib/api/chat';
+import { streamChat, getChatHistory, getChatSessions, createChatSession, deleteChatSession, clearChatHistory, deleteChatMessage, updateChatMessage } from '@/lib/api/chat';
 import { streamSSE } from '@/lib/stream/streamClient';
 import { generateId } from '@/lib/utils/helpers';
 
@@ -24,14 +24,14 @@ export default function useChat({ notebookId, materialIds = [] }) {
 
   const abortRef = useRef(null);
 
-  
+
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
     };
   }, []);
 
-  
+
   const sendMessage = useCallback(
     async (content, notebookIdOverride, intentOverride = null) => {
       if (!content?.trim() || isStreaming) return;
@@ -39,10 +39,10 @@ export default function useChat({ notebookId, materialIds = [] }) {
       const effectiveNotebookId = notebookIdOverride || notebookId;
       if (!effectiveNotebookId) return;
 
-      setStreaming(true); 
+      setStreaming(true);
       setError(null);
 
-      
+
       let activeSessionId = useChatStore.getState().sessionId;
       if (!activeSessionId) {
         try {
@@ -52,12 +52,12 @@ export default function useChat({ notebookId, materialIds = [] }) {
           setSessionId(activeSessionId);
         } catch (err) {
           setError(err.message || 'Failed to create chat session');
-          setStreaming(false); 
+          setStreaming(false);
           return;
         }
       }
 
-      
+
       const userMsg = {
         id: generateId(),
         role: 'user',
@@ -67,7 +67,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
       };
       addMessage(userMsg);
 
-      
+
       const assistantMsg = {
         id: generateId(),
         role: 'assistant',
@@ -76,7 +76,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
       };
       addMessage(assistantMsg);
 
-      
+
       const ac = new AbortController();
       abortRef.current = ac;
 
@@ -104,8 +104,8 @@ export default function useChat({ notebookId, materialIds = [] }) {
               }
             },
             done: (data) => {
-              
-              
+
+
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
                 ...(data?.intent ? { intentOverride: data.intent } : {}),
@@ -119,13 +119,13 @@ export default function useChat({ notebookId, materialIds = [] }) {
               setError(data.error || 'Stream error');
               setStreaming(false);
             },
-            
-            step: () => {},
-            agent_start: () => {},
-            code_generated: () => {},
-            tool_result: () => {},
-            summary: () => {},
-            
+
+            step: () => { },
+            agent_start: () => { },
+            code_generated: () => { },
+            tool_result: () => { },
+            summary: () => { },
+
             code_block: (data) => {
               if (!data.code) return;
               useChatStore.getState().updateLastMessage((prev) => ({
@@ -146,10 +146,10 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 artifacts: [...(prev.artifacts || []), data],
               }));
             },
-            tool_start: () => {},
-            validation: () => {},
-            intent: () => {},
-            dataset_profile: () => {},
+            tool_start: () => { },
+            validation: () => { },
+            intent: () => { },
+            dataset_profile: () => { },
             web_search_update: (data) => {
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
@@ -168,7 +168,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 webSearchState: prev.webSearchState ? { ...prev.webSearchState, status: 'done' } : undefined,
               }));
             },
-            
+
             research_start: (data) => {
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
@@ -230,7 +230,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 },
               }));
             },
-            meta: () => {},
+            meta: () => { },
             blocks: (data) => {
               if (!data?.blocks) return;
               useChatStore.getState().updateLastMessage((prev) => ({
@@ -339,11 +339,11 @@ export default function useChat({ notebookId, materialIds = [] }) {
           ac.signal,
         );
 
-        
+
         setStreaming(false);
       } catch (err) {
         if (err.name === 'AbortError') {
-          
+
           setStreaming(false);
           return;
         }
@@ -356,18 +356,18 @@ export default function useChat({ notebookId, materialIds = [] }) {
     [notebookId, materialIds, isStreaming, addMessage, setStreaming, setError, setSessionId],
   );
 
-  
+
   const abort = useCallback(() => {
     abortRef.current?.abort();
     setStreaming(false);
   }, [setStreaming]);
 
-  
+
   const retry = useCallback(() => {
     const msgs = useChatStore.getState().messages;
     if (msgs.length < 2) return;
 
-    
+
     let lastUserMsg = null;
     for (let i = msgs.length - 1; i >= 0; i--) {
       if (msgs[i].role === 'user') {
@@ -377,7 +377,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     }
     if (!lastUserMsg) return;
 
-    
+
     const lastMsg = msgs[msgs.length - 1];
     if (lastMsg.role === 'assistant') {
       setMessages(msgs.slice(0, -1));
@@ -387,7 +387,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     sendMessage(lastUserMsg.content);
   }, [sendMessage, setMessages, setError]);
 
-  
+
   const loadHistory = useCallback(
     async (sid) => {
       if (!notebookId) return;
@@ -397,9 +397,9 @@ export default function useChat({ notebookId, materialIds = [] }) {
           setMessages(
             history.map((msg) => {
               const meta = msg.agent_meta || {};
-              
+
               const intentOverride = meta.intent || undefined;
-              
+
               const codeBlocks = meta.code_block
                 ? [{ code: meta.code_block.code, language: meta.code_block.language || 'python', step_index: null }]
                 : undefined;
@@ -439,7 +439,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     [notebookId, sessionId, setMessages],
   );
 
-  
+
   const loadSessions = useCallback(async () => {
     if (!notebookId) return [];
     try {
@@ -450,7 +450,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     }
   }, [notebookId]);
 
-  
+
   const createSession = useCallback(
     async (title = 'New Chat') => {
       if (!notebookId) return null;
@@ -468,7 +468,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     [notebookId, setSessionId, setMessages, setError],
   );
 
-  
+
   const deleteSession = useCallback(
     async (sid) => {
       try {
@@ -484,7 +484,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
     [sessionId, setSessionId, setMessages, setError],
   );
 
-  
+
   const clearHistory = useCallback(async () => {
     if (!notebookId) return;
     try {
@@ -494,15 +494,51 @@ export default function useChat({ notebookId, materialIds = [] }) {
       setError('Failed to clear history');
     }
   }, [notebookId, sessionId, setMessages, setError]);
+  
+  const deleteMessage = useCallback(async (messageId) => {
+    try {
+      await deleteChatMessage(messageId);
+      const msgs = useChatStore.getState().messages;
+      const idx = msgs.findIndex(m => m.id === messageId);
+      if (idx !== -1) {
+        const newMsgs = [...msgs];
+        if (msgs[idx].role === 'user' && msgs[idx+1]?.role === 'assistant') {
+          newMsgs.splice(idx, 2);
+        } else {
+          newMsgs.splice(idx, 1);
+        }
+        setMessages(newMsgs);
+      }
+    } catch {
+      setError('Failed to delete message');
+    }
+  }, [setMessages, setError]);
+
+  const editMessage = useCallback(async (messageId, content) => {
+    try {
+      await updateChatMessage(messageId, content);
+      const msgs = useChatStore.getState().messages;
+      const idx = msgs.findIndex(m => m.id === messageId);
+      if (idx !== -1) {
+        const newMsgs = [...msgs];
+        if (msgs[idx].role === 'user' && msgs[idx+1]?.role === 'assistant') {
+          newMsgs.splice(idx + 1, 1);
+        }
+        newMsgs[idx] = { ...newMsgs[idx], content };
+        setMessages(newMsgs);
+        sendMessage(content);
+      }
+    } catch {
+      setError('Failed to update message');
+    }
+  }, [setMessages, setError, sendMessage]);
 
   return {
-    
     messages,
     sessionId,
     isStreaming,
     error,
 
-    
     sendMessage,
     abort,
     retry,
@@ -511,6 +547,8 @@ export default function useChat({ notebookId, materialIds = [] }) {
     createSession,
     deleteSession,
     clearHistory,
+    deleteMessage,
+    editMessage,
     clearMessages,
     setSessionId,
     setMessages,

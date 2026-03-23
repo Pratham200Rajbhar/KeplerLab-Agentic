@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from app.prompts import get_json_repair_prompt
 from app.services.llm_service.llm import get_llm_structured
 
 logger = logging.getLogger(__name__)
@@ -248,21 +249,7 @@ def _build_retry_prompt(
     error: Optional[Exception],
 ) -> str:
     error_desc = f"{type(error).__name__}: {str(error)[:200]}" if error else "invalid format"
-
-    return f"""The following JSON output is invalid or truncated. Fix ONLY the JSON — do not change values or structure, just repair syntax issues.
-
-Error: {error_desc}
-
-Broken JSON:
-```
-{previous_response[:2000]}
-```
-
-Rules:
-- Return ONLY valid JSON — no markdown fences, no explanatory text
-- Complete all fields in the schema
-- Ensure proper JSON syntax (commas, quotes, brackets)
-- Keep output compact to avoid truncation
-
-YOUR FIXED JSON OUTPUT:
-"""
+    return get_json_repair_prompt(
+        broken_json=previous_response[:2000],
+        error=error_desc,
+    )

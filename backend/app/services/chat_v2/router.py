@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -152,10 +152,26 @@ async def optimize_prompts_endpoint(
     current_user=Depends(get_current_user),
 ):
     from app.services.chat_v2.prompt_optimizer import optimize_prompts
+    from app.routes.utils import require_material
+
+    context_text = ""
+    if request.material_ids:
+        materials_text = []
+        for mid in request.material_ids:
+            try:
+                material = await require_material(mid, str(current_user.id))
+                if material.originalText:
+                    materials_text.append(f"--- Document: {material.title} ---\n{material.originalText[:15000]}")
+            except Exception as e:
+                logger.warning("Could not load material %s for prompt optimizer: %s", mid, e)
+        context_text = "\n\n".join(materials_text)
 
     try:
-        prompts = await optimize_prompts(request.prompt, request.count)
+        prompts = await optimize_prompts(request.prompt, request.count, context_text)
         return JSONResponse(content={"prompts": prompts})
+    except ValueError as e:
+        logger.warning("Prompt optimization produced no usable model output: %s", e)
+        return JSONResponse(content={"prompts": []})
     except Exception as e:
         logger.error("Prompt optimization failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to optimize prompts")
@@ -226,3 +242,29 @@ async def delete_chat_session_endpoint(
     if not success:
         raise HTTPException(status_code=404, detail="Session not found or could not be deleted")
     return {"deleted": True}
+
+@router.delete("/message/{message_id}")
+async def delete_chat_message_endpoint(
+    message_id: str,
+    current_user=Depends(get_current_user),
+):
+    from app.services.chat_v2.service import delete_message
+    success = await delete_message(message_id, str(current_user.id))
+    if not success:
+        raise HTTPException(status_code=404, detail="Message not found or could not be deleted")
+    return {"deleted": True}
+
+@router.patch("/message/{message_id}")
+async def update_chat_message_endpoint(
+    message_id: str,
+    request: Dict[str, str],
+    current_user=Depends(get_current_user),
+):
+    from app.services.chat_v2.service import update_message
+    content = request.get("content")
+    if not content:
+        raise HTTPException(status_code=400, detail="Content is required")
+    success = await update_message(message_id, str(current_user.id), content)
+    if not success:
+        raise HTTPException(status_code=404, detail="Message not found or could not be updated")
+    return {"updated": True}

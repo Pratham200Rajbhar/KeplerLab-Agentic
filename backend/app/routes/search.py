@@ -28,6 +28,29 @@ async def search_web(
 
     logger.info(f"[SEARCH] Query='{query}' user={current_user.id}")
 
+    from app.core.config import settings
+    if settings.WEB_SEARCH_ENDPOINT:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    settings.WEB_SEARCH_ENDPOINT,
+                    json={"query": query}
+                )
+                resp.raise_for_status()
+                results = resp.json()
+                
+                return [
+                    SearchResult(
+                        title=r.get("title", "No Title"),
+                        link=r.get("link", r.get("url", "")),
+                        snippet=r.get("snippet", "No description available.")
+                    )
+                    for r in results
+                ]
+        except Exception as e:
+            logger.warning(f"External web search failed: {e}. Falling back to default.")
+
     try:
         from app.core.web_search import ddg_search
 

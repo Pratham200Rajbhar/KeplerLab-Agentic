@@ -1,7 +1,0 @@
-The following high-resolution fractal images have been generated using vectorized NumPy computations:
-
-- **mandelbrot.png**: 1200×900 Mandelbrot set, computed with `max_iter=256` and the `'inferno'` colormap.
-- **julia_set.png**: 1200×900 Julia set for `c = -0.7 + 0.27015j`, computed with `max_iter=256` and the `'plasma'` colormap.
-- **fractals_comparison.png**: 2400×900 side-by-side comparison image combining both fractals.
-
-All three files are available for download via the artifact cards.

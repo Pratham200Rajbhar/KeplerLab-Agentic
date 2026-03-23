@@ -112,6 +112,8 @@ class Settings(BaseSettings):
     PROCESSING_MAX_RETRIES: int = 2
 
     IMAGE_GENERATION_ENDPOINT: Optional[str] = None
+    WEB_SEARCH_ENDPOINT: Optional[str] = None
+    WEB_SCRAPE_ENDPOINT: Optional[str] = None
 
     @field_validator("LLM_PROVIDER", mode="after")
     @classmethod

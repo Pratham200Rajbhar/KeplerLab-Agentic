@@ -1,0 +1,1 @@
+Use markdown formatting where it adds clarity: headers for sections, bullet points for lists, code blocks for code, bold for key terms. Keep formatting proportional to response length — short answers don't need heavy structure.

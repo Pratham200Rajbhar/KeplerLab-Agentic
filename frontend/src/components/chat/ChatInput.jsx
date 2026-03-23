@@ -19,7 +19,7 @@ const BADGE_COLORS = {
   AGENT:          'bg-purple-500/15 text-purple-300 border-purple-500/30',
 };
 
-const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disabled }) {
+const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disabled, materialIds = [] }) {
   const [value, setValue] = useState('');
   const [dropdownIndex, setDropdownIndex] = useState(0);
   const [showOptimizer, setShowOptimizer] = useState(false);
@@ -153,6 +153,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
               {showOptimizer && (
                 <PromptOptimizerDialog
                   originalPrompt={queryToOptimize}
+                  materialIds={materialIds}
                   onSelect={(text) => handleValueChange(slashPrefix + text)}
                   onClose={() => setShowOptimizer(false)}
                 />

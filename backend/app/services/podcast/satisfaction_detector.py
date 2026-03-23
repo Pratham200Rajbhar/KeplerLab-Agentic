@@ -5,6 +5,7 @@ import logging
 from typing import Optional, Tuple
 
 from app.services.llm_service.llm import get_llm
+from app.prompts import get_podcast_satisfaction_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -108,12 +109,7 @@ def detect_satisfaction_heuristic(
     return (None, best_confidence)
 
 async def detect_satisfaction_llm(message: str, language: str = "en") -> bool:
-    prompt = (
-        "You are analyzing a listener's response during a podcast Q&A session.\n"
-        f"The listener said: \"{message}\"\n\n"
-        "Does this message indicate the user is satisfied with the answer and ready to "
-        "continue the podcast? Respond with exactly one word: Yes or No."
-    )
+    prompt = get_podcast_satisfaction_prompt(message)
 
     try:
         llm = get_llm(mode="structured", max_tokens=10)

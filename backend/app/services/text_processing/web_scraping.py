@@ -129,6 +129,31 @@ class WebScrapingService:
         if not _is_valid_url(url):
             return _web_fail(url, f"Invalid URL: {url}")
 
+        from app.core.config import settings
+        if settings.WEB_SCRAPE_ENDPOINT:
+            try:
+                resp = requests.post(
+                    settings.WEB_SCRAPE_ENDPOINT,
+                    json={"url": url},
+                    timeout=30
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                text = data.get("text") or data.get("content", "")
+                title = data.get("title") or url
+                
+                if text:
+                    return {
+                        "url": url,
+                        "title": title,
+                        "text": _clean_text(text),
+                        "method": "external_endpoint",
+                        "status": "success",
+                        "word_count": len(text.split())
+                    }
+            except Exception as e:
+                logger.warning(f"External web scrape failed for {url}: {e}. Falling back to default.")
+
         method = "selenium" if _needs_selenium(url) else "requests"
 
         result = self._scrape_with_retry(url, method)

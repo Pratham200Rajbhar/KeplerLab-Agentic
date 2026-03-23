@@ -6,6 +6,7 @@ from typing import Any
 
 from app.services.llm_service.llm import get_llm
 from app.core.config import settings
+from app.prompts import get_explainer_slide_prompt
 
 logger = logging.getLogger("explainer.script")
 
@@ -22,33 +23,6 @@ LANGUAGE_NAMES = {
     "bn": "Bengali",
 }
 
-_SLIDE_PROMPT_TEMPLATE = """You are a professional teacher delivering a clear, thorough narration for a presentation slide.
-
-SLIDE {slide_number}/{total_slides}:
-Title: {title}
-Content: {content}
-
-Write a narration of 120-180 words for this slide in {narration_language}, following these rules:
-
-CONTENT & TEACHING:
-- Explain EVERY concept and point on the slide fully — do not skip anything
-- Teach like a knowledgeable teacher: define terms, explain what things mean and why they matter
-- Use examples ONLY where a concept is genuinely abstract or hard to grasp — not as filler
-- Never repeat a point just to pad length; prioritize depth and clarity
-
-LANGUAGE & TERMINOLOGY:
-- Narrate primarily in {narration_language}
-- For technical terms, acronyms, product names, or domain-specific vocabulary that are internationally recognised in English (e.g. "API", "Infrastructure as a Service", "Docker", "neural network", "bandwidth"), keep them in English — do NOT force-translate them if no natural equivalent exists in {narration_language}
-- When introducing such a term, you may briefly clarify its meaning in {narration_language} if needed, then continue using the English term naturally
-- This code-switching is professional and expected in technical education — do it confidently
-
-STYLE:
-- Speak naturally as if talking directly to a student — conversational yet professional
-- Do NOT start with "In this slide", "Today we will", or any meta-phrase — jump straight into the content
-
-Output ONLY the spoken narration text. No headers, labels, or markdown.
-"""
-
 def _build_slide_prompt(
     slide_number: int,
     total_slides: int,
@@ -58,12 +32,12 @@ def _build_slide_prompt(
 ) -> str:
     lang_name = LANGUAGE_NAMES.get(narration_language, narration_language)
 
-    return _SLIDE_PROMPT_TEMPLATE.format(
+    return get_explainer_slide_prompt(
         slide_number=slide_number,
         total_slides=total_slides,
         title=title,
         content=content,
-        narration_language=lang_name,
+        language=lang_name,
     )
 
 def _generate_single_script(

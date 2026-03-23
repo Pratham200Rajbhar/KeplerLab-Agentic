@@ -9,7 +9,7 @@ import ResearchReport from './ResearchReport';
 import AgentProgressPanel from './AgentProgressPanel';
 import CollapsibleActionBlock from './CollapsibleActionBlock';
 import AnnotatedText from './AnnotatedText';
-import { Copy, Check, RotateCcw, Sparkles } from 'lucide-react';
+import { Copy, Check, RotateCcw, Sparkles, Pencil, Trash2, X, SendHorizonal } from 'lucide-react';
 
 const INTENT_BADGES = {
   WEB_RESEARCH:   { label: 'Deep Research', color: 'bg-blue-500/10 text-blue-300',   border: 'border-blue-500/20' },
@@ -19,9 +19,12 @@ const INTENT_BADGES = {
 };
 
 
-const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, notebookId, sessionId }) {
+const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, onEdit, onDelete, notebookId, sessionId }) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editText, setEditText] = useState(message.content || '');
 
   const handleCopy = useCallback(() => {
     if (!message.content) return;
@@ -30,23 +33,101 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, n
     setTimeout(() => setCopied(false), 2000);
   }, [message.content]);
 
+  const handleEditSave = useCallback(() => {
+    if (editText.trim() && editText.trim() !== message.content) {
+      onEdit?.(message.id, editText.trim());
+    }
+    setIsEditing(false);
+  }, [editText, message.content, message.id, onEdit]);
+
+  const handleEditCancel = useCallback(() => {
+    setEditText(message.content || '');
+    setIsEditing(false);
+  }, [message.content]);
+
   
   if (isUser) {
     const badge = message.intentOverride ? INTENT_BADGES[message.intentOverride] : null;
     return (
       <div className="flex justify-end px-4 sm:px-6 py-2 group">
-        <div className="max-w-[78%] flex flex-col items-end gap-1.5">
+        <div className={`max-w-[85%] sm:max-w-[78%] flex flex-col items-end gap-1.5 ${isEditing ? 'w-full' : ''}`}>
           {badge && (
             <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${badge.color} ${badge.border}`}>
               {badge.label}
             </span>
           )}
-          <div
-            className="px-4 py-2.5 rounded-2xl rounded-tr-md text-sm text-text-primary whitespace-pre-wrap break-words leading-relaxed"
-            style={{ background: 'var(--surface-overlay, rgba(255,255,255,0.07))' }}
-          >
-            {message.content}
-          </div>
+          
+          {isEditing ? (
+            <div className="w-full space-y-2">
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEditSave(); }
+                  if (e.key === 'Escape') handleEditCancel();
+                }}
+                rows={Math.min(10, editText.split('\n').length + 1)}
+                autoFocus
+                className="w-full px-4 py-3 text-sm rounded-2xl rounded-tr-md bg-surface-overlay text-text-primary border border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none leading-relaxed transition-all"
+                placeholder="Edit your message..."
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={handleEditCancel} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors">
+                  <X className="w-3.5 h-3.5" /> Cancel
+                </button>
+                <button onClick={handleEditSave} disabled={!editText.trim()} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors disabled:opacity-40">
+                  <SendHorizonal className="w-3.5 h-3.5" /> Save
+                </button>
+              </div>
+            </div>
+          ) : isDeleting ? (
+            <div className="px-4 py-3 rounded-2xl rounded-tr-md bg-danger/10 border border-danger/20 flex flex-col gap-2 items-center animate-in fade-in zoom-in duration-200">
+              <span className="text-xs font-medium text-danger text-center">Delete this message and its response?</span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsDeleting(false)}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md bg-surface-overlay text-text-primary hover:bg-surface-raised transition-colors"
+                >
+                  No, keep it
+                </button>
+                <button 
+                  onClick={() => { onDelete?.(message.id); setIsDeleting(false); }}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md bg-danger text-white hover:bg-danger/90 transition-colors shadow-sm shadow-danger/20"
+                >
+                  Yes, delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className="px-4 py-2.5 rounded-2xl rounded-tr-md text-sm text-text-primary whitespace-pre-wrap break-words leading-relaxed transition-all"
+                style={{ background: 'var(--surface-overlay, rgba(255,255,255,0.07))' }}
+              >
+                {message.content}
+              </div>
+              <div className="flex items-center gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                {onEdit && (
+                  <button 
+                    onClick={() => { setIsEditing(true); setIsDeleting(false); setEditText(message.content || ''); }} 
+                    title="Edit message" 
+                    className="flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-text-secondary hover:bg-surface-overlay transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button 
+                    onClick={() => { setIsDeleting(true); setIsEditing(false); }} 
+                    title="Delete message" 
+                    className="flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

@@ -153,6 +153,69 @@ async def save_assistant_message(
         logger.error("save_assistant_message failed: %s", exc)
         raise
 
+async def update_user_message(
+    message_id: str,
+    user_id: str,
+    content: str,
+) -> bool:
+    try:
+        # 1. Update the message content
+        await prisma.chatmessage.update(
+            where={"id": message_id},
+            data={"content": content}
+        )
+        
+        # 2. Find and delete the subsequent assistant response if it exists
+        msg = await prisma.chatmessage.find_unique(where={"id": message_id})
+        if msg:
+            next_msg = await prisma.chatmessage.find_first(
+                where={
+                    "chatSessionId": msg.chatSessionId,
+                    "createdAt": {"gt": msg.createdAt},
+                    "role": "assistant"
+                },
+                order={"createdAt": "asc"}
+            )
+            if next_msg:
+                await delete_message_pair(str(next_msg.id), user_id)
+        return True
+    except Exception as exc:
+        logger.error("update_user_message failed: %s", exc)
+        return False
+
+async def delete_message_pair(message_id: str, user_id: str) -> bool:
+    try:
+        msg = await prisma.chatmessage.find_unique(where={"id": message_id})
+        if not msg or str(msg.userId) != user_id:
+            return False
+
+        # If it's a user message, find the next assistant response
+        to_delete = [message_id]
+        if msg.role == "user":
+            next_msg = await prisma.chatmessage.find_first(
+                where={
+                    "chatSessionId": msg.chatSessionId,
+                    "createdAt": {"gt": msg.createdAt},
+                    "role": "assistant"
+                },
+                order={"createdAt": "asc"}
+            )
+            if next_msg:
+                to_delete.append(str(next_msg.id))
+        
+        # Also delete blocks for these messages
+        await prisma.responseblock.delete_many(
+            where={"chatMessageId": {"in": to_delete}}
+        )
+        # Delete the messages themselves
+        await prisma.chatmessage.delete_many(
+            where={"id": {"in": to_delete}}
+        )
+        return True
+    except Exception as exc:
+        logger.error("delete_message_pair failed: %s", exc)
+        return False
+
 async def save_response_blocks(message_id: str, content: str) -> List[Dict[str, Any]]:
     blocks_text = _split_markdown_blocks(content)
     created = []

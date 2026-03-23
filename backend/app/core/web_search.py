@@ -62,7 +62,7 @@ def _fetch_and_extract_sync(url: str) -> Optional[Dict[str, str]]:
         "url": url,
         "title": title,
         "domain": urlparse(url).netloc,
-        "text": text[:6000],
+        "text": text[:8000],
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 

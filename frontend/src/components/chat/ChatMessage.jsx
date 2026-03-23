@@ -18,14 +18,14 @@ import { downloadArtifactSecure } from '@/lib/api/agent';
 import { apiConfig } from '@/lib/api/config';
 
 const TOOL_BADGE = {
-  rag_tool:       { Icon: Search,        label: 'RAG Search' },
-  research_tool:  { Icon: Globe,         label: 'Web Research' },
-  python_tool:    { Icon: Code2,         label: 'Python' },
-  data_profiler:  { Icon: Brain,         label: 'Data Profile' },
-  quiz_tool:      { Icon: ClipboardList, label: 'Quiz' },
-  flashcard_tool: { Icon: BookOpen,      label: 'Flashcards' },
-  ppt_tool:       { Icon: Monitor,       label: 'Slides' },
-  code_repair:    { Icon: Wrench,        label: 'Code Repair' },
+  rag_tool: { Icon: Search, label: 'RAG Search' },
+  research_tool: { Icon: Globe, label: 'Web Research' },
+  python_tool: { Icon: Code2, label: 'Python' },
+  data_profiler: { Icon: Brain, label: 'Data Profile' },
+  quiz_tool: { Icon: ClipboardList, label: 'Quiz' },
+  flashcard_tool: { Icon: BookOpen, label: 'Flashcards' },
+  ppt_tool: { Icon: Monitor, label: 'Slides' },
+  code_repair: { Icon: Wrench, label: 'Code Repair' },
 };
 
 function tryParseDataAnalysis(content) {
@@ -35,7 +35,7 @@ function tryParseDataAnalysis(content) {
   try {
     const parsed = JSON.parse(trimmed);
     if ('stdout' in parsed || 'explanation' in parsed) return parsed;
-  } catch {  }
+  } catch { }
   return null;
 }
 
@@ -63,7 +63,7 @@ function tryParseResearchJSON(content) {
       });
     }
     return lines.join('\n');
-  } catch {  }
+  } catch { }
   return null;
 }
 
@@ -79,7 +79,7 @@ function tryParseMultiSource(content) {
     const tool = m[1].trim();
     const body = m[2].trim();
     let json = null;
-    if (body.startsWith('{') && body.endsWith('}')) { try { json = JSON.parse(body); } catch {  } }
+    if (body.startsWith('{') && body.endsWith('}')) { try { json = JSON.parse(body); } catch { } }
     blocks.push({ tool, raw: body, json });
   }
   return blocks.length > 0 ? blocks : null;
@@ -89,8 +89,7 @@ function ActionButton({ icon, activeIcon, label, onClick, isActive = false }) {
   const [active, setActive] = useState(isActive);
   return (
     <button onClick={() => { setActive(!active); onClick?.(!active); }} title={label}
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 ${
-        active ? 'text-accent bg-accent/10' : 'text-text-muted hover:text-text-secondary hover:bg-surface-overlay'}`}>
+      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 ${active ? 'text-accent bg-accent/10' : 'text-text-muted hover:text-text-secondary hover:bg-surface-overlay'}`}>
       {active ? (activeIcon || icon) : icon}
     </button>
   );
@@ -101,8 +100,7 @@ function CopyActionButton({ content }) {
   return (
     <button onClick={async () => { await navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
       title={copied ? 'Copied!' : 'Copy'}
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 ${
-        copied ? 'text-success bg-success-subtle' : 'text-text-muted hover:text-text-secondary hover:bg-surface-overlay'}`}>
+      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-150 ${copied ? 'text-success bg-success-subtle' : 'text-text-muted hover:text-text-secondary hover:bg-surface-overlay'}`}>
       {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
@@ -114,7 +112,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
   const agentMeta = message.agentMeta || null;
   const allArtifacts = message.artifacts || [];
 
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.content || '');
 
@@ -192,13 +190,13 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
     );
   };
 
-  
+
   const handleArtifactDownload = useCallback(async (artifact) => {
     try {
       await downloadArtifactSecure(artifact);
     } catch (err) {
       console.error('Download failed:', err);
-      
+
       if (artifact.downloadUrl) {
         const link = document.createElement('a');
         link.href = artifact.downloadUrl;
@@ -270,7 +268,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
 
   const intent = agentMeta?.intent;
 
-  
+
   const normalizedArtifacts = allArtifacts.map((art, idx) => {
     const rawUrl = art.url || art.download_url || art.downloadUrl || '';
     const absoluteUrl = rawUrl && rawUrl.startsWith('/') ? `${apiConfig.baseUrl}${rawUrl}` : rawUrl;
@@ -290,7 +288,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
       <div className="flex gap-3 w-full">
         <div className="ai-avatar shrink-0 mt-0.5"><Lightbulb className="w-4 h-4" strokeWidth={1.5} /></div>
         <div className="flex-1 min-w-0">
-          {}
+          { }
           {intent === 'CODE_EXECUTION' && agentMeta?.code_block && (
             <CodePanel
               code={agentMeta.code_block.code}
@@ -301,10 +299,10 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             />
           )}
 
-          {}
+          { }
           {renderAIContent()}
 
-          {}
+          { }
           {allArtifacts.length > 0 && (
             <div className="mt-4 space-y-3">
               {allArtifacts.map((art, idx) => (
@@ -313,17 +311,17 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             </div>
           )}
 
-          {}
+          { }
           {intent === 'WEB_SEARCH' && agentMeta?.web_sources?.length > 0 && (
             <WebSources sources={agentMeta.web_sources} />
           )}
 
-          {}
+          { }
           {intent === 'WEB_RESEARCH' && agentMeta?.research_sources?.length > 0 && (
             <WebSources sources={agentMeta.research_sources} />
           )}
 
-          {}
+          { }
           {message.citations?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {message.citations.map((citation, idx) => (
@@ -332,7 +330,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
             </div>
           )}
 
-          {}
+          { }
           <div className="ai-action-bar opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-2 flex items-center gap-0.5">
             <CopyActionButton content={message.content} />
             <ActionButton label="Good response" icon={<ThumbsUp className="w-3.5 h-3.5" />} />
@@ -348,7 +346,7 @@ export default memo(function ChatMessage({ message, onRetry, onEdit, onDelete })
               </button>
             )}
           </div>
-          </div>
+        </div>
       </div>
     </div>
   );

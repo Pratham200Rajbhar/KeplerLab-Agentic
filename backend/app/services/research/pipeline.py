@@ -9,18 +9,24 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 from app.core.web_search import ddg_search, fetch_url_content
 from app.services.llm_service.llm import get_llm
+from app.prompts import (
+    get_research_decompose_prompt,
+    get_research_gap_prompt,
+    get_research_report_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
-# ── Deep research constants ──
-# Target: 30-50 websites across multiple search rounds
-_FETCH_TIMEOUT = 15          # per-URL timeout (seconds)
-_RESULTS_PER_QUERY = 10      # DDG results per search query
-_URLS_PER_ROUND = 10          # max URLs to fetch per round
-_MAX_ROUNDS = 3               # search → fetch rounds
-_INITIAL_SUB_QUESTIONS = 5    # sub-questions on first decomposition
-_FOLLOWUP_QUERIES = 3         # follow-up queries per gap round
-_SOURCE_TEXT_LIMIT = 4000     # chars kept per fetched page
+# ── Deep research constants ─────────────────────────────────────────────────
+# Target: 40-60 websites across multiple search rounds
+_FETCH_TIMEOUT      = 20           # per-URL timeout (seconds)
+_RESULTS_PER_QUERY  = 15           # DDG results per search query
+_URLS_PER_ROUND     = 15           # max URLs to fetch per round
+_MAX_ROUNDS         = 5            # search → fetch rounds (5 × 15 = 75 candidate URLs)
+_INITIAL_SUB_QUESTIONS = 8         # initial sub-questions for decomposition
+_FOLLOWUP_QUERIES   = 6            # follow-up queries per gap round
+_SOURCE_TEXT_LIMIT  = 6000         # chars kept per fetched page
+_MIN_SOURCES_TARGET = 50           # stop early if we hit this many sources
 
 
 def _sse(event: str, data: Any) -> str:
@@ -37,15 +43,7 @@ def _parse_json_array(text: str) -> list:
 
 async def _decompose_query(query: str, n: int = _INITIAL_SUB_QUESTIONS) -> List[Dict[str, str]]:
     llm = get_llm(temperature=0.3)
-    prompt = (
-        f"You are a research query decomposer. Break this query into {n} targeted, "
-        "diverse sub-questions that together fully cover every angle of the topic.\n\n"
-        f"Query: {query}\n\n"
-        "Return ONLY a JSON array:\n"
-        '[{"sub_question": "...", "search_query": "..."}]\n\n'
-        "Make each search_query short and optimised for web search engines. "
-        "Cover different perspectives, time periods, and aspects."
-    )
+    prompt = get_research_decompose_prompt(query, n)
     resp = await llm.ainvoke(prompt)
     raw = getattr(resp, "content", str(resp)).strip()
     try:
@@ -113,28 +111,31 @@ async def _fetch_streaming(
                 "snippet": result.get("text", "")[:200],
             })
             fetched.append(result)
-    # ensure all tasks finished
     await asyncio.gather(*tasks, return_exceptions=True)
-    # extend caller's list
     all_sources.extend(fetched)
 
 
 async def _identify_gaps(
     query: str,
-    sources_summary: str,
+    all_sources: List[Dict],
     previous_queries: List[str],
 ) -> List[Dict[str, str]]:
+    """
+    Build a richer coverage summary (not just titles) to help the LLM identify
+    real gaps — what topics and subtopics are covered vs. still missing.
+    """
     llm = get_llm(temperature=0.3)
-    prompt = (
-        "You are a research gap analyst. Based on the original query and source "
-        "summaries so far, identify 3-4 information gaps or angles not yet covered.\n\n"
-        f"Original query: {query}\n\n"
-        f"Sources collected so far (titles/domains):\n{sources_summary}\n\n"
-        f"Previous search queries used (do NOT repeat):\n{json.dumps(previous_queries)}\n\n"
-        "Return ONLY a JSON array of NEW follow-up search queries:\n"
-        '[{"sub_question": "...", "search_query": "..."}]\n\n'
-        "Return an empty array [] ONLY if you are fully confident every angle is covered."
-    )
+
+    # Build a richer summary: title + first 200 chars of content
+    coverage_lines = []
+    for s in all_sources[-30:]:
+        title = s.get("title", "?")
+        domain = s.get("domain", "?")
+        snippet = s.get("text", "")[:200].replace("\n", " ")
+        coverage_lines.append(f"- [{domain}] {title}: {snippet}")
+    sources_summary = "\n".join(coverage_lines)
+
+    prompt = get_research_gap_prompt(query, sources_summary, json.dumps(previous_queries))
     resp = await llm.ainvoke(prompt)
     raw = getattr(resp, "content", str(resp)).strip()
     try:
@@ -143,7 +144,7 @@ async def _identify_gaps(
         return []
 
 
-def _build_source_context(sources: List[Dict], max_sources: int = 30) -> str:
+def _build_source_context(sources: List[Dict], max_sources: int = 50) -> str:
     """Build a source block for the report-writing LLM, using as many sources as possible."""
     parts = []
     for i, s in enumerate(sources[:max_sources]):
@@ -172,10 +173,10 @@ async def stream_research(
     try:
         yield _sse("research_start", {})
 
-        # ── Round 0: decompose query ──
+        # ── Round 0: decompose query into sub-questions ──
         yield _sse("research_phase", {
             "phase": "searching",
-            "label": "Preparing search queries…",
+            "label": "Preparing search plan…",
         })
         sub_questions = await _decompose_query(query, _INITIAL_SUB_QUESTIONS)
         current_queries = sub_questions
@@ -183,16 +184,15 @@ async def stream_research(
 
         yield _sse("research_phase", {
             "phase": "searching",
-            "label": f"Searching across {len(sub_questions)} topics…",
+            "label": f"Searching {len(sub_questions)} angles simultaneously…",
             "queries": [sq["search_query"] for sq in sub_questions],
         })
 
         # ── Search → Fetch rounds ──
         for rnd in range(1, _MAX_ROUNDS + 1):
-            # Search
             yield _sse("research_phase", {
                 "phase": "searching",
-                "label": f"Looking up {len(current_queries)} queries…",
+                "label": f"Round {rnd}: looking up {len(current_queries)} queries…",
                 "queries": [sq["search_query"] for sq in current_queries],
             })
             new_results = await _search_batch(current_queries, seen_urls)
@@ -203,6 +203,7 @@ async def stream_research(
                 return
 
             if not new_results:
+                logger.info("[research] No new URLs in round %d — stopping early", rnd)
                 break
 
             # Fetch — stream each source as it arrives
@@ -227,21 +228,24 @@ async def stream_research(
                 yield _sse("done", {})
                 return
 
-            # Check if we have enough sources or need more rounds
-            if len(all_sources) >= 30 or rnd >= _MAX_ROUNDS:
+            logger.info("[research] Round %d complete — %d total sources", rnd, len(all_sources))
+
+            # Stop if we've hit our target
+            if len(all_sources) >= _MIN_SOURCES_TARGET or rnd >= _MAX_ROUNDS:
+                logger.info(
+                    "[research] Stopping after round %d — %d sources collected (target: %d)",
+                    rnd, len(all_sources), _MIN_SOURCES_TARGET
+                )
                 break
 
-            # Find gaps for next round
+            # Identify gaps for next round using richer coverage summary
             yield _sse("research_phase", {
                 "phase": "synthesizing",
-                "label": "Checking what else to look up…",
+                "label": f"Analyzing coverage gaps ({len(all_sources)} sources so far)…",
             })
-            sources_summary = "\n".join(
-                f"- {s.get('title', '?')} ({s.get('domain', '?')})"
-                for s in all_sources[-20:]
-            )
-            follow_ups = await _identify_gaps(query, sources_summary, all_queries_used)
+            follow_ups = await _identify_gaps(query, all_sources, all_queries_used)
             if not follow_ups:
+                logger.info("[research] No gaps identified — stopping after round %d", rnd)
                 break
 
             current_queries = follow_ups[:_FOLLOWUP_QUERIES]
@@ -249,39 +253,20 @@ async def stream_research(
 
             yield _sse("research_phase", {
                 "phase": "searching",
-                "label": f"Exploring {len(current_queries)} more angles…",
+                "label": f"Exploring {len(current_queries)} uncovered angles…",
                 "queries": [sq["search_query"] for sq in current_queries],
             })
 
         # ── Write the detailed report via LLM streaming ──
         yield _sse("research_phase", {
             "phase": "writing",
-            "label": f"Writing detailed analysis from {len(all_sources)} sources…",
+            "label": f"Writing comprehensive analysis from {len(all_sources)} sources…",
         })
 
-        source_ctx = _build_source_context(all_sources, max_sources=30)
+        source_ctx = _build_source_context(all_sources, max_sources=_MIN_SOURCES_TARGET)
         llm = get_llm(temperature=0.3)
 
-        report_prompt = (
-            "You are a world-class research analyst. You have been given content from "
-            f"{len(all_sources)} real web sources about the following topic.\n\n"
-            f"RESEARCH TOPIC: {query}\n\n"
-            f"SOURCES:\n{source_ctx}\n\n"
-            "YOUR TASK: Write a **very detailed, comprehensive, in-depth research report**.\n\n"
-            "RULES:\n"
-            "- This is deep research. DO NOT write a summary. Write a FULL, DETAILED analysis.\n"
-            "- Cover every aspect, sub-topic, perspective, and nuance found in the sources.\n"
-            "- Use markdown headers (##, ###) to organize sections clearly.\n"
-            "- Include specific data, numbers, statistics, names, dates from the sources.\n"
-            "- The report should be at least 2000-3000 words. Be thorough.\n"
-            "- Include: introduction, detailed analysis of each angle, comparisons, "
-            "real-world implications, expert opinions found in sources, conclusion.\n"
-            "- DO NOT start with 'Here is' or 'I found'. Write directly as a report.\n"
-            "- DO NOT include any URLs, hyperlinks, or web addresses anywhere in the report.\n"
-            "- DO NOT include any inline citations, bracketed numbers (like [1], [2]), or source references.\n"
-            "- DO NOT include a 'Sources' or 'References' section at the end.\n"
-            "- Focus purely on the content and analysis, providing a clean, professional report.\n"
-        )
+        report_prompt = get_research_report_prompt(query, source_ctx, len(all_sources))
 
         full_report = []
         async for chunk in llm.astream(report_prompt):

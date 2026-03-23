@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 from typing import Any, List, Optional
 
 class QuizQuestion(BaseModel):
@@ -98,12 +98,12 @@ class SlideContent(BaseModel):
     key_metric: Optional[dict] = None
 
 class OptimizedPrompt(BaseModel):
-    optimized_prompt: str
+    optimized_prompt: str = Field(validation_alias=AliasChoices("optimized_prompt", "prompt", "text", "suggestion"))
     confidence: int = Field(ge=0, le=100)
-    explanation: str
+    explanation: str = Field(default="", validation_alias=AliasChoices("explanation", "justification", "reasoning"))
 
 class OptimizedPromptsOutput(BaseModel):
-    prompts: List[Any]
+    prompts: List[Any] = Field(default_factory=list, validation_alias=AliasChoices("prompts", "optimized_prompts", "alternatives", "items", "results"))
 
     @model_validator(mode="after")
     def _drop_incomplete_prompts(self) -> "OptimizedPromptsOutput":
@@ -113,8 +113,6 @@ class OptimizedPromptsOutput(BaseModel):
                 valid.append(OptimizedPrompt.model_validate(item))
             except Exception:
                 pass
-        if not valid:
-            raise ValueError("No valid optimized prompts found in LLM output")
         self.prompts = valid  # type: ignore[assignment]
         return self
 

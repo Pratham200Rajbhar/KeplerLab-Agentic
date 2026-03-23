@@ -1,229 +1,249 @@
-# Fix /agent Agentic Pipeline (General Purpose Autonomous Agent)
+You are a senior AI architect and prompt engineer working on a large production AI system.
 
-Refactor and improve the current **/agent pipeline** so the agent works as a **general-purpose autonomous assistant**, not only for coding tasks.
+Your task is to analyze the COMPLETE workspace and redesign the entire prompt system from scratch.
 
-The agent must understand **any user goal** and choose the correct capability automatically (RAG, research, dataset analysis, file generation, coding, etc.).
-
-The implementation must remove unnecessary steps, simplify the reasoning flow, and ensure the agent **only performs actions required to complete the user request**.
-
----
-
-# 1. Core Objective
-
-The `/agent` system must:
-
-* handle **any type of task**
-* dynamically choose the best tool
-* avoid unnecessary searches or steps
-* return exactly what the user asked for
-* stop execution when the goal is completed
-
-The agent should behave similar to **ChatGPT / Claude tool agents**.
+This is not a small fix.
+This is a full prompt architecture rewrite.
 
 ---
 
-# 2. Agent Decision Logic
+## PROJECT CONTEXT
 
-Before executing any step, the agent must analyze the user request and determine the **task type**.
+The workspace is a large AI platform with:
 
-Possible task categories:
+* FastAPI backend
+* RAG pipeline
+* Agent system
+* Chat system
+* Flashcard generator
+* Quiz generator
+* Mindmap generator
+* Presentation generator
+* Podcast generator
+* Explainer generator
+* Code execution sandbox
+* Multi-LLM provider support
+* Vector database (Chroma)
+* Prompt templates stored in /app/prompts/
+* Services using prompts in /app/services/
+* Chat / Agent prompts
+* System prompts
+* Tool prompts
+* Generation prompts
 
-```
-knowledge_query
-document_analysis
-dataset_analysis
-web_research
-file_generation
-coding_task
-visualization
-general_chat
-```
+The current prompts are BAD because:
 
-Example routing:
+* hardcoded instructions
+* duplicated logic
+* inconsistent format
+* not reusable
+* not dynamic
+* not production level
+* not aligned with RAG
+* not aligned with agent tools
+* not aligned with multi-provider LLM
+* not scalable
 
-```
-PDF / documents → RAG
-CSV / Excel → Python analysis
-Web knowledge → web search
-Report generation → document generation
-Charts → python visualization
-Coding → code generation
-```
-
-The agent must automatically select the correct tool.
-
----
-
-# 3. Remove Unnecessary Actions
-
-Fix current problems where the agent:
-
-* runs unnecessary web searches
-* generates unrelated explanations
-* performs extra reasoning steps
-* continues execution after goal completion
-
-Add rule:
-
-```
-If the user request is already solvable with available data,
-do not perform additional searches.
-```
-
-The agent must stop execution immediately when the goal is achieved.
+Your job is to FIX ALL of this.
 
 ---
 
-# 4. Simplified Agent Execution Flow
+## GOAL
 
-Rewrite the pipeline as:
+You must:
 
-```
-User Request
-     ↓
-Intent Analysis
-     ↓
-Task Planning
-     ↓
-Tool Selection
-     ↓
-Tool Execution
-     ↓
-Observation
-     ↓
-Goal Completed?
-     ↓
-Return Result
-```
-
-Avoid deep recursive reasoning loops.
-
-Maximum steps:
-
-```
-MAX_AGENT_STEPS = 8
-```
+1. Analyze the entire workspace
+2. Find ALL prompt files
+3. Find ALL places where prompts are used
+4. Delete all existing prompt md / txt files
+5. Design a new prompt architecture
+6. Rewrite ALL prompts from scratch
+7. Make prompts dynamic and reusable
+8. Make prompts production-level
+9. Make prompts work for ALL features
+10. Make prompts compatible with RAG + Agent + Tools
 
 ---
 
-# 5. Tool Selection Rules
+## IMPORTANT RULES
 
-Available tools:
+DO NOT:
 
-```
-rag_search
-web_search
-research
-python
-artifact_generation
-```
+* Do not keep old prompts
+* Do not patch old prompts
+* Do not keep hardcoded instructions
+* Do not write feature-specific hacks
+* Do not assume single use case
+* Do not write static prompts
 
-The agent must choose tools based on task type.
+DO:
 
-Examples:
-
-```
-Analyze dataset → python
-Summarize document → rag
-Find latest information → web_search
-Generate report → artifact_generation
-```
-
-Do not call tools unnecessarily.
+* Write modular prompts
+* Write reusable prompts
+* Write parameterized prompts
+* Write context-aware prompts
+* Write tool-aware prompts
+* Write RAG-aware prompts
+* Write agent-aware prompts
+* Write multi-LLM compatible prompts
+* Write production quality prompts
 
 ---
 
-# 6. Output Policy
+## NEW PROMPT ARCHITECTURE REQUIRED
 
-The agent must **only return what the user requested**.
+You must create a prompt system like:
 
-Rules:
+app/prompts/
 
-* no unnecessary explanations
-* no unrelated information
-* concise responses
-* produce files when requested
-* avoid filler text
+```
+system/
+    base_system.md
+    rag_system.md
+    agent_system.md
+    tool_system.md
+
+chat/
+    chat_base.md
+    chat_rag.md
+    chat_agent.md
+
+generation/
+    flashcard.md
+    quiz.md
+    mindmap.md
+    presentation.md
+    podcast.md
+    explainer.md
+
+code/
+    code_generation.md
+    code_execution.md
+
+shared/
+    formatting.md
+    safety.md
+    style.md
+    reasoning.md
+```
+
+Prompts must be composable.
 
 Example:
 
-User request:
+system + rag + style + task + context
 
-```
-give top 10 cities in india as pdf
-```
-
-Correct output:
-
-```
-PDF file generated
-```
-
-No extra discussion.
+NOT one big hardcoded prompt.
 
 ---
 
-# 7. Agent Prompt Improvement
+## PROMPT DESIGN RULES
 
-Rewrite the system prompt controlling the agent.
+All prompts must:
 
-Example:
+* be model-agnostic
+* support local LLM
+* support OpenAI
+* support Gemini
+* support Ollama
+* support NVIDIA endpoints
 
-```
-You are an autonomous task-solving AI agent.
+Prompts must accept variables like:
 
-Your goal is to complete the user's request using the most efficient method.
+{context}
+{materials}
+{question}
+{difficulty}
+{instructions}
+{tool_results}
+{conversation_history}
+{user_intent}
+{format}
+{max_tokens}
 
-Rules:
-- Understand the user's objective clearly.
-- Select the correct tool for the task.
-- Avoid unnecessary reasoning or searches.
-- Only execute steps required to achieve the goal.
-- Stop immediately when the goal is completed.
-- Return only the requested output.
-
-Do not generate irrelevant explanations or additional information.
-```
-
----
-
-# 8. Error Handling
-
-If a tool fails:
-
-1. retry once
-2. choose alternative tool if possible
-3. return clear error message
-
-Do not enter infinite retry loops.
+Prompts must NOT assume values.
 
 ---
 
-# 9. UI Behavior
+## RAG SUPPORT
 
-While the agent is working:
+Prompts must support:
 
-Show only **high-level steps** in the UI:
-
-```
-Planning task
-Collecting information
-Processing data
-Generating result
-```
-
-Do not expose internal reasoning logs.
+* retrieved chunks
+* citations
+* source names
+* notebook filtering
+* multi material context
+* long context trimming
 
 ---
 
-# 10. Production Requirements
+## AGENT SUPPORT
 
-The new agent pipeline must be:
+Prompts must support:
 
-* modular
-* deterministic
-* efficient
-* async-safe
-* production ready
+* tool calling
+* multi step reasoning
+* scratchpad
+* planner / executor
+* function calls
+* code tool
+* search tool
+* generation tool
 
-Ensure the agent can handle **all user tasks**, not only coding workflows.
+---
+
+## GENERATION SUPPORT
+
+Prompts must support:
+
+* flashcards
+* quiz
+* mindmap
+* presentation
+* podcast
+* explainer
+* summary
+* notes
+* study guide
+
+without rewriting prompt each time.
+
+---
+
+## OUTPUT FORMAT
+
+You must output:
+
+1. New prompt architecture tree
+2. All new prompt files
+3. Explanation of each prompt
+4. Changes needed in services
+5. Changes needed in prompt loader
+6. Changes needed in chat router
+7. Changes needed in agent
+8. Changes needed in RAG pipeline
+
+Do not stop until ALL prompts are replaced.
+
+---
+
+## QUALITY LEVEL
+
+Write prompts like production systems:
+
+ChatGPT
+Claude
+Cursor
+Notion AI
+Perplexity
+NotebookLM
+
+NOT like tutorial code.
+
+---
+
+START
+
+Analyze the workspace now.
+Rewrite the entire prompt system.
