@@ -11,6 +11,8 @@ import { sanitizeStreamingMarkdown } from './MarkdownRenderer';
 import MarkdownRenderer from './MarkdownRenderer';
 import CollapsibleActionBlock from './CollapsibleActionBlock';
 import AnnotatedText from './AnnotatedText';
+import ArtifactViewer from './ArtifactViewer';
+
 
 
 const CitationCtx = createContext({ citations: [], activeCite: null, onCite: () => {} });
@@ -56,7 +58,7 @@ function SourceCard({ source }) {
 function ResearchProgressPanel({ researchState }) {
   if (!researchState) return null;
 
-  const { phase = 'searching', phaseLabel = 'Starting deep research…', queries = [], sources = [] } = researchState;
+  const { phase = 'searching', label: phaseLabel = 'Starting deep research…', queries = [], sources = [] } = researchState;
 
   // Show the last 5 sources; re-animate when a new batch of 5 arrives
   const latestSources = sources.slice(-5);
@@ -294,6 +296,7 @@ function ResearchReport({
   isStreaming = false,
   researchState = null,
   messageBlocks = [],
+  artifacts = [],
 }) {
   const [activeCite, setActiveCite] = useState(null);
 
@@ -381,9 +384,20 @@ function ResearchReport({
         )}
 
         {/* Citation source bubbles removed */}
+        
+        {/* Research Artifacts (PDF Export, etc.) */}
+        {artifacts.length > 0 && isDone && (
+          <div className="mt-6 pt-4 border-t border-white/[0.06]">
+            <div className="text-[10px] uppercase tracking-wider text-text-muted/60 mb-2.5 font-bold">
+              Research Deliverables
+            </div>
+            <ArtifactViewer artifacts={artifacts} />
+          </div>
+        )}
       </div>
     </CitationCtx.Provider>
   );
 }
+
 
 export default memo(ResearchReport);

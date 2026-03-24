@@ -16,6 +16,7 @@ async def execute(
     material_ids: List[str],
     user_id: str,
     notebook_id: str,
+    step_index: Optional[int] = None,
 ) -> AsyncIterator[str | ToolResult]:
     yield sse_tool_start("rag", label="Searching your materials…")
 
@@ -42,7 +43,7 @@ async def execute(
 
     except Exception as exc:
         logger.error("RAG retrieval failed: %s", exc)
-        yield sse_tool_result("rag", success=False, summary="Retrieval failed")
+        yield sse_tool_result("rag", success=False, summary="Retrieval failed", step_index=step_index)
         yield ToolResult(
             tool_name="rag",
             success=False,
@@ -52,7 +53,7 @@ async def execute(
         return
 
     if not context:
-        yield sse_tool_result("rag", success=True, summary="No relevant context found")
+        yield sse_tool_result("rag", success=True, summary="No relevant context found", step_index=step_index)
         yield ToolResult(
             tool_name="rag",
             success=True,
@@ -61,7 +62,7 @@ async def execute(
         )
         return
 
-    yield sse_tool_result("rag", success=True, summary=f"Found {chunks_used} source(s)")
+    yield sse_tool_result("rag", success=True, summary=f"Found {chunks_used} source(s)", step_index=step_index)
     yield ToolResult(
         tool_name="rag",
         success=True,

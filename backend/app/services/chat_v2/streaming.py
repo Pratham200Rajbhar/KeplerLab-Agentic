@@ -19,10 +19,12 @@ def sse_tool_start(tool: str, label: Optional[str] = None) -> str:
         data["label"] = label
     return sse("tool_start", data)
 
-def sse_tool_result(tool: str, success: bool = True, summary: Optional[str] = None) -> str:
+def sse_tool_result(tool: str, success: bool = True, summary: Optional[str] = None, step_index: Optional[int] = None) -> str:
     data: Dict[str, Any] = {"tool": tool, "success": success}
     if summary:
         data["summary"] = summary
+    if step_index is not None:
+        data["step_index"] = step_index
     return sse("tool_result", data)
 
 def sse_error(error: str) -> str:
@@ -37,8 +39,11 @@ def sse_blocks(blocks: List[Dict[str, Any]]) -> str:
 def sse_meta(metadata: Dict[str, Any]) -> str:
     return sse("meta", metadata)
 
-def sse_code_block(code: str, language: str = "python", session_id: str = "") -> str:
-    return sse("code_block", {"code": code, "language": language, "session_id": session_id})
+def sse_code_block(code: str, language: str = "python", session_id: str = "", step_index: Optional[int] = None) -> str:
+    data: Dict[str, Any] = {"code": code, "language": language, "session_id": session_id}
+    if step_index is not None:
+        data["step_index"] = step_index
+    return sse("code_block", data)
 
 def sse_web_sources(sources: List[Dict[str, Any]]) -> str:
     return sse("web_sources", {"sources": sources})

@@ -29,20 +29,22 @@ async def _run_rag(
     material_ids: List[str],
     user_id: str,
     notebook_id: str,
+    step_index: Optional[int] = None,
     **kwargs,
 ) -> AsyncIterator[Union[str, ToolResult]]:
     from app.services.tools.rag_tool import execute
-    async for item in execute(query, material_ids, user_id, notebook_id):
+    async for item in execute(query, material_ids, user_id, notebook_id, step_index=step_index):
         yield item
 
 
 async def _run_web_search(
     query: str,
     user_id: str,
+    step_index: Optional[int] = None,
     **kwargs,
 ) -> AsyncIterator[Union[str, ToolResult]]:
     from app.services.tools.web_search_tool import execute
-    async for item in execute(query, user_id):
+    async for item in execute(query, user_id, step_index=step_index):
         yield item
 
 
@@ -51,10 +53,12 @@ async def _run_research(
     user_id: str,
     notebook_id: str,
     session_id: str,
+    material_ids: List[str] = None,
+    step_index: Optional[int] = None,
     **kwargs,
 ) -> AsyncIterator[Union[str, ToolResult]]:
     from app.services.tools.research_tool import execute
-    async for item in execute(query, user_id, notebook_id, session_id):
+    async for item in execute(query, user_id, notebook_id, session_id, material_ids, step_index=step_index):
         yield item
 
 
@@ -64,6 +68,7 @@ async def _run_python_auto(
     user_id: str,
     notebook_id: str,
     session_id: str,
+    step_index: Optional[int] = None,
     **kwargs,
 ) -> AsyncIterator[Union[str, ToolResult]]:
     """Generate code then immediately execute it and register artifacts."""
@@ -74,7 +79,7 @@ async def _run_python_auto(
     generated_code = ""
     language = "python"
 
-    async for item in gen_execute(query, material_ids, user_id, notebook_id, session_id):
+    async for item in gen_execute(query, material_ids, user_id, notebook_id, session_id, step_index=step_index):
         if isinstance(item, ToolResult):
             generated_code = item.metadata.get("code", "")
             language = item.metadata.get("language", "python")
@@ -100,6 +105,7 @@ async def _run_python_auto(
     async for item in execute_code_and_collect_artifacts(
         generated_code, user_id, notebook_id, session_id,
         language=language, material_ids=material_ids,
+        step_index=step_index,
     ):
         yield item
 
@@ -134,7 +140,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
             "research questions requiring comprehensive analysis."
         ),
         execute_fn=_run_research,
-        required_params=["query", "user_id", "notebook_id", "session_id"],
+        required_params=["query", "user_id", "notebook_id", "session_id", "material_ids"],
     ),
     "python_auto": ToolSpec(
         name="python_auto",

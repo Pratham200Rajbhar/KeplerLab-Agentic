@@ -172,7 +172,9 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
               isStreaming={isStreaming}
               researchState={message.researchState || null}
               messageBlocks={message.blocks || []}
+              artifacts={message.artifacts || []}
             />
+
           )}
 
           {}
@@ -189,6 +191,8 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
             <AgentProgressPanel
               agentState={message.agentState}
               isStreaming={isStreaming}
+              codeBlocks={message.codeBlocks}
+              artifacts={message.artifacts}
             />
           )}
 

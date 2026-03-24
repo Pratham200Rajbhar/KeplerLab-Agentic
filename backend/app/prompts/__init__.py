@@ -428,20 +428,30 @@ def get_research_gap_prompt(query: str, sources_summary: str, previous_queries: 
 
 
 def get_research_report_prompt(query: str, source_ctx: str, source_count: int) -> str:
-    request = (
-        "Write a comprehensive research report grounded in the provided sources. "
-        "Use markdown sections and include evidence-backed analysis.\n"
-        f"Topic: {query}\nSource count: {source_count}\nSources:\n{source_ctx}"
+    return (
+        f"You are a specialized research assistant producing a high-quality, professional research report.\n\n"
+        f"TOPIC: {query}\n\n"
+        f"You have analyzed {source_count} web sources. Their content is provided below.\n\n"
+        f"YOUR GOAL: Write a report that is DEEP yet extremely EASY TO READ. It should feel like a premium Perplexity Page or a high-level executive briefing.\n\n"
+        f"CORE PRINCIPLES:\n"
+        f"1. **Clarity & Synthesis**: Do not just list facts. Synthesize the findings into logical themes. Use simple, direct language.\n"
+        f"2. **Scanability**: Use bolding, bullet points, and tables to make key information jump off the page.\n"
+        f"3. **Structured Depth**: Use clear, descriptive ## Headings. Start with a high-level summary, then provide deep thematic sections.\n"
+        f"4. **Exact Citations**: Every claim MUST be followed by [SOURCE N].\n"
+        f"5. **Intent Alignment**: Structure the report based on what the user is likely trying to achieve with this specific query.\n\n"
+        f"DETAILED REQUIREMENTS:\n"
+        f"- **Executive Summary**: Always start with a 1-2 paragraph summary of the most critical takeaways.\n"
+        f"- **Thematic Sections**: Group information logically (e.g., 'Market Trends', 'Technical Challenges', 'Global Impact'). Use as many sections as needed for full coverage.\n"
+        f"- **Data & Evidence**: Include hard numbers, specific dates, and notable expert quotes from the sources.\n"
+        f"- **Formatting**: Use **bolding** for emphasis. Use tables for comparisons. Use nested lists for complex breakdowns.\n"
+        f"- **No Filler**: Eliminate phrases like 'According to sources' or 'Research shows'. Just state the facts with citations.\n\n"
+        f"SOURCES ({source_count} total):\n\n"
+        f"{source_ctx}\n\n"
+        f"Now, generate the ultimate research report. Priority: Depth, Clarity, and Professional Structure. Do not truncate the substance."
     )
-    return compose_prompt(
-        ["system/base_system.md", "shared/reasoning.md", "shared/style.md", "chat/chat_agent.md"],
-        {
-            "mode": "research_report",
-            "question": request,
-            "tool_results": source_ctx,
-            "artifacts": "None",
-        },
-    )
+
+
+
 
 
 def get_explainer_slide_prompt(

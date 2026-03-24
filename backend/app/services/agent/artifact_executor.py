@@ -223,14 +223,14 @@ ORIGINAL CODE:
 ```
 
 Fix the code so it runs without errors and PRODUCES the output file. Key rules:
-- For PDF (fpdf2):
-  • set_font style MUST be "" or "B"/"I"/"U"/"BI". NEVER "Normal"/"Regular"
-  • ALWAYS use multi_cell(0, h, text) — w=0 means full page width, prevents "not enough space" errors
-  • Sanitize ALL text: unicodedata.normalize('NFKD', str(s)).encode('latin-1','replace').decode('latin-1')
-  • Keep default margins, font size <= 18 for title, <= 13 for headers, <= 11 for body
-- For charts: plt.savefig() then plt.close(), NEVER plt.show()
+- For PDF Generation:
+  • Use the provided `kepler_fpdf.PDF` (or `KeplerPDF`) class for robust layout.
+  • Example: `from kepler_fpdf import PDF; pdf = PDF(); pdf.add_section("Title"); pdf.multi_cell(0, 10, "Text"); pdf.output("out.pdf")`
+  • The `PDF` class automatically loads fonts and handles Unicode/Sanitization.
+  • To avoid "not enough space" errors, ALWAYS ensure you are at the correct X/Y before `multi_cell(0)`.
+- For charts: `plt.savefig()` then `plt.close()`, NEVER `plt.show()`
 - Use relative filenames only (no subdirectories)
-- print("SAVED: <filename>") after writing each file
+- `print("SAVED: <filename>")` after writing each file
 - Do NOT wrap in try/except that silently swallows errors — let errors propagate so they can be diagnosed
 
 Return ONLY the corrected {language} code — no markdown fences, no explanation.
@@ -273,6 +273,7 @@ async def execute_code_and_collect_artifacts(
     language: str = "python",
     timeout: int = 600,
     material_ids: Optional[List[str]] = None,
+    step_index: Optional[int] = None,
 ) -> AsyncIterator[str | ToolResult]:
     """
     Execute code in the sandbox, register any output files as artifacts,
@@ -315,6 +316,36 @@ async def execute_code_and_collect_artifacts(
                     logger.info("Copied %d material file(s) to sandbox: %s", len(copied), copied)
             except Exception as exc:
                 logger.warning("Failed to copy material files to sandbox: %s", exc)
+
+        # Copy Kepler Utilities (Root Solution for robust generation)
+        try:
+            util_src = os.path.join(os.path.dirname(__file__), "kepler_fpdf.py")
+            if os.path.exists(util_src):
+                shutil.copy2(util_src, os.path.join(work_dir, "kepler_fpdf.py"))
+                input_filenames.add("kepler_fpdf.py")
+                logger.info("Copied kepler_fpdf.py to sandbox")
+        except Exception as util_exc:
+            logger.warning("Failed to copy kepler_fpdf utility: %s", util_exc)
+
+        # Copy Unicode fonts for PDF generation support
+        try:
+            font_dir = "/usr/share/fonts/truetype/dejavu"
+            font_files = ["DejaVuSans.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans-Oblique.ttf"]
+            for font_file in font_files:
+                src = os.path.join(font_dir, font_file)
+                if os.path.exists(src):
+                    shutil.copy2(src, os.path.join(work_dir, font_file))
+                    input_filenames.add(font_file)
+                    logger.info("Copied %s to sandbox", font_file)
+                else:
+                    # Alternative path
+                    alt_src = os.path.join("/usr/share/fonts/dejavu", font_file)
+                    if os.path.exists(alt_src):
+                        shutil.copy2(alt_src, os.path.join(work_dir, font_file))
+                        input_filenames.add(font_file)
+                        logger.info("Copied %s to sandbox (alt path)", font_file)
+        except Exception as font_exc:
+            logger.warning("Failed to copy fonts to sandbox: %s", font_exc)
 
         # Execute with auto-repair loop
         current_code = code
@@ -360,6 +391,7 @@ async def execute_code_and_collect_artifacts(
                 yield sse("agent_status", {
                     "phase": "executing",
                     "message": f"Code issue detected, repairing (attempt {attempt + 2})…",
+                    "step_index": step_index,
                 })
                 fixed = await _attempt_code_repair(current_code, error_msg, language)
                 if fixed:
@@ -415,6 +447,8 @@ async def execute_code_and_collect_artifacts(
             record = await _register_artifact(art, user_id, notebook_id, session_id)
             if record:
                 registered.append(record)
+                if step_index is not None:
+                    record["step_index"] = step_index
                 yield sse("agent_artifact", record)
             else:
                 logger.warning("Failed to register artifact: %s", art.get("filename"))

@@ -79,20 +79,40 @@ function ArtifactCard({ artifact }) {
   }
 
   const colors = getFileColor(artifact.mime, artifact.display_type);
+  const isPremiumRenderer = artifact.display_type === 'research_report' || artifact.mime?.includes('pdf');
+
+  const cardClasses = isPremiumRenderer 
+    ? "relative overflow-hidden flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all duration-300 group bg-gradient-to-r from-accent/[0.05] to-transparent border-accent/20 hover:border-accent/40 hover:bg-accent/[0.08] shadow-[0_0_15px_-3px_rgba(26,115,232,0.15)]"
+    : "flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.08] hover:border-white/[0.14] transition-colors bg-white/[0.02] group";
+
+  const iconClasses = isPremiumRenderer
+    ? "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-accent/20 text-accent shadow-inner shadow-accent/20"
+    : `w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`;
+
+  const titleClasses = isPremiumRenderer
+    ? "text-sm font-semibold text-text-primary truncate group-hover:text-accent transition-colors"
+    : "text-sm font-medium text-text-primary truncate";
+
+  const buttonClasses = isPremiumRenderer
+    ? "shrink-0 flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition-all bg-accent text-white hover:bg-accent/90 shadow-[0_0_10px_-2px_rgba(26,115,232,0.4)] hover:shadow-[0_0_15px_-2px_rgba(26,115,232,0.6)]"
+    : "shrink-0 flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors px-3 py-1.5 rounded-lg border border-accent/25 hover:bg-accent/10";
+
 
   return (
-    <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.08] hover:border-white/[0.14] transition-colors bg-white/[0.02]">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
+    <div className={cardClasses}>
+      <div className={iconClasses}>
         <FileIcon mime={artifact.mime} displayType={artifact.display_type} />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-text-primary truncate">{artifact.filename}</div>
+      <div className="flex-1 min-w-0 z-10">
+        <div className={titleClasses}>{artifact.filename}</div>
         <div className="flex items-center gap-2 mt-0.5">
           {artifact.size > 0 && (
-            <span className="text-xs text-text-muted">{formatBytes(artifact.size)}</span>
+            <span className={isPremiumRenderer ? "text-xs text-text-secondary" : "text-xs text-text-muted"}>
+              {formatBytes(artifact.size)}
+            </span>
           )}
           {artifact.display_type && (
-            <span className="text-[10px] text-text-muted/60 uppercase tracking-wider">
+            <span className="text-[10px] text-text-muted/60 uppercase tracking-wider font-semibold">
               {artifact.display_type.replace('_', ' ')}
             </span>
           )}
@@ -102,11 +122,15 @@ function ArtifactCard({ artifact }) {
         <a
           href={apiUrl}
           download={artifact.filename}
-          className="shrink-0 flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors px-3 py-1.5 rounded-lg border border-accent/25 hover:bg-accent/10"
+          className={`${buttonClasses} z-10`}
         >
-          <Download size={12} />
-          Download
+          <Download size={isPremiumRenderer ? 14 : 12} />
+          {isPremiumRenderer ? 'Download Report' : 'Download'}
         </a>
+      )}
+      {/* Decorative background glow for premium cards */}
+      {isPremiumRenderer && (
+        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-accent/5 to-transparent pointer-events-none rounded-r-xl" />
       )}
     </div>
   );

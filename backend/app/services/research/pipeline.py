@@ -8,25 +8,32 @@ import time
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from app.core.web_search import ddg_search, fetch_url_content
-from app.services.llm_service.llm import get_llm
+from app.services.llm_service.llm import get_llm, extract_chunk_content
 from app.prompts import (
     get_research_decompose_prompt,
     get_research_gap_prompt,
     get_research_report_prompt,
 )
+from app.services.research.pdf_exporter import generate_research_pdf
+
 
 logger = logging.getLogger(__name__)
 
+# Silence noisy external libraries during research
+logging.getLogger("trafilatura").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
 # ── Deep research constants ─────────────────────────────────────────────────
-# Target: 40-60 websites across multiple search rounds
-_FETCH_TIMEOUT      = 20           # per-URL timeout (seconds)
-_RESULTS_PER_QUERY  = 15           # DDG results per search query
-_URLS_PER_ROUND     = 15           # max URLs to fetch per round
-_MAX_ROUNDS         = 5            # search → fetch rounds (5 × 15 = 75 candidate URLs)
-_INITIAL_SUB_QUESTIONS = 8         # initial sub-questions for decomposition
-_FOLLOWUP_QUERIES   = 6            # follow-up queries per gap round
-_SOURCE_TEXT_LIMIT  = 6000         # chars kept per fetched page
-_MIN_SOURCES_TARGET = 50           # stop early if we hit this many sources
+# Target: ~10 websites across 1-2 search rounds
+_FETCH_TIMEOUT      = 10           # per-URL timeout (seconds)
+_RESULTS_PER_QUERY  = 5            # DDG results per search query
+_URLS_PER_ROUND     = 5            # max URLs to fetch per round
+_MAX_ROUNDS         = 2            # search → fetch rounds
+_INITIAL_SUB_QUESTIONS = 3         # initial sub-questions for decomposition
+_FOLLOWUP_QUERIES   = 2            # follow-up queries per gap round
+_SOURCE_TEXT_LIMIT  = 4000         # chars kept per fetched page
+_MIN_SOURCES_TARGET = 10           # stop early if we hit this many sources
 
 
 def _sse(event: str, data: Any) -> str:
@@ -121,8 +128,8 @@ async def _identify_gaps(
     previous_queries: List[str],
 ) -> List[Dict[str, str]]:
     """
-    Build a richer coverage summary (not just titles) to help the LLM identify
-    real gaps — what topics and subtopics are covered vs. still missing.
+    Identify what's still missing and return follow-up search queries.
+    Falls back to LLM-generated angle queries if JSON parsing fails.
     """
     llm = get_llm(temperature=0.3)
 
@@ -138,10 +145,59 @@ async def _identify_gaps(
     prompt = get_research_gap_prompt(query, sources_summary, json.dumps(previous_queries))
     resp = await llm.ainvoke(prompt)
     raw = getattr(resp, "content", str(resp)).strip()
+
+    # Strip markdown fences if present
+    if "```" in raw:
+        parts = raw.split("```")
+        for part in parts:
+            part = part.strip()
+            if part.startswith("json"):
+                part = part[4:].strip()
+            if part.startswith("["):
+                raw = part
+                break
+
+    logger.info("[research] Gap analysis LLM response (first 500 chars): %s", raw[:500])
+
     try:
-        return _parse_json_array(raw)
-    except Exception:
-        return []
+        results = _parse_json_array(raw)
+        if results:
+            logger.info("[research] Gap analysis found %d follow-up queries", len(results))
+            return results
+    except Exception as e:
+        logger.warning("[research] Gap analysis JSON parse failed: %s | raw: %s", e, raw[:200])
+
+    # Fallback: generate diverse follow-up queries directly via LLM
+    logger.info("[research] Gap analysis returned empty — using fallback query generation")
+    fallback_prompt = (
+        f"The topic is: {query}\n\n"
+        f"These search queries have already been used:\n{json.dumps(previous_queries)}\n\n"
+        f"Generate 4 NEW, DIFFERENT search queries to find more information about this topic "
+        f"that aren't covered by the queries above. Focus on: statistics, recent developments, "
+        f"expert analysis, case studies, and comparisons.\n\n"
+        f"Return ONLY a JSON array of strings: [\"query1\", \"query2\", \"query3\", \"query4\"]"
+    )
+    try:
+        resp2 = await llm.ainvoke(fallback_prompt)
+        raw2 = getattr(resp2, "content", str(resp2)).strip()
+        if "```" in raw2:
+            raw2 = raw2.split("```")[1].strip()
+            if raw2.startswith("json"):
+                raw2 = raw2[4:].strip()
+        m = re.search(r"\[.*\]", raw2, re.DOTALL)
+        if m:
+            queries = json.loads(m.group())
+            if isinstance(queries, list) and queries:
+                logger.info("[research] Fallback generated %d queries", len(queries))
+                return [
+                    {"sub_question": q, "search_query": q}
+                    for q in queries
+                    if isinstance(q, str) and q.strip()
+                ]
+    except Exception as e2:
+        logger.warning("[research] Fallback query generation also failed: %s", e2)
+
+    return []
 
 
 def _build_source_context(sources: List[Dict], max_sources: int = 50) -> str:
@@ -179,6 +235,10 @@ async def stream_research(
             "label": "Preparing search plan…",
         })
         sub_questions = await _decompose_query(query, _INITIAL_SUB_QUESTIONS)
+        if not sub_questions:
+            logger.info("[research] Decomposition failed, falling back to original query")
+            sub_questions = [{"sub_question": query, "search_query": query}]
+        
         current_queries = sub_questions
         all_queries_used.extend(sq["search_query"] for sq in sub_questions)
 
@@ -270,7 +330,7 @@ async def stream_research(
 
         full_report = []
         async for chunk in llm.astream(report_prompt):
-            token = getattr(chunk, "content", str(chunk))
+            token = extract_chunk_content(chunk)
             if token:
                 full_report.append(token)
                 yield _sse("token", {"content": token})
@@ -292,6 +352,21 @@ async def stream_research(
 
         # Persist
         report_text = "".join(full_report)
+        
+        # ── Generate & Register PDF Artifact ──
+        try:
+            pdf_info = await generate_research_pdf(
+                report_md=report_text,
+                query=query,
+                sources_count=len(all_sources),
+                user_id=user_id,
+                notebook_id=notebook_id
+            )
+            if pdf_info:
+                yield _sse("research_pdf", pdf_info)
+        except Exception as pdf_exc:
+            logger.warning("[research] PDF generation failed: %s", pdf_exc)
+
         try:
             from app.db.prisma_client import prisma
             await prisma.researchsession.create(data={
@@ -306,6 +381,7 @@ async def stream_research(
             })
         except Exception as exc:
             logger.warning("[research] DB persist failed (non-fatal): %s", exc)
+
 
     except Exception as exc:
         logger.exception("[research] Pipeline error: %s", exc)

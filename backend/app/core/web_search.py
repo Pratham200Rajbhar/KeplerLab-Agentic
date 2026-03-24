@@ -17,13 +17,48 @@ _FETCH_TIMEOUT = 30
 _TRAFILA_CONFIG = _use_trafila_config()
 _TRAFILA_CONFIG.set("DEFAULT", "TIMEOUT", "30")
 
+
 def _ddg_search_sync(query: str, max_results: int = 5) -> list:
+    """
+    Search using DuckDuckGo's html endpoint, falling back to auto.
+    Retries up to 2 times with back-off on rate-limit errors.
+    """
+    import time
     from ddgs import DDGS
 
-    d = DDGS()
-    return list(d.text(query, max_results=max_results))
+    # DDGS v9.x: 'html' is DuckDuckGo native; 'auto' tries all engines
+    backends = ["html", "auto"]
+    last_exc: Optional[Exception] = None
+
+    for backend in backends:
+        for attempt in range(2):
+            try:
+                d = DDGS()
+                results = list(d.text(query, max_results=max_results, backend=backend))
+                if results:
+                    return results
+                break  # empty but no error — try next backend
+            except Exception as exc:
+                last_exc = exc
+                msg = str(exc).lower()
+                if any(k in msg for k in ("ratelimit", "202", "timeout", "429", "blocked")):
+                    wait = 1.5 * (attempt + 1)
+                    logger.debug(
+                        "[ddg_search] %s backend rate-limited (attempt %d), retrying in %.1fs",
+                        backend, attempt + 1, wait,
+                    )
+                    time.sleep(wait)
+                    continue
+                logger.debug("[ddg_search] %s backend error: %s", backend, exc)
+                break
+
+    if last_exc is not None:
+        raise last_exc
+    return []
+
 
 async def ddg_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
+    """Async wrapper — used by /web, /research, and /search/web fallback."""
     try:
         raw = await asyncio.to_thread(_ddg_search_sync, query, max_results)
         return [
@@ -38,6 +73,7 @@ async def ddg_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     except Exception as exc:
         logger.warning("[ddg_search] Failed for query=%r: %s", query, exc)
         return []
+
 
 def _fetch_and_extract_sync(url: str) -> Optional[Dict[str, str]]:
     downloaded = trafilatura.fetch_url(url, config=_TRAFILA_CONFIG)
@@ -65,6 +101,7 @@ def _fetch_and_extract_sync(url: str) -> Optional[Dict[str, str]]:
         "text": text[:8000],
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
+
 
 async def fetch_url_content(url: str) -> Optional[Dict[str, str]]:
     try:

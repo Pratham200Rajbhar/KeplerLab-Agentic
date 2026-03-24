@@ -1,23 +1,35 @@
 from __future__ import annotations
 
-from app.prompts import get_prompt_template
+from app.prompts import compose_prompt, get_prompt_template
 
 
-# These constants keep the existing .format(...) call pattern used by the agent runtime.
-# They are now sourced from modular markdown templates in app/prompts.
-AGENT_SYSTEM_PROMPT = "\n\n".join(
+# ── Agent system prompt ─────────────────────────────────────────────────
+# Uses compose_prompt() for SAFE rendering — all {placeholders} in the
+# raw markdown templates are resolved: known ones get values, unknown
+# ones become empty strings.  This prevents the KeyError crash that
+# occurred when using raw get_prompt_template() + str.format().
+#
+# NOTE: {today} is NOT baked in here — it is injected at runtime by the
+# orchestrator via simple string concatenation (not .format()).
+AGENT_SYSTEM_PROMPT = compose_prompt(
     [
-        get_prompt_template("system/base_system.md").strip(),
-        get_prompt_template("system/agent_system.md").strip(),
-        get_prompt_template("system/tool_system.md").strip(),
-        get_prompt_template("shared/safety.md").strip(),
-        get_prompt_template("shared/style.md").strip(),
-    ]
+        "system/base_system.md",
+        "shared/safety.md",
+        "shared/style.md",
+    ],
+    {
+        "mode": "Agent",
+        "user_intent": "Execute the user's task autonomously using available tools",
+        "today": "",  # will be injected at runtime
+    },
 )
 
+# ── Chat-level prompts (all {vars} are supplied by callers) ─────────────
+SYNTHESIS_PROMPT = get_prompt_template("chat/agent_synthesis.md")
+DIRECT_RESPONSE_PROMPT = get_prompt_template("chat/direct_response.md")
+
+# ── Structured prompts (all {vars} supplied by callers) ─────────────────
 INTENT_CLASSIFIER_PROMPT = get_prompt_template("system/agent_intent_classifier.md")
 PLANNER_PROMPT = get_prompt_template("system/agent_planner.md")
 TOOL_SELECTOR_PROMPT = get_prompt_template("system/agent_tool_selector.md")
 REFLECTION_PROMPT = get_prompt_template("system/agent_reflection.md")
-SYNTHESIS_PROMPT = get_prompt_template("chat/agent_synthesis.md")
-DIRECT_RESPONSE_PROMPT = get_prompt_template("chat/direct_response.md")

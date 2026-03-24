@@ -133,7 +133,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 codeBlocks: [
                   ...(prev.codeBlocks || []),
                   {
-                    step_index: null,
+                    step_index: data.step_index !== undefined ? data.step_index : null,
                     code: data.code,
                     language: data.language || 'python',
                   },
@@ -172,15 +172,11 @@ export default function useChat({ notebookId, materialIds = [] }) {
             research_start: (data) => {
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
+                intentOverride: "WEB_RESEARCH",
                 researchState: {
                   status: 'researching',
-                  query: data.query || '',
-                  maxIterations: data.max_iterations || 3,
-                  targetSources: data.target_sources || 80,
-                  iteration: 0,
                   phase: 'searching',
-                  phaseNum: 1,
-                  phaseLabel: 'Starting deep research…',
+                  label: 'Initializing research...',
                   queries: [],
                   sources: [],
                 },
@@ -220,7 +216,14 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 };
               });
             },
+            research_pdf: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                artifacts: [...(prev.artifacts || []), data],
+              }));
+            },
             citations: (data) => {
+
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
                 citations: data.citations || [],
@@ -286,15 +289,26 @@ export default function useChat({ notebookId, materialIds = [] }) {
             agent_result: (data) => {
               useChatStore.getState().updateLastMessage((prev) => {
                 const existing = prev.agentState || {};
+                const results = [...(existing.results || [])];
+                const resObj = { 
+                  tool: data.tool, 
+                  success: data.success, 
+                  summary: data.summary,
+                  step_index: data.step_index
+                };
+                
+                if (data.step_index !== undefined && data.step_index !== null) {
+                  results[data.step_index] = resObj;
+                } else {
+                  results.push(resObj);
+                }
+
                 return {
                   ...prev,
                   agentState: {
                     ...existing,
                     activeTool: null,
-                    results: [
-                      ...(existing.results || []),
-                      { tool: data.tool, success: data.success, summary: data.summary },
-                    ],
+                    results,
                   },
                 };
               });

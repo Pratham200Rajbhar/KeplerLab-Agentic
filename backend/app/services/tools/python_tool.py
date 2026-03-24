@@ -39,6 +39,7 @@ async def execute(
     user_id: str,
     notebook_id: str,
     session_id: str,
+    step_index: Optional[int] = None,
 ) -> AsyncIterator[str | ToolResult]:
     yield sse_tool_start("python", label="Generating code…")
 
@@ -134,8 +135,8 @@ async def execute(
         if code.endswith("```"):
             code = code[:-3].strip()
 
-        yield sse_code_block(code, language, session_id)
-        yield sse_tool_result("python", success=True, summary="Code generated — review before running")
+        yield sse_code_block(code, language, session_id, step_index=step_index)
+        yield sse_tool_result("python", success=True, summary="Code generated — review before running", step_index=step_index)
 
         yield ToolResult(
             tool_name="python",
@@ -146,7 +147,7 @@ async def execute(
 
     except Exception as exc:
         logger.error("Code generation failed: %s", exc)
-        yield sse_tool_result("python", success=False, summary="Code generation failed")
+        yield sse_tool_result("python", success=False, summary="Code generation failed", step_index=step_index)
         yield ToolResult(
             tool_name="python",
             success=False,

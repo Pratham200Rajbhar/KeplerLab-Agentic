@@ -12,7 +12,9 @@ Streaming:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import re as _re
 import operator
 import time
 from datetime import date
@@ -30,13 +32,13 @@ from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import (
     sse, sse_done, sse_error, sse_meta, sse_token, sse_blocks,
 )
-from app.services.llm_service.llm import get_llm
+from app.services.llm_service.llm import get_llm, get_llm_structured
 
 from .executor import execute_tool, process_tool_result
 from .log_utils import log_stage
 from .memory import AgentMemory
 from .planner import create_plan, classify_intent
-from .prompts import SYNTHESIS_PROMPT, DIRECT_RESPONSE_PROMPT, AGENT_SYSTEM_PROMPT
+from .prompts import SYNTHESIS_PROMPT, DIRECT_RESPONSE_PROMPT, AGENT_SYSTEM_PROMPT, REFLECTION_PROMPT
 from .resource_router import classify_materials
 from .artifact_executor import detect_file_generation_intent
 from .state import AgentState, PlanStep
@@ -44,9 +46,9 @@ from .tool_selector import select_tool
 
 logger = logging.getLogger(__name__)
 
-MAX_STEPS      = 8
-MAX_TOOL_CALLS = 12
-MAX_RETRIES    = 1
+MAX_STEPS      = 12
+MAX_TOOL_CALLS = 15
+MAX_RETRIES    = 2
 AGENT_TIMEOUT  = 600   # seconds
 
 EmitFn = Callable[[str], Awaitable[None]]
@@ -92,11 +94,26 @@ class AgentGraphState(TypedDict):
     # Runtime objects (not serialised — in-memory only)
     _memory:      Any   # AgentMemory
     _agent_state: Any   # AgentState (compat shim for existing tools)
+    _reflect_decision: str  # Reflection node decision: continue|retry_with_fix|replan|complete
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # 2. Helpers
 # ═══════════════════════════════════════════════════════════════════════
+
+_VAR_RE = _re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
+
+
+def _render_prompt(template: str, variables: Dict[str, str]) -> str:
+    """Safe prompt renderer — replaces known {vars}, blanks unknown ones.
+
+    Unlike str.format(), this will NEVER raise KeyError for unresolved
+    placeholders.  Unknown variables become empty strings.
+    """
+    def _repl(m: _re.Match) -> str:
+        return variables.get(m.group(1), "")
+    return _VAR_RE.sub(_repl, template)
+
 
 def _today() -> str:
     return date.today().strftime("%B %d, %Y")
@@ -338,18 +355,144 @@ async def _node_advance_step(state: AgentGraphState, config) -> Dict:
     return {"current_step_index": new_idx, "step_retry_count": 0, "_agent_state": agent_state}
 
 
+async def _node_reflect(state: AgentGraphState, config) -> Dict:
+    """Self-healing reflection node.
+
+    After each step execution, the LLM evaluates the result and decides:
+      - continue:       step OK, move to next planned step
+      - retry_with_fix: step failed, retry with corrected instructions
+      - replan:         current plan insufficient, add new steps
+      - complete:       goal fully achieved, skip remaining steps
+    """
+    emit: EmitFn = config["configurable"]["emit"]
+    success = bool(state.get("last_step_success", False))
+    plan = list(state.get("plan") or [])
+    step_idx = int(state.get("current_step_index", 0))
+    retries = int(state.get("step_retry_count", 0))
+    is_last = step_idx >= len(plan) - 1
+
+    # Fast path: success on last step → go straight to synthesize
+    if success and is_last:
+        return {"_reflect_decision": "complete"}
+
+    # Fast path: success and more steps → continue
+    if success and not is_last:
+        return {"_reflect_decision": "continue"}
+
+    # Fast path: exceeded retry budget → move on
+    if retries >= MAX_RETRIES:
+        logger.warning("Reflect: max retries (%d) exceeded, moving on.", MAX_RETRIES)
+        return {"_reflect_decision": "continue" if not is_last else "complete"}
+
+    # ── LLM-based reflection on failure ────────────────────────────
+    await emit(sse("agent_status", {"phase": "reflecting", "message": "Analyzing error and planning fix…"}))
+
+    latest_obs = list(state.get("observations") or [])[-1:]
+    latest_result = str(latest_obs[0].get("content", "No output")) if latest_obs else "No output"
+    error_info = ""
+    if latest_obs:
+        meta = latest_obs[0].get("metadata", {})
+        if isinstance(meta, dict):
+            error_info = meta.get("error", "")
+
+    current_step = plan[step_idx] if step_idx < len(plan) else {}
+    artifacts_str = ", ".join(a.get("filename", "?") for a in (state.get("artifacts") or [])) or "None"
+    obs_str = "\n".join(
+        f"[{o.get('tool','?')}] {o.get('content','')[:300]}"
+        for o in (state.get("observations") or [])
+    )[-2000:] or "None"
+
+    prompt = _render_prompt(REFLECTION_PROMPT, {
+        "today": _today(),
+        "goal": state["goal"],
+        "step_number": str(step_idx + 1),
+        "total_steps": str(len(plan)),
+        "latest_step": current_step.get("description", state["goal"]),
+        "success": str(success),
+        "latest_result": latest_result[:1500],
+        "error": error_info or "None",
+        "artifacts": artifacts_str,
+        "observations": obs_str,
+    })
+
+    try:
+        llm = get_llm_structured(temperature=0.0)
+        response = await llm.ainvoke(prompt)
+        raw = getattr(response, "content", str(response)).strip()
+    except Exception as exc:
+        logger.warning("Reflection LLM call failed: %s; defaulting to continue", exc)
+        return {"_reflect_decision": "continue"}
+
+    raw_lower = raw.lower()
+    log_stage(logger, "Reflect", {"raw": raw[:120], "step": step_idx + 1})
+
+    # Parse decision
+    if "retry_with_fix" in raw_lower:
+        # Extract corrected step description
+        new_desc = _extract_after(raw, "NEW_STEPS:")
+        if new_desc and not new_desc.startswith("["):
+            # Update the current plan step with corrected instructions
+            plan[step_idx] = {
+                "description": new_desc.strip(),
+                "tool_hint": current_step.get("tool_hint"),
+            }
+            return {
+                "_reflect_decision": "retry_with_fix",
+                "plan": plan,
+                "step_retry_count": retries + 1,
+            }
+        return {"_reflect_decision": "retry_with_fix", "step_retry_count": retries + 1}
+
+    if "replan" in raw_lower:
+        new_steps_raw = _extract_after(raw, "NEW_STEPS:")
+        if new_steps_raw:
+            try:
+                start = new_steps_raw.find("[")
+                end = new_steps_raw.rfind("]")
+                if start != -1 and end != -1:
+                    new_steps_data = json.loads(new_steps_raw[start:end+1])
+                    new_plan = list(plan)  # copy
+                    for ns in new_steps_data[:3]:  # max 3 new steps
+                        if isinstance(ns, dict) and "description" in ns:
+                            new_plan.append({
+                                "description": ns["description"],
+                                "tool_hint": ns.get("tool_hint"),
+                            })
+                    return {
+                        "_reflect_decision": "replan",
+                        "plan": new_plan,
+                    }
+            except Exception as exc:
+                logger.warning("Failed to parse replan steps: %s", exc)
+        return {"_reflect_decision": "continue"}
+
+    if "complete" in raw_lower:
+        return {"_reflect_decision": "complete"}
+
+    # Default: continue
+    return {"_reflect_decision": "continue"}
+
+
+def _extract_after(text: str, marker: str) -> str:
+    """Extract text after a marker like 'NEW_STEPS:'."""
+    idx = text.find(marker)
+    if idx == -1:
+        return ""
+    return text[idx + len(marker):].strip()
+
+
 async def _node_direct_response(state: AgentGraphState, config) -> Dict:
     emit: EmitFn = config["configurable"]["emit"]
     await emit(sse("agent_status", {"phase": "synthesizing", "message": "Generating response…"}))
 
     memory: Optional[AgentMemory] = state.get("_memory")
-    system = AGENT_SYSTEM_PROMPT.format(today=_today())
-    human  = DIRECT_RESPONSE_PROMPT.format(
-        today=_today(),
-        chat_history=memory.format_chat_history(max_turns=12) if memory else "",
-        artifacts=memory.format_session_artifacts() if memory else "",
-        goal=state["goal"],
-    )
+    system = f"{AGENT_SYSTEM_PROMPT}\n\nToday is {_today()}."
+    human  = _render_prompt(DIRECT_RESPONSE_PROMPT, {
+        "today": _today(),
+        "chat_history": memory.format_chat_history(max_turns=12) if memory else "",
+        "artifacts": memory.format_session_artifacts() if memory else "",
+        "goal": state["goal"],
+    })
     llm      = get_llm(temperature=0.3)
     response = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
     text     = getattr(response, "content", str(response)).strip()
@@ -386,15 +529,15 @@ async def _node_synthesize(state: AgentGraphState, config) -> Dict:
     is_file_gen = state.get("is_file_generation", False)
     file_expected_but_missing = is_file_gen and not artifacts_list
 
-    system = AGENT_SYSTEM_PROMPT.format(today=_today())
-    human  = SYNTHESIS_PROMPT.format(
-        today=_today(),
-        goal=state["goal"],
-        chat_history=memory.format_chat_history(max_turns=8) if memory else "",
-        observations=obs_str,
-        artifacts=artifacts_str,
-        sources=sources_str,
-    )
+    system = f"{AGENT_SYSTEM_PROMPT}\n\nToday is {_today()}."
+    human  = _render_prompt(SYNTHESIS_PROMPT, {
+        "today": _today(),
+        "goal": state["goal"],
+        "chat_history": memory.format_chat_history(max_turns=8) if memory else "",
+        "observations": obs_str,
+        "artifacts": artifacts_str,
+        "sources": sources_str,
+    })
 
     llm      = get_llm(temperature=0.3)
     response = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
@@ -428,23 +571,38 @@ def _route_after_plan(state: AgentGraphState) -> str:
 
 
 def _route_after_execute(state: AgentGraphState) -> str:
-    step_idx   = state.get("current_step_index", 0)
-    total      = len(state.get("plan") or [])
-    step_count = state.get("step_count", 0)
-    tool_calls = state.get("total_tool_calls", 0)
-    success    = state.get("last_step_success", False)
-    retries    = state.get("step_retry_count", 0)
-    is_last    = step_idx >= total - 1
+    """After executing a step, always go to reflect for intelligent routing."""
+    step_count = int(state.get("step_count", 0))
+    tool_calls = int(state.get("total_tool_calls", 0))
 
+    # Hard limits — skip reflection, go to synthesize
     if step_count >= MAX_STEPS or tool_calls >= MAX_TOOL_CALLS:
         return "synthesize"
-    if success:
-        return "synthesize" if is_last else "advance_step"
-    # Failed — retry the SAME step if retries remain, even if it's the last step.
-    # This ensures single-step plans (the most common case) get a retry.
-    if retries > MAX_RETRIES:
-        return "synthesize" if is_last else "advance_step"
-    return "execute_step"  # retry same step
+
+    return "reflect"
+
+
+def _route_after_reflect(state: AgentGraphState) -> str:
+    """Route based on the reflection node's decision."""
+    decision = str(state.get("_reflect_decision", "continue"))
+    step_idx = int(state.get("current_step_index", 0))
+    total = len(list(state.get("plan") or []))
+    is_last = step_idx >= total - 1
+
+    if decision == "complete":
+        return "synthesize"
+
+    if decision == "retry_with_fix":
+        return "execute_step"  # re-run same step with corrected instructions
+
+    if decision == "replan":
+        # Plan was extended — advance and execute the new step
+        return "advance_step" if not is_last else "execute_step"
+
+    # "continue" — advance to next step or synthesize if last
+    if is_last:
+        return "synthesize"
+    return "advance_step"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -456,6 +614,7 @@ def _build_graph() -> Any:
     g.add_node("analyse",         _node_analyse)
     g.add_node("planner",         _node_plan)
     g.add_node("execute_step",    _node_execute_step)
+    g.add_node("reflect",         _node_reflect)
     g.add_node("advance_step",    _node_advance_step)
     g.add_node("direct_response", _node_direct_response)
     g.add_node("synthesize",      _node_synthesize)
@@ -466,9 +625,12 @@ def _build_graph() -> Any:
                              {"execute_step": "execute_step",
                               "direct_response": "direct_response"})
     g.add_conditional_edges("execute_step", _route_after_execute,
+                             {"synthesize": "synthesize",
+                              "reflect":    "reflect"})
+    g.add_conditional_edges("reflect", _route_after_reflect,
                              {"synthesize":   "synthesize",
                               "advance_step": "advance_step",
-                              "execute_step": "execute_step"})   # retry same step
+                              "execute_step": "execute_step"})
     g.add_edge("advance_step",    "execute_step")
     g.add_edge("direct_response", END)
     g.add_edge("synthesize",      END)
@@ -524,6 +686,7 @@ async def run_agent(
         "start_time":         start_time,
         "_memory":            None,
         "_agent_state":       None,
+        "_reflect_decision": "continue",
     }
 
     final_state: Dict = {}

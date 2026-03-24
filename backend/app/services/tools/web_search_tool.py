@@ -172,6 +172,7 @@ async def _check_completeness(question: str, scraped: List[Dict]) -> Dict:
 async def execute(
     query: str,
     user_id: str,
+    step_index: Optional[int] = None,
 ) -> AsyncIterator[str | ToolResult]:
     yield sse_tool_start("web_search", label="Searching the web…")
 
@@ -259,7 +260,7 @@ async def execute(
             for i, s in enumerate(all_scraped)
         ])
 
-        yield sse_tool_result("web_search", True, f"Found {len(sources)} sources across {min(_MAX_ROUNDS, len(all_queries_used))} search rounds")
+        yield sse_tool_result("web_search", True, f"Found {len(sources)} sources across {min(_MAX_ROUNDS, len(all_queries_used))} search rounds", step_index=step_index)
 
         yield ToolResult(
             tool_name="web_search",
@@ -274,7 +275,7 @@ async def execute(
 
     except Exception as exc:
         logger.exception("[web] Web search tool failed")
-        yield sse_tool_result("web_search", False, str(exc))
+        yield sse_tool_result("web_search", False, str(exc), step_index=step_index)
         yield ToolResult(
             tool_name="web_search",
             success=False,

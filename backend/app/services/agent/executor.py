@@ -58,6 +58,7 @@ async def execute_tool(
         "notebook_id": state.notebook_id,
         "session_id": state.session_id,
         "material_ids": state.material_ids,
+        "step_index": state.current_step_index,
     }
 
     state.total_tool_calls += 1
