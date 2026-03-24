@@ -650,6 +650,7 @@ async def run_agent(
     user_id:      str,
     session_id:   str,
     material_ids: List[str],
+    original_goal: Optional[str] = None,
 ) -> AsyncIterator[str]:
     """
     LangGraph agent pipeline.
@@ -779,7 +780,11 @@ async def run_agent(
 
     # ── Persist to DB ──────────────────────────────────────────────
     try:
-        await message_store.save_user_message(notebook_id, user_id, session_id, goal)
+        persist_goal = original_goal if original_goal is not None else goal
+        await message_store.save_user_message(
+            notebook_id, user_id, session_id, persist_goal,
+            agent_meta={"intent": "AGENT"}
+        )
         msg_id = await message_store.save_assistant_message(
             notebook_id, user_id, session_id, final_response, meta,
         )

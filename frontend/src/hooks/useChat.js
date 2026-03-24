@@ -411,8 +411,16 @@ export default function useChat({ notebookId, materialIds = [] }) {
           setMessages(
             history.map((msg) => {
               const meta = msg.agent_meta || {};
+              let intentOverride = meta.intent || undefined;
 
-              const intentOverride = meta.intent || undefined;
+              // Fallback: If metadata is missing but content has slash command, use it
+              if (!intentOverride && msg.role === 'user' && msg.content) {
+                const trimmed = msg.content.trim();
+                if (trimmed.startsWith('/agent')) intentOverride = 'AGENT';
+                else if (trimmed.startsWith('/web')) intentOverride = 'WEB_SEARCH';
+                else if (trimmed.startsWith('/research')) intentOverride = 'WEB_RESEARCH';
+                else if (trimmed.startsWith('/code')) intentOverride = 'CODE_EXECUTION';
+              }
 
               const codeBlocks = meta.code_block
                 ? [{ code: meta.code_block.code, language: meta.code_block.language || 'python', step_index: null }]
@@ -420,7 +428,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
 
               // Reconstruct minimal agentState so AgentProgressPanel renders in
               // the "done" state when this message is loaded from history.
-              const agentState = (meta.intent === 'AGENT') ? {
+              const agentState = (intentOverride === 'AGENT') ? {
                 status: 'done',
                 finishReason: meta.finish_reason,
                 stepsExecuted: meta.steps_executed,

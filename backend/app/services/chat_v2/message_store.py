@@ -111,17 +111,22 @@ async def save_user_message(
     user_id: str,
     session_id: str,
     content: str,
+    agent_meta: Optional[Dict[str, Any]] = None,
 ) -> str:
     try:
-        msg = await prisma.chatmessage.create(
-            data={
-                "notebookId": notebook_id,
-                "userId": user_id,
-                "chatSessionId": session_id,
-                "role": "user",
-                "content": content,
-            }
-        )
+        data: Dict[str, Any] = {
+            "notebookId": notebook_id,
+            "userId": user_id,
+            "chatSessionId": session_id,
+            "role": "user",
+            "content": content,
+        }
+        if agent_meta:
+            try:
+                data["agentMeta"] = json.dumps(agent_meta)
+            except Exception:
+                pass
+        msg = await prisma.chatmessage.create(data=data)
         return str(msg.id)
     except Exception as exc:
         logger.error("save_user_message failed: %s", exc)

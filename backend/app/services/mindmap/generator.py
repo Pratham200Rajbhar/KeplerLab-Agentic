@@ -6,7 +6,12 @@ import uuid
 from datetime import datetime, timezone
 
 from app.prompts import get_mindmap_prompt
-from app.models.mindmap_schemas import MindMapResponse
+from app.models.mindmap_schemas import (
+    MindMapNode, 
+    MindMapResponse, 
+    NestedMindMapNode, 
+    NestedMindMapResponse
+)
 from app.services.llm_service.structured_invoker import invoke_structured
 from app.services.material_service import get_material_text
 from app.db.prisma_client import prisma
@@ -15,8 +20,31 @@ logger = logging.getLogger(__name__)
 
 def generate_mindmap_sync(combined_text: str) -> dict:
     prompt = get_mindmap_prompt(combined_text)
-    result = invoke_structured(prompt, MindMapResponse, max_retries=2)
-    return result.model_dump()
+    nested = invoke_structured(prompt, NestedMindMapResponse, max_retries=2)
+    
+    # Flatten the nested structure
+    nodes: list[MindMapNode] = []
+    
+    def _visit(node: NestedMindMapNode, parent_id: str | None = None):
+        node_id = str(uuid.uuid4())
+        flat_node = MindMapNode(
+            id=node_id,
+            label=node.label,
+            parent_id=parent_id,
+            description=node.description,
+            question_hint=node.question_hint,
+        )
+        nodes.append(flat_node)
+        for child in node.children:
+            _visit(child, node_id)
+            
+    _visit(nested.root)
+    
+    response = MindMapResponse(
+        title=nested.title,
+        nodes=nodes
+    )
+    return response.model_dump()
 
 async def generate_mindmap(
     material_ids: list[str],

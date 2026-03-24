@@ -21,8 +21,8 @@ function MindMapNode({ id, data }) {
       className={`
         group relative px-6 py-2.5 rounded-full border transition-all duration-300 
         cursor-pointer min-w-[120px] max-w-[320px] flex items-center justify-between gap-3
-        ${isHighlighted 
-          ? 'bg-[#3b4252] border-blue-400/50 shadow-[0_0_15px_rgba(96,165,250,0.2)]' 
+        ${isHighlighted
+          ? 'bg-[#3b4252] border-blue-400/50 shadow-[0_0_15px_rgba(96,165,250,0.2)]'
           : 'bg-[#2e3440] border-[#4c566a] hover:border-[#81a1c1]'
         }
       `}
@@ -58,11 +58,11 @@ function MindMapNode({ id, data }) {
       {/* Visual Hub (Chevron Toggle) */}
       {hasChildren && (
         <div className="relative flex items-center justify-center mr-[-10px] shrink-0 pointer-events-none">
-          <div 
+          <div
             className={`
               w-7 h-7 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300
-              ${isCollapsed 
-                ? 'bg-[#3b4252] text-[#81a1c1] border-[#4c566a]' 
+              ${isCollapsed
+                ? 'bg-[#3b4252] text-[#81a1c1] border-[#4c566a]'
                 : 'bg-[#81a1c1] text-[#2e3440] border-[#81a1c1]'
               }
             `}

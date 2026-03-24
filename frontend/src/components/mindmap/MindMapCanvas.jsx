@@ -35,16 +35,16 @@ const HubEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targe
   });
 
   return (
-    <BaseEdge 
+    <BaseEdge
       id={id}
-      path={edgePath} 
-      markerEnd={markerEnd} 
-      style={{ 
-        ...style, 
-        stroke: '#94a3b8', 
-        strokeWidth: 2.5, 
-        opacity: 0.8 
-      }} 
+      path={edgePath}
+      markerEnd={markerEnd}
+      style={{
+        ...style,
+        stroke: '#94a3b8',
+        strokeWidth: 2.5,
+        opacity: 0.8
+      }}
     />
   );
 };
@@ -52,8 +52,8 @@ const HubEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targe
 const nodeTypes = { mindmap: MindMapNode };
 const edgeTypes = { hub: HubEdge };
 
-const NODE_WIDTH = 260; 
-const NODE_HEIGHT = 44; 
+const NODE_WIDTH = 260;
+const NODE_HEIGHT = 44;
 
 /**
  * Dagre layout engine for consistent Right-to-Left (LR) tree structure.
@@ -64,8 +64,8 @@ function generateLayout(mapData) {
   const edgesList = Array.isArray(mapData.edges) && mapData.edges.length > 0
     ? mapData.edges
     : mapData.nodes
-        .filter((n) => n.parent_id)
-        .map((n) => ({ source: n.parent_id, target: n.id }));
+      .filter((n) => n.parent_id)
+      .map((n) => ({ source: n.parent_id, target: n.id }));
 
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
@@ -84,7 +84,7 @@ function generateLayout(mapData) {
   const rfNodes = mapData.nodes.map((n) => {
     const pos = g.node(n.id);
     const hasChildren = edgesList.some((e) => e.source === n.id);
-    
+
     // Find depth by climbing up the parent tree
     let depth = 0;
     let currentParentId = n.parent_id;
@@ -98,10 +98,10 @@ function generateLayout(mapData) {
     return {
       id: n.id,
       type: 'mindmap',
-      data: { 
-        label: n.label, 
+      data: {
+        label: n.label,
         depth,
-        hasChildren 
+        hasChildren
       },
       position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
     };
@@ -123,11 +123,11 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialLayout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialLayout.edges);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Single source of truth for visibility
   const [collapsedIds, setCollapsedIds] = useState(() => {
     const allParentIds = new Set(mapData.nodes.filter(n => n.parent_id).map(n => n.parent_id));
-    return allParentIds; 
+    return allParentIds;
   });
 
   const { fitView, zoomIn, zoomOut } = useReactFlow();
@@ -166,10 +166,10 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
     setNodes((nds) => nds.map((n) => ({
       ...n,
       hidden: hiddenSet.has(n.id),
-      data: { 
-        ...n.data, 
-        collapsed: collapsedIds.has(n.id), 
-        onToggleCollapse: toggleCollapse 
+      data: {
+        ...n.data,
+        collapsed: collapsedIds.has(n.id),
+        onToggleCollapse: toggleCollapse
       },
     })));
 
@@ -229,7 +229,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
             {mapData?.title || 'Mind Map'}
           </h3>
           <div className="flex items-center gap-3 text-[#81a1c1]">
-             <button onClick={() => fitView({ padding: 0.2, maxZoom: 1 })} className="p-1.5 rounded-full hover:bg-[#434c5e]" title="Reset View">
+            <button onClick={() => fitView({ padding: 0.2, maxZoom: 1 })} className="p-1.5 rounded-full hover:bg-[#434c5e]" title="Reset View">
               <Maximize2 className="w-4 h-4" />
             </button>
             <button onClick={handleExport} className="p-1.5 rounded-full hover:bg-[#434c5e]" title="Download PNG">
@@ -246,7 +246,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
 
         {/* Search */}
         <div className="absolute top-[100px] right-10 z-10">
-           <div className="relative">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#81a1c1] opacity-50" />
             <input
               type="text"
@@ -261,7 +261,7 @@ function MindMapCanvasInner({ mapData, onClose, onRegenerate }) {
 
       {/* Floating Controls */}
       <div className="fixed bottom-10 right-10 z-10 flex flex-col gap-2 scale-110">
-         <div className="flex flex-col bg-[#3b4252] rounded-full p-1 shadow-2xl border border-[#4c566a]">
+        <div className="flex flex-col bg-[#3b4252] rounded-full p-1 shadow-2xl border border-[#4c566a]">
           {onRegenerate && (
             <button onClick={onRegenerate} className="p-2 rounded-full hover:bg-[#434c5e] text-[#81a1c1]" title="Regenerate">
               <RefreshCw className="w-4 h-4" />

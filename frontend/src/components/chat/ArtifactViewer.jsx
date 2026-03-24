@@ -140,8 +140,20 @@ function ArtifactCard({ artifact }) {
 export default function ArtifactViewer({ artifacts }) {
   if (!artifacts?.length) return null;
 
-  const images = artifacts.filter(isImageArtifact);
-  const files = artifacts.filter(a => !isImageArtifact(a));
+  // De-duplicate artifacts by filename, keeping the last occurrence (most recent)
+  const uniqueMap = new Map();
+  artifacts.forEach(art => {
+    if (art.filename) {
+      uniqueMap.set(art.filename, art);
+    } else {
+      // Fallback for artifacts without filename (e.g. by ID)
+      uniqueMap.set(art.id || Math.random().toString(), art);
+    }
+  });
+  const uniqueArtifacts = Array.from(uniqueMap.values());
+
+  const images = uniqueArtifacts.filter(isImageArtifact);
+  const files = uniqueArtifacts.filter(a => !isImageArtifact(a));
 
   return (
     <div className="space-y-2.5">

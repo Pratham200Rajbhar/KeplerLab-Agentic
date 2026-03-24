@@ -9,8 +9,8 @@ class MindMapNode(BaseModel):
     id: str
     label: str
     parent_id: Optional[str] = None
-    description: str
-    question_hint: str
+    description: str = ""
+    question_hint: str = ""
     has_children: bool = False
 
 class MindMapRequest(BaseModel):
@@ -24,3 +24,13 @@ class MindMapResponse(BaseModel):
     material_ids: List[str] = Field(default_factory=list)
     nodes: List[MindMapNode] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class NestedMindMapNode(BaseModel):
+    label: str
+    description: str = ""
+    question_hint: str = ""
+    children: List[NestedMindMapNode] = Field(default_factory=list)
+
+class NestedMindMapResponse(BaseModel):
+    title: str
+    root: NestedMindMapNode

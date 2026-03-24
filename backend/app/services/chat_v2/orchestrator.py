@@ -32,10 +32,7 @@ async def run(
     capability = route_capability(message, material_ids, intent_override)
 
     if capability == Capability.AGENT:
-        agent_goal = message.lstrip()
-        if agent_goal.startswith("/agent"):
-            agent_goal = agent_goal[len("/agent"):].strip()
-        async for event in _handle_agent(agent_goal, notebook_id, user_id, session_id, material_ids):
+        async for event in _handle_agent(message, notebook_id, user_id, session_id, material_ids):
             yield event
         return
 
@@ -197,8 +194,15 @@ async def _handle_code_execution(message, notebook_id, user_id, session_id, mate
 
 async def _handle_agent(goal, notebook_id, user_id, session_id, material_ids):
     from app.services.agent.agent_orchestrator import run_agent
+
+    # Clean the goal for the internal agent graph, but keep original 'goal' for persistence
+    clean_goal = goal.lstrip()
+    if clean_goal.startswith("/agent"):
+        clean_goal = clean_goal[len("/agent"):].strip()
+
     async for event in run_agent(
-        goal=goal,
+        goal=clean_goal,
+        original_goal=goal, # Pass original goal for persistence
         notebook_id=notebook_id,
         user_id=user_id,
         session_id=session_id,
@@ -243,7 +247,10 @@ async def _persist(
     agent_meta: Dict[str, Any],
 ) -> tuple:
     try:
-        await message_store.save_user_message(notebook_id, user_id, session_id, user_message)
+        await message_store.save_user_message(
+            notebook_id, user_id, session_id, user_message, 
+            agent_meta={"intent": agent_meta.get("intent")} if agent_meta else None
+        )
 
         msg_id = await message_store.save_assistant_message(
             notebook_id, user_id, session_id, assistant_answer, agent_meta

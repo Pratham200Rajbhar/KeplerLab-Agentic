@@ -72,7 +72,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     const trimmed = value.trim();
     if (!trimmed || isStreaming) return;
     const parsed = parseSlashCommand(trimmed);
-    const query = parsed.query || trimmed;
+    const query = trimmed; // Keep full text including slash command
     const intentOverride = parsed.intent || null;
     if (!query) return;
     onSend(query, intentOverride);
