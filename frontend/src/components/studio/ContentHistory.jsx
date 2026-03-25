@@ -15,7 +15,6 @@ function contentTypeIcon(type) {
     podcast: <Mic className="w-3.5 h-3.5 text-purple-400" />,
     presentation: <Presentation className="w-3.5 h-3.5 text-orange-400" />,
     explainer: <FileText className="w-3.5 h-3.5 text-cyan-400" />,
-    mindmap: <Brain className="w-3.5 h-3.5 text-pink-400" />,
   };
   return icons[type] || <FileText className="w-3.5 h-3.5 text-[var(--text-muted)]" />;
 }

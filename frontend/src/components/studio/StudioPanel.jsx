@@ -20,7 +20,6 @@ import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
 import usePodcastStore from '@/stores/usePodcastStore';
 import { generateFlashcards, generateQuiz, generatePresentation } from '@/lib/api/generation';
-import { generateMindMap } from '@/lib/api/mindmap';
 import {
   saveGeneratedContent,
   getGeneratedContent,
@@ -51,10 +50,6 @@ const InlinePresentationView = dynamic(
 );
 const PodcastStudio = dynamic(
   () => import('@/components/podcast/PodcastStudio'),
-  { ssr: false, loading: () => <LoadingSpinner /> }
-);
-const MindMapCanvas = dynamic(
-  () => import('@/components/mindmap/MindMapCanvas'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
 
@@ -135,8 +130,6 @@ export default function StudioPanel() {
   const [quizData, setQuizData] = useState(null);
   const [presentationData, setPresentationData] = useState(null);
   const [explainerData, setExplainerData] = useState(null);
-  const [mindmapData, setMindmapData] = useState(null);
-  const [showMindmapCanvas, setShowMindmapCanvas] = useState(false);
 
   
   const [showPresentationConfig, setShowPresentationConfig] = useState(false);
@@ -173,7 +166,6 @@ export default function StudioPanel() {
     setFlashcardsData(null);
     setQuizData(null);
     setPresentationData(null);
-    setMindmapData(null);
     setShowPresentationConfig(false);
     setShowQuizConfig(false);
     setShowFlashcardConfig(false);
@@ -208,9 +200,6 @@ export default function StudioPanel() {
                 break;
               case 'presentation':
                 setPresentationData(c.data);
-                break;
-              case 'mindmap':
-                setMindmapData(c.data);
                 break;
             }
           }
@@ -376,62 +365,7 @@ export default function StudioPanel() {
     }
   };
 
-  const handleMindmapClick = async () => {
-    if (!effectiveMaterial) return;
-    if (mindmapData) {
-      setShowMindmapCanvas(true);
-      return;
-    }
-    setLoadingState('mindmap', true);
-    const ac = new AbortController();
-    abortControllerRef.current.mindmap = ac;
-    try {
-      const data = await generateMindMap({
-        notebookId: currentNotebook.id,
-        materialIds: selectedMaterialIds,
-        signal: ac.signal,
-      });
-      setMindmapData(data);
-      const saved = await trySave('mindmap', data, data.title || 'Mind Map');
-      if (saved) {
-        setContentHistory((prev) => [saved, ...prev]);
-        toast.success('Mind map saved to Created');
-      }
-      setShowMindmapCanvas(true);
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      toast.error(error.message || 'Failed to generate mind map. Please try again.');
-    } finally {
-      setLoadingState('mindmap', false);
-    }
-  };
 
-  const handleMindmapRegenerate = async () => {
-    if (!currentNotebook?.id || !selectedMaterialIds.length) return;
-    setLoadingState('mindmap', true);
-    const ac = new AbortController();
-    abortControllerRef.current.mindmap = ac;
-    try {
-      const data = await generateMindMap({
-        notebookId: currentNotebook.id,
-        materialIds: selectedMaterialIds,
-        signal: ac.signal,
-      });
-      setMindmapData(data);
-      const saved = await trySave('mindmap', data, data.title || 'Mind Map');
-      if (saved) {
-        setContentHistory((prev) => {
-          const exists = prev.find((c) => c.content_type === 'mindmap' && c.id === saved.id);
-          return exists ? prev.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...prev];
-        });
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      toast.error(error.message || 'Failed to regenerate mind map.');
-    } finally {
-      setLoadingState('mindmap', false);
-    }
-  };
 
   
   const handleViewHistoryItem = (item) => {
@@ -453,10 +387,6 @@ export default function StudioPanel() {
       case 'explainer':
         setExplainerData(item.data);
         setActiveView('explainer');
-        break;
-      case 'mindmap':
-        setMindmapData(item.data);
-        setShowMindmapCanvas(true);
         break;
       case 'podcast':
         loadPodcastSession(item.id);
@@ -531,10 +461,6 @@ export default function StudioPanel() {
               setPresentationData(null);
               setActiveView(null);
             }
-            break;
-          case 'mindmap':
-            setMindmapData(null);
-            setShowMindmapCanvas(false);
             break;
         }
       }
@@ -671,14 +597,6 @@ export default function StudioPanel() {
         if (podcastPhase !== 'generating') setShowPodcastConfig(true);
       },
     },
-    {
-      id: 'mindmap',
-      title: 'Mind Map',
-      description: 'Visualize concept relationships',
-      icon: <Network className="w-5 h-5" />,
-      onClick: handleMindmapClick,
-      onCancel: () => handleCancelGeneration('mindmap'),
-    },
   ];
 
   const completedPodcastSessions = (podcastSessions || []).filter(
@@ -787,13 +705,6 @@ export default function StudioPanel() {
         />
       )}
 
-      {showMindmapCanvas && mindmapData && (
-        <MindMapCanvas
-          mapData={mindmapData}
-          onClose={() => setShowMindmapCanvas(false)}
-          onRegenerate={handleMindmapRegenerate}
-        />
-      )}
 
       <aside
         ref={panelRef}

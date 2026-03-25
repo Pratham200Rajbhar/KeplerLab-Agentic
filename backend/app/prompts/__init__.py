@@ -194,20 +194,6 @@ def get_slide_content_prompt(
     )
 
 
-def get_mindmap_prompt(material_text: str) -> str:
-    return compose_prompt(
-        [
-            "system/base_system.md",
-            "shared/reasoning.md",
-            "shared/formatting.md",
-            "generation/mindmap.md",
-        ],
-        {
-            "mode": "mindmap_generation",
-            "materials": material_text,
-            "instructions": "",
-        },
-    )
 
 
 def get_ppt_prompt(
