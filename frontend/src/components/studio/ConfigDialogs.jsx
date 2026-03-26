@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
-import { X } from 'lucide-react';
+import { X, Loader2, Info } from 'lucide-react';
+import { suggestFlashcardCount, suggestQuizCount } from '@/lib/api/generation';
 
 
-export function FlashcardConfigDialog({ onGenerate, onCancel }) {
+export function FlashcardConfigDialog({ onGenerate, onCancel, materialIds }) {
   const onConfirm = onGenerate;
   const onClose = onCancel;
   const [topic, setTopic] = useState('');
@@ -13,6 +14,32 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
   const [aiSuggest, setAiSuggest] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
   const [instructions, setInstructions] = useState('');
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionReasoning, setSuggestionReasoning] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    if (aiSuggest && materialIds && materialIds.length > 0) {
+      const fetchSuggestion = async () => {
+        setIsSuggesting(true);
+        try {
+          const res = await suggestFlashcardCount(materialIds);
+          if (mounted && res) {
+            setCardCount(res.suggested_count);
+            setSuggestionReasoning(res.reasoning);
+          }
+        } catch (error) {
+          console.error('Failed to get flashcard suggestion:', error);
+        } finally {
+          if (mounted) setIsSuggesting(false);
+        }
+      };
+      fetchSuggestion();
+    } else {
+      setSuggestionReasoning('');
+    }
+    return () => { mounted = false; };
+  }, [aiSuggest, materialIds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -59,7 +86,29 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
               </label>
             </div>
             {aiSuggest ? (
-              <p className="text-[11px] text-[var(--text-muted)] italic">AI will choose the optimal card count based on content length.</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-8 bg-[var(--surface-overlay)] rounded-lg border border-[var(--border)] flex items-center px-3 relative overflow-hidden">
+                    {isSuggesting ? (
+                      <div className="flex items-center gap-2 text-[var(--text-muted)] animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="text-[11px]">AI is analyzing content...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-[var(--accent)]">{cardCount} cards</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Suggested by AI</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {suggestionReasoning && !isSuggesting && (
+                  <div className="flex gap-2 p-2 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border,var(--accent))] border-opacity-20 animate-fade-in">
+                    <Info className="w-3 h-3 text-[var(--accent)] shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{suggestionReasoning}</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-3">
                 <input
@@ -131,7 +180,7 @@ export function FlashcardConfigDialog({ onGenerate, onCancel }) {
 }
 
 
-export function QuizConfigDialog({ onGenerate, onCancel }) {
+export function QuizConfigDialog({ onGenerate, onCancel, materialIds }) {
   const onConfirm = onGenerate;
   const onClose = onCancel;
   const [topic, setTopic] = useState('');
@@ -139,6 +188,32 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
   const [aiSuggest, setAiSuggest] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
   const [instructions, setInstructions] = useState('');
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionReasoning, setSuggestionReasoning] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    if (aiSuggest && materialIds && materialIds.length > 0) {
+      const fetchSuggestion = async () => {
+        setIsSuggesting(true);
+        try {
+          const res = await suggestQuizCount(materialIds);
+          if (mounted && res) {
+            setMcqCount(res.suggested_count);
+            setSuggestionReasoning(res.reasoning);
+          }
+        } catch (error) {
+          console.error('Failed to get quiz suggestion:', error);
+        } finally {
+          if (mounted) setIsSuggesting(false);
+        }
+      };
+      fetchSuggestion();
+    } else {
+      setSuggestionReasoning('');
+    }
+    return () => { mounted = false; };
+  }, [aiSuggest, materialIds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -185,7 +260,29 @@ export function QuizConfigDialog({ onGenerate, onCancel }) {
               </label>
             </div>
             {aiSuggest ? (
-              <p className="text-[11px] text-[var(--text-muted)] italic">AI will choose the optimal question count based on content length.</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-8 bg-[var(--surface-overlay)] rounded-lg border border-[var(--border)] flex items-center px-3 relative overflow-hidden">
+                    {isSuggesting ? (
+                      <div className="flex items-center gap-2 text-[var(--text-muted)] animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="text-[11px]">AI is analyzing content...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-[var(--accent)]">{mcqCount} questions</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Suggested by AI</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {suggestionReasoning && !isSuggesting && (
+                  <div className="flex gap-2 p-2 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border,var(--accent))] border-opacity-20 animate-fade-in">
+                    <Info className="w-3 h-3 text-[var(--accent)] shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{suggestionReasoning}</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-3">
                 <input

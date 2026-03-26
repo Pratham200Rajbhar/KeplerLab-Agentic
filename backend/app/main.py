@@ -38,6 +38,7 @@ from app.routes.upload import router as upload_router
 from app.routes.materials import router as materials_router
 from app.routes.flashcard import router as flashcard_router
 from app.routes.quiz import router as quiz_router
+from app.routes.mindmap import router as mindmap_router
 from app.routes.chat import router as chat_router
 from app.routes.models import router as models_router
 from app.routes.jobs import router as jobs_router
@@ -208,6 +209,7 @@ app.include_router(upload_router)
 app.include_router(materials_router)
 app.include_router(flashcard_router)
 app.include_router(quiz_router)
+app.include_router(mindmap_router)
 app.include_router(chat_router)
 app.include_router(jobs_router)
 app.include_router(ppt_router)

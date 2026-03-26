@@ -40,8 +40,3 @@ curl -X POST http://159.89.166.91:8002/api/scrape \
 
 ---
 
-## 4. Troubleshooting
-If the API returns an error:
-- Ensure the server is running (check `pm2 status`).
-- Verify the `.env` file has the correct `PORT` (currently `8002`).
-- Check the logs using `pm2 logs web-scraper-api`.

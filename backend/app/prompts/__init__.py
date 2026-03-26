@@ -57,6 +57,27 @@ def get_flashcard_prompt(
     )
 
 
+def get_flashcard_suggestion_prompt(content_text: str) -> str:
+    return compose_prompt(
+        ["generation/flashcard_suggest.md"],
+        {"materials": content_text},
+    )
+
+
+def get_quiz_suggestion_prompt(content_text: str) -> str:
+    return compose_prompt(
+        ["generation/quiz_suggest.md"],
+        {"materials": content_text},
+    )
+
+
+def get_presentation_suggestion_prompt(content_text: str) -> str:
+    return compose_prompt(
+        ["generation/presentation_suggest.md"],
+        {"materials": content_text},
+    )
+
+
 def get_quiz_prompt(
     content_text: str,
     mcq_count: int | None = None,
@@ -76,6 +97,27 @@ def get_quiz_prompt(
             "materials": content_text,
             "difficulty": difficulty,
             "count": count,
+            "instructions": instructions or "",
+        },
+    )
+
+
+def get_mindmap_prompt(
+    content_text: str,
+    focus_topic: str | None = None,
+    instructions: str | None = None,
+) -> str:
+    return compose_prompt(
+        [
+            "system/base_system.md",
+            "shared/style.md",
+            "shared/formatting.md",
+            "generation/mindmap.md",
+        ],
+        {
+            "mode": "mindmap_generation",
+            "materials": content_text,
+            "focus_topic": focus_topic or "General Overview",
             "instructions": instructions or "",
         },
     )

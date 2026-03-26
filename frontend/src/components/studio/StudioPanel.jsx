@@ -12,7 +12,7 @@ import {
   ChevronRight,
   FlaskConical,
   AlertTriangle,
-  Network,
+  Brain,
 } from 'lucide-react';
 
 import useAppStore from '@/stores/useAppStore';
@@ -20,11 +20,13 @@ import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
 import usePodcastStore from '@/stores/usePodcastStore';
 import { generateFlashcards, generateQuiz, generatePresentation } from '@/lib/api/generation';
+import { generateMindMap } from '@/lib/api/mindmap';
 import {
   saveGeneratedContent,
   getGeneratedContent,
   deleteGeneratedContent,
   updateGeneratedContent,
+  rateGeneratedContent,
 } from '@/lib/api/notebooks';
 import { PANEL } from '@/lib/utils/constants';
 
@@ -52,6 +54,10 @@ const PodcastStudio = dynamic(
   () => import('@/components/podcast/PodcastStudio'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
+const MindMapCanvas = dynamic(
+  () => import('@/components/mindmap/MindMapCanvas'),
+  { ssr: false, loading: () => <LoadingSpinner /> }
+);
 
 function LoadingSpinner() {
   return (
@@ -62,7 +68,7 @@ function LoadingSpinner() {
 }
 
 
-const PodcastProgress = memo(({ phase, progress }) => {
+const PodcastProgress = memo(function PodcastProgress({ phase, progress }) {
   if (phase !== 'generating' || !progress) return null;
   return (
     <div className="mt-3 p-3 rounded-xl border border-[var(--accent-border,var(--accent))] bg-[var(--accent-subtle)] animate-fade-in">
@@ -91,7 +97,7 @@ const PodcastProgress = memo(({ phase, progress }) => {
 });
 
 export default function StudioPanel() {
-  
+
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const draftMode = useAppStore((s) => s.draftMode);
   const selectedSources = useAppStore((s) => s.selectedSources);
@@ -122,30 +128,34 @@ export default function StudioPanel() {
 
   const selectedMaterialIds = selectedSources;
 
-  
+
   const [activeView, setActiveView] = useState(null);
 
-  
+
   const [flashcardsData, setFlashcardsData] = useState(null);
   const [quizData, setQuizData] = useState(null);
   const [presentationData, setPresentationData] = useState(null);
   const [explainerData, setExplainerData] = useState(null);
+  const [mindmapData, setMindmapData] = useState(null);
+  const [mindmapFullscreen, setMindmapFullscreen] = useState(false);
+  const [mindmapRating, setMindmapRating] = useState(null);
+  const [mindmapContentId, setMindmapContentId] = useState(null);
 
-  
+
   const [showPresentationConfig, setShowPresentationConfig] = useState(false);
   const [showQuizConfig, setShowQuizConfig] = useState(false);
   const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
   const [showExplainerDialog, setShowExplainerDialog] = useState(false);
   const [showPodcastConfig, setShowPodcastConfig] = useState(false);
 
-  
+
   const [contentHistory, setContentHistory] = useState([]);
   const [activeHistoryMenu, setActiveHistoryMenu] = useState(null);
   const [showRenameHistoryModal, setShowRenameHistoryModal] = useState(false);
   const [renamingHistoryItem, setRenamingHistoryItem] = useState(null);
   const [newHistoryTitle, setNewHistoryTitle] = useState('');
 
-  
+
   const [width, setWidth] = useState(PANEL.STUDIO.DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef(null);
@@ -155,9 +165,9 @@ export default function StudioPanel() {
     abortControllerRef.current[type]?.abort();
   }, []);
 
-  
+
   const prevNotebookId = useRef(null);
-  
+
   useEffect(() => {
     const notebookId = currentNotebook?.id;
     if (notebookId === prevNotebookId.current) return;
@@ -166,6 +176,10 @@ export default function StudioPanel() {
     setFlashcardsData(null);
     setQuizData(null);
     setPresentationData(null);
+    setMindmapData(null);
+    setMindmapFullscreen(false);
+    setMindmapContentId(null);
+    setMindmapRating(null);
     setShowPresentationConfig(false);
     setShowQuizConfig(false);
     setShowFlashcardConfig(false);
@@ -179,7 +193,7 @@ export default function StudioPanel() {
     if (currentNotebook?.id) {
       loadPodcastSessions(currentNotebook.id, currentNotebook.isDraft || draftMode);
     }
- 
+
     const loadSavedContent = async () => {
       if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
         try {
@@ -201,6 +215,11 @@ export default function StudioPanel() {
               case 'presentation':
                 setPresentationData(c.data);
                 break;
+              case 'mindmap':
+                setMindmapData(c.data);
+                setMindmapContentId(c.id);
+                setMindmapRating(c.rating || null);
+                break;
             }
           }
         } catch (error) {
@@ -209,16 +228,16 @@ export default function StudioPanel() {
       }
     };
     loadSavedContent();
-      }, [
-      currentNotebook?.id, 
-      currentNotebook?.isDraft, 
-      draftMode, 
-      loadPodcastSessions, 
-      setFlashcards, 
-      setQuiz
-    ]);
+  }, [
+    currentNotebook?.id,
+    currentNotebook?.isDraft,
+    draftMode,
+    loadPodcastSessions,
+    setFlashcards,
+    setQuiz
+  ]);
 
-  
+
   const handleMouseMove = useCallback(
     (e) => {
       if (isResizing && panelRef.current) {
@@ -264,7 +283,7 @@ export default function StudioPanel() {
     }
   };
 
-  
+
   const handleFlashcardsClick = () => {
     setShowFlashcardConfig(true);
   };
@@ -365,9 +384,58 @@ export default function StudioPanel() {
     }
   };
 
+  const handleMindMapClick = async () => {
+    if (!effectiveMaterial) return;
+    setLoadingState('mindmap', true);
+    const ac = new AbortController();
+    abortControllerRef.current.mindmap = ac;
+    try {
+      const res = await generateMindMap(currentNotebook?.id, selectedMaterialIds);
+
+      setMindmapData(res.data);
+      setMindmapContentId(res.id);
+      setMindmapRating(null);
+      setActiveView('mindmap');
+      setMindmapFullscreen(false);
+
+      if (res.id) {
+        setContentHistory((prev) => [res, ...prev]);
+        toast.success(`Mind Map saved to Created`);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      toast.error(error.message || 'Failed to generate mind map. Please try again.');
+    } finally {
+      setLoadingState('mindmap', false);
+    }
+  };
+
+  const handleCancelMindMap = () => {
+    abortControllerRef.current.mindmap?.abort();
+    setLoadingState('mindmap', false);
+  };
+
+  const handleToggleMindmapFullscreen = () => {
+    setMindmapFullscreen((prev) => !prev);
+  };
+
+  const handleMindMapRate = async (contentId, rating) => {
+    if (!currentNotebook?.id) return;
+    try {
+      await rateGeneratedContent(currentNotebook.id, contentId, rating);
+      setMindmapRating(rating);
+      setContentHistory((prev) =>
+        prev.map((item) =>
+          item.id === contentId ? { ...item, rating } : item
+        )
+      );
+      toast.success('Rating saved');
+    } catch (error) {
+      toast.error('Failed to save rating');
+    }
+  };
 
 
-  
   const handleViewHistoryItem = (item) => {
     switch (item.content_type) {
       case 'flashcards':
@@ -391,6 +459,13 @@ export default function StudioPanel() {
       case 'podcast':
         loadPodcastSession(item.id);
         setActiveView('podcast');
+        break;
+      case 'mindmap':
+        setMindmapData(item.data);
+        setMindmapContentId(item.id);
+        setMindmapRating(item.rating);
+        setActiveView('mindmap');
+        setMindmapFullscreen(false);
         break;
     }
   };
@@ -462,6 +537,14 @@ export default function StudioPanel() {
               setActiveView(null);
             }
             break;
+          case 'mindmap':
+            if (mindmapContentId === item.id) {
+              setMindmapData(null);
+              setMindmapContentId(null);
+              setMindmapRating(null);
+              setMindmapFullscreen(false);
+            }
+            break;
         }
       }
     } catch (err) {
@@ -520,7 +603,7 @@ export default function StudioPanel() {
     );
   }, [contentHistory, podcastSessions]);
 
-  
+
   const podcastGeneratingRef = useRef(false);
 
   const handlePodcastGenerate = async (config) => {
@@ -552,7 +635,7 @@ export default function StudioPanel() {
     }
   }, [podcastPhase, loadPodcastSessions, setLoadingState, activeView, currentNotebook?.id]);
 
-  
+
   const outputs = [
     {
       id: 'flashcards',
@@ -590,12 +673,20 @@ export default function StudioPanel() {
       title: 'AI Podcast',
       description:
         podcastPhase === 'generating'
-          ? podcastProgress?.message || 'Generating\u2026'
+          ? podcastProgress?.message || 'Generating…'
           : 'Two-host AI podcast from your sources',
       icon: <Mic className="w-5 h-5" />,
       onClick: () => {
         if (podcastPhase !== 'generating') setShowPodcastConfig(true);
       },
+    },
+    {
+      id: 'mindmap',
+      title: 'Mind Map',
+      description: 'Visualize concepts as a connected diagram',
+      icon: <Brain className="w-5 h-5" />,
+      onClick: handleMindMapClick,
+      onCancel: handleCancelMindMap,
     },
   ];
 
@@ -613,9 +704,10 @@ export default function StudioPanel() {
     presentation: 'Presentation',
     explainer: 'Explainer Video',
     podcast: 'AI Podcast',
+    mindmap: 'Mind Map',
   };
 
-  
+
   const renderInlineContent = () => {
     switch (activeView) {
       case 'flashcards':
@@ -646,15 +738,52 @@ export default function StudioPanel() {
       case 'podcast':
         return <PodcastStudio onClose={() => setActiveView(null)} onRequestNew={() => setShowPodcastConfig(true)} />;
 
+      case 'mindmap':
+        if (mindmapFullscreen && mindmapData) {
+          return (
+            <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 animate-fade-in shadow-2xl">
+              <div className="flex-1 min-h-0 relative">
+                <MindMapCanvas
+                  mindmapData={mindmapData}
+                  onClose={() => {
+                    setMindmapFullscreen(false);
+                    setActiveView(null);
+                  }}
+                  onRate={handleMindMapRate}
+                  contentId={mindmapContentId}
+                  isFullscreen={true}
+                  onToggleFullscreen={handleToggleMindmapFullscreen}
+                  savedRating={mindmapRating}
+                />
+              </div>
+            </div>
+          );
+        } else if (mindmapData) {
+          return (
+            <div className="flex-1 h-full min-h-0 relative">
+              <MindMapCanvas
+                mindmapData={mindmapData}
+                onClose={() => setActiveView(null)}
+                onRate={handleMindMapRate}
+                contentId={mindmapContentId}
+                isFullscreen={false}
+                onToggleFullscreen={handleToggleMindmapFullscreen}
+                savedRating={mindmapRating}
+              />
+            </div>
+          );
+        }
+        return null; // Fallback if mindmapData is null but activeView is 'mindmap'
+
       default:
         return null;
     }
   };
 
-  
+
   return (
     <>
-      {}
+      {/* History Rename Modal */}
       {showRenameHistoryModal && (
         <HistoryRenameModal
           item={renamingHistoryItem}
@@ -667,11 +796,12 @@ export default function StudioPanel() {
         />
       )}
 
-      {}
+      {/* Configuration Dialogs */}
       {showPresentationConfig && (
         <PresentationConfigDialog
           onConfirm={handleGeneratePresentation}
           onClose={() => setShowPresentationConfig(false)}
+          materialIds={selectedMaterialIds}
         />
       )}
 
@@ -680,6 +810,7 @@ export default function StudioPanel() {
           onGenerate={handleGenerateQuiz}
           onCancel={() => setShowQuizConfig(false)}
           loading={loading['quiz']}
+          materialIds={selectedMaterialIds}
         />
       )}
 
@@ -688,6 +819,7 @@ export default function StudioPanel() {
           onGenerate={handleGenerateFlashcards}
           onCancel={() => setShowFlashcardConfig(false)}
           loading={loading['flashcards']}
+          materialIds={selectedMaterialIds}
         />
       )}
 
@@ -705,6 +837,26 @@ export default function StudioPanel() {
         />
       )}
 
+      {/* Mind Map Fullscreen Overlay */}
+      {activeView === 'mindmap' && mindmapData && mindmapFullscreen && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 animate-fade-in shadow-2xl">
+          <div className="flex-1 min-h-0 relative">
+            <MindMapCanvas
+              mindmapData={mindmapData}
+              onClose={() => {
+                setMindmapFullscreen(false);
+                setActiveView(null);
+              }}
+              onRate={handleMindMapRate}
+              contentId={mindmapContentId}
+              savedRating={mindmapRating}
+              isFullscreen={true}
+              onToggleFullscreen={handleToggleMindmapFullscreen}
+            />
+          </div>
+        </div>
+      )}
+
 
       <aside
         ref={panelRef}
@@ -712,7 +864,7 @@ export default function StudioPanel() {
         style={{ width: `${width}px`, minWidth: `${PANEL.STUDIO.MIN_WIDTH}px` }}
         aria-label="Studio panel"
       >
-        {}
+        { }
         <div
           className={`absolute top-0 left-0 w-1.5 h-full cursor-col-resize transition-colors z-10 group ${isResizing ? 'bg-[var(--accent)]' : 'hover:bg-[var(--accent)]'
             }`}
@@ -724,7 +876,7 @@ export default function StudioPanel() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
-        {}
+        { }
         <div className="panel-header">
           <div className="flex items-center gap-2">
             {activeView ? (
@@ -749,114 +901,113 @@ export default function StudioPanel() {
           </div>
         </div>
 
-        {}
+        { }
         <div className="flex-1 overflow-hidden flex flex-col">
-          {}
-          <div className="flex-1 overflow-y-auto p-4 relative">
-          {activeView ? (
-            renderInlineContent()
-          ) : effectiveMaterial ? (
-            <>
-              <p className="text-[11.5px] text-text-muted mb-4 leading-relaxed">
-                {selectedSources.length > 1 ? (
-                  <>
-                    Generating from{' '}
-                    <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
-                      {selectedSources.length} sources
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Create from{' '}
-                    <span className="text-text-primary font-semibold">
-                      {effectiveMaterial.title || effectiveMaterial.filename}
-                    </span>
-                  </>
-                )}
-              </p>
+          <div className={`flex-1 relative flex flex-col ${activeView === 'mindmap' ? '' : 'overflow-y-auto p-4'}`}>
+            {activeView ? (
+              renderInlineContent()
+            ) : effectiveMaterial ? (
+              <>
+                  <p className="text-[11.5px] text-text-muted mb-4 leading-relaxed">
+                    {selectedSources.length > 1 ? (
+                      <>
+                        Generating from{' '}
+                        <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
+                          {selectedSources.length} sources
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Create from{' '}
+                        <span className="text-text-primary font-semibold">
+                          {effectiveMaterial.title || effectiveMaterial.filename}
+                        </span>
+                      </>
+                    )}
+                  </p>
 
-              <div className="space-y-1.5">
-                {outputs.map((output, i) => (
-                  <div
-                    key={output.id}
-                    className="animate-fade-up"
-                    style={{
-                      animationDelay: `${i * 50}ms`,
-                      animationFillMode: 'backwards',
-                    }}
-                  >
-                    <FeatureCard
-                      icon={output.icon}
-                      label={output.title}
-                      description={output.description}
-                      onClick={output.onClick}
-                      loading={loading[output.id]}
-                      disabled={!effectiveMaterial}
-                      onCancel={output.onCancel}
-                    />
+                  <div className="space-y-1.5">
+                    {outputs.map((output, i) => (
+                      <div
+                        key={output.id}
+                        className="animate-fade-up"
+                        style={{
+                          animationDelay: `${i * 50}ms`,
+                          animationFillMode: 'backwards',
+                        }}
+                      >
+                        <FeatureCard
+                          icon={output.icon}
+                          label={output.title}
+                          description={output.description}
+                          onClick={output.onClick}
+                          loading={loading[output.id]}
+                          disabled={!effectiveMaterial}
+                          onCancel={output.onCancel}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {}
-              <PodcastProgress phase={podcastPhase} progress={podcastProgress} />
+                  { }
+                  <PodcastProgress phase={podcastPhase} progress={podcastProgress} />
 
-              {}
-              {podcastError && podcastPhase === 'idle' && (
-                <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
-                    <span className="text-xs text-[var(--danger)]">{podcastError}</span>
+                  { }
+                  {podcastError && podcastPhase === 'idle' && (
+                    <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
+                        <span className="text-xs text-[var(--danger)]">{podcastError}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPodcastError(null);
+                          setShowPodcastConfig(true);
+                        }}
+                        className="mt-2 text-xs text-[var(--danger)] hover:underline"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  { }
+                  {combinedHistory.length > 0 && (
+                    <div className="mt-10 flex flex-col">
+                      { }
+                      <div className="flex items-center gap-3 py-2 shrink-0">
+                        <div className="flex-1 h-px bg-[var(--border)]" />
+                        <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                          Created
+                        </span>
+                        <div className="flex-1 h-px bg-[var(--border)]" />
+                      </div>
+                      <div className="pb-2">
+                        <ContentHistory
+                          items={combinedHistory}
+                          onSelect={handleViewHistoryItem}
+                          onRename={openHistoryRenameModal}
+                          onDelete={handleHistoryDelete}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
+                    <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
+                    <FlaskConical className="w-6 h-6 text-accent relative z-10" />
                   </div>
-                  <button
-                    onClick={() => {
-                      setPodcastError(null);
-                      setShowPodcastConfig(true);
-                    }}
-                    className="mt-2 text-xs text-[var(--danger)] hover:underline"
-                  >
-                    Try Again
-                  </button>
+                  <p className="text-sm font-semibold text-text-secondary mb-1.5">No source selected</p>
+                  <p className="text-xs text-text-muted max-w-[180px] leading-relaxed">
+                    Select a source from the panel to generate study materials
+                  </p>
                 </div>
               )}
-
-              {}
-              {combinedHistory.length > 0 && (
-                <div className="mt-10 flex flex-col">
-                  {}
-                  <div className="flex items-center gap-3 py-2 shrink-0">
-                    <div className="flex-1 h-px bg-[var(--border)]" />
-                    <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
-                      Created
-                    </span>
-                    <div className="flex-1 h-px bg-[var(--border)]" />
-                  </div>
-                  <div className="pb-2">
-                    <ContentHistory
-                      items={combinedHistory}
-                      onSelect={handleViewHistoryItem}
-                      onRename={openHistoryRenameModal}
-                      onDelete={handleHistoryDelete}
-                    />
-                  </div>
-                </div>
-              )}
-
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-                <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
-                <FlaskConical className="w-6 h-6 text-accent relative z-10" />
-              </div>
-              <p className="text-sm font-semibold text-text-secondary mb-1.5">No source selected</p>
-              <p className="text-xs text-text-muted max-w-[180px] leading-relaxed">
-                Select a source from the panel to generate study materials
-              </p>
             </div>
-          )}
-          </div>{}
-        </div>{}
+        </div>
       </aside>
     </>
   );

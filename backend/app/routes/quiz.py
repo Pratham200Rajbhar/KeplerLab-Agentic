@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.models.shared_enums import DifficultyLevel
-from app.services.quiz.generator import generate_quiz
+from app.services.quiz.generator import generate_quiz, suggest_quiz_count
 from app.services.auth import get_current_user
 from .utils import require_material_text, require_materials_text
 
@@ -17,9 +17,13 @@ class QuizRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
     topic: Optional[str] = Field(None, max_length=500)
-    mcq_count: Optional[int] = Field(10, ge=1, le=150)
+    mcq_count: Optional[int] = Field(None, ge=1, le=150)
     difficulty: DifficultyLevel = DifficultyLevel.medium
     additional_instructions: Optional[str] = Field(None, max_length=2000)
+
+class SuggestRequest(BaseModel):
+    material_id: Optional[str] = None
+    material_ids: Optional[List[str]] = None
 
 @router.post("")
 async def create_quiz(
@@ -70,4 +74,25 @@ async def create_quiz(
             current_user.id, ids, e, exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Failed to generate quiz")
+
+@router.post("/suggest")
+async def suggest_count(
+    request: SuggestRequest,
+    current_user=Depends(get_current_user),
+):
+    ids = request.material_ids or ([request.material_id] if request.material_id else [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No material selected")
+
+    if len(ids) == 1:
+        text = await require_material_text(ids[0], current_user.id)
+    else:
+        text = await require_materials_text(ids, current_user.id)
+
+    try:
+        suggestion = await suggest_quiz_count(text)
+        return JSONResponse(content=suggestion)
+    except Exception as e:
+        logger.error("Quiz suggestion failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to get suggestion")
 

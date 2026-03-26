@@ -178,22 +178,23 @@ model ChatMessage {
 // ─── Generated Content ───────────────────────────────────
 
 model GeneratedContent {
-  id          String   @id @default(uuid()) @db.Uuid
-  notebookId  String   @map("notebook_id") @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  materialId  String?  @map("material_id") @db.Uuid
-  contentType String   @map("content_type") @db.VarChar(50)
-  title       String?  @db.VarChar(255)
-  data        Json
-  language    String?  @db.VarChar(10)
+  id String @id @default(uuid()) @db.Uuid
+  notebookId String @map("notebook_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  materialId String? @map("material_id") @db.Uuid
+  contentType String @map("content_type") @db.VarChar(50)
+  title String? @db.VarChar(255)
+  data Json
+  language String? @db.VarChar(10)
   materialIds String[] @default([]) @map("material_ids") // Legacy — use GeneratedContentMaterial join table
-  createdAt   DateTime @default(now()) @map("created_at")
+  rating String? @db.VarChar(10) // 'positive' or 'negative'
+  createdAt DateTime @default(now()) @map("created_at")
 
-  notebook        Notebook                   @relation(fields: [notebookId], references: [id], onDelete: Cascade)
-  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  material        Material?                  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material? @relation(fields: [materialId], references: [id], onDelete: Cascade)
   explainerVideos ExplainerVideo[]
-  materialJoins   GeneratedContentMaterial[]
+  materialJoins GeneratedContentMaterial[]
 
   @@index([notebookId, userId, contentType])
   @@map("generated_content")

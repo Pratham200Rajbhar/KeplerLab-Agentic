@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles } from 'lucide-react';
 import { parseSlashCommand } from '@/lib/utils/parseSlashCommand';
+import useAppStore from '@/stores/useAppStore';
 import PromptOptimizerDialog from './PromptOptimizerDialog';
 
 const COMMAND_META = {
@@ -37,6 +38,27 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
+ 
+  // Sync with global chat input value from store
+  const chatInputValue = useAppStore(s => s.chatInputValue);
+  const setChatInputValue = useAppStore(s => s.setChatInputValue);
+
+  useEffect(() => {
+    if (chatInputValue && chatInputValue.trim() !== '') {
+      setValue(chatInputValue);
+      // Clear the store value immediately so we don't sync again on re-render
+      setChatInputValue('');
+      
+      // Focus and adjust height
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+        }
+      }, 50);
+    }
+  }, [chatInputValue, setChatInputValue]);
 
   
   // Derived state to avoid synchronous setStates in useEffect

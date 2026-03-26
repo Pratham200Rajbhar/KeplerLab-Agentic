@@ -10,7 +10,7 @@ from typing import Optional
 import os
 import logging
 
-from app.services.ppt.generator import generate_presentation
+from app.services.ppt.generator import generate_presentation, suggest_presentation_count
 from app.services.auth import get_current_user
 from app.services.job_service import create_job, update_job_status
 from app.core.config import settings
@@ -37,6 +37,10 @@ class PresentationRequest(BaseModel):
         default=None,
         description="Extra guidance for the AI, e.g. 'focus on key statistics', 'make it executive-level'.",
     )
+
+class SuggestRequest(BaseModel):
+    material_id: Optional[str] = None
+    material_ids: Optional[list[str]] = None
 
 @router.post("")
 async def generate_ppt(
@@ -91,6 +95,27 @@ async def generate_ppt(
             traceback.format_exc(),
         )
         raise HTTPException(status_code=500, detail=f"Failed to generate presentation: {str(e)}")
+
+@router.post("/suggest")
+async def suggest_count(
+    request: SuggestRequest,
+    current_user=Depends(get_current_user),
+):
+    ids = request.material_ids or ([request.material_id] if request.material_id else [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No material selected")
+
+    if len(ids) == 1:
+        text = await require_material_text(ids[0], current_user.id)
+    else:
+        text = await require_materials_text(ids, current_user.id)
+
+    try:
+        suggestion = await suggest_presentation_count(text)
+        return JSONResponse(content=suggestion)
+    except Exception as e:
+        logger.error("Presentation suggestion failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to get suggestion")
 
 @router.post("/async")
 async def generate_ppt_async(

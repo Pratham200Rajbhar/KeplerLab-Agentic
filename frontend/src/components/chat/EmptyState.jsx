@@ -5,7 +5,7 @@ import { BookOpen, Loader2, RefreshCw } from 'lucide-react';
 import { getEmptySuggestions } from '@/lib/api/chat';
 import useAppStore from '@/stores/useAppStore';
 
-const EmptyState = memo(({ onSend }) => {
+const EmptyState = memo(function EmptyState({ onSend }) {
   const selectedSources = useAppStore((s) => s.selectedSources);
   const materials = useAppStore((s) => s.materials);
 

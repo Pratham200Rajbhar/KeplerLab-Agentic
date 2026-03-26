@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, Grid,
-  X
+  X, Loader2, Info
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import { suggestPresentationCount } from '@/lib/api/generation';
 import './PresentationView.css';
 
 
@@ -257,10 +258,37 @@ export default function InlinePresentationView({ presentation, onClose }) {
 }
 
 
-export function PresentationConfigDialog({ onConfirm, onClose }) {
+export function PresentationConfigDialog({ onConfirm, onClose, materialIds }) {
   const [maxSlides, setMaxSlides] = useState(10);
   const [theme, setTheme] = useState('modern');
   const [instructions, setInstructions] = useState('');
+  const [aiSuggest, setAiSuggest] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionReasoning, setSuggestionReasoning] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    if (aiSuggest && materialIds && materialIds.length > 0) {
+      const fetchSuggestion = async () => {
+        setIsSuggesting(true);
+        try {
+          const res = await suggestPresentationCount(materialIds);
+          if (mounted && res) {
+            setMaxSlides(res.suggested_count);
+            setSuggestionReasoning(res.reasoning);
+          }
+        } catch (error) {
+          console.error('Failed to get presentation suggestion:', error);
+        } finally {
+          if (mounted) setIsSuggesting(false);
+        }
+      };
+      fetchSuggestion();
+    } else {
+      setSuggestionReasoning('');
+    }
+    return () => { mounted = false; };
+  }, [aiSuggest, materialIds]);
 
   const themes = [
     { id: 'modern', label: 'Modern', desc: 'Clean & minimal' },
@@ -286,18 +314,60 @@ export function PresentationConfigDialog({ onConfirm, onClose }) {
         <div className="p-5 space-y-4">
           {}
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Max Slides</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={5}
-                max={30}
-                value={maxSlides}
-                onChange={(e) => setMaxSlides(Number(e.target.value))}
-                className="flex-1 accent-(--accent)"
-              />
-              <span className="text-sm font-medium text-[var(--text-primary)] w-8 text-center">{maxSlides}</span>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Max Slides</label>
+              <label className="flex items-center gap-1.5 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={aiSuggest}
+                    onChange={(e) => setAiSuggest(e.target.checked)}
+                  />
+                  <div className="w-7 h-4 bg-[var(--surface-overlay)] border border-[var(--border)] rounded-full peer peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all"></div>
+                  <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-all peer-checked:translate-x-3"></div>
+                </div>
+                <span className="text-[10px] font-medium text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors">AI Suggest</span>
+              </label>
             </div>
+            
+            {aiSuggest ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-8 bg-[var(--surface-overlay)] rounded-lg border border-[var(--border)] flex items-center px-3 relative overflow-hidden">
+                    {isSuggesting ? (
+                      <div className="flex items-center gap-2 text-[var(--text-muted)] animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="text-[11px]">AI is analyzing content...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-[var(--accent)]">{maxSlides} slides</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Suggested by AI</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {suggestionReasoning && !isSuggesting && (
+                  <div className="flex gap-2 p-2 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border,var(--accent))] border-opacity-20 animate-fade-in">
+                    <Info className="w-3 h-3 text-[var(--accent)] shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{suggestionReasoning}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={5}
+                  max={30}
+                  value={maxSlides}
+                  onChange={(e) => setMaxSlides(Number(e.target.value))}
+                  className="flex-1 accent-(--accent)"
+                />
+                <span className="text-sm font-medium text-[var(--text-primary)] w-8 text-center">{maxSlides}</span>
+              </div>
+            )}
           </div>
 
           {}

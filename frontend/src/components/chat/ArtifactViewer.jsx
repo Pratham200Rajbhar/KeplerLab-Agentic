@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, FileText, FileSpreadsheet, FileCode, FileArchive, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { useMemo } from 'react';
 
 const IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'image/webp']);
 const IMAGE_DISPLAY = new Set(['image', 'chart', 'plot', 'figure', 'heatmap']);
@@ -138,19 +139,21 @@ function ArtifactCard({ artifact }) {
 
 
 export default function ArtifactViewer({ artifacts }) {
-  if (!artifacts?.length) return null;
-
   // De-duplicate artifacts by filename, keeping the last occurrence (most recent)
-  const uniqueMap = new Map();
-  artifacts.forEach(art => {
-    if (art.filename) {
-      uniqueMap.set(art.filename, art);
-    } else {
-      // Fallback for artifacts without filename (e.g. by ID)
-      uniqueMap.set(art.id || Math.random().toString(), art);
-    }
-  });
-  const uniqueArtifacts = Array.from(uniqueMap.values());
+  const uniqueArtifacts = useMemo(() => {
+    if (!artifacts?.length) return [];
+    const uniqueMap = new Map();
+    artifacts.forEach((art, index) => {
+      if (art.filename) {
+        uniqueMap.set(art.filename, art);
+      } else {
+        uniqueMap.set(art.id || `fallback-${index}`, art);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  }, [artifacts]);
+
+  if (!artifacts?.length) return null;
 
   const images = uniqueArtifacts.filter(isImageArtifact);
   const files = uniqueArtifacts.filter(a => !isImageArtifact(a));

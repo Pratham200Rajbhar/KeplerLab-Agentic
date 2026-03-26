@@ -2,43 +2,59 @@
 
 import { memo, useState, useMemo } from 'react';
 import {
-  Clock, FileText, Layers, BookOpen, Mic, Presentation,
-  MoreVertical, Pencil, Trash2, Brain
+Clock, FileText, Layers, BookOpen, Mic, Presentation, Network,
+MoreVertical, Pencil, Trash2, Brain
 } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils/helpers';
 
 
 function contentTypeIcon(type) {
-  const icons = {
-    flashcards: <Layers className="w-3.5 h-3.5 text-blue-400" />,
-    quiz: <BookOpen className="w-3.5 h-3.5 text-green-400" />,
-    podcast: <Mic className="w-3.5 h-3.5 text-purple-400" />,
-    presentation: <Presentation className="w-3.5 h-3.5 text-orange-400" />,
-    explainer: <FileText className="w-3.5 h-3.5 text-cyan-400" />,
-  };
-  return icons[type] || <FileText className="w-3.5 h-3.5 text-[var(--text-muted)]" />;
+const icons = {
+flashcards: <Layers className="w-3.5 h-3.5 text-blue-400" />,
+quiz: <BookOpen className="w-3.5 h-3.5 text-green-400" />,
+podcast: <Mic className="w-3.5 h-3.5 text-purple-400" />,
+presentation: <Presentation className="w-3.5 h-3.5 text-orange-400" />,
+explainer: <FileText className="w-3.5 h-3.5 text-cyan-400" />,
+mindmap: <Network className="w-3.5 h-3.5 text-pink-400" />,
+};
+return icons[type] || <FileText className="w-3.5 h-3.5 text-[var(--text-muted)]" />;
 }
 
 function contentSubtitle(item) {
-  switch (item.content_type) {
-    case 'flashcards': {
-      const count = item.data?.flashcards?.length || item.data?.cards?.length || 0;
-      return `${count} card${count !== 1 ? 's' : ''}`;
-    }
-    case 'quiz': {
-      const count = item.data?.questions?.length || 0;
-      return `${count} question${count !== 1 ? 's' : ''}`;
-    }
-    case 'presentation': {
-      const count = item.data?.slides?.length || item.data?.slide_count || 0;
-      return `${count} slide${count !== 1 ? 's' : ''}`;
-    }
-    default:
-      return formatRelativeDate(item.created_at);
-  }
+switch (item.content_type) {
+case 'flashcards': {
+const count = item.data?.flashcards?.length || item.data?.cards?.length || 0;
+return `${count} card${count !== 1 ? 's' : ''}`;
+}
+case 'quiz': {
+const count = item.data?.questions?.length || 0;
+return `${count} question${count !== 1 ? 's' : ''}`;
+}
+case 'presentation': {
+const count = item.data?.slides?.length || item.data?.slide_count || 0;
+return `${count} slide${count !== 1 ? 's' : ''}`;
+}
+case 'mindmap': {
+const nodeCount = item.data?.nodes?.length || countNodes(item.data) || 0;
+return `${nodeCount} node${nodeCount !== 1 ? 's' : ''}`;
+}
+default:
+return formatRelativeDate(item.created_at);
+}
 }
 
-const ContentHistory = memo(({ items = [], activeId, onSelect, onDelete, onRename, filter }) => {
+function countNodes(node) {
+if (!node) return 0;
+let count = 1;
+if (node.children) {
+for (const child of node.children) {
+count += countNodes(child);
+}
+}
+return count;
+}
+
+const ContentHistory = memo(function ContentHistory({ items = [], activeId, onSelect, onDelete, onRename, filter }) {
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   const filtered = useMemo(() => {

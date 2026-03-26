@@ -43,11 +43,12 @@ export default function ChatPanelWithParams() {
 function ChatPanel({ currentSessionId, setCurrentSessionId }) {
   const router = useRouter();
 
-
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const draftMode = useAppStore((s) => s.draftMode);
   const selectedSources = useAppStore((s) => s.selectedSources);
   const materials = useAppStore((s) => s.materials);
+  const registerSendMessage = useAppStore((s) => s.registerSendMessage);
+  const unregisterSendMessage = useAppStore((s) => s.unregisterSendMessage);
 
 
   const effectiveIds = useMemo(
@@ -136,8 +137,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
     loadHistory(currentSessionId);
 
-  }, [currentNotebook?.id, currentNotebook?.isDraft, currentSessionId, draftMode, clearMessages, isStreaming, loadHistory]);
-
+}, [currentNotebook?.id, currentNotebook?.isDraft, currentSessionId, draftMode, clearMessages, isStreaming, loadHistory]);
 
   const handleCreateSession = useCallback(async () => {
     if (!currentNotebook?.id) return;
@@ -209,10 +209,14 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       }
 
 
-      await sendMessage(content, notebookId, intentOverride);
-    },
-    [currentNotebook?.id, currentNotebook?.isDraft, sendMessage, router, setError],
+  await sendMessage(content, notebookId, intentOverride);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, sendMessage, router, setError],
   );
+
+  useEffect(() => {
+    registerSendMessage(handleSend);
+    return () => unregisterSendMessage();
+  }, [registerSendMessage, unregisterSendMessage, handleSend]);
 
 
   const handleRetry = useCallback(

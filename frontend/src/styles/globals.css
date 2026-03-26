@@ -2677,3 +2677,47 @@ body {
   background: var(--surface-overlay);
   color: var(--text-primary);
 }
+
+/* ═══════════════════════════════════════════════════════
+MINDMAP ANIMATIONS
+═══════════════════════════════════════════════════════ */
+
+@keyframes mindnode-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes mindnode-pulse-glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.mindnode-container {
+  animation: mindnode-enter 0.25s ease-out both;
+}
+
+.mindnode-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mindnode-card:hover {
+  transform: translateY(-1px);
+}
+
+.mindnode-toggle {
+  transition: transform 0.2s ease, background-color 0.15s ease;
+}
+
+.mindmap-edge-group {
+  animation: mindnode-enter 0.3s ease-out both;
+}

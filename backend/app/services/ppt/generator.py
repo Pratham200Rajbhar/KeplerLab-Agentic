@@ -7,9 +7,9 @@ import time
 import uuid
 from typing import Optional
 
-from app.prompts import get_ppt_prompt
-from app.services.llm_service.llm_schemas import PresentationHTMLOutput
-from app.services.llm_service.structured_invoker import invoke_structured
+from app.prompts import get_ppt_prompt, get_presentation_suggestion_prompt
+from app.services.llm_service.llm_schemas import PresentationHTMLOutput, PresentationSuggestionOutput
+from app.services.llm_service.structured_invoker import invoke_structured, async_invoke_structured
 from app.services.ppt.slide_extractor import extract_slides
 
 logger = logging.getLogger("ppt.generator")
@@ -202,3 +202,8 @@ body {{
 
     logger.debug("PPT HTML post-processed | length=%d", len(stripped))
     return stripped
+
+async def suggest_presentation_count(material_text: str) -> dict:
+    prompt = get_presentation_suggestion_prompt(material_text)
+    result = await async_invoke_structured(prompt, PresentationSuggestionOutput, max_retries=1)
+    return result.model_dump()
