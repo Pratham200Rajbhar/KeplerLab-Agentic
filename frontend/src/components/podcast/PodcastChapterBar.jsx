@@ -15,7 +15,7 @@ export default function PodcastChapterBar({ chapters = [], currentSegmentIndex, 
   const bookmarkSet = new Set(bookmarks.map((b) => b.segment_index));
 
   return (
-    <div className="px-3 py-2 space-y-1">
+    <div className="podcast-list">
       {chapters.map((ch, i) => {
         const isActive =
           currentSegmentIndex >= ch.startSegment &&
@@ -26,16 +26,16 @@ export default function PodcastChapterBar({ chapters = [], currentSegmentIndex, 
           <button
             key={ch.id || i}
             onClick={() => onChapterClick?.(ch)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+            className={`podcast-card podcast-fade-in-item w-full flex items-center gap-3 ${
               isActive
-                ? 'bg-[var(--accent)] border border-[var(--accent)]'
-                : 'hover:bg-[var(--surface-overlay)] border border-transparent'
+                ? 'active'
+                : ''
             }`}
+            style={{ animationDelay: `${Math.min(i * 18, 180)}ms` }}
           >
-            {}
             <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${
               isActive
-                ? 'bg-[var(--accent)] text-white'
+                ? 'bg-cyan-300/20 text-cyan-200 border border-cyan-300/35'
                 : 'bg-[var(--surface)] text-[var(--text-muted)]'
             }`}>
               {i + 1}

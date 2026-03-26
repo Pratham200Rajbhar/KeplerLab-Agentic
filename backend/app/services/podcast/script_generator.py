@@ -13,6 +13,40 @@ from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_speaker(raw_speaker: object) -> str:
+    token = str(raw_speaker or "").strip().lower()
+    if not token:
+        return ""
+
+    # Common aliases seen in LLM outputs.
+    if token in {"host", "anchor", "moderator", "narrator", "speaker1", "speaker 1", "alex"}:
+        return "host"
+    if token in {"guest", "expert", "speaker2", "speaker 2", "guest1", "guest 1"}:
+        return "guest"
+
+    if "host" in token or "speaker 1" in token or "speaker1" in token:
+        return "host"
+    if "guest" in token or "speaker 2" in token or "speaker2" in token:
+        return "guest"
+
+    return ""
+
+
+def _ensure_dual_speakers(segments: List[Dict]) -> None:
+    if len(segments) < 2:
+        if segments:
+            segments[0]["speaker"] = "host"
+        return
+
+    speakers = {str(seg.get("speaker", "")).lower() for seg in segments}
+    if {"host", "guest"}.issubset(speakers):
+        return
+
+    # If model returns a monologue, force alternating dialogue.
+    for i, seg in enumerate(segments):
+        seg["speaker"] = "host" if i % 2 == 0 else "guest"
+
 _MODE_QUERIES: Dict[str, List[str]] = {
     "overview": [
         "Comprehensive overview of all key topics, concepts, and findings",
@@ -38,40 +72,57 @@ _MODE_QUERIES: Dict[str, List[str]] = {
 }
 
 def _extract_json(text: str) -> dict:
+    """Robust JSON extraction from LLM response text."""
     text = text.strip()
 
+    # 1. Try direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
+    # 2. Try extraction from markdown blocks
     for pattern in (
         r"```json\s*\n?([\s\S]*?)\n?```",
         r"```\s*\n?([\s\S]*?)\n?```",
     ):
         m = re.search(pattern, text, re.DOTALL)
         if m:
+            content = m.group(1).strip()
             try:
-                return json.loads(m.group(1).strip())
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # Try cleaning common JSON errors in the content
+                cleaned = re.sub(r",\s*([}\]])", r"\1", content)
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    pass
+
+    # 3. Try finding the first '{' and last '}'
+    m = re.search(r"(\{[\s\S]*\})", text)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except json.JSONDecodeError:
+            # Try cleaning common JSON errors in the match
+            cleaned = re.sub(r",\s*([}\]])", r"\1", m.group(1))
+            try:
+                return json.loads(cleaned)
             except json.JSONDecodeError:
                 pass
 
-    m = re.search(r"\{[\s\S]*\}", text)
-    if m:
-        try:
-            return json.loads(m.group(0))
-        except json.JSONDecodeError:
-            pass
-
+    # 4. Final attempt: cleanup and global trailing comma removal
     candidate = re.sub(r",\s*([}\]])", r"\1", text)
     try:
         return json.loads(candidate)
     except json.JSONDecodeError:
         pass
 
+    logger.error("Failed to extract JSON from LLM response. Raw text length: %d. Head: %r", len(text), text[:500])
     raise ValueError(
         f"Could not extract valid JSON from LLM response "
-        f"({len(text)} chars): {text[:300]}…"
+        f"({len(text)} chars). See logs for full output."
     )
 
 def _rag_search(
@@ -204,8 +255,17 @@ async def generate_podcast_script(
 
     for i, seg in enumerate(segments):
         seg["segment_index"] = i
-        if seg.get("speaker", "").lower() not in ("host", "guest"):
+        # Map 'content' to 'text' for TTS compatibility if LLM used 'content'
+        if "content" in seg and "text" not in seg:
+            seg["text"] = seg["content"]
+
+        normalized_speaker = _normalize_speaker(seg.get("speaker"))
+        if normalized_speaker:
+            seg["speaker"] = normalized_speaker
+        else:
             seg["speaker"] = "host" if i % 2 == 0 else "guest"
+
+    _ensure_dual_speakers(segments)
 
     raw_chapters: List[Dict] = result.get("chapters", [{"name": "Full Episode", "start_segment": 0}])
     chapters: List[Dict] = [

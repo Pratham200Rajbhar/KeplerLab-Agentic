@@ -20,6 +20,7 @@ import SourceItem from '@/components/notebook/SourceItem';
 import UploadDialog from '@/components/notebook/UploadDialog';
 import WebSearchDialog from '@/components/notebook/WebSearchDialog';
 import DocumentPreview from '@/components/chat/DocumentPreview';
+import { PANEL } from '@/lib/utils/constants';
 
 const ALL_FILE_TYPES = [
   { id: '', label: 'Any type' },
@@ -60,7 +61,11 @@ export default function Sidebar({ onNavigate }) {
 
   const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
 
-  const { width, startDrag } = useResizablePanel('left', { defaultWidth: 320, minWidth: 260, maxWidth: 600 });
+  const { width, startDrag } = useResizablePanel('left', {
+    defaultWidth: PANEL.SIDEBAR.DEFAULT_WIDTH,
+    minWidth: PANEL.SIDEBAR.MIN_WIDTH,
+    maxWidth: PANEL.SIDEBAR.MAX_WIDTH,
+  });
 
   const [dragActive, setDragActive] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
@@ -309,7 +314,7 @@ export default function Sidebar({ onNavigate }) {
     <>
       <aside
         className="h-full overflow-hidden flex flex-col relative bg-surface/60 backdrop-blur-2xl text-text-primary"
-        style={{ width: `${width}px`, minWidth: '260px' }}
+        style={{ width: `${width}px` }}
       >
         {}
         <div className="flex items-center justify-between p-5 shrink-0 bg-surface/40">

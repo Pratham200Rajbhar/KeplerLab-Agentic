@@ -67,17 +67,20 @@ async def create_session(req: CreateSessionRequest, user=Depends(get_current_use
     if not req.material_ids:
         raise HTTPException(400, "At least one material ID is required")
 
-    result = await session_manager.create_session(
-        user_id=user.id,
-        notebook_id=req.notebook_id,
-        mode=req.mode,
-        topic=req.topic,
-        language=req.language,
-        host_voice=req.host_voice,
-        guest_voice=req.guest_voice,
-        material_ids=req.material_ids,
-    )
-    return result
+    try:
+        result = await session_manager.create_session(
+            user_id=user.id,
+            notebook_id=req.notebook_id,
+            mode=req.mode,
+            topic=req.topic,
+            language=req.language,
+            host_voice=req.host_voice,
+            guest_voice=req.guest_voice,
+            material_ids=req.material_ids,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 @router.get("/session/{session_id}")
 async def get_session(session_id: str, user=Depends(get_current_user)):
@@ -324,6 +327,7 @@ async def get_languages():
     return [
         {"code": code, "name": name}
         for code, name in LANGUAGE_NAMES.items()
+        if code in VOICE_MAP
     ]
 
 @router.post("/voice/preview")

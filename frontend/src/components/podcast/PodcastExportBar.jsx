@@ -55,7 +55,8 @@ export default function PodcastExportBar() {
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={!!exporting}
-        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-overlay)] transition-colors"
+        className="podcast-pill-btn px-2.5 text-[var(--text-muted)]"
+        aria-label="Export podcast"
       >
         {exporting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -67,7 +68,7 @@ export default function PodcastExportBar() {
       {showMenu && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-          <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-1 z-20 w-44 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg overflow-hidden animate-fade-in">
             <button
               onClick={() => handleExport('pdf')}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors"

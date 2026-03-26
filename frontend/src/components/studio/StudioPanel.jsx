@@ -243,7 +243,7 @@ export default function StudioPanel() {
       if (isResizing && panelRef.current) {
         const rect = panelRef.current.getBoundingClientRect();
         const newWidth = rect.right - e.clientX;
-        if (newWidth >= PANEL.STUDIO.MIN_WIDTH && newWidth <= PANEL.STUDIO.MAX_WIDTH) {
+        if (newWidth >= PANEL.STUDIO.MIN_WIDTH) {
           setWidth(newWidth);
         }
       }

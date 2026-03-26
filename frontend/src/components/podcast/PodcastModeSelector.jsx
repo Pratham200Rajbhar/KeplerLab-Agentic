@@ -8,6 +8,50 @@ import VoicePicker from './VoicePicker';
 import { getLanguages } from '@/lib/api/podcast';
 import { useToast } from '@/stores/useToastStore';
 
+const NATIVE_LANGUAGE_NAMES = {
+  en: 'English',
+  hi: 'हिन्दी',
+  gu: 'ગુજરાતી',
+  bn: 'বাংলা',
+  ta: 'தமிழ்',
+  te: 'తెలుగు',
+  mr: 'मराठी',
+  kn: 'ಕನ್ನಡ',
+  ml: 'മലയാളം',
+  pa: 'ਪੰਜਾਬੀ',
+  ur: 'اردو',
+  or: 'ଓଡିଆ',
+  es: 'Espanol',
+  fr: 'Francais',
+  de: 'Deutsch',
+  ar: 'العربية',
+  ja: '日本語',
+  zh: '中文',
+  pt: 'Portugues',
+};
+
+const DEFAULT_LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'gu', name: 'Gujarati' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'te', name: 'Telugu' },
+  { code: 'mr', name: 'Marathi' },
+  { code: 'kn', name: 'Kannada' },
+  { code: 'ml', name: 'Malayalam' },
+  { code: 'pa', name: 'Punjabi' },
+  { code: 'ur', name: 'Urdu' },
+  { code: 'or', name: 'Odia' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'ar', name: 'Arabic' },
+];
+
 const MODES = [
   { id: 'overview', label: 'Overview', desc: 'A broad tour of all uploaded material' },
   { id: 'deep-dive', label: 'Deep Dive', desc: 'In-depth analysis of key concepts' },
@@ -54,6 +98,11 @@ export default function PodcastModeSelector() {
   };
 
   const hasSources = selectedSources.length > 0;
+  const availableLanguages = (() => {
+    // Use backend-supported language list to avoid silent English fallback.
+    if (Array.isArray(languages) && languages.length > 0) return languages;
+    return DEFAULT_LANGUAGES;
+  })();
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -115,24 +164,13 @@ export default function PodcastModeSelector() {
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          className="podcast-language-select w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
         >
-          {languages.length > 0 ? (
-            languages.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)
-          ) : (
-            <>
-              <option value="en">English</option>
-              <option value="hi">Hindi</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="ja">Japanese</option>
-              <option value="zh">Chinese</option>
-              <option value="pt">Portuguese</option>
-              <option value="ar">Arabic</option>
-              <option value="gu">Gujarati</option>
-            </>
-          )}
+          {availableLanguages.map((l) => {
+            const native = NATIVE_LANGUAGE_NAMES[l.code];
+            const optionLabel = native && native !== l.name ? `${l.name} (${native})` : l.name;
+            return <option key={l.code} value={l.code}>{optionLabel}</option>;
+          })}
         </select>
       </div>
 

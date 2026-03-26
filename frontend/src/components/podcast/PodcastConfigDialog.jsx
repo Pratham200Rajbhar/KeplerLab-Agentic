@@ -1,31 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, PlayCircle, Mic, BookOpen, Search, Globe } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Mic, Globe, BookOpen, Search, PlayCircle, Layers3, Brain, Scale, MessagesSquare } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import VoicePicker from './VoicePicker';
-import { getLanguages } from '@/lib/api/podcast';
+import { getLanguages, getVoicesForLanguage } from '@/lib/api/podcast';
 import usePodcastStore from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
 
+const NATIVE_LANGUAGE_NAMES = {
+  en: 'English', hi: 'हिन्दी', gu: 'ગુજરાતી', bn: 'বাংলা', ta: 'தமிழ்', te: 'తెలుగు',
+  mr: 'मराठी', kn: 'ಕನ್ನಡ', ml: 'മലയാളം', pa: 'ਪੰਜਾਬੀ', ur: 'اردو', or: 'ଓଡିଆ',
+  es: 'Espanol', fr: 'Francais', de: 'Deutsch', ar: 'العربية', ja: '日本語', zh: '中文', pt: 'Portugues',
+};
+
 const MODES = [
-  { id: 'overview',  label: 'Overview',   desc: 'Broad tour of all material',      emoji: '🗺️' },
-  { id: 'deep-dive', label: 'Deep Dive',  desc: 'In-depth concept analysis',        emoji: '🔬' },
-  { id: 'debate',    label: 'Debate',     desc: 'Hosts take opposing views',        emoji: '⚖️' },
-  { id: 'q-and-a',  label: 'Q & A',      desc: 'Interview-style discussion',       emoji: '💬' },
+  { id: 'overview', label: 'Overview', desc: 'Broad tour of all material', Icon: Layers3 },
+  { id: 'deep-dive', label: 'Deep Dive', desc: 'In-depth concept analysis', Icon: Brain },
+  { id: 'debate', label: 'Debate', desc: 'Hosts take opposing views', Icon: Scale },
+  { id: 'q-and-a', label: 'Q & A', desc: 'Interview-style discussion', Icon: MessagesSquare },
 ];
 
 const DEFAULT_LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'hi', name: 'Hindi' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'zh', name: 'Chinese' },
-  { code: 'pt', name: 'Portuguese' },
-  { code: 'ar', name: 'Arabic' },
+  { code: 'en', name: 'English' }, { code: 'hi', name: 'Hindi' }, { code: 'gu', name: 'Gujarati' },
+  { code: 'bn', name: 'Bengali' }, { code: 'ta', name: 'Tamil' }, { code: 'te', name: 'Telugu' },
+  { code: 'mr', name: 'Marathi' }, { code: 'kn', name: 'Kannada' }, { code: 'ml', name: 'Malayalam' },
+  { code: 'pa', name: 'Punjabi' }, { code: 'ur', name: 'Urdu' }, { code: 'or', name: 'Odia' },
+  { code: 'es', name: 'Spanish' }, { code: 'fr', name: 'French' }, { code: 'de', name: 'German' },
+  { code: 'ja', name: 'Japanese' }, { code: 'zh', name: 'Chinese' }, { code: 'pt', name: 'Portuguese' }, { code: 'ar', name: 'Arabic' },
 ];
 
 export default function PodcastConfigDialog({ onClose }) {
@@ -37,31 +40,98 @@ export default function PodcastConfigDialog({ onClose }) {
   const currentNotebook = useAppStore((s) => s.currentNotebook);
   const selectedSources = useAppStore((s) => s.selectedSources);
 
-  useEffect(() => {
-    if (error) toast.error(error);
-  }, [error, toast]);
-
-  const [scope, setScope]         = useState('full');   
-  const [mode, setMode]           = useState('overview');
-  const [topic, setTopic]         = useState('');
-  const [language, setLanguage]   = useState('en');
+  const [scope, setScope] = useState('full');
+  const [mode, setMode] = useState('overview');
+  const [topic, setTopic] = useState('');
+  const [language, setLanguage] = useState('en');
   const [hostVoice, setHostVoice] = useState('');
   const [guestVoice, setGuestVoice] = useState('');
   const [languages, setLanguages] = useState([]);
+  const [, setDefaultVoices] = useState({ host: '', guest: '' });
+  const [voiceIdsForLanguage, setVoiceIdsForLanguage] = useState([]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error, toast]);
 
   useEffect(() => {
     getLanguages()
       .then((data) => {
         if (Array.isArray(data)) setLanguages(data);
-        else if (data?.languages) setLanguages(data.languages);
+        else if (Array.isArray(data?.languages)) setLanguages(data.languages);
         else setLanguages([]);
       })
       .catch(() => setLanguages([]));
   }, []);
 
-  const availableLanguages = languages.length > 0 ? languages : DEFAULT_LANGUAGES;
+  useEffect(() => {
+    getVoicesForLanguage(language)
+      .then((data) => {
+        const voices = Array.isArray(data) ? data : Array.isArray(data?.voices) ? data.voices : [];
+        const ids = voices.map((v) => v.id || v.voice_id || v.voiceId).filter(Boolean);
+        setVoiceIdsForLanguage(ids);
+
+        const defaults = data?.defaults || {};
+        const nextHost = defaults.host || ids[0] || '';
+        const nextGuest = defaults.guest || ids.find((id) => id !== nextHost) || '';
+
+        setDefaultVoices({
+          host: nextHost,
+          guest: nextGuest,
+        });
+
+        setHostVoice((prev) => (prev && ids.includes(prev) ? prev : nextHost));
+        setGuestVoice((prev) => {
+          const fallback = nextGuest || ids.find((id) => id !== nextHost) || '';
+          if (prev && ids.includes(prev) && prev !== nextHost) return prev;
+          return fallback;
+        });
+      })
+      .catch(() => {
+        setVoiceIdsForLanguage([]);
+        setDefaultVoices({ host: '', guest: '' });
+        setHostVoice('');
+        setGuestVoice('');
+      });
+  }, [language]);
+
+  const handleHostVoiceChange = (voiceId) => {
+    setHostVoice(voiceId);
+    if (voiceId && voiceId === guestVoice) {
+      const alternative = voiceIdsForLanguage.find((id) => id !== voiceId) || '';
+      setGuestVoice(alternative);
+    }
+  };
+
+  const handleGuestVoiceChange = (voiceId) => {
+    setGuestVoice(voiceId);
+    if (voiceId && voiceId === hostVoice) {
+      const alternative = voiceIdsForLanguage.find((id) => id !== voiceId) || '';
+      setHostVoice(alternative);
+    }
+  };
+
+  const availableLanguages = (() => {
+    // Prefer backend-supported languages to avoid selecting options
+    // that later fall back to English voices.
+    if (Array.isArray(languages) && languages.length > 0) return languages;
+    return DEFAULT_LANGUAGES;
+  })();
+
+  const selectedLanguageNative = NATIVE_LANGUAGE_NAMES[language] || availableLanguages.find((l) => l.code === language)?.name || language;
+
+  const canGenerate =
+    selectedSources.length > 0 &&
+    !loading &&
+    (scope === 'full' || topic.trim().length > 0) &&
+    !(hostVoice && guestVoice && hostVoice === guestVoice);
 
   const handleGenerate = async () => {
+    if (hostVoice && guestVoice && hostVoice === guestVoice) {
+      toast.error('Choose different voices for Host and Guest.');
+      return;
+    }
+
     try {
       const config = {
         mode,
@@ -74,161 +144,173 @@ export default function PodcastConfigDialog({ onClose }) {
       if (session?.id) await startGeneration(session.id);
       onClose?.();
     } catch {
-      
+      // handled in store
     }
   };
 
-  const canGenerate = selectedSources.length > 0 && !loading && (scope === 'full' || topic.trim().length > 0);
-
   return (
-    <Modal onClose={onClose} maxWidth="lg">
-      {}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-          <Mic className="w-4 h-4 text-[var(--accent)]" />
+    <Modal onClose={onClose} maxWidth="max-w-[1120px]">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] px-6 py-4">
+        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--accent-border)] bg-[var(--accent-subtle)]">
+          <Mic className="h-4 w-4 text-[var(--accent)]" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">New AI Podcast</h3>
-          <p className="text-[11px] text-[var(--text-muted)]">Configure your two-host AI podcast</p>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">New AI Podcast</h3>
+          <p className="text-xs text-[var(--text-muted)]">Configure your two-host AI podcast</p>
         </div>
-        <button onClick={onClose} className="ml-auto p-1.5 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
-          <X className="w-4 h-4 text-[var(--text-muted)]" />
+        <button onClick={onClose} className="ml-auto rounded-lg p-1.5 hover:bg-[var(--surface-overlay)]" aria-label="Close dialog">
+          <X className="h-4 w-4 text-[var(--text-muted)]" />
         </button>
       </div>
 
-      <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+      <div
+        className="space-y-5 px-6 py-5"
+        style={{
+          backgroundImage:
+            'radial-gradient(1200px 220px at 50% -80px, rgba(16,185,129,0.08), transparent), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundSize: 'auto, 24px 24px, 24px 24px',
+          backgroundPosition: 'center top, 0 0, 0 0',
+        }}
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-4"
+            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}
+          >
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">What to Cover</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setScope('full')}
+                  className={`rounded-lg border p-3 text-left transition-colors ${scope === 'full' ? 'border-[var(--accent)] bg-[var(--accent-subtle)]' : 'border-[var(--border)] hover:bg-[var(--surface-overlay)]'}`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]"><BookOpen className="h-4 w-4" /> Full Resource</span>
+                  <span className="mt-1 block text-xs text-[var(--text-muted)]">Cover all material</span>
+                </button>
 
-        {}
-        <div>
-          <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">What to Cover</label>
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => setScope('full')}
-              disabled={loading}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                scope === 'full'
-                  ? 'border-[var(--accent)] bg-[var(--accent-subtle)]'
-                  : 'border-[var(--border)] hover:border-[var(--text-muted)]'
-              }`}
-            >
-              <div className={`p-2 rounded-lg shrink-0 ${scope === 'full' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-overlay)] text-[var(--text-muted)]'}`}>
-                <BookOpen className="w-4 h-4" />
+                <button
+                  type="button"
+                  onClick={() => setScope('topic')}
+                  className={`rounded-lg border p-3 text-left transition-colors ${scope === 'topic' ? 'border-[var(--accent)] bg-[var(--accent-subtle)]' : 'border-[var(--border)] hover:bg-[var(--surface-overlay)]'}`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]"><Search className="h-4 w-4" /> Specific Topic</span>
+                  <span className="mt-1 block text-xs text-[var(--text-muted)]">Focus on one area</span>
+                </button>
               </div>
-              <div>
-                <span className={`text-xs font-semibold block ${scope === 'full' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Full Resource</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Cover all material</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setScope('topic')}
-              disabled={loading}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                scope === 'topic'
-                  ? 'border-[var(--accent)] bg-[var(--accent-subtle)]'
-                  : 'border-[var(--border)] hover:border-[var(--text-muted)]'
-              }`}
-            >
-              <div className={`p-2 rounded-lg shrink-0 ${scope === 'topic' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-overlay)] text-[var(--text-muted)]'}`}>
-                <Search className="w-4 h-4" />
-              </div>
-              <div>
-                <span className={`text-xs font-semibold block ${scope === 'topic' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Specific Topic</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Focus on one area</span>
-              </div>
-            </button>
-          </div>
+              {scope === 'topic' && (
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. Chapter 3: Neural Networks"
+                  className="podcast-text-field mt-2.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                />
+              )}
+            </div>
 
-          {scope === 'topic' && (
-            <div className="mt-2.5 animate-fade-in">
-              <input
-                type="text"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Chapter 3: Neural Networks, Photosynthesis..."
-                autoFocus
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"><Globe className="h-3 w-3" /> Language</p>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)] px-3 py-2">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="podcast-language-select w-full bg-transparent text-sm text-[var(--text-primary)] focus:outline-none"
+                >
+                  {availableLanguages.map((l) => {
+                    const native = NATIVE_LANGUAGE_NAMES[l.code];
+                    const label = native && native !== l.name ? `${l.name} (${native})` : l.name;
+                    return (
+                      <option key={l.code} value={l.code}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <p className="mt-1.5 text-[10px] text-[var(--text-muted)]">Selected script: {selectedLanguageNative}</p>
+            </div>
+          </section>
+
+          <section
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
+            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}
+          >
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Podcast Style</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  className={`rounded-lg border p-3 text-left transition-colors ${mode === m.id ? 'border-[var(--accent)] bg-[var(--accent-subtle)]' : 'border-[var(--border)] hover:bg-[var(--surface-overlay)]'}`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
+                    <m.Icon className="h-4 w-4 text-[var(--text-secondary)]" />
+                    {m.label}
+                  </span>
+                  <span className="mt-1 block text-xs text-[var(--text-muted)]">{m.desc}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section
+          className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
+          style={{
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+            backgroundImage: 'radial-gradient(420px 140px at 100% 0%, rgba(16,185,129,0.08), transparent)',
+          }}
+        >
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Host Voices</p>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)]/55 p-3">
+              <VoicePicker
+                label="Host"
+                language={language}
+                value={hostVoice}
+                onChange={handleHostVoiceChange}
+                excludeVoiceId={guestVoice}
                 disabled={loading}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-shadow"
               />
             </div>
-          )}
-        </div>
-
-        {}
-        <div>
-          <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Podcast Style</label>
-          <div className="grid grid-cols-2 gap-2">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)]/55 p-3">
+              <VoicePicker
+                label="Guest"
+                language={language}
+                value={guestVoice}
+                onChange={handleGuestVoiceChange}
+                excludeVoiceId={hostVoice}
                 disabled={loading}
-                className={`text-left p-2.5 rounded-xl border-2 transition-all ${
-                  mode === m.id
-                    ? 'border-[var(--accent)] bg-[var(--accent-subtle)]'
-                    : 'border-[var(--border)] hover:border-[var(--text-muted)]'
-                }`}
-              >
-                <span className="text-base block mb-0.5">{m.emoji}</span>
-                <span className={`text-xs font-semibold block ${mode === m.id ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>{m.label}</span>
-                <span className="text-[10px] text-[var(--text-muted)] block leading-tight">{m.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {}
-        <div>
-          <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Globe className="w-3 h-3" /> Language
-          </label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            disabled={loading}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-shadow"
-          >
-            {availableLanguages.map((l) => (
-              <option key={l.code} value={l.code}>{l.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {}
-        <div>
-          <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Mic className="w-3 h-3" /> Host Voices
-          </label>
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] overflow-hidden divide-y divide-[var(--border)]">
-            <div className="p-3">
-              <VoicePicker label="Host" language={language} value={hostVoice} onChange={setHostVoice} />
-            </div>
-            <div className="p-3">
-              <VoicePicker label="Guest" language={language} value={guestVoice} onChange={setGuestVoice} />
+              />
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
-      {}
-      <div className="flex items-center gap-2.5 px-5 py-4 border-t border-[var(--border)]">
+      <div className="flex items-center gap-2.5 border-t border-[var(--border)] px-6 py-4">
         <button
           onClick={onClose}
           disabled={loading}
-          className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors disabled:opacity-40"
+          className="flex-1 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] disabled:opacity-40"
         >
           Cancel
         </button>
+
         <button
           onClick={handleGenerate}
           disabled={!canGenerate}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--accent)] text-white hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
         >
           {loading ? (
-            <><div className="loading-spinner w-4 h-4" /> Generating…</>
+            <>
+              <div className="loading-spinner h-4 w-4" /> Generating...
+            </>
           ) : (
-            <><PlayCircle className="w-4 h-4" /> Generate Podcast</>
+            <>
+              <PlayCircle className="h-4 w-4" /> Generate Podcast
+            </>
           )}
         </button>
       </div>

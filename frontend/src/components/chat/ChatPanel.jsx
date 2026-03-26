@@ -119,7 +119,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
     })();
 
     return () => { cancelled = true; };
-  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, loadSessions]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, loadSessions, currentSessionId, setCurrentSessionId]);
 
   useEffect(() => {
     if (sessions.length > 0 && !currentSessionId) {

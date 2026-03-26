@@ -26,6 +26,7 @@ export default function usePodcastPlayer() {
   
   const audioElRef = useRef(typeof window !== 'undefined' ? new Audio() : null);
   const audioCacheRef = useRef(new Map());
+  const pendingSeekRef = useRef(null);
 
   
   useEffect(() => {
@@ -86,6 +87,29 @@ export default function usePodcastPlayer() {
     };
   }, []);
 
+  useEffect(() => {
+    const audio = audioElRef.current;
+    if (!audio) return;
+
+    const applyPendingSeek = () => {
+      if (pendingSeekRef.current == null) return;
+      try {
+        audio.currentTime = Math.max(0, pendingSeekRef.current);
+      } catch {
+        // Best effort; if metadata is still not ready this will re-apply on next event.
+      }
+      pendingSeekRef.current = null;
+    };
+
+    audio.addEventListener('loadedmetadata', applyPendingSeek);
+    audio.addEventListener('canplay', applyPendingSeek);
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', applyPendingSeek);
+      audio.removeEventListener('canplay', applyPendingSeek);
+    };
+  }, []);
+
   
   useEffect(() => {
     const audio = audioElRef.current;
@@ -113,6 +137,46 @@ export default function usePodcastPlayer() {
       }
     },
     [],
+  );
+
+  const seekToOverall = useCallback(
+    async (totalSeconds) => {
+      if (!segments.length) return;
+
+      const safeTotal = Math.max(0, Number(totalSeconds) || 0);
+      const durationSeconds = segments.map((seg) => Math.max(0, (seg.durationMs || 0) / 1000));
+      const fullDuration = durationSeconds.reduce((sum, s) => sum + s, 0);
+      const clamped = fullDuration > 0 ? Math.min(safeTotal, fullDuration) : safeTotal;
+
+      let running = 0;
+      let targetIndex = segments.length - 1;
+      let targetOffset = 0;
+
+      for (let i = 0; i < durationSeconds.length; i++) {
+        const segDur = durationSeconds[i];
+        if (clamped <= running + segDur || i === durationSeconds.length - 1) {
+          targetIndex = i;
+          targetOffset = Math.max(0, clamped - running);
+          break;
+        }
+        running += segDur;
+      }
+
+      if (targetIndex === currentSegmentIndex) {
+        seekTo(targetOffset);
+        return;
+      }
+
+      pendingSeekRef.current = targetOffset;
+      await playSegment(targetIndex);
+
+      const audio = audioElRef.current;
+      if (audio && audio.readyState >= 1 && pendingSeekRef.current != null) {
+        seekTo(targetOffset);
+        pendingSeekRef.current = null;
+      }
+    },
+    [segments, currentSegmentIndex, playSegment, seekTo],
   );
 
   
@@ -148,6 +212,7 @@ export default function usePodcastPlayer() {
     prevSegment,
     changeSpeed,
     seekTo,
+    seekToOverall,
     skip,
     jumpToSegment,
   };

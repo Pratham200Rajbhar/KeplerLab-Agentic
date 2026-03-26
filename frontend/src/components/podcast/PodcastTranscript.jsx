@@ -22,7 +22,7 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
   }
 
   return (
-    <div ref={containerRef} className="px-3 py-2 space-y-1">
+    <div ref={containerRef} className="podcast-list">
       {segments.map((seg, i) => {
         const isActive = i === currentIndex;
         return (
@@ -30,26 +30,19 @@ export default function PodcastTranscript({ segments = [], currentIndex, onSegme
             key={seg.id || i}
             ref={isActive ? activeRef : null}
             onClick={() => onSegmentClick?.(i)}
-            className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
+            className={`podcast-card podcast-fade-in-item ${
               isActive
-                ? 'bg-[var(--accent)] border border-[var(--accent)]'
-                : 'hover:bg-[var(--surface-overlay)] border border-transparent'
+                ? 'active'
+                : ''
             }`}
+            style={{ animationDelay: `${Math.min(i * 16, 160)}ms` }}
           >
             <div className="flex items-start gap-2">
-              {}
-              <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${
-                (seg.speaker === 'host' || seg.speaker === 'HOST')
-                  ? 'bg-blue-500/15 text-blue-400'
-                  : 'bg-purple-500/15 text-purple-400'
-              }`}>
+              <span className={`podcast-speaker-chip ${(seg.speaker === 'host' || seg.speaker === 'HOST') ? 'host' : 'guest'}`}>
                 {seg.speaker || 'Speaker'}
               </span>
 
-              {}
-              <p className={`text-xs leading-relaxed ${
-                isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'
-              }`}>
+              <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
                 {seg.text}
               </p>
             </div>

@@ -54,19 +54,21 @@ export default function PodcastDoubtHistory({ doubts = [], playSegment }) {
   }
 
   return (
-    <div className="px-3 py-2 space-y-2">
+    <div className="podcast-list">
       {doubts.map((d, i) => (
-        <div key={d.id || i} className="p-2.5 rounded-lg border border-[var(--border)]">
-          {}
+        <div
+          key={d.id || i}
+          className="podcast-answer-card podcast-fade-in-item"
+          style={{ animationDelay: `${Math.min(i * 18, 180)}ms` }}
+        >
           <div className="flex items-start gap-2 mb-2">
             <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)] mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--text-primary)] leading-relaxed">{d.questionText || d.question_text}</p>
           </div>
 
-          {}
           <div className="pl-5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-bold uppercase px-1 py-0.5 rounded bg-purple-500/15 text-purple-400">
+              <span className="podcast-answer-chip">
                 ANSWER
               </span>
               {d.audioPath && (
@@ -85,7 +87,6 @@ export default function PodcastDoubtHistory({ doubts = [], playSegment }) {
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{d.answerText || d.answer_text}</p>
           </div>
 
-          {}
           {(d.pausedAtSegment != null || d.paused_at_segment != null) && (
             <button
               onClick={() => playSegment?.(d.pausedAtSegment ?? d.paused_at_segment)}

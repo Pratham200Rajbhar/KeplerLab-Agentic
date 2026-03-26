@@ -467,7 +467,7 @@ function MindMapCanvasInner({
     } finally {
       setIsExporting(false);
     }
-  }, [nodes, getViewportForBounds, normalized.title, isExporting]);
+  }, [nodes, normalized.title, isExporting]);
 
   const handleExpandAll = useCallback(() => {
     if (expandedIds.size > 0) {

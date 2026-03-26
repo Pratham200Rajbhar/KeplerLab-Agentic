@@ -27,29 +27,26 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   const textareaRef = useRef(null);
 
   
+  // Sync with global chat input value from store
+  const chatInputValue = useAppStore(s => s.chatInputValue);
+  const setChatInputValue = useAppStore(s => s.setChatInputValue);
+
+  const syncedValue = chatInputValue && chatInputValue.trim() !== '' ? chatInputValue : value;
+
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, [value]);
+  }, [syncedValue]);
 
-  
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
- 
-  // Sync with global chat input value from store
-  const chatInputValue = useAppStore(s => s.chatInputValue);
-  const setChatInputValue = useAppStore(s => s.setChatInputValue);
 
   useEffect(() => {
     if (chatInputValue && chatInputValue.trim() !== '') {
-      setValue(chatInputValue);
-      // Clear the store value immediately so we don't sync again on re-render
-      setChatInputValue('');
-      
-      // Focus and adjust height
+      // Focus and adjust height when an external source injects text.
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
@@ -58,12 +55,12 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         }
       }, 50);
     }
-  }, [chatInputValue, setChatInputValue]);
+  }, [chatInputValue]);
 
   
   // Derived state to avoid synchronous setStates in useEffect
   const { activeCommand, showDropdown } = useMemo(() => {
-    const trimmed = value.trim();
+    const trimmed = syncedValue.trim();
     const parsed = parseSlashCommand(trimmed);
     const isTypingCmd = trimmed.startsWith('/') && !trimmed.includes(' ');
     
@@ -71,19 +68,20 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
       activeCommand: parsed.command ? { label: parsed.label, intent: parsed.intent, command: parsed.command } : null,
       showDropdown: isTypingCmd
     };
-  }, [value]);
+  }, [syncedValue]);
 
   const handleValueChange = useCallback((val) => {
+    if (chatInputValue) setChatInputValue('');
     setValue(val);
     setDropdownIndex(0);
-  }, []);
+  }, [chatInputValue, setChatInputValue]);
 
   
   const filteredCommands = useMemo(() => {
-    if (!value.startsWith('/')) return [];
-    const partial = value.slice(1).toLowerCase();
+    if (!syncedValue.startsWith('/')) return [];
+    const partial = syncedValue.slice(1).toLowerCase();
     return Object.entries(COMMAND_META).filter(([cmd]) => cmd.startsWith(partial));
-  }, [value]);
+  }, [syncedValue]);
 
   const selectCommand = useCallback((cmd) => {
     handleValueChange(`/${cmd} `);
@@ -91,7 +89,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   }, [handleValueChange]);
  
   const handleSend = useCallback(() => {
-    const trimmed = value.trim();
+    const trimmed = syncedValue.trim();
     if (!trimmed || isStreaming) return;
     const parsed = parseSlashCommand(trimmed);
     const query = trimmed; // Keep full text including slash command
@@ -100,7 +98,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     onSend(query, intentOverride);
     handleValueChange('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  }, [value, isStreaming, onSend, handleValueChange]);
+  }, [syncedValue, isStreaming, onSend, handleValueChange]);
  
   const handleKeyDown = useCallback(
     (e) => {
@@ -124,7 +122,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         }
         if (e.key === 'Escape') {
           e.preventDefault();
-          handleValueChange(value + ' '); // Hiding dropdown by adding space
+          handleValueChange(syncedValue + ' '); // Hiding dropdown by adding space
           return;
         }
       }
@@ -134,27 +132,27 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         handleSend();
       }
       if (e.key === 'Escape' && activeCommand) {
-        const parsed = parseSlashCommand(value.trim());
+        const parsed = parseSlashCommand(syncedValue.trim());
         handleValueChange(parsed.query || '');
       }
     },
-    [handleSend, activeCommand, value, showDropdown, filteredCommands, dropdownIndex, selectCommand, handleValueChange],
+    [handleSend, activeCommand, syncedValue, showDropdown, filteredCommands, dropdownIndex, selectCommand, handleValueChange],
   );
  
   const dismissCommand = useCallback(() => {
-    const parsed = parseSlashCommand(value.trim());
+    const parsed = parseSlashCommand(syncedValue.trim());
     handleValueChange(parsed.query || '');
     textareaRef.current?.focus();
-  }, [value, handleValueChange]);
+  }, [syncedValue, handleValueChange]);
 
   return (
     <div className="px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full sticky bottom-0 z-10 bg-gradient-to-t from-surface-50 via-surface-50/95 to-transparent">
       <div className="max-w-3xl w-full relative">
 
         {/* Optimize Prompt button — above the input panel, left-aligned, visible only when there's text */}
-        {!isStreaming && value.trim().length > 0 && (() => {
-          const parsed = parseSlashCommand(value.trim());
-          const queryToOptimize = parsed.command ? parsed.query : value.trim();
+        {!isStreaming && syncedValue.trim().length > 0 && (() => {
+          const parsed = parseSlashCommand(syncedValue.trim());
+          const queryToOptimize = parsed.command ? parsed.query : syncedValue.trim();
           const slashPrefix = parsed.command ? `/${parsed.command} ` : '';
           return (
             <div className="flex justify-start mb-2 px-1">
@@ -250,7 +248,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         >
           <textarea
             ref={textareaRef}
-            value={value}
+            value={syncedValue}
             onChange={(e) => handleValueChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
@@ -276,7 +274,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           ) : (
             <button
               onClick={handleSend}
-              disabled={!value.trim() || disabled}
+              disabled={!syncedValue.trim() || disabled}
               className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-accent text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-accent/80 transition-colors"
               title="Send message"
               aria-label="Send message"

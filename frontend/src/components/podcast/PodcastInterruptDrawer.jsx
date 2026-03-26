@@ -84,20 +84,18 @@ export default function PodcastInterruptDrawer() {
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 animate-slide-up">
-      <div className="bg-[var(--surface-raised)] border-t border-[var(--border)] rounded-t-2xl shadow-lg p-4">
-        {}
+      <div className="podcast-drawer p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-[var(--text-primary)]">Ask a Question</h4>
-          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors">
+          <button onClick={handleClose} className="podcast-icon-btn">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
 
-        {}
         {answer && (
-          <div className="mb-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] animate-fade-in">
+          <div className="mb-3 podcast-answer-card animate-fade-in">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">
+              <span className="podcast-answer-chip">
                 ANSWER
               </span>
               {answer.audioPath && (
@@ -114,7 +112,6 @@ export default function PodcastInterruptDrawer() {
           </div>
         )}
 
-        {}
         <div className="flex items-center gap-2">
           <button
             onClick={isRecording ? stopMic : startMic}
@@ -134,13 +131,13 @@ export default function PodcastInterruptDrawer() {
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             placeholder="Type your question..."
-            className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+            className="podcast-drawer-field flex-1 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
 
           <button
             onClick={handleSubmit}
             disabled={!question.trim() || submitting}
-            className="p-2.5 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors disabled:opacity-40 shrink-0"
+            className="podcast-play-btn h-10 w-10 rounded-xl disabled:opacity-40 shrink-0"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

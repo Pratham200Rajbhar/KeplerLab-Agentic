@@ -11,7 +11,7 @@ from app.db.prisma_client import prisma
 from app.services.ws_manager import ws_manager
 from app.services.podcast.script_generator import generate_podcast_script
 from app.services.podcast.tts_service import synthesize_all_segments
-from app.services.podcast.voice_map import get_default_voices
+from app.services.podcast.voice_map import get_default_voices, VOICE_MAP
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,9 @@ async def create_session(
     material_ids: Optional[List[str]] = None,
 ) -> Dict:
     db = prisma
+
+    if language not in VOICE_MAP:
+        raise ValueError(f"Unsupported podcast language: {language}")
 
     defaults = get_default_voices(language)
     host_v = host_voice or defaults["host"]

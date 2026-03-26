@@ -283,7 +283,7 @@ def get_code_repair_prompt(broken_code: str, stderr: str) -> str:
 
 def get_podcast_qa_prompt(language: str, context: str, question: str) -> str:
     return compose_prompt(
-        ["system/base_system.md", "shared/style.md", "generation/podcast.md"],
+        ["system/base_system.md", "shared/style.md", "generation/podcast_qa.md"],
         {
             "mode": "podcast_qa",
             "language": language,

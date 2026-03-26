@@ -61,15 +61,26 @@ DEFAULT_VOICES: Dict[str, dict] = {
 }
 
 LANGUAGE_NAMES: Dict[str, str] = {
-    "en": "English", "hi": "Hindi", "gu": "Gujarati", "es": "Spanish",
-    "ar": "Arabic", "fr": "French", "de": "German", "ja": "Japanese",
-    "zh": "Chinese", "pt": "Portuguese",
+    "en": "English", "hi": "Hindi", "gu": "Gujarati", "bn": "Bengali",
+    "ta": "Tamil", "te": "Telugu", "mr": "Marathi", "kn": "Kannada",
+    "ml": "Malayalam", "pa": "Punjabi", "ur": "Urdu", "or": "Odia",
+    "es": "Spanish", "ar": "Arabic", "fr": "French", "de": "German",
+    "ja": "Japanese", "zh": "Chinese", "pt": "Portuguese",
 }
 
 PREVIEW_TEXTS: Dict[str, str] = {
     "en": "Welcome to this podcast where we explore fascinating topics together.",
     "hi": "इस पॉडकास्ट में आपका स्वागत है जहाँ हम साथ मिलकर दिलचस्प विषयों की खोज करते हैं।",
     "gu": "આ પોડકાસ્ટમાં આપનું સ્વાગત છે જ્યાં આપણે સાથે મળીને રસપ્રદ વિષયોની શોધ કરીએ છીએ.",
+    "bn": "এই পডকাস্টে আপনাকে স্বাগতম, যেখানে আমরা একসাথে আকর্ষণীয় বিষয়গুলি অন্বেষণ করি।",
+    "ta": "இந்த பாட்காஸ்டிற்கு வரவேற்கிறோம். நாம் சேர்ந்து சுவாரஸ்யமான தலைப்புகளை ஆராய்வோம்.",
+    "te": "ఈ పోడ్‌కాస్ట్‌కు స్వాగతం. మనం కలిసి ఆసక్తికరమైన విషయాలను అన్వేషిద్దాం.",
+    "mr": "या पॉडकास्टमध्ये आपले स्वागत आहे, जिथे आपण एकत्रितपणे रंजक विषयांचा अभ्यास करतो.",
+    "kn": "ಈ ಪಾಡ್‌ಕಾಸ್ಟ್‌ಗೆ ಸ್ವಾಗತ, ಇಲ್ಲಿ ನಾವು ಒಟ್ಟಿಗೆ ಆಸಕ್ತಿದಾಯಕ ವಿಷಯಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೇವೆ.",
+    "ml": "ഈ പോഡ്കാസ്റ്റിലേക്ക് സ്വാഗതം, ഇവിടെ നാം ഒരുമിച്ച് ആകർഷകമായ വിഷയങ്ങൾ അന്വേഷിക്കുന്നു.",
+    "pa": "ਇਸ ਪੋਡਕਾਸਟ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ, ਜਿੱਥੇ ਅਸੀਂ ਇਕੱਠੇ ਦਿਲਚਸਪ ਵਿਸ਼ਿਆਂ ਦੀ ਖੋਜ ਕਰਦੇ ਹਾਂ।",
+    "ur": "اس پوڈکاسٹ میں خوش آمدید، جہاں ہم مل کر دلچسپ موضوعات کو دریافت کرتے ہیں۔",
+    "or": "ଏହି ପଡକାଷ୍ଟକୁ ସ୍ୱାଗତ, ଯେଉଁଠାରେ ଆମେ ସଙ୍ଗେ ସଙ୍ଗେ ଆକର୍ଷଣୀୟ ବିଷୟ ଅନୁସନ୍ଧାନ କରୁଛୁ।",
     "es": "Bienvenidos a este podcast donde exploramos temas fascinantes juntos.",
     "ar": "مرحبًا بكم في هذا البودكاست حيث نستكشف معًا مواضيع رائعة.",
     "fr": "Bienvenue dans ce podcast où nous explorons ensemble des sujets fascinants.",
