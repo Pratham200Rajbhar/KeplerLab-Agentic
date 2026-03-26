@@ -182,9 +182,16 @@ async def _handle_code_execution(message, notebook_id, user_id, session_id, mate
 
     if tool_result:
         answer = tool_result.content or "Code generated."
+        code = tool_result.metadata.get("code", "")
+        language = tool_result.metadata.get("language", "python")
         meta = {
             "intent": "CODE_EXECUTION",
-            "original_code": tool_result.metadata.get("code", ""),
+            "original_code": code,
+            "code_block": {
+                "code": code,
+                "language": language,
+            },
+            "language": language,
             "phase": tool_result.metadata.get("phase", "generated"),
         }
         await _persist(notebook_id, user_id, session_id, message, answer, meta)

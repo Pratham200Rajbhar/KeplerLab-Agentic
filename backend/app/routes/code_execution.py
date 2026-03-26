@@ -143,11 +143,21 @@ async def execute_code(
                     if art_event:
                         yield _sse_event("artifact", art_event)
 
+                has_stdout = bool((result.stdout or "").strip())
+                has_stderr = bool((result.stderr or "").strip())
+                if has_stdout or has_stderr or artifacts:
+                    success_summary = f"Code executed successfully. {len(artifacts)} file(s) produced."
+                else:
+                    success_summary = (
+                        "Code executed successfully, but produced no output. "
+                        "This script may only define functions/classes and not print anything."
+                    )
+
                 yield _sse_event("execution_done", {
                     "exit_code": 0,
                     "stdout": result.stdout or "",
                     "stderr": result.stderr or "",
-                    "summary": f"Code executed successfully. {len(artifacts)} file(s) produced.",
+                    "summary": success_summary,
                     "elapsed": result.elapsed_seconds,
                 })
             else:

@@ -261,6 +261,7 @@ export default function InlinePresentationView({ presentation, onClose }) {
 export function PresentationConfigDialog({ onConfirm, onClose, materialIds }) {
   const [maxSlides, setMaxSlides] = useState(10);
   const [theme, setTheme] = useState('modern');
+  const [customTheme, setCustomTheme] = useState('');
   const [instructions, setInstructions] = useState('');
   const [aiSuggest, setAiSuggest] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -294,11 +295,16 @@ export function PresentationConfigDialog({ onConfirm, onClose, materialIds }) {
     { id: 'modern', label: 'Modern', desc: 'Clean & minimal' },
     { id: 'academic', label: 'Academic', desc: 'Formal & structured' },
     { id: 'creative', label: 'Creative', desc: 'Bold & visual' },
+    { id: 'custom', label: 'Custom', desc: 'Describe your style' },
   ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onConfirm({ maxSlides, theme, additionalInstructions: instructions });
+    const finalInstruction = [
+      instructions.trim(),
+      theme === 'custom' && customTheme.trim() ? `Style Requirement: ${customTheme.trim()}` : ''
+    ].filter(Boolean).join('\n\n');
+    onConfirm({ maxSlides, theme, additionalInstructions: finalInstruction });
   };
 
   return (
@@ -373,7 +379,7 @@ export function PresentationConfigDialog({ onConfirm, onClose, materialIds }) {
           {}
           <div>
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Theme</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {themes.map((t) => (
                 <button
                   key={t.id}
@@ -381,15 +387,26 @@ export function PresentationConfigDialog({ onConfirm, onClose, materialIds }) {
                   onClick={() => setTheme(t.id)}
                   className={`text-left p-2.5 rounded-lg border transition-all ${
                     theme === t.id
-                      ? 'border-[var(--accent)] bg-[var(--accent)]'
-                      : 'border-[var(--border)] hover:border-[var(--text-muted)]'
+                      ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                      : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--text-muted)]'
                   }`}
                 >
-                  <span className="text-xs font-medium text-[var(--text-primary)] block">{t.label}</span>
-                  <span className="text-[10px] text-[var(--text-muted)]">{t.desc}</span>
+                  <span className={`text-xs font-medium block ${theme === t.id ? 'text-white' : 'text-[var(--text-primary)]'}`}>{t.label}</span>
+                  <span className={`text-[10px] ${theme === t.id ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>{t.desc}</span>
                 </button>
               ))}
             </div>
+            {theme === 'custom' && (
+              <div className="mt-2 text-left animate-fade-in">
+                <input
+                  type="text"
+                  value={customTheme}
+                  onChange={(e) => setCustomTheme(e.target.value)}
+                  placeholder="e.g. Dark mode with electric blue and pink accents"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--border)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] text-[var(--text-primary)]"
+                />
+              </div>
+            )}
           </div>
 
           {}

@@ -157,7 +157,7 @@ async def process_explainer_video(
 
         loop = asyncio.get_running_loop()
 
-        async def compose_single_video(script: dict) -> tuple[int, str | None]:
+        async def compose_single_video(idx: int, script: dict) -> tuple[int, str | None]:
             slide_num = script["slide_number"]
             img_path = image_paths.get(slide_num)
             if not img_path:
@@ -166,14 +166,15 @@ async def process_explainer_video(
 
             audio_path = os.path.join(work_dir, f"slide_{slide_num}.mp3")
             video_path = os.path.join(work_dir, f"slide_{slide_num}.mp4")
+            duration = audio_durations[idx]
 
             await loop.run_in_executor(
                 None,
-                partial(compose_slide_video, img_path, audio_path, video_path),
+                partial(compose_slide_video, img_path, audio_path, video_path, duration),
             )
             return slide_num, video_path
 
-        video_tasks = [compose_single_video(script) for script in scripts]
+        video_tasks = [compose_single_video(i, script) for i, script in enumerate(scripts)]
         video_results = await asyncio.gather(*video_tasks)
         
         slide_videos = [

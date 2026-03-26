@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+        body {
+      margin: 0;
+      padding: 24px;
+            background: #f1f5f9;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      display: grid;
+      gap: 24px;
+      justify-content: center;
+    }
+    slide {
+      display: block;
+    }
+    .slide {
+      width: 1024px;
+      height: 1024px;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      padding: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+        h1 { margin: 0; font-size: 42px; line-height: 1.2; color: #0f172a; }
+        h2 { margin: 0; font-size: 30px; color: #0f766e; }
+        p, li { font-size: 24px; line-height: 1.5; color: #0f172a; }
+    ul { margin: 0; padding-left: 28px; }
+    table { width: 100%; border-collapse: collapse; font-size: 20px; }
+        td { border: 1px solid #d1d5db; padding: 10px; vertical-align: top; color: #334155; }
+    .image-placeholder {
+            border: 2px dashed #0f766e;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+            color: #334155;
+      font-size: 20px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide theme-modern">
+    <header><h1>XML vs HTML: Purpose and Structure</h1></header>
+    <section>
+<h1>XML vs HTML: Purpose and Structure</h1>
+<h2>Data Transport vs. Data Presentation</h2>
+<ul><li>XML is content-oriented and designed to transport and store data; HTML is presentation-oriented and designed to display data.</li><li>XML allows users to define custom tags and attributes with semantic meaning; HTML uses a fixed, pre-determined set of tags.</li><li>XML supports validation through schemas (e.g., XSD); HTML has no built-in data validation capabilities.</li><li>XML documents require explicit declaration of encoding and version (e.g., &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;).</li><li>XML enforces strict well-formedness rules (e.g., proper nesting, closing tags); HTML is more tolerant of syntax errors.</li></ul>
+<p>The distinction between XML and HTML reflects a fundamental division in web technologies: XML serves as a meta-language for structuring data exchange between systems, while HTML is a markup language for rendering content in browsers. XML’s extensibility enables domain-specific vocabularies (e.g., DocBook, RSS), whereas HTML’s static tag set focuses on visual layout and semantics for human consumption. This separation allows systems to decouple data representation from presentation, supporting interoperability across heterogeneous platforms.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>Web Service Communication: SOAP Message Structure</h1></header>
+    <section>
+<h1>Web Service Communication: SOAP Message Structure</h1>
+<h2>Envelope, Header, Body, and Encoding</h2>
+<ul><li>A SOAP message is an XML document wrapped in an Envelope element that defines the start and end of the message.</li><li>The Envelope declares XML namespaces for SOAP standards (e.g., xmlns:SOAP-ENV=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;).</li><li>The Body element contains the actual request or response data, such as the calculateCarPayment operation with loanAmount, loanTerm, and loanRate parameters.</li><li>Type information is explicitly encoded using xsi:type=&quot;xsd:string&quot; to ensure unambiguous interpretation by the receiver.</li><li>The encodingStyle attribute specifies the serialization rules (e.g., http://schemas.xmlsoap.org/soap/encoding/).</li></ul>
+<table><tr><td>SOAP Component</td><td>Purpose</td></tr><tr><td>Envelope</td><td>Root element defining message boundaries and namespaces</td></tr><tr><td>Header (optional)</td><td>Carries metadata (e.g., authentication, routing)</td></tr><tr><td>Body</td><td>Contains the core message payload (request/response data)</td></tr><tr><td>Fault (optional)</td><td>Reports errors in processing (not shown in example)</td></tr></table>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>Full Virtualization: Techniques and Examples</h1></header>
+    <section>
+<h1>Full Virtualization: Techniques and Examples</h1>
+<h2>No Guest OS Modification Required</h2>
+<ul><li>Full virtualization uses binary translation to replace non-virtualizable privileged instructions with safe equivalents, while direct execution handles user-level instructions for performance.</li><li>It provides a complete simulation of the underlying hardware, creating an exact copy of the physical system for the guest OS.</li><li>The guest operating system runs unmodified and is unaware of the virtualized environment.</li><li>Significant virtualization overhead arises due to instruction interception and translation, especially for privileged operations.</li><li>Examples include commercial solutions like VMware ESX, Microsoft Virtual Server, and Citrix XenServer; open-source options include Linux Xen HVM and KVM.</li></ul>
+<p>Full virtualization achieves hardware abstraction by decoupling the guest OS from the physical hardware, enabling portability and isolation. The hypervisor layer intercepts sensitive instructions and translates them at runtime, ensuring security and stability without requiring changes to the guest OS. This approach supports diverse operating systems—including unmodified Windows and Linux distributions—on the same host, making it ideal for enterprise server consolidation and cloud infrastructure where flexibility and compatibility are critical.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>Distributed System Interoperability Requirements</h1></header>
+    <section>
+<h1>Distributed System Interoperability Requirements</h1>
+<h2>Cross-Platform and Cross-Technology Compatibility</h2>
+<ul><li>Interoperability must span operating systems (e.g., Windows, Linux, macOS), hardware architectures (e.g., x86, ARM), and communication protocols (e.g., TCP/IP, HTTP).</li><li>Distributed systems must operate across programming languages (e.g., Java, C++, Python) and software interfaces (e.g., APIs, RPCs).</li><li>Security measures and information representation formats (e.g., JSON, XML, ASN.1) must be standardized or translated to ensure consistent data interpretation.</li><li>Achieving openness requires independence from underlying heterogeneity in hardware, platforms, and programming languages.</li><li>Middleware standards like CORBA, DCOM, and DCE provide frameworks for cross-platform object communication and remote procedure calls.</li></ul>
+<table><tr><td>Heterogeneity Dimension</td><td>Example Technologies</td></tr><tr><td>Operating Systems</td><td>Linux, Windows, macOS, Android</td></tr><tr><td>Hardware Architectures</td><td>x86, ARM, RISC-V</td></tr><tr><td>Communication Architectures</td><td>HTTP/REST, gRPC, SOAP, MQTT</td></tr><tr><td>Programming Languages</td><td>Java, Python, C#, JavaScript</td></tr><tr><td>Security Measures</td><td>TLS, OAuth 2.0, SAML, Kerberos</td></tr></table>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

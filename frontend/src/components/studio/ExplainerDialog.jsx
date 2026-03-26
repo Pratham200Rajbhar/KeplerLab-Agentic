@@ -80,7 +80,7 @@ export default function ExplainerDialog({ onClose, onComplete }) {
         } else {
           setProgress({
             message: status.message || 'Processing...',
-            pct: (status.progress || 0) * 100,
+            pct: status.progress || 0,
           });
         }
       } catch {

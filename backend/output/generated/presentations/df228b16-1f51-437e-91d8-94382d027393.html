@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f3f4f6;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      display: grid;
+      gap: 24px;
+      justify-content: center;
+    }
+    slide {
+      display: block;
+    }
+    .slide {
+      width: 1024px;
+      height: 1024px;
+      background: white;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      padding: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    h1 { margin: 0; font-size: 42px; line-height: 1.2; }
+    h2 { margin: 0; font-size: 30px; color: #334155; }
+    p, li { font-size: 24px; line-height: 1.5; color: #0f172a; }
+    ul { margin: 0; padding-left: 28px; }
+    table { width: 100%; border-collapse: collapse; font-size: 20px; }
+    td { border: 1px solid #cbd5e1; padding: 10px; vertical-align: top; }
+    .image-placeholder {
+      border: 2px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 20px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Web Services and Cloud Computing Fundamentals</h1></header>
+    <section>
+<h1>Web Services and Cloud Computing</h1>
+<h2>Foundations in XML, Web Services, and Virtualization</h2>
+<ul><li>XML for data transport and storage</li><li>HTML for human-readable presentation</li><li>Full virtualization without guest OS modification</li><li>Interoperability across heterogeneous systems</li></ul>
+<p>This presentation explores core concepts in web services, cloud computing, and distributed systems, including XML vs. HTML, virtualization techniques, and system interoperability requirements.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs HTML: Purpose and Structure</h1></header>
+    <section>
+<h1>XML vs HTML: Key Differences</h1>
+<p>XML allows users to define custom tags and attributes to describe data meaning, while HTML uses a rigid set of tags focused on visual presentation.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML Document Structure and Validation</h1></header>
+    <section>
+<h1>XML Instance Document Example</h1>
+<p>An XML document includes a declaration, optional comments, namespace declarations, and schema references. Example: &lt;em&gt;XML in Depth&lt;/em&gt; uses a &lt;books&gt; root element containing &lt;book&gt; entries with attributes like year and book-title.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>SOAP Message Format</h1></header>
+    <section>
+<h1>SOAP Envelope and Body Structure</h1>
+<p>SOAP messages use an envelope-based format with namespaces for encoding and schema definitions. A typical message includes a &lt;SOAP-ENV:Body&gt; containing method calls and typed parameters (e.g., loanAmount, loanTerm, loanRate).</p>
+<div class="image-placeholder">Image: Visual diagram of a SOAP message envelope with header and body sections, showing XML namespaces and method parameters</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed System Interoperability</h1></header>
+    <section>
+<h1>Interoperability Across Heterogeneous Environments</h1>
+<ul><li>Operating systems</li><li>Hardware architectures</li><li>Programming languages</li><li>Communication protocols</li><li>Security measures</li><li>Information representation</li></ul>
+<p>Distributed systems must achieve openness by being independent of underlying heterogeneity in hardware, platforms, and languages.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Full Virtualization Techniques</h1></header>
+    <section>
+<h1>Full Virtualization: Binary Translation &amp; Direct Execution</h1>
+<p>Full virtualization simulates complete hardware without requiring guest OS modification. It uses binary translation for privileged instructions and direct execution for user-level code, resulting in virtualization overhead. Guest OS is unaware of virtualization.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization Solutions</h1></header>
+    <section>
+<h1>Commercial and Open-Source Virtualization Platforms</h1>
+<table><tr><td>Type</td><td>Examples</td></tr><tr><td>Commercial</td><td>VMware ESX, Microsoft Virtual Server, Citrix XenServer</td></tr><tr><td>Open Source</td><td>Linux Xen (HVM), KVM</td></tr></table>
+<p>These platforms implement full virtualization to provide complete abstraction of physical hardware and support unmodified guest operating systems.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed System Architectures</h1></header>
+    <section>
+<h1>Foundational Enablers in Distributed Systems</h1>
+<ul><li>Grid Technology</li><li>Broadband Networks</li><li>Web 2.0</li><li>Service-Oriented Architectures</li><li>Free and Open Source Software</li><li>Web Application Frameworks</li></ul>
+<p>Modern distributed systems integrate foundational services, SOA, and open-source frameworks to enable scalable and interoperable computing.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed System Components</h1></header>
+    <section>
+<h1>Resource and Content Management in Distributed Systems</h1>
+<table><tr><td>Category</td><td>Examples</td></tr><tr><td>Resource Management</td><td>Database, Web, Human, Content</td></tr><tr><td>Operational Functions</td><td>Backup, Recovery, CRM, Document Management</td></tr><tr><td>Collaboration</td><td>Social Networks, OpenCrowd, Search</td></tr></table>
+<p>Distributed systems manage diverse resources and content types, supporting collaboration, backup, and dynamic user engagement.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Middleware and Object Architecture</h1></header>
+    <section>
+<h1>Middleware Standards for Distributed Objects</h1>
+<ul><li>Common Object Request Broker Architecture (CORBA)</li><li>Distributed Component Object Model (DCOM)</li><li>Products based on these standards</li></ul>
+<p>Middleware like CORBA and DCOM enables object-based communication across heterogeneous environments, forming the backbone of distributed component systems.</p>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

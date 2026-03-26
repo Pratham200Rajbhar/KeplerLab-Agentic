@@ -123,6 +123,13 @@ export default function Sidebar({ onNavigate }) {
       handlePodcastWsEvent(msg);
       return;
     }
+    if (msg.type === 'presentation_update_progress') {
+      const store = useAppStore.getState();
+      if (store.setPresentationUpdateProgress) {
+        store.setPresentationUpdateProgress(msg.message);
+      }
+      return;
+    }
     if (msg.type === 'notebook_update' && msg.notebook_id) {
       if (currentNotebook?.id === msg.notebook_id) {
         setCurrentNotebook({ ...currentNotebook, name: msg.name });

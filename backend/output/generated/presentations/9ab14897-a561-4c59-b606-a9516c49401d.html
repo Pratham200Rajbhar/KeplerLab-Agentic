@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #F8F9FA;
+      font-family: 'Open Sans', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #3182CE;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #2D3748;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #3182CE;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #2D3748;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #E2E8F0;
+      padding: 16px;
+      vertical-align: top;
+      color: #2D3748;
+    }
+    .image-placeholder {
+      border: 4px dashed #3182CE44;
+      background: #3182CE08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #718096;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Distributed Systems: Core Principles</h1></header>
+    <section>
+<h2>Independence, Interoperability, and Transparency</h2>
+<ul><li>Independence from heterogeneity: hardware, platforms, and languages</li><li>Interoperability across open systems via standardized interfaces</li><li>Transparency as a key desired property</li></ul>
+<p>Distributed systems must abstract environmental diversity while enabling seamless interaction across heterogeneous components.</p>
+<div class="image-placeholder">Image: A layered architecture diagram showing hardware (servers, storage), platforms (OS, middleware), and languages (Python, Java, C++) at the bottom, with a transparent shield labeled &#x27;Abstraction Layer&#x27; above them, and services on top interacting via standardized interfaces (WSDL, UDDI)</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Transparency in Distributed Systems</h1></header>
+    <section>
+<h2>Eight Key Forms of Transparency</h2>
+<table><tr><td>Transparency Type</td><td>Description</td></tr><tr><td>Access</td><td>Hide differences in data representation and resource access</td></tr><tr><td>Location</td><td>Hide where a resource is located</td></tr><tr><td>Migration</td><td>Hide that a resource may move to another location</td></tr><tr><td>Replication</td><td>Hide that a resource is replicated</td></tr><tr><td>Concurrency</td><td>Hide that a resource may be shared by several competitive users</td></tr><tr><td>Failure</td><td>Hide the failure and recovery of a resource</td></tr></table>
+<p>Transparency ensures users and applications interact with resources without needing to know underlying implementation details.</p>
+<div class="image-placeholder">Image: A user interface with a single icon labeled &#x27;Data Resource&#x27; that, when clicked, opens a panel showing multiple hidden layers: location markers, replication nodes, failure recovery logs, and concurrent access indicators—all visually abstracted behind a clean UI</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Desired Properties of Distributed Systems</h1></header>
+    <section>
+<h2>Core Objectives for System Design</h2>
+<ul><li>Transparency: Uniform access regardless of location or implementation</li><li>Openness: Conformance to well-defined interfaces and portability</li><li>Scalability: Ability to grow in size and complexity without degradation</li><li>Enhanced Availability: Fault tolerance and redundancy support</li><li>Concurrency: Support for multiple users accessing shared resources</li><li>Heterogeneity: Independence from underlying platform differences</li></ul>
+<p>These properties collectively enable robust, scalable, and maintainable distributed systems that serve users and resources efficiently.</p>
+<div class="image-placeholder">Image: A circular diagram with six labeled nodes (Transparency, Openness, Scalability, Availability, Concurrency, Heterogeneity) connected by arrows, each node containing a small icon: e.g., a globe for openness, a scaling slider for scalability, a heartbeat for availability</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture</h1></header>
+    <section>
+<h2>Standards-Based Interaction Framework</h2>
+<ul><li>WSDL defines the interface for service interaction (external IDL)</li><li>UDDI serves as a registry for discovering and publishing services</li><li>SOAP enables structured message exchange with built-in security</li><li>XML provides extensible, content-oriented data transport</li></ul>
+<p>Web services rely on standardized, XML-based protocols to enable application-to-application communication across heterogeneous environments.</p>
+<div class="image-placeholder">Image: A flow diagram: Web Service Requester → UDDI Registry (search icon) → Web Service Provider (server icon) → SOAP Request/Response (envelope icon). Include WSDL document icon attached to the provider, and XML tags (e.g., &lt;book&gt;, &lt;author&gt;) floating near the SOAP envelope</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>WSDL Components</h1></header>
+    <section>
+<h2>What WSDL Describes</h2>
+<ul><li>Data types used by the service</li><li>Parameters required and returned by operations</li><li>Groupings of functionality (portTypes)</li><li>Protocol used to access the service (e.g., SOAP over HTTP)</li><li>Service endpoint location (address)</li></ul>
+<p>WSDL acts as a contract that enables clients to understand how to interact with a service without prior knowledge of its implementation.</p>
+<div class="image-placeholder">Image: A WSDL document rendered as a structured XML file with highlighted sections: &lt;types&gt;, &lt;message&gt;, &lt;portType&gt;, &lt;binding&gt;, and &lt;service&gt;. Arrows from each section point to real-world equivalents: e.g., &lt;types&gt; → database schema icon, &lt;service&gt; → URL bar icon</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs. HTML</h1></header>
+    <section>
+<h2>Purpose, Structure, and Use Cases</h2>
+<table><tr><td>Feature</td><td>XML</td><td>HTML</td></tr><tr><td>Tags</td><td>Extensible, user-defined</td><td>Fixed, pre-defined</td></tr><tr><td>Orientation</td><td>Content-oriented</td><td>Presentation-oriented</td></tr><tr><td>Validation</td><td>Supports schema validation (XSD)</td><td>No built-in validation</td></tr><tr><td>Primary Use</td><td>Transport and store data</td><td>Display data to humans</td></tr></table>
+<p>XML is designed for data transport and validation; HTML is designed for visual presentation and rendering.</p>
+<div class="image-placeholder">Image: Split-screen comparison: left side shows XML with custom tags like &lt;book&gt;&lt;author&gt;John Doe&lt;/author&gt;&lt;/book&gt; and an XSD schema icon; right side shows HTML with &lt;h1&gt;, &lt;p&gt;, &lt;font&gt; tags and a browser window rendering styled text</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Service Models</h1></header>
+    <section>
+<h2>IaaS, PaaS, SaaS Comparison</h2>
+<table><tr><td>Model</td><td>IaaS</td><td>PaaS</td><td>SaaS</td></tr><tr><td>What You Get</td><td>Infrastructure only (VMs, storage, networks)</td><td>Platform (runtimes, databases, web servers)</td><td>Ready-to-use applications (email, social media)</td></tr><tr><td>Technical Effort</td><td>High (OS, middleware, apps managed by user)</td><td>Medium (apps managed by user; platform by provider)</td><td>Low (provider handles all technical aspects)</td></tr><tr><td>Target Users</td><td>Skilled developers, researchers</td><td>Application developers</td><td>End users, businesses</td></tr></table>
+<p>Each model offers different levels of abstraction and responsibility, enabling users to choose based on technical capacity and operational needs.</p>
+<div class="image-placeholder">Image: Three vertical layers stacked: bottom layer labeled &#x27;IaaS&#x27; with icons for VM, disk, server rack; middle layer &#x27;PaaS&#x27; with icons for Java runtime, MySQL, Tomcat; top layer &#x27;SaaS&#x27; with icons for email envelope, social network nodes. Arrows show upward dependency and decreasing user responsibility</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Self-Service in IaaS</h1></header>
+    <section>
+<h2>Business Value and Operational Efficiency</h2>
+<ul><li>Self-service is a core imperative in IaaS—enables direct user control</li><li>Analogous to banking ATMs: reduces need for manual intervention</li><li>Customers make routine requests conforming to predefined business rules</li><li>Enables automation, reduces operational overhead, and improves scalability</li></ul>
+<p>Self-service interfaces empower users to provision and manage resources on demand, mirroring the efficiency of automated service models.</p>
+<div class="image-placeholder">Image: Side-by-side: left side shows a bank branch with long queue and tellers; right side shows a user interacting with an ATM labeled &#x27;Self-Service Portal&#x27; with icons for VM provisioning, storage allocation, and network configuration</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Characteristics</h1></header>
+    <section>
+<h2>Key Architectural Traits</h2>
+<ul><li>Loose Coupling: Minimizes dependencies between services</li><li>Standard-Based: Ensures interoperability via open standards</li><li>Flexibility &amp; Reusability: Services can be composed and reused</li><li>Scalability &amp; Programmatically Accessible: Designed for growth and automation</li><li>Application-to-Application Communication: Enables enterprise integration</li></ul>
+<p>These traits support resilient, maintainable, and evolvable service-oriented architectures.</p>
+<div class="image-placeholder">Image: A network of interconnected nodes (services), each labeled (e.g., &#x27;Auth&#x27;, &#x27;Payment&#x27;, &#x27;Inventory&#x27;), with dashed lines indicating loose coupling, and icons for standards (W3C logo), scalability (arrows), and automation (robot arm)</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

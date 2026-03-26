@@ -14,6 +14,7 @@ import asyncio
 import json
 import logging
 from typing import AsyncIterator, Dict, List, Optional
+from urllib.parse import urlparse
 
 from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import (
@@ -31,6 +32,49 @@ _URLS_PER_ROUND = 10     # URLs to scrape per round
 _DDG_RESULTS = 8         # DDG results requested per query
 _CONTENT_LIMIT = 5000    # chars kept per scraped page for synthesis
 _COMPLETENESS_THRESHOLD = 80   # confidence % above which we stop iterating
+_STAGNATION_DELTA = 5    # minimum confidence improvement to continue iterating
+
+_PREFERRED_DOMAINS = {
+    "huggingface.co",
+    "github.com",
+    "arxiv.org",
+    "wikipedia.org",
+    "paperswithcode.com",
+    "ai.meta.com",
+    "mistral.ai",
+    "openai.com",
+    "anthropic.com",
+}
+
+_LOW_SIGNAL_DOMAINS = {
+    "medium.com",
+    "hashnode.dev",
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "tiktok.com",
+    "pinterest.com",
+}
+
+
+def _domain_of(url: str) -> str:
+    try:
+        host = urlparse(url).netloc.lower()
+        return host[4:] if host.startswith("www.") else host
+    except Exception:
+        return ""
+
+
+def _domain_score(domain: str) -> int:
+    if not domain:
+        return 0
+    if domain in _PREFERRED_DOMAINS:
+        return 3
+    if any(domain.endswith(f".{d}") for d in _PREFERRED_DOMAINS):
+        return 2
+    if domain in _LOW_SIGNAL_DOMAINS or any(domain.endswith(f".{d}") for d in _LOW_SIGNAL_DOMAINS):
+        return -2
+    return 1
 
 
 # ── Helper: generate search queries ───────────────────────────────────────
@@ -43,6 +87,8 @@ async def _generate_queries(question: str) -> List[str]:
         f"Generate 4-5 short, distinct web search queries to comprehensively answer:\n"
         f'"{question}"\n\n'
         "Make them diverse — cover different angles, time frames, and specifics. "
+        "Prefer queries that target authoritative sources (official model cards, papers, docs, benchmarks). "
+        "Avoid social/news/opinion-only phrasing. "
         "Return ONLY a JSON array of strings, no other text."
     )
     try:
@@ -87,9 +133,26 @@ async def _search_and_scrape(
             url = hit.get("url", "")
             if url and url not in seen_urls:
                 seen_urls.add(url)
+                domain = _domain_of(url)
+                if _domain_score(domain) < 0:
+                    continue
+                hit["_domain"] = domain
                 candidate_urls.append(hit)
 
-    to_scrape = candidate_urls[:_URLS_PER_ROUND]
+    # Prefer authoritative domains and domain diversity
+    candidate_urls.sort(key=lambda h: _domain_score(h.get("_domain", "")), reverse=True)
+
+    diverse: List[Dict] = []
+    seen_domains: set = set()
+    for hit in candidate_urls:
+        domain = hit.get("_domain", "")
+        if domain and domain in seen_domains:
+            continue
+        if domain:
+            seen_domains.add(domain)
+        diverse.append(hit)
+
+    to_scrape = diverse[:_URLS_PER_ROUND]
 
     # Scrape all in parallel
     async def _one_scrape(hit: Dict) -> Optional[Dict]:
@@ -179,6 +242,8 @@ async def execute(
     seen_urls: set = set()
     all_scraped: List[Dict] = []
     all_queries_used: List[str] = []
+    rounds_completed = 0
+    prev_confidence = -1
 
     search_state = {
         "status": "searching",
@@ -195,6 +260,7 @@ async def execute(
 
         # ── Iterative search rounds ────────────────────────────────────────
         for rnd in range(1, _MAX_ROUNDS + 1):
+            rounds_completed = rnd
             round_label = f"Round {rnd}: reading {len(queries)} queries…" if rnd > 1 else f"Searching {len(queries)} queries…"
             search_state["status"] = "reading"
             search_state["scraping_urls"] = [{"url": q, "status": "fetching"} for q in queries]
@@ -214,6 +280,11 @@ async def execute(
             if not all_scraped:
                 break
 
+            # If this round produced no new pages, more rounds are unlikely to help.
+            if not scraped:
+                logger.info("[web] Round %d yielded no new pages; stopping early", rnd)
+                break
+
             # Don't check completeness on last round — just synthesize
             if rnd >= _MAX_ROUNDS:
                 break
@@ -223,14 +294,25 @@ async def execute(
             yield sse_web_search_update(**search_state)
 
             check = await _check_completeness(query, all_scraped)
+            confidence = int(check.get("confidence", 0))
             logger.info(
                 "[web] Completeness check round %d — complete=%s confidence=%d%% missing=%s",
-                rnd, check["is_complete"], check["confidence"], check["missing_aspects"]
+                rnd, check["is_complete"], confidence, check["missing_aspects"]
             )
 
-            if check["is_complete"] or check["confidence"] >= _COMPLETENESS_THRESHOLD:
-                logger.info("[web] Answer deemed complete at round %d (confidence=%d%%)", rnd, check["confidence"])
+            if check["is_complete"] or confidence >= _COMPLETENESS_THRESHOLD:
+                logger.info("[web] Answer deemed complete at round %d (confidence=%d%%)", rnd, confidence)
                 break
+
+            if prev_confidence >= 0 and confidence <= (prev_confidence + _STAGNATION_DELTA):
+                logger.info(
+                    "[web] Completeness confidence stagnated (%d%% -> %d%%); stopping early",
+                    prev_confidence,
+                    confidence,
+                )
+                break
+
+            prev_confidence = confidence
 
             # Not complete — prepare follow-up queries for next round
             follow_ups = check.get("follow_up_queries", [])
@@ -260,7 +342,12 @@ async def execute(
             for i, s in enumerate(all_scraped)
         ])
 
-        yield sse_tool_result("web_search", True, f"Found {len(sources)} sources across {min(_MAX_ROUNDS, len(all_queries_used))} search rounds", step_index=step_index)
+        yield sse_tool_result(
+            "web_search",
+            True,
+            f"Found {len(sources)} sources across {rounds_completed} search rounds",
+            step_index=step_index,
+        )
 
         yield ToolResult(
             tool_name="web_search",
@@ -269,7 +356,7 @@ async def execute(
             metadata={
                 "queries": all_queries_used,
                 "sources": sources,
-                "rounds": len([q for q in all_queries_used]),
+                "rounds": rounds_completed,
             },
         )
 

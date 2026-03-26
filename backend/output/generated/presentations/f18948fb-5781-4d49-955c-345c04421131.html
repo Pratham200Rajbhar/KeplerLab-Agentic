@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #F5F9FC;
+      font-family: 'Open Sans', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #2563EB;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #1A2639;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #2563EB;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #1A2639;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    ol {
+      margin: 0;
+      padding-left: 40px;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #E5E7EB;
+      padding: 16px;
+      vertical-align: top;
+      color: #1A2639;
+    }
+    .image-placeholder {
+      border: 4px dashed #2563EB44;
+      background: #2563EB08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #6B7280;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    blockquote {
+      margin: 0;
+      border-left: 8px solid #2563EB;
+      padding: 16px 20px;
+      background: #2563EB10;
+      border-radius: 10px;
+      font-size: 26px;
+      color: #1A2639;
+      font-style: italic;
+    }
+    pre {
+      margin: 0;
+      border: 2px solid #E5E7EB;
+      border-radius: 10px;
+      padding: 18px;
+      background: #F5F9FC;
+      overflow: hidden;
+    }
+    code {
+      font-size: 22px;
+      line-height: 1.35;
+      color: #1A2639;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .callout {
+      border: 3px solid #2563EB;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 24px;
+      color: #1A2639;
+      background: #2563EB12;
+    }
+    hr {
+      border: none;
+      border-top: 4px solid #E5E7EB;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Distributed Systems &amp; Cloud Computing Foundations</h1></header>
+    <section>
+<h2>Core Concepts, Architectures, and Service Models</h2>
+<div class="callout">Based on authoritative definitions from Buyya and W3C standards</div>
+<div class="image-placeholder">Image: A conceptual diagram showing interconnected computers forming a unified resource, with arrows indicating communication paths and virtualization layers overlaying physical hardware</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed System Definition</h1></header>
+    <section>
+<blockquote>“a collection of interconnected stand-alone computers cooperatively working together as a single, integrated computing resource”</blockquote>
+<blockquote>“a collection of interconnected and virtualized computers that are dynamically provisioned and presented as one or more unified computing resources based on service-level agreements”</blockquote>
+<div class="callout">Key distinction: Distributed systems emphasize cooperation; cloud computing adds virtualization and dynamic provisioning</div>
+<p>Both models rely on loose coupling, standard interfaces, and service abstraction to manage heterogeneity and scale.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Middleware: The Abstraction Layer</h1></header>
+    <section>
+<blockquote>“a software layer between applications and the OS whose purpose is to mask heterogeneity of the underlying components and to provide a convenient programming model to application programmers”</blockquote>
+<blockquote>“a class of software technologies designed to help manage the complexity and heterogeneity inherent in distributed systems”</blockquote>
+<div class="callout">Middleware resides above OS but below application—providing common programming abstractions across heterogeneous nodes</div>
+<div class="image-placeholder">Image: A layered architecture diagram: Physical Hardware → Operating System → Middleware (highlighted in blue) → Application Programs, with labels indicating abstraction and masking functions</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Service-Oriented Computing (SOC)</h1></header>
+    <section>
+<blockquote>“Service orientation is the core reference model for cloud computing systems”</blockquote>
+<blockquote>“This approach adopts the concept of services as the main building blocks of application and system development”</blockquote>
+<ul><li>Enables rapid, low-cost development</li><li>Supports flexible, interoperable, and evolvable systems</li><li>Services are specified through interfaces (often in IDLs) (Excerpt 7, 15)</li></ul>
+<div class="callout">SOC underpins cloud computing—services are the atomic units of composition and reuse</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture (WSDL Elements)</h1></header>
+    <section>
+<table><tr><td>Element</td><td>Purpose</td></tr><tr><td>&lt;types&gt;</td><td>Provides data type definitions</td></tr><tr><td>&lt;message&gt;</td><td>Abstract definition of transmitted data</td></tr><tr><td>&lt;portType&gt;</td><td>Set of abstract operations</td></tr><tr><td>&lt;binding&gt;</td><td>Concrete protocol and data format for operations</td></tr><tr><td>&lt;port&gt;</td><td>Address for a binding</td></tr><tr><td>&lt;service&gt;</td><td>Aggregates related ports</td></tr><tr><td>&lt;serviceType&gt;</td><td>Aggregates portTypes</td></tr></table>
+<div class="callout">WSDL defines the interface for requester–provider interaction (Excerpt 15, 2)</div>
+<div class="image-placeholder">Image: A WSDL document structure visualized as nested boxes: &lt;definitions&gt; containing &lt;types&gt;, &lt;message&gt;, &lt;portType&gt;, &lt;binding&gt;, &lt;port&gt;, and &lt;service&gt; elements, with color-coded layers for abstraction (portType) vs concreteness (binding, port)</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs HTML: Purpose &amp; Structure</h1></header>
+    <section>
+<table><tr><td>Feature</td><td>XML</td><td>HTML</td></tr><tr><td>Tag Flexibility</td><td>Extensible: user-defined tags and attributes</td><td>Fixed: pre-determined tags</td></tr><tr><td>Orientation</td><td>Content-oriented: designed to transport/store data</td><td>Presentation-oriented: designed to display data</td></tr><tr><td>Validation</td><td>Supports schema validation (XSD)</td><td>No built-in validation</td></tr><tr><td>Use Case</td><td>Data exchange, configuration, service interfaces</td><td>Web page rendering</td></tr></table>
+<blockquote>“XML is for computers; HTML is for humans”</blockquote>
+<div class="callout">XML enables machine-readable, validated data transport; HTML is for human-facing presentation</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML Document Validity</h1></header>
+    <section>
+<blockquote>“Well formed: Syntax is correct (all tags opened and closed)”</blockquote>
+<blockquote>“Valid: All the elements match the definitions written in the schema”</blockquote>
+<blockquote>“XML Documents (xml) == XML Instances of the Schema (xsd)”</blockquote>
+<ol><li>Step 1: Ensure well-formedness (balanced tags, proper nesting)</li><li>Step 2: Validate against XSD schema for structural and semantic correctness</li><li>Step 3: Confirm conformance to defined data types and constraints</li></ol>
+<div class="callout">Well-formedness is syntactic; validity is semantic—both required for robust service communication</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Transparency Properties in Distributed Systems</h1></header>
+    <section>
+<table><tr><td>Transparency</td><td>Description</td></tr><tr><td>Access</td><td>Hide differences in data representation and access methods</td></tr><tr><td>Location</td><td>Hide where a resource is located</td></tr><tr><td>Migration</td><td>Hide that a resource may move to another location</td></tr><tr><td>Relocation</td><td>Hide that a resource may be moved while in use</td></tr><tr><td>Replication</td><td>Hide that a resource is replicated</td></tr><tr><td>Concurrency</td><td>Hide that a resource may be shared by competitive users</td></tr><tr><td>Failure</td><td>Hide failure and recovery of a resource</td></tr><tr><td>Persistence</td><td>Hide whether a resource is in memory or on disk</td></tr></table>
+<div class="callout">Transparencies collectively enable seamless interaction despite underlying complexity (Excerpt 6)</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Service Models: IaaS, PaaS, SaaS</h1></header>
+    <section>
+<table><tr><td>Model</td><td>What You Get</td><td>Technical Difficulty</td><td>Deals With</td></tr><tr><td>IaaS</td><td>Infrastructure (VMs, storage, servers, networks)</td><td>High</td><td>Virtualization, infrastructure management</td></tr><tr><td>PaaS</td><td>Platform (runtimes, databases, web servers)</td><td>Medium</td><td>Development environment, deployment</td></tr><tr><td>SaaS</td><td>Pre-configured applications (email, social media)</td><td>None</td><td>End-user software</td></tr></table>
+<div class="callout">IaaS is foundational; PaaS builds on it for developers; SaaS delivers ready-to-use applications (Excerpt 13)</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Characteristics</h1></header>
+    <section>
+<ul><li>Loose Coupling: Services interact via well-defined interfaces without tight dependencies</li><li>Standard-Based Interoperability: Use open standards (e.g., REST, SOAP, WSDL) for cross-platform compatibility</li><li>Flexibility &amp; Scalability: Resources can be dynamically allocated or deallocated based on demand</li><li>Reusability: Services and components can be reused across applications and domains</li><li>Reduced Complexity: Abstraction hides infrastructure details from end users and developers</li><li>Programmatically Accessible: APIs enable automation, integration, and orchestration</li><li>Application-to-Application Communication: Services communicate directly via machine-readable protocols</li></ul>
+<blockquote>“The main principle behind cloud computing model is to offer computing, storage, and software as a service or as a utility”</blockquote>
+<div class="callout">Internet access is the only requirement for consumption—services are delivered on-demand</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Deployment Models</h1></header>
+    <section>
+<table><tr><td>Model</td><td>Ownership</td><td>Users</td><td>Complexity</td></tr><tr><td>Private Cloud</td><td>Owned by single organization</td><td>Internal users</td><td>Moderate</td></tr><tr><td>Community Cloud</td><td>Owned by community of organizations</td><td>Shared mission/concerns (e.g., security)</td><td>Higher (custom governance)</td></tr><tr><td>Public Cloud</td><td>Third-party provider</td><td>General public</td><td>Low</td></tr><tr><td>Hybrid Cloud</td><td>Combination of two or more models</td><td>Mixed internal/external needs</td><td>Highest (integration complexity)</td></tr></table>
+<div class="callout">Hybrid clouds support flexibility but increase integration complexity (Excerpt 19)</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Registry: UDDI</h1></header>
+    <section>
+<blockquote>“Universal Description, Discovery and Integration (UDDI) serves as a &#x27;business and service&#x27; registry essential for the widespread use of Web services”</blockquote>
+<ul><li>Businesses populate registry with service descriptions</li><li>Enables discovery and integration over the Web</li><li>Supports dynamic binding and composition of services</li></ul>
+<div class="image-placeholder">Image: A registry diagram: three businesses (A, B, C) publishing service descriptions into a central UDDI node; a requester queries UDDI to discover and bind to services, with labeled arrows for publish, find, and bind operations</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Middleware &amp; Management Stack</h1></header>
+    <section>
+<blockquote>“Cloud Middleware: Management and Monitoring, Security, MapReduce Programming” (Excerpt 9)</blockquote>
+<ul><li>Middleware abstracts heterogeneity across virtualized resources</li><li>Cloud management includes provisioning, monitoring, scaling, and security enforcement</li><li>MapReduce enables distributed data processing at scale</li></ul>
+<div class="callout">Middleware bridges infrastructure and application layers—critical for elasticity and abstraction in cloud environments</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Key Needs &amp; Enablers of Cloud Computing</h1></header>
+    <section>
+<ol><li>Virtualization: Enables resource abstraction and multi-tenancy</li><li>Cloud Architecture: Layered design (network, compute, storage, management)</li><li>Types of Virtualization: OS, hardware, network, storage virtualization</li><li>Opportunities &amp; Challenges: Scalability vs. security, cost vs. control</li><li>Future: Edge integration, AI-driven automation, green computing</li></ol>
+<div class="callout">Virtualization is the foundational enabler—without it, cloud elasticity and resource pooling are impossible</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Summary: Interoperability Requirements</h1></header>
+    <section>
+<blockquote>“Systems should conform to well-defined interfaces, support portability, and easily interoperate” (Excerpt 11)</blockquote>
+<ul><li>Interfaces must be standardized (e.g., WSDL, REST, SOAP)</li><li>Applications must be portable across environments</li><li>Interoperability requires semantic and syntactic alignment</li></ul>
+<div class="callout">Interoperability is non-negotiable in distributed and cloud systems—enabled by SOC, XML, and middleware</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

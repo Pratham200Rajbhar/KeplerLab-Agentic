@@ -10,6 +10,7 @@ def compose_slide_video(
     image_path: str,
     audio_path: str,
     output_path: str,
+    duration: float,
 ) -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -23,7 +24,7 @@ def compose_slide_video(
         "-c:a", "aac",
         "-b:a", "192k",
         "-pix_fmt", "yuv420p",
-        "-shortest",
+        "-t", str(duration + 0.1),
         "-vf", "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:-1:-1:color=black",
         output_path,
     ]

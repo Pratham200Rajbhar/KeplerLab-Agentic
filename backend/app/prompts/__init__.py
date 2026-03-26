@@ -307,7 +307,7 @@ def get_podcast_script_prompt(language: str, mode_instruction: str, context: str
     )
 
 
-def get_code_generation_prompt(user_request: str) -> str:
+def get_code_generation_prompt(user_request: str, language: str = "python") -> str:
     return compose_prompt(
         [
             "system/base_system.md",
@@ -318,7 +318,7 @@ def get_code_generation_prompt(user_request: str) -> str:
         {
             "mode": "code_generation",
             "question": user_request,
-            "language": "python",
+            "language": language,
             "context": "",
             "constraints": "Sandboxed execution with relative output paths.",
             "tool_name": "python_auto",

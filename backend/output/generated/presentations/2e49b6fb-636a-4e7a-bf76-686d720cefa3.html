@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a12;
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #14141f;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #00ffff;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #ff00ff;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #e0e0e0;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #ff00ff;
+      font-family: 'Orbitron', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #e0e0e0;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #00ffff;
+      padding: 16px;
+      vertical-align: top;
+      color: #e0e0e0;
+    }
+    .image-placeholder {
+      border: 4px dashed #ff00ff44;
+      background: #ff00ff08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #7a7a8f;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Web Services &amp; Cloud Computing Foundations</h1></header>
+    <section>
+<h2>Interoperability, RPC, and Distributed Systems Architecture</h2>
+<ul><li>Web Services enable platform-independent, loosely coupled communication over the Internet</li><li>SOA and Cloud Computing are independent approaches—Web Services provide the communication layer</li><li>Cloud Computing abstracts infrastructure complexity via virtualization and service orientation</li></ul>
+<div class="image-placeholder">Image: Cyberpunk-style Venn diagram with neon pink (Web Services), bright cyan (SOA), and deep purple (Cloud Computing) overlapping circles. Center label: &#x27;HTTP/XML Protocol Layer&#x27;. Background: dark circuit board with glowing traces.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Remote Procedure Call (RPC) Architecture</h1></header>
+    <section>
+<p>RPC enables distributed computation by abstracting network communication through stubs—client-side stub marshals parameters, server-side stub unmarshals and invokes the remote function.</p>
+<ul><li>Client stub marshals parameters and sends message over network to server stub</li><li>Server stub unmarshals parameters and invokes actual server function</li><li>Return value is marshaled by server stub, transmitted back, and unmarshaled by client stub</li></ul>
+<div class="image-placeholder">Image: Split-screen cyberpunk illustration: left side shows client process with glowing stub functions, right side shows server process. A neon cyan data packet labeled &#x27;RPC Message&#x27; traverses a glowing fiber-optic cable between them. Stubs depicted as translucent holographic interfaces with binary streams.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed Object Mechanisms: CORBA vs RMI</h1></header>
+    <section>
+<table><tr><td>Feature</td><td>CORBA</td><td>RMI</td></tr><tr><td>Language Scope</td><td>Multi-language (C++, Java, etc.)</td><td>Java-only</td></tr><tr><td>Interface Definition</td><td>IDL (similar to C++)</td><td>Java interfaces</td></tr><tr><td>Complexity</td><td>High—complex configuration and learning curve</td><td>Low—simpler Java-to-Java communication</td></tr><tr><td>Evolution</td><td>Microsoft shifted from CORBA → COM → .NET</td><td>Pure Java runtime integration</td></tr></table>
+<ul><li>CORBA supports heterogeneous language environments via IDL but is complex</li><li>RMI is simpler and Java-specific, enabling seamless Java object interaction</li></ul>
+<div class="image-placeholder">Image: Dual-panel cyberpunk graphic: left panel shows CORBA with glowing IDL interface definitions, multi-colored language icons (C++, Java, etc.) connected via neon-orange data streams. Right panel shows RMI with clean Java code snippets and blue JVM icons. Background: dark grid with circuitry.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>RMI Architecture &amp; Development Lifecycle</h1></header>
+    <section>
+<p>RMI enables Java objects to invoke remote methods transparently. The registry binds server names, clients lookup references, and stubs/skeletons handle marshaling/unmarshaling.</p>
+<ul><li>Server binds remote object to registry name; client looks up and obtains stub reference</li><li>Stub serializes parameters and sends to skeleton; skeleton unmarshals and invokes remote method</li><li>Return value is serialized back through stub to client</li></ul>
+<table><tr><td>Step</td><td>Action</td></tr><tr><td>1</td><td>Define remote interface</td></tr><tr><td>2</td><td>Implement remote object</td></tr><tr><td>3</td><td>Develop client program</td></tr><tr><td>4</td><td>Compile Java source files</td></tr><tr><td>5</td><td>Generate stubs and skeletons</td></tr><tr><td>6</td><td>Start RMI registry</td></tr><tr><td>7</td><td>Start remote server objects</td></tr><tr><td>8</td><td>Run client</td></tr></table>
+<div class="image-placeholder">Image: Cyberpunk RMI flow diagram: three vertical zones—&#x27;RMI Server&#x27;, &#x27;RMI Registry&#x27;, &#x27;RMI Client&#x27;—connected by glowing neon-blue data streams. Show stub and skeleton as translucent interfaces with XML-like serialization streams. Background: dark server rack with blinking neon indicators.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services: SOAP vs REST</h1></header>
+    <section>
+<table><tr><td>Aspect</td><td>SOAP</td><td>REST</td></tr><tr><td>Nature</td><td>Protocol</td><td>Architectural style</td></tr><tr><td>Data Format</td><td>XML only</td><td>XML, JSON, HTML, plain text</td></tr><tr><td>Bandwidth</td><td>Higher (XML overhead)</td><td>Lower (lightweight)</td></tr><tr><td>Security</td><td>Built-in WS-Security</td><td>Inherited from transport (e.g., HTTPS)</td></tr><tr><td>Standards</td><td>Strict standards (JAX-WS)</td><td>Flexible, minimal constraints (JAX-RS)</td></tr><tr><td>Preference</td><td>Less preferred today</td><td>More preferred for web APIs</td></tr></table>
+<ul><li>SOAP is protocol-based, XML-only, and more rigid; REST is style-based and format-flexible</li><li>REST uses URIs to expose business logic; SOAP uses service interfaces</li><li>REST inherits security from underlying transport; SOAP defines its own security framework</li></ul>
+<div class="image-placeholder">Image: Split cyberpunk interface: left side shows SOAP envelope with glowing XML tags, heavy headers, and neon-red security icons. Right side shows RESTful URIs (e.g., /users/123) with JSON payloads in neon-green. Background: dark server room with flickering neon signs.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture &amp; XML Foundation</h1></header>
+    <section>
+<p>Web Services rely on XML for messaging, description (WSDL), and discovery (UDDI). XML enables platform-neutral data exchange and structured communication.</p>
+<ul><li>XML is pure text—no binary data—allowing any application to parse and share data regardless of platform</li><li>WSDL defines service interface, operations, bindings, and endpoint address</li><li>UDDI serves as a business/service registry for publishing and discovering Web Services</li></ul>
+<div class="image-placeholder">Image: Cyberpunk data flow: XML document (neon-green text) flows from client through WSDL parser (glowing blue interface) to UDDI registry (neon-pink database node), then to SOAP service endpoint. Background: dark network with glowing nodes and data packets.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>IaaS: Infrastructure as a Service</h1></header>
+    <section>
+<p>IaaS provides virtualized computing resources over the internet—virtual machines, storage, networks—enabling scalable infrastructure without hardware procurement.</p>
+<ul><li>Resources are dynamically scaled, metered, and billed on utility pricing (e.g., $0.02–$2.60/hour per instance)</li><li>Self-service provisioning allows users to deploy VMs without IT intervention</li><li>Supports enterprise infrastructure, cloud hosting, and virtual data centers</li></ul>
+<table><tr><td>Provider</td><td>Key Offerings</td></tr><tr><td>Amazon EC2</td><td>Scalable VM instances (small to quadruple extra large)</td></tr><tr><td>Microsoft Azure</td><td>Integrated cloud platform with Windows Server support</td></tr><tr><td>Google Compute Engine</td><td>High-performance VMs with global networking</td></tr><tr><td>DigitalOcean / Linode</td><td>Developer-friendly VM provisioning</td></tr></table>
+<div class="image-placeholder">Image: Futuristic data center interior: rows of server racks with glowing neon-blue indicators, overlaid with floating holographic VM icons (neon-pink), storage arrays (cyan), and network links (bright cyan). Background: dark industrial floor with reflective surfaces.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization: Hypervisors &amp; VM Migration</h1></header>
+    <section>
+<p>Virtualization decouples OS from hardware via hypervisors. Type 1 (bare-metal) offers better performance; Type 2 (hosted) prioritizes ease of use.</p>
+<ul><li>Full Virtualization: unmodified guest OS (e.g., VMware ESXi, KVM); uses binary translation or direct execution</li><li>Para-Virtualization: modified guest OS (e.g., Xen); better performance but requires kernel changes</li><li>Live Migration: moves VMs between hosts with minimal downtime (e.g., VMware VMotion, XenMotion)</li></ul>
+<table><tr><td>Migration Type</td><td>VM State</td><td>Storage Requirement</td><td>Use Case</td></tr><tr><td>Live Migration</td><td>Powered on</td><td>Shared storage</td><td>Load balancing, proactive maintenance</td></tr><tr><td>Cold Migration</td><td>Powered off</td><td>No shared storage needed</td><td>Simple VM relocation</td></tr><tr><td>Live Storage Migration</td><td>Powered on</td><td>Moves disks without downtime</td><td>Storage tiering</td></tr></table>
+<div class="image-placeholder">Image: Cyberpunk hypervisor architecture diagram: three layers—Hardware (dark gray), Hypervisor (neon-cyan layer with glowing VMM icon), VMs (neon-pink icons). Arrows show live migration path between two VMs with glowing data streams. Background: dark server room with circuitry.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Deployment Models &amp; Service Layers</h1></header>
+    <section>
+<p>Cloud deployment models (public, private, hybrid, community) and service models (IaaS, PaaS, SaaS) define how resources are provisioned and consumed.</p>
+<table><tr><td>Model</td><td>Characteristics</td><td>Use Case</td></tr><tr><td>Public Cloud</td><td>Shared infrastructure, third-party managed</td><td>Cost-effective scaling, web apps</td></tr><tr><td>Private Cloud</td><td>Dedicated infrastructure, internal or hosted</td><td>Regulated industries, security-critical workloads</td></tr><tr><td>Hybrid Cloud</td><td>Mix of public + private; cloud bursting</td><td>Elastic workloads, seasonal demand spikes</td></tr><tr><td>Community Cloud</td><td>Shared by organizations with common concerns</td><td>Research consortia, government agencies</td></tr></table>
+<ul><li>IaaS: Infrastructure (VMs, storage, networking); user manages OS, middleware, apps</li><li>PaaS: Platform (runtime, middleware, OS); user focuses on apps</li><li>SaaS: Fully managed applications (e.g., Gmail, Salesforce)</li></ul>
+<div class="image-placeholder">Image: Cyberpunk cloud taxonomy: central glowing sphere labeled &#x27;Cloud Computing&#x27; with four branches—Public (neon-pink), Private (neon-cyan), Hybrid (neon-yellow), Community (neon-green). Below, three stacked layers: IaaS (dark gray), PaaS (cyan), SaaS (pink). Background: dark grid with floating data nodes.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

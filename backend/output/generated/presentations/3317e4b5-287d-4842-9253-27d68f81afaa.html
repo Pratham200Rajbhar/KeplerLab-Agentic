@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0F172A;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #1E293B;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #334155;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #38BDF8;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #F1F5F9;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #38BDF8;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #F1F5F9;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    ol {
+      margin: 0;
+      padding-left: 40px;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #334155;
+      padding: 16px;
+      vertical-align: top;
+      color: #F1F5F9;
+    }
+    .image-placeholder {
+      border: 4px dashed #38BDF844;
+      background: #38BDF808;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #94A3B8;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    blockquote {
+      margin: 0;
+      border-left: 8px solid #38BDF8;
+      padding: 16px 20px;
+      background: #38BDF810;
+      border-radius: 10px;
+      font-size: 26px;
+      color: #F1F5F9;
+      font-style: italic;
+    }
+    pre {
+      margin: 0;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 18px;
+      background: #0F172A;
+      overflow: hidden;
+    }
+    code {
+      font-size: 22px;
+      line-height: 1.35;
+      color: #F1F5F9;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .callout {
+      border: 3px solid #38BDF8;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 24px;
+      color: #F1F5F9;
+      background: #38BDF812;
+    }
+    hr {
+      border: none;
+      border-top: 4px solid #334155;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Infrastructure as a Service (IaaS)</h1></header>
+    <section>
+<h2>Virtualized Computing Resources on Demand</h2>
+<blockquote>All cloud computing services provide access to computing resources in a virtualized environment, &#x27;the Cloud&#x27;, across a public connection, usually the internet.</blockquote>
+<div class="callout">IaaS delivers virtualized hardware—virtual machines, storage, networking—over the internet or private networks.</div>
+<p>IaaS enables users to access computing infrastructure as if they owned it, while the provider manages physical hardware in data centers.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Core Characteristics of IaaS</h1></header>
+    <section>
+<ul><li>Self-service provisioning: Users independently request and deploy resources without IT intervention.</li></ul>
+<ul><li>Virtualization: All infrastructure components (CPU, memory, storage, networking) are abstracted and pooled.</li></ul>
+<ul><li>Dynamic scaling: Resources automatically scale up or down based on demand.</li></ul>
+<ul><li>Metered usage: Customers pay only for consumed resources—CPU, memory, storage—measured per instance-hour.</li></ul>
+<div class="image-placeholder">Image: A diagram showing a user clicking a self-service portal to provision a VM, which is then dynamically scaled and metered in real time, with icons for CPU, RAM, storage, and billing metrics</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Self-Service as a Business Enabler</h1></header>
+    <section>
+<blockquote>The banking ATM service is a great example of the business value of self service. Without the availability of the self-service ATM, banks would be required to use costly resources to manage activities of all their customers—even for the most repetitive tasks.</blockquote>
+<p>Self-service in IaaS mirrors this: users make direct requests for routine infrastructure tasks, conforming to predefined business rules, eliminating manual overhead.</p>
+<ul><li>Users bypass IT bottlenecks for VM provisioning, storage allocation, and network configuration.</li></ul>
+<ul><li>Reduces operational cost and accelerates time-to-service.</li></ul>
+<div class="callout">Self-service is imperative—not optional—in IaaS design and user experience.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Hybrid Cloud &amp; Cloud Bursting</h1></header>
+    <section>
+<p>Hybrid cloud combines private/internal and external cloud resources to optimize flexibility and resource allocation.</p>
+<ul><li>Private clouds: Internal infrastructure behind firewall, used for sensitive data and day-to-day operations.</li></ul>
+<ul><li>Public clouds: External providers offering scalable, on-demand infrastructure.</li></ul>
+<ul><li>Cloud bursting: Offloading workloads to public cloud during demand spikes, releasing resources when demand drops.</li></ul>
+<table><tr><td>Model</td><td>Control</td><td>Scalability</td><td>Use Case</td></tr><tr><td>Private Cloud</td><td>High</td><td>Limited</td><td>Regulated data, internal apps</td></tr><tr><td>Hybrid Cloud</td><td>Balanced</td><td>High</td><td>Bursting, disaster recovery</td></tr></table>
+<div class="image-placeholder">Image: A split-screen visual: left side shows a secure data center behind a firewall labeled &#x27;Private Cloud&#x27;; right side shows a public cloud icon with arrows flowing into it labeled &#x27;Cloud Bursting&#x27;; a central dashboard shows workload balancing between both</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization &amp; VM Lifecycle Management</h1></header>
+    <section>
+<p>Virtualization enables infrastructure abstraction, allowing VMs to be managed as portable data files—facilitating migration, automation, and optimization.</p>
+<ol><li>VM request → IT reviews resource pool → provisioning begins.</li></ol>
+<ol><li>VM provisioned and started → service delivered per SLA.</li></ol>
+<ol><li>VM released after lifecycle ends → resources freed for reuse.</li></ol>
+<ul><li>Live migration: Moves powered-on VMs between hosts in milliseconds—no user impact.</li></ul>
+<ul><li>Use cases: Proactive maintenance, load balancing, zero-downtime updates.</li></ul>
+<div class="callout">VM migration tools like VMware VMotion and Citrix XenMotion enable seamless mobility.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>IaaS Deployment Models &amp; Considerations</h1></header>
+    <section>
+<table><tr><td>Provider Examples</td><td>Private Frameworks</td><td>Public Providers</td></tr><tr><td>—</td><td>Eucalyptus, OpenNebula</td><td>Amazon EC2, others</td></tr></table>
+<ul><li>Amazon EC2 supports rapid instance provisioning (minutes), with varied instance sizes: small, large, high-CPU, high-memory.</li></ul>
+<ul><li>Service-level agreements (SLAs) may guarantee 99.999% availability and auto-scaling at &gt;80% utilization.</li></ul>
+<ul><li>Rental model: Users pay for instance-hours (e.g., $0.02–$2.60/hr), not physical hardware.</li></ul>
+<div class="callout">Private IaaS enables charge-back models—departments billed based on usage (weekly/monthly).</div>
+<div class="callout">Limitations: Hardware/software specificity, legal restrictions, security gaps, and latency concerns may preclude IaaS adoption.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

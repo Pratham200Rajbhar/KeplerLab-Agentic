@@ -19,8 +19,14 @@ import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
 import usePodcastStore from '@/stores/usePodcastStore';
-import { generateFlashcards, generateQuiz, generatePresentation } from '@/lib/api/generation';
+import { generateFlashcards, generateQuiz, downloadBlob } from '@/lib/api/generation';
 import { generateMindMap } from '@/lib/api/mindmap';
+import {
+  generatePresentation as generatePresentationApi,
+  getPresentation,
+  updatePresentation as updatePresentationApi,
+  downloadPresentation,
+} from '@/lib/api/presentation';
 import {
   saveGeneratedContent,
   getGeneratedContent,
@@ -32,7 +38,8 @@ import { PANEL } from '@/lib/utils/constants';
 
 import FeatureCard from './FeatureCard';
 import ExplainerDialog from './ExplainerDialog';
-import { PresentationConfigDialog } from '@/components/presentation/PresentationView';
+import PresentationDialog from '@/components/presentation/PresentationDialog';
+import PresentationEditor from '@/components/presentation/PresentationEditor';
 import PodcastConfigDialog from '@/components/podcast/PodcastConfigDialog';
 
 import {
@@ -45,11 +52,6 @@ import {
   ContentHistory,
 } from './index';
 
-
-const InlinePresentationView = dynamic(
-  () => import('@/components/presentation/PresentationView'),
-  { ssr: false, loading: () => <LoadingSpinner /> }
-);
 const PodcastStudio = dynamic(
   () => import('@/components/podcast/PodcastStudio'),
   { ssr: false, loading: () => <LoadingSpinner /> }
@@ -105,6 +107,7 @@ export default function StudioPanel() {
   const loading = useAppStore((s) => s.loading);
   const setFlashcards = useAppStore((s) => s.setFlashcards);
   const setQuiz = useAppStore((s) => s.setQuiz);
+  const setPresentation = useAppStore((s) => s.setPresentation);
   const setLoadingState = useAppStore((s) => s.setLoadingState);
 
   const podcastPhase = usePodcastStore((s) => s.phase);
@@ -140,6 +143,9 @@ export default function StudioPanel() {
   const [mindmapFullscreen, setMindmapFullscreen] = useState(false);
   const [mindmapRating, setMindmapRating] = useState(null);
   const [mindmapContentId, setMindmapContentId] = useState(null);
+  const [activePresentationSlide, setActivePresentationSlide] = useState(0);
+  const [isPresentationUpdating, setIsPresentationUpdating] = useState(false);
+  const [isPresentationDownloading, setIsPresentationDownloading] = useState(false);
 
 
   const [showPresentationConfig, setShowPresentationConfig] = useState(false);
@@ -176,6 +182,7 @@ export default function StudioPanel() {
     setFlashcardsData(null);
     setQuizData(null);
     setPresentationData(null);
+    setActivePresentationSlide(0);
     setMindmapData(null);
     setMindmapFullscreen(false);
     setMindmapContentId(null);
@@ -187,6 +194,7 @@ export default function StudioPanel() {
     setContentHistory([]);
     setFlashcards(null);
     setQuiz(null);
+    setPresentation(null);
     setActiveView(null);
 
     // Use notebook ID and draft state to control loading
@@ -213,7 +221,8 @@ export default function StudioPanel() {
                 setQuiz(c.data);
                 break;
               case 'presentation':
-                setPresentationData(c.data);
+                setPresentationData(c);
+                setPresentation(c.data);
                 break;
               case 'mindmap':
                 setMindmapData(c.data);
@@ -234,7 +243,8 @@ export default function StudioPanel() {
     draftMode,
     loadPodcastSessions,
     setFlashcards,
-    setQuiz
+    setQuiz,
+    setPresentation
   ]);
 
 
@@ -365,22 +375,66 @@ export default function StudioPanel() {
     const ac = new AbortController();
     abortControllerRef.current.presentation = ac;
     try {
-      const data = await generatePresentation(effectiveMaterial.id, {
-        ...options,
-        materialIds: selectedMaterialIds,
-        signal: ac.signal,
-      });
+      const data = await generatePresentationApi(
+        {
+          notebookId: currentNotebook?.id,
+          materialIds: selectedMaterialIds,
+          title: options.title,
+          instruction: options.instruction,
+        },
+        { signal: ac.signal }
+      );
       setPresentationData(data);
-      const saved = await trySave('presentation', data, data.title || 'Presentation');
-      if (saved) {
-        setContentHistory((prev) => [saved, ...prev]);
-        toast.success(`Presentation saved to Created`);
-      }
+      setPresentation(data?.data || null);
+      setActivePresentationSlide(0);
+      setContentHistory((prev) => [data, ...prev.filter((item) => item.id !== data.id)]);
+      setActiveView('presentation');
+      toast.success('Presentation generated');
     } catch (error) {
       if (error.name === 'AbortError') return;
       toast.error(error.message || 'Failed to generate presentation. Please try again.');
     } finally {
       setLoadingState('presentation', false);
+    }
+  };
+
+  const handleUpdatePresentation = async (instruction) => {
+    if (!presentationData?.id) return;
+    setIsPresentationUpdating(true);
+    try {
+      const updated = await updatePresentationApi({
+        presentationId: presentationData.id,
+        instruction,
+        active_slide_index: activePresentationSlide,
+      });
+      setPresentationData(updated);
+      setPresentation(updated?.data || null);
+      setContentHistory((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      toast.success('Presentation updated');
+    } catch (error) {
+      toast.error(error.message || 'Failed to update presentation');
+    } finally {
+      setIsPresentationUpdating(false);
+      useAppStore.getState().setPresentationUpdateProgress('');
+    }
+  };
+
+  const handleDownloadPresentation = async (format = 'pptx') => {
+    if (!presentationData?.id) return;
+    const normalizedFormat = String(format || 'pptx').toLowerCase();
+    const extension = normalizedFormat === 'pdf' || normalizedFormat === 'html' ? normalizedFormat : 'pptx';
+    const safeBase = String(presentationData?.title || 'presentation')
+      .replace(/[\\/:*?"<>|]+/g, '_')
+      .trim() || 'presentation';
+    setIsPresentationDownloading(true);
+    try {
+      const { blob, filename } = await downloadPresentation(presentationData.id, { format: normalizedFormat });
+      const finalName = filename || `${safeBase}.${extension}`;
+      downloadBlob(blob, finalName);
+    } catch (error) {
+      toast.error(error.message || 'Failed to download presentation');
+    } finally {
+      setIsPresentationDownloading(false);
     }
   };
 
@@ -436,7 +490,7 @@ export default function StudioPanel() {
   };
 
 
-  const handleViewHistoryItem = (item) => {
+  const handleViewHistoryItem = async (item) => {
     switch (item.content_type) {
       case 'flashcards':
         setFlashcardsData(item.data);
@@ -449,7 +503,15 @@ export default function StudioPanel() {
         setActiveView('quiz');
         break;
       case 'presentation':
-        setPresentationData(item.data);
+        try {
+          const data = await getPresentation(item.id);
+          setPresentationData(data);
+          setPresentation(data?.data || null);
+          setActivePresentationSlide(0);
+        } catch (error) {
+          toast.error(error.message || 'Failed to load presentation');
+          return;
+        }
         setActiveView('presentation');
         break;
       case 'explainer':
@@ -534,6 +596,7 @@ export default function StudioPanel() {
           case 'presentation':
             if (presentationData?.id === item.id) {
               setPresentationData(null);
+              setPresentation(null);
               setActiveView(null);
             }
             break;
@@ -728,9 +791,14 @@ export default function StudioPanel() {
             </button>
           </div>
         ) : (
-          <InlinePresentationView
+          <PresentationEditor
             presentation={presentationData}
-            onClose={() => setActiveView(null)}
+            activeSlide={activePresentationSlide}
+            onSelectSlide={setActivePresentationSlide}
+            onUpdate={handleUpdatePresentation}
+            onDownload={handleDownloadPresentation}
+            updating={isPresentationUpdating}
+            downloading={isPresentationDownloading}
           />
         );
       case 'explainer':
@@ -798,9 +866,10 @@ export default function StudioPanel() {
 
       {/* Configuration Dialogs */}
       {showPresentationConfig && (
-        <PresentationConfigDialog
-          onConfirm={handleGeneratePresentation}
+        <PresentationDialog
+          onGenerate={handleGeneratePresentation}
           onClose={() => setShowPresentationConfig(false)}
+          loading={loading['presentation']}
           materialIds={selectedMaterialIds}
         />
       )}

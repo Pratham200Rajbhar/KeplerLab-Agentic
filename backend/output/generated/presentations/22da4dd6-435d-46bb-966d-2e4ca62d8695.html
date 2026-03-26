@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #ffffff;
+      box-sizing: border-box;
+      padding: 80px 100px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    header {
+      margin-bottom: 40px;
+      border-bottom: 4px solid #0f766e;
+      padding-bottom: 20px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 72px;
+      line-height: 1.1;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 30px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 48px;
+      color: #0f766e;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 36px;
+      line-height: 1.4;
+      color: #0f172a;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 50px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 28px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #d1d5db;
+      padding: 20px;
+      vertical-align: top;
+      color: #0f172a;
+    }
+    .image-placeholder {
+      border: 4px dashed #0f766e44;
+      background: #0f766e08;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      color: #334155;
+      font-size: 32px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide theme-modern">
+    <header><h1>XML vs HTML: Purpose and Structure</h1></header>
+    <section>
+<h2>Foundational Markup Comparison</h2>
+<ul><li>XML: Content-oriented, extensible tags, designed to transport and store data</li><li>HTML: Presentation-oriented, fixed tags, designed to display data</li><li>XML supports user-defined tags and attributes; HTML uses pre-determined, rigid tag set</li><li>XML enables data validation via schemas; HTML lacks native validation capabilities</li></ul>
+<p>XML serves as a structured data format for machine interpretation, while HTML focuses on visual rendering for human consumption.</p>
+<div class="image-placeholder">Image: Side-by-side comparison: left side shows XML document with custom tags like &lt;book&gt;&lt;author&gt;John Doe&lt;/author&gt;&lt;/book&gt;, right side shows HTML with presentation tags like &lt;h1&gt;, &lt;font color=&#x27;red&#x27;&gt;, &lt;br&gt;. Use clean, modern UI styling with labeled arrows pointing to key differences.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>XML Document Structure and Validation</h1></header>
+    <section>
+<h2>Syntax, Namespaces, and Schema Integration</h2>
+<ul><li>XML documents begin with an XML declaration (e.g., &lt;?xml version=&#x27;1.0&#x27; encoding=&#x27;UTF-8&#x27;?&gt;)</li><li>Namespaces (xmlns) and schemaLocation enable schema-based validation and tag disambiguation</li><li>Well-formedness requires proper nesting, closing tags, and escaped special characters</li><li>Validation via XSD or DTD ensures data integrity and structural correctness</li></ul>
+<p>XML’s extensibility and formal validation mechanisms make it suitable for reliable data exchange in distributed systems.</p>
+<table><tr><td>Feature</td><td>XML</td></tr><tr><td>Tag Flexibility</td><td>User-defined</td></tr><tr><td>Validation</td><td>Schema-based (XSD/DTD)</td></tr><tr><td>Primary Use</td><td>Data transport/storage</td></tr></table>
+<div class="image-placeholder">Image: Visual of an XML document with highlighted namespace declarations, schemaLocation, and nested elements like &lt;books&gt;&lt;book&gt;&lt;author&gt;John Doe&lt;/author&gt;&lt;/book&gt;&lt;/books&gt;. Include a small inset showing an XSD schema snippet validating structure.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>SOAP Message Format</h1></header>
+    <section>
+<h2>Envelope, Body, and Data Encoding</h2>
+<ul><li>SOAP messages use an envelope structure with xmlns declarations for namespaces and encoding rules</li><li>The &lt;SOAP-ENV:Body&gt; contains the actual request/response payload (e.g., &lt;calculateCarPayment&gt;)</li><li>Data types are explicitly declared using xsi:type and xsd: prefixes (e.g., xsi:type=&#x27;xsd:string&#x27;)</li><li>Encoding style follows SOAP Encoding rules (http://schemas.xmlsoap.org/soap/encoding/)</li></ul>
+<p>SOAP ensures interoperability by standardizing how structured data is packaged and transmitted across heterogeneous systems.</p>
+<div class="image-placeholder">Image: Hierarchical diagram of a SOAP message: outer envelope labeled &#x27;SOAP-ENV:Envelope&#x27;, inner &#x27;Body&#x27; containing a nested &lt;calculateCarPayment&gt; element with child elements &lt;loanAmount&gt;, &lt;loanTerm&gt;, &lt;loanRate&gt;, each annotated with type attributes.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>Full Virtualization: Principles and Implementation</h1></header>
+    <section>
+<h2>Hardware Abstraction Without Guest Modification</h2>
+<ul><li>Full virtualization presents a complete hardware abstraction layer to the guest OS</li><li>Uses binary translation for privileged instructions and direct execution for user-level code</li><li>No modification required to guest OS or applications—transparent to the guest</li><li>Significant overhead due to instruction translation and trap handling</li></ul>
+<p>This approach enables legacy and unmodified operating systems to run on virtualized infrastructure without compatibility concerns.</p>
+<table><tr><td>Aspect</td><td>Full Virtualization</td></tr><tr><td>Guest OS Modification</td><td>None required</td></tr><tr><td>Virtualization Overhead</td><td>High (binary translation)</td></tr><tr><td>Examples</td><td>VMware ESX, KVM, Xen HVM</td></tr></table>
+<div class="image-placeholder">Image: Layered architecture diagram: Physical hardware at bottom, hypervisor layer in middle, two virtual machines on top—each running unmodified OS (e.g., Windows, Linux), with arrows showing binary translation between hypervisor and privileged instructions.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide theme-modern">
+    <header><h1>Distributed System Interoperability Requirements</h1></header>
+    <section>
+<h2>Cross-Platform and Cross-Environment Compatibility</h2>
+<ul><li>Interoperability spans operating systems, hardware architectures, and communication protocols</li><li>Must support heterogeneous programming languages, security models, and data representations</li><li>Openness requires independence from underlying hardware, platforms, and language specifics</li><li>Middleware standards (CORBA, DCOM, DCE) enable abstraction across these dimensions</li></ul>
+<p>Achieving openness ensures distributed systems remain scalable and maintainable despite technological heterogeneity.</p>
+<div class="image-placeholder">Image: Network diagram with nodes representing different OS (Linux, Windows), hardware (x86, ARM), languages (Java, C++, Python), and security domains (firewall, LDAP). Arrows labeled &#x27;CORBA&#x27;, &#x27;DCOM&#x27;, &#x27;DCE&#x27; connect nodes, emphasizing middleware mediation.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

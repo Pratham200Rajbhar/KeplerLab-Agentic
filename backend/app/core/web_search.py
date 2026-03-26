@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
@@ -18,16 +19,29 @@ _TRAFILA_CONFIG = _use_trafila_config()
 _TRAFILA_CONFIG.set("DEFAULT", "TIMEOUT", "30")
 
 
+def _get_ddg_backends() -> List[str]:
+    """Return preferred DDGS backends that are valid for newer ddgs versions."""
+    # ddgs>=9 no longer supports backend="html"; use provider names instead.
+    configured = os.getenv("DDGS_BACKENDS", "duckduckgo,brave,auto")
+    candidates = [b.strip().lower() for b in configured.split(",") if b.strip()]
+    seen: set[str] = set()
+    backends: List[str] = []
+    for backend in candidates:
+        if backend not in seen:
+            seen.add(backend)
+            backends.append(backend)
+    return backends or ["duckduckgo", "auto"]
+
+
 def _ddg_search_sync(query: str, max_results: int = 5) -> list:
     """
-    Search using DuckDuckGo's html endpoint, falling back to auto.
+    Search using configured ddgs backends, falling back to auto.
     Retries up to 2 times with back-off on rate-limit errors.
     """
     import time
     from ddgs import DDGS
 
-    # DDGS v9.x: 'html' is DuckDuckGo native; 'auto' tries all engines
-    backends = ["html", "auto"]
+    backends = _get_ddg_backends()
     last_exc: Optional[Exception] = None
 
     for backend in backends:

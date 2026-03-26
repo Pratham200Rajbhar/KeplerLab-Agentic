@@ -422,8 +422,20 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 else if (trimmed.startsWith('/code')) intentOverride = 'CODE_EXECUTION';
               }
 
-              const codeBlocks = meta.code_block
-                ? [{ code: meta.code_block.code, language: meta.code_block.language || 'python', step_index: null }]
+              const codeBlockFromMeta = meta.code_block?.code
+                ? { code: meta.code_block.code, language: meta.code_block.language || 'python', step_index: null }
+                : null;
+
+              const codeBlockFromLegacyMeta = (!codeBlockFromMeta && meta.original_code)
+                ? {
+                    code: meta.original_code,
+                    language: meta.language || 'python',
+                    step_index: null,
+                  }
+                : null;
+
+              const codeBlocks = codeBlockFromMeta || codeBlockFromLegacyMeta
+                ? [codeBlockFromMeta || codeBlockFromLegacyMeta]
                 : undefined;
 
               // Reconstruct minimal agentState so AgentProgressPanel renders in

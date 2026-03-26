@@ -23,6 +23,10 @@ enum UserRole {
 enum VideoStatus {
   pending
   processing
+  capturing_slides
+  generating_script
+  generating_audio
+  composing_video
   completed
   failed
 }
@@ -32,6 +36,10 @@ enum ExportStatus {
   processing
   completed
   failed
+}
+
+enum GeneratedContentType {
+  PRESENTATION
 }
 
 // ─── Users ───────────────────────────────────────────────
@@ -184,7 +192,9 @@ model GeneratedContent {
   materialId String? @map("material_id") @db.Uuid
   contentType String @map("content_type") @db.VarChar(50)
   title String? @db.VarChar(255)
-  data Json
+  data Json?
+  htmlPath String? @map("html_path") @db.Text
+  pptPath String? @map("ppt_path") @db.Text
   language String? @db.VarChar(10)
   materialIds String[] @default([]) @map("material_ids") // Legacy — use GeneratedContentMaterial join table
   rating String? @db.VarChar(10) // 'positive' or 'negative'

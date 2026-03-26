@@ -129,7 +129,14 @@ async def run_in_sandbox(
 
     run_cmd = _render(run_tpl)
 
-    stdin_bytes: Optional[bytes] = stdin.encode("utf-8") if stdin else None
+    stdin_bytes: Optional[bytes] = None
+    if stdin is not None and stdin != "":
+        # Normalize line endings and ensure trailing newline so line-based readers
+        # (Scanner/input/scanf loops) don't hang waiting for Enter.
+        normalized_stdin = stdin.replace("\r\n", "\n").replace("\r", "\n")
+        if normalized_stdin and not normalized_stdin.endswith("\n"):
+            normalized_stdin += "\n"
+        stdin_bytes = normalized_stdin.encode("utf-8")
     stdin_pipe = asyncio.subprocess.PIPE if stdin_bytes is not None else asyncio.subprocess.DEVNULL
 
     stdout_lines: List[str] = []
@@ -167,7 +174,6 @@ async def run_in_sandbox(
                 total += len(raw)
                 if total > _MAX_OUTPUT_BYTES:
                     lines_buf.append("[output truncated — too large]")
-                    stream.feed_eof()
                     break
                 line = raw.decode("utf-8", errors="replace").rstrip("\n")
                 if is_stdout and line.startswith(_CHART_MARKER):

@@ -20,6 +20,29 @@ const LANG_META = {
 
 const LANG_LIST = Object.entries(LANG_META).map(([value, meta]) => ({ value, ...meta }));
 
+const STDIN_HINTS = {
+  python: {
+    placeholder: 'Example:\n5\n10 20 30 40 50',
+    sample: '5\n10 20 30 40 50\n',
+  },
+  java: {
+    placeholder: 'Example for Scanner:\n5\n10 20 30 40 50',
+    sample: '5\n10 20 30 40 50\n',
+  },
+  cpp: {
+    placeholder: 'Example for cin:\n5\n10 20 30 40 50',
+    sample: '5\n10 20 30 40 50\n',
+  },
+  c: {
+    placeholder: 'Example for scanf:\n5\n10 20 30 40 50',
+    sample: '5\n10 20 30 40 50\n',
+  },
+  javascript: {
+    placeholder: 'Example:\nname=Kepler\nage=22',
+    sample: 'name=Kepler\nage=22\n',
+  },
+};
+
 
 export default function CodeWorkspace({ codeBlocks, notebookId, sessionId, isStreaming }) {
   const initialCode = codeBlocks?.[0]?.code || '';
@@ -193,6 +216,7 @@ export default function CodeWorkspace({ codeBlocks, notebookId, sessionId, isStr
 
   const hasConsole = consoleLines.length > 0 || isRunning;
   const langMeta = LANG_META[language] || LANG_META.python;
+  const stdinMeta = STDIN_HINTS[language] || STDIN_HINTS.python;
 
   return (
     <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
@@ -265,16 +289,35 @@ export default function CodeWorkspace({ codeBlocks, notebookId, sessionId, isStr
       {/* Stdin */}
       {showStdin && (
         <div className="border-t border-white/[0.04]">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02]">
-            <Terminal size={10} className="text-text-muted/60" />
-            <span className="text-[10px] font-medium text-text-muted/60 uppercase tracking-wider">stdin</span>
+          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white/[0.02]">
+            <div className="flex items-center gap-2">
+              <Terminal size={10} className="text-text-muted/60" />
+              <span className="text-[10px] font-medium text-text-muted/60 uppercase tracking-wider">stdin</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setStdin(stdinMeta.sample)}
+                className="text-[10px] px-1.5 py-0.5 rounded text-text-muted hover:text-text-primary hover:bg-white/[0.05] transition-colors"
+              >
+                Use sample
+              </button>
+              <button
+                onClick={() => setStdin('')}
+                className="text-[10px] px-1.5 py-0.5 rounded text-text-muted hover:text-text-primary hover:bg-white/[0.05] transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div className="px-3 pt-2 text-[10px] text-text-muted/55">
+            Input is sent as standard input. Each new line acts like pressing Enter.
           </div>
           <textarea
             value={stdin}
             onChange={(e) => setStdin(e.target.value)}
             spellCheck={false}
-            rows={2}
-            placeholder="Program input…"
+            rows={3}
+            placeholder={stdinMeta.placeholder}
             className="w-full bg-black/5 font-mono text-xs text-text-primary p-3.5 resize-y outline-none placeholder:text-text-muted/30"
           />
         </div>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a12;
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #1a1a2e;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #00ffff;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #ff00ff;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #e0e0e0;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #ff00ff;
+      font-family: 'Orbitron', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #e0e0e0;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #00ffff;
+      padding: 16px;
+      vertical-align: top;
+      color: #e0e0e0;
+    }
+    .image-placeholder {
+      border: 4px dashed #ff00ff44;
+      background: #ff00ff08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #8888aa;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Web Services &amp; Cloud Computing Foundations</h1></header>
+    <section>
+<h2>Interoperability, RPC, and Distributed Systems Architecture</h2>
+<div class="image-placeholder">Image: Neon cyberpunk cityscape with glowing server racks, floating SOAP and REST icons, and a central holographic cloud with interconnected nodes in bright cyan and neon pink. Background grid lines pulse rhythmically.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services vs. SOA vs. Cloud Computing</h1></header>
+    <section>
+<p>Web Services, SOA, and Cloud Computing are independent approaches, though Web Services often serve as the connection mechanism for Cloud Computing.</p>
+<ul><li>Cloud Computing: Broad term for any Web service software, hardware, and applications.</li><li>SOA: Focuses mainly on software services and service-oriented architecture.</li><li>Web Services: Encapsulate Cloud services; used for connections in Cloud Computing.</li><li>Web Services can be used outside Cloud Computing, as part of a service-oriented architecture.</li></ul>
+<div class="image-placeholder">Image: Venn diagram with three overlapping neon-lit circles labeled &#x27;Web Services&#x27;, &#x27;SOA&#x27;, and &#x27;Cloud Computing&#x27;. Overlap between Web Services and Cloud Computing is highlighted in bright cyan. Background dark with subtle circuit patterns.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>RPC: Remote Procedure Call Architecture</h1></header>
+    <section>
+<p>RPC enables distributed computation by allowing a client process to invoke a procedure on a remote server through stubs and network communication.</p>
+<div class="image-placeholder">Image: Split-screen diagram: left side shows client process calling stub, right side shows server process with skeleton. Arrows labeled &#x27;marshal&#x27;, &#x27;network&#x27;, &#x27;unmarshal&#x27; in neon pink and cyan. Background dark with subtle wireframe grid.</div>
+<ul><li>Client calls client stub, which marshals parameters and sends message over network.</li><li>Server stub unmarshals parameters and calls server function.</li><li>Server returns result; stub marshals and sends response back to client stub.</li><li>Client stub unmarshals return value and returns to client code.</li></ul>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed Object Mechanisms</h1></header>
+    <section>
+<p>Distributed objects allow processes on different hosts to invoke remote methods. Key implementations include RMI, CORBA, and DCOM.</p>
+<table><tr><td>Feature</td><td>CORBA</td><td>RMI</td></tr><tr><td>Language Scope</td><td>Virtually any language</td><td>Java only</td></tr><tr><td>Interface Definition</td><td>IDL (C++-like)</td><td>Java interfaces</td></tr><tr><td>Complexity</td><td>High</td><td>Low</td></tr><tr><td>Evolution</td><td>COM → .NET</td><td>Native Java support</td></tr></table>
+<ul><li>CORBA supports cross-language object transmission but is complex.</li><li>RMI is Java-specific and simpler, enabling Java-to-Java communication.</li><li>Distributed objects are accessed via remote methods, with client-server roles defined.</li></ul>
+<div class="image-placeholder">Image: Two servers labeled &#x27;Host A&#x27; and &#x27;Host B&#x27; connected by glowing fiber optic cable. A method call arrow labeled &#x27;remote method&#x27; travels from Host A to Host B. Neon pink and cyan highlights on interfaces and data structures.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture</h1></header>
+    <section>
+<p>Web services solve interoperability, firewall traversal, and complexity issues of earlier distributed systems like RMI and CORBA.</p>
+<ul><li>Interoperability: Web services use HTTP and XML, avoiding vendor-specific on-wire formats.</li><li>Firewall Traversal: Use standard HTTP port 80, enabling easier collaboration across firewalls.</li><li>Reduced Complexity: Developer-friendly compared to RMI/CORBA learning curves.</li><li>Platform independence: Language-neutral protocols enable cross-platform communication.</li></ul>
+<div class="image-placeholder">Image: Three-tier architecture diagram: &#x27;Client (VB/JSP)&#x27;, &#x27;Java Service on Solaris&#x27;, &#x27;Database&#x27;. Arrows labeled &#x27;SOAP over HTTP&#x27; in neon pink. Background with subtle firewall icon and port 80 badge.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>SOAP vs REST Web Services</h1></header>
+    <section>
+<table><tr><td>Aspect</td><td>SOAP</td><td>REST</td></tr><tr><td>Nature</td><td>Protocol</td><td>Architectural style</td></tr><tr><td>Data Format</td><td>XML only</td><td>XML, JSON, HTML, text</td></tr><tr><td>Bandwidth</td><td>Higher</td><td>Lower</td></tr><tr><td>Security</td><td>Built-in</td><td>Transport-dependent (e.g., HTTPS)</td></tr><tr><td>Standards</td><td>Strict, comprehensive</td><td>Flexible, minimal</td></tr><tr><td>Java APIs</td><td>JAX-WS</td><td>JAX-RS</td></tr></table>
+<ul><li>SOAP is a protocol using XML for messaging; REST is an architectural style.</li><li>REST is more preferred due to simplicity, lower bandwidth, and flexibility.</li><li>SOAP defines its own security; REST inherits security from underlying transport.</li></ul>
+<div class="image-placeholder">Image: Split neon sign: left side &#x27;SOAP&#x27; with XML envelope icon in bright cyan, right side &#x27;REST&#x27; with URL path icon in neon pink. Background with subtle HTTP headers and JSON/XML tags.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Stack &amp; XML</h1></header>
+    <section>
+<p>Web services rely on XML-based technologies for messaging, description, and registry functions.</p>
+<ul><li>XML Messaging: SOAP uses XML for remote calls across heterogeneous systems.</li><li>WSDL: XML-based language defining service interface, parameters, protocols, and location.</li><li>UDDI: XML-based registry for publishing and discovering web services.</li><li>XML is pure text, enabling cross-platform data exchange without binary compatibility issues.</li></ul>
+<div class="image-placeholder">Image: Three-layer stack: bottom &#x27;XML Messaging (SOAP)&#x27;, middle &#x27;WSDL Interface Definition&#x27;, top &#x27;UDDI Registry&#x27;. Neon pink and cyan borders with glowing arrows between layers. Background dark with subtle XML tags.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>WSDL Structure &amp; Example</h1></header>
+    <section>
+<p>WSDL defines how clients interact with web services through abstract operations, bindings, and service endpoints.</p>
+<table><tr><td>WSDL Element</td><td>Purpose</td></tr><tr><td>&lt;types&gt;</td><td>Data type definitions</td></tr><tr><td>&lt;message&gt;</td><td>Abstract data being transmitted</td></tr><tr><td>&lt;portType&gt;</td><td>Abstract set of operations</td></tr><tr><td>&lt;binding&gt;</td><td>Concrete protocol and format</td></tr><tr><td>&lt;service&gt;</td><td>Aggregates related ports with address</td></tr></table>
+<ul><li>Service available at http://www.examples.com/SayHello/.</li><li>Binding specifies SOAP over HTTP transport.</li><li>Port associates binding with URI endpoint.</li></ul>
+<div class="image-placeholder">Image: XML code snippet with highlighted &lt;definitions&gt;, &lt;binding&gt;, and &lt;service&gt; tags in neon pink. Background with subtle server icon and URL badge.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>UDDI: Universal Description, Discovery, and Integration</h1></header>
+    <section>
+<p>UDDI serves as a business and service registry essential for widespread web service use, enabling discovery and integration.</p>
+<div class="image-placeholder">Image: Three-step flowchart: &#x27;Publish&#x27; (business registers service), &#x27;Find&#x27; (client queries registry), &#x27;Interact&#x27; (client invokes service via WSDL). Neon pink and cyan arrows with glowing UDDI logo in center.</div>
+<ul><li>Businesses populate UDDI with service descriptions.</li><li>Marketplaces and search engines query UDDI to discover services.</li><li>UDDI supports integration across organizations via standardized descriptions.</li></ul>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Layers &amp; Service Models</h1></header>
+    <section>
+<p>Cloud computing delivers computing resources over the internet through layered service models.</p>
+<table><tr><td>Layer</td><td>What You Get</td><td>Key Components</td></tr><tr><td>IaaS</td><td>Infrastructure &amp; pay-per-use</td><td>VMs, storage, servers, load balancers</td></tr><tr><td>PaaS</td><td>Platform &amp; runtime</td><td>Runtimes, databases, web servers</td></tr><tr><td>SaaS</td><td>Pre-configured applications</td><td>Email, CRM, social networking</td></tr></table>
+<ul><li>IaaS: Basic layer; requires technical knowledge of OS and infrastructure.</li><li>PaaS: Platform layer; developers focus on apps without managing infrastructure.</li><li>SaaS: Application layer; users access software without technical concerns.</li></ul>
+<div class="image-placeholder">Image: Three-tier cloud stack: bottom &#x27;IaaS (Hardware)&#x27;, middle &#x27;PaaS (Runtime)&#x27;, top &#x27;SaaS (Apps)&#x27;. Neon pink and cyan gradients with glowing arrows upward. Background with subtle server racks and database icons.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization &amp; Hypervisors</h1></header>
+    <section>
+<p>Virtualization decouples OS from hardware, enabling migration, isolation, and efficient resource utilization.</p>
+<ul><li>Virtual Machine: Software implementation of a machine executing programs like a physical machine.</li><li>Hypervisor: Thin software layer enabling multiple OS to share hardware (Type 1: bare-metal; Type 2: hosted).</li><li>Full Virtualization: Guest OS unaware; uses binary translation or direct execution.</li><li>Para-Virtualization: Guest OS modified for optimization; stub drivers improve performance.</li></ul>
+<div class="image-placeholder">Image: Layered architecture: hardware (bottom), hypervisor (middle), multiple VMs (top). Neon pink highlights hypervisor, cyan highlights VMs. Background with subtle circuit board pattern.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>IaaS Characteristics &amp; Benefits</h1></header>
+    <section>
+<p>IaaS provides virtualized hardware resources on-demand, with dynamic scaling, utility-style costing, and self-service provisioning.</p>
+<table><tr><td>Feature</td><td>Description</td></tr><tr><td>Dynamic Scaling</td><td>Resources automatically scale based on application needs</td></tr><tr><td>Service Levels</td><td>SLAs guarantee availability (e.g., 99.999%)</td></tr><tr><td>Rental Model</td><td>Pay for usage; no physical hardware delivery</td></tr><tr><td>Metering &amp; Costs</td><td>Instance-based billing (e.g., $0.02–$2.60/hour)</td></tr><tr><td>Self-Service Provisioning</td><td>Users provision resources without IT intervention</td></tr></table>
+<ul><li>No hardware investment; provider manages data centers and backups.</li><li>Location independence: Accessible from anywhere with internet.</li><li>No single point of failure: Redundancy ensures service continuity.</li></ul>
+<div class="image-placeholder">Image: Neon cyberpunk dashboard with sliders labeled &#x27;CPU&#x27;, &#x27;Memory&#x27;, &#x27;Storage&#x27; that auto-adjust. Background with glowing server racks and &#x27;Pay-per-use&#x27; badge in neon pink.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>VM Migration Techniques</h1></header>
+    <section>
+<p>VM migration enables movement of virtual machines between hosts for load balancing, maintenance, and high availability.</p>
+<table><tr><td>Migration Type</td><td>Conditions</td><td>Use Case</td></tr><tr><td>Live Migration</td><td>VM powered on; shared storage</td><td>Proactive maintenance, load balancing</td></tr><tr><td>Cold Migration</td><td>VM powered off; no shared storage</td><td>Simple migration, no CPU compatibility checks</td></tr><tr><td>Live Storage Migration</td><td>Running VM; new data store</td><td>Storage reorganization without downtime</td></tr></table>
+<ul><li>Live migration: No noticeable downtime; used by VMware VMotion and Citrix XenMotion.</li><li>Cold migration: Simple process; moves configuration files, disks, and logs.</li><li>All VM components (CPU, memory, storage, networking) are virtualized for easy migration.</li></ul>
+<div class="image-placeholder">Image: Three animated panels: VM moving between servers with &#x27;Live&#x27;, &#x27;Cold&#x27;, and &#x27;Storage&#x27; labels in neon pink and cyan. Background with subtle network topology map.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed Systems &amp; Middleware</h1></header>
+    <section>
+<p>Distributed systems appear as a single coherent system, with middleware masking heterogeneity and enabling transparent communication.</p>
+<ul><li>Transparency: Hides distribution aspects (access, location, migration, replication, failure).</li><li>Openness: Enables interoperability across heterogeneous environments.</li><li>Scalability: System remains effective with increased users and resources.</li><li>Middleware: Software layer above OS, below apps, masking heterogeneity (e.g., RPC, CORBA).</li></ul>
+<div class="image-placeholder">Image: Distributed system with multiple nodes connected by glowing arrows labeled &#x27;messages&#x27;. Middleware layer in neon pink overlays OS and hardware. Background with subtle globe and network map.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Grid vs. Cloud Computing</h1></header>
+    <section>
+<table><tr><td>Aspect</td><td>Grid Computing</td><td>Cloud Computing</td></tr><tr><td>Concept</td><td>Utility computing for complex problems</td><td>Utility computing for scalable apps</td></tr><tr><td>Resource Allocation</td><td>Negotiated, managed schedulers</td><td>Simple user-provider model</td></tr><tr><td>Domains</td><td>Multiple domains</td><td>Single domain</td></tr><tr><td>Character</td><td>Non-commercial, publicly funded</td><td>Commercial</td></tr><tr><td>Heterogeneity</td><td>Heterogeneous, geographically dispersed</td><td>Virtualized, homogeneous</td></tr></table>
+<ul><li>Grid: Heterogeneous, autonomous nodes; used for scientific computing.</li><li>Cloud: Virtualized, unified resources; designed for network-centric application development.</li><li>Both use utility computing, but cloud emphasizes standardization and ease of use.</li></ul>
+<div class="image-placeholder">Image: Split screen: left side &#x27;Grid&#x27; with scattered nodes and complex arrows, right side &#x27;Cloud&#x27; with centralized VMs and simple arrows. Neon pink and cyan highlights with subtle circuit patterns.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Deployment Models</h1></header>
+    <section>
+<ul><li>Public Cloud: Accessible to general public; less secure but cost-effective (e.g., AWS, Azure).</li><li>Private Cloud: Exclusive to single organization; enhanced security and control.</li><li>Community Cloud: Shared by organizations with common concerns (e.g., security, compliance).</li><li>Hybrid Cloud: Mix of public and private; critical tasks use private, non-critical use public.</li></ul>
+<p>Hybrid clouds enable &#x27;cloud bursting&#x27;—releasing public cloud resources during sudden demand spikes.</p>
+<div class="image-placeholder">Image: Four icons: &#x27;Public&#x27; (globe), &#x27;Private&#x27; (building), &#x27;Community&#x27; (group), &#x27;Hybrid&#x27; (merge). Neon pink and cyan borders with glowing firewall and cloud icons. Background with subtle network map.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

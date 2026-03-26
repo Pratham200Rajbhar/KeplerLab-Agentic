@@ -64,10 +64,15 @@ async def check_presentations(
 
         if pres_materials & requested_set:
             data = pres.data if isinstance(pres.data, dict) else {}
+            if isinstance(pres.data, str):
+                try:
+                    data = json.loads(pres.data)
+                except Exception:
+                    pass
             matching.append({
                 "id": str(pres.id),
                 "title": pres.title or data.get("title", "Untitled"),
-                "slide_count": data.get("slide_count", 0),
+                "slide_count": data.get("slide_count", len(data.get("slides", []))),
                 "created_at": pres.createdAt.isoformat() if pres.createdAt else None,
                 "language": pres.language,
             })
@@ -106,39 +111,55 @@ async def generate_explainer(
             raise HTTPException(status_code=404, detail="Presentation not found")
 
         presentation_data = presentation.data if isinstance(presentation.data, dict) else {}
-        presentation_html = presentation_data.get("html", "")
+        if isinstance(presentation.data, str):
+            try:
+                presentation_data = json.loads(presentation.data)
+            except Exception:
+                pass
+        presentation_html = ""
+        html_path = getattr(presentation, "htmlPath", None)
+        if html_path and os.path.exists(html_path):
+            try:
+                with open(html_path, "r", encoding="utf-8") as f:
+                    presentation_html = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read presentation HTML from {html_path}: {e}")
+        
+        if not presentation_html:
+            presentation_html = presentation_data.get("html", "")
+            
         if not presentation_html:
             raise HTTPException(status_code=400, detail="Presentation has no HTML content")
     else:
-        from app.services.ppt.generator import generate_presentation
-        from app.routes.utils import require_materials_text, require_material_text
+        from app.services.presentation.generator import generate_presentation_content
+        from app.services.presentation.schemas import GeneratePresentationRequest as GenPresReq
 
-        ids = request.material_ids
-        if len(ids) == 1:
-            text = await require_material_text(ids[0], user_id)
-        else:
-            text = await require_materials_text(ids, user_id)
-
-        result = await generate_presentation(
-            material_text=text,
-            user_id=user_id,
+        pres_req = GenPresReq(
+            notebook_id=request.notebook_id,
+            material_ids=request.material_ids,
+            instruction=f"Generate presentation in {request.ppt_language} language."
         )
+        result = await generate_presentation_content(pres_req, user_id)
 
-        create_data: dict = {
-            "notebookId": request.notebook_id,
-            "userId": user_id,
-            "contentType": "presentation",
-            "title": result.get("title", "Explainer Slides"),
-            "data": json.dumps(result),
-            "language": request.ppt_language,
-            "materialIds": ids,
-        }
-        if len(ids) == 1:
-            create_data["materialId"] = ids[0]
+        presentation = await prisma.generatedcontent.find_first(
+            where={"id": result["id"]}
+        )
+        if not presentation:
+            raise HTTPException(status_code=500, detail="Failed to retrieve generated presentation")
 
-        presentation = await prisma.generatedcontent.create(data=create_data)
-        presentation_data = result
-        presentation_html = result.get("html", "")
+        presentation_data = result.get("data", {})
+        
+        presentation_html = ""
+        html_path = result.get("html_path")
+        if html_path and os.path.exists(html_path):
+            try:
+                with open(html_path, "r", encoding="utf-8") as f:
+                    presentation_html = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read generated presentation HTML from {html_path}: {e}")
+
+        if not presentation_html:
+            raise HTTPException(status_code=500, detail="Generated presentation has no HTML content")
 
     slide_count = presentation_data.get("slide_count", len(presentation_data.get("slides", [])))
 

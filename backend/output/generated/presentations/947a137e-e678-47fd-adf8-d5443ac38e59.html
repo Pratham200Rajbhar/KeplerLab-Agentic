@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0f14;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #151b23;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #30363d;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #58a6ff;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #e6edf3;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #58a6ff;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #e6edf3;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #30363d;
+      padding: 16px;
+      vertical-align: top;
+      color: #e6edf3;
+    }
+    .image-placeholder {
+      border: 4px dashed #58a6ff44;
+      background: #58a6ff08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #8b949e;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Distributed Systems: Core Principles</h1></header>
+    <section>
+<h2>Transparency, Openness, and Heterogeneity Masking</h2>
+<ul><li>A distributed system is one on which I cannot get any work done because some machine I have never heard of crashed.</li><li>Desired properties: Transparency, Openness, Scalability, Enhanced Availability, Concurrency, Independent failures, Heterogeneity.</li></ul>
+<p>Distributed systems must abstract away underlying complexity to enable seamless interaction across heterogeneous environments.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Transparency in Distributed Systems</h1></header>
+    <section>
+<table><tr><td>Transparency Type</td><td>Description</td></tr><tr><td>Access</td><td>Hide differences in data representation and how a resource is accessed</td></tr><tr><td>Location</td><td>Hide where a resource is located</td></tr><tr><td>Migration</td><td>Hide that a resource may move to another location</td></tr><tr><td>Replication</td><td>Hide that a resource is replicated</td></tr><tr><td>Concurrency</td><td>Hide that a resource may be shared by several competitive users</td></tr><tr><td>Failure</td><td>Hide the failure and recovery of a resource</td></tr></table>
+<div class="image-placeholder">Image: A layered diagram showing a user interface overlaying transparent layers labeled &#x27;Access&#x27;, &#x27;Location&#x27;, &#x27;Migration&#x27;, &#x27;Replication&#x27;, &#x27;Concurrency&#x27;, and &#x27;Failure&#x27;—each layer obscuring the underlying infrastructure beneath, with arrows indicating seamless access from top to bottom.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Heterogeneity Masking via Middleware</h1></header>
+    <section>
+<ul><li>Middleware frameworks mask heterogeneity of networks and hardware.</li><li>Most also mask heterogeneity of operating systems or programming languages, or both.</li><li>CORBA and similar frameworks mask heterogeneity among vendor implementations of the same middleware standard.</li></ul>
+<p>Middleware ensures that distributed systems remain independent of underlying hardware, platforms, and programming languages.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Openness and Interoperability Requirements</h1></header>
+    <section>
+<ul><li>Systems should conform to well-defined interfaces.</li><li>Systems should support portability of applications.</li><li>Systems should easily interoperate with services from other open systems, irrespective of the underlying environment.</li></ul>
+<div class="image-placeholder">Image: Three distinct computing platforms—Linux server, Windows workstation, and macOS laptop—connected via standardized API endpoints, with arrows labeled &#x27;Well-defined Interface&#x27;, &#x27;Portability&#x27;, and &#x27;Interoperability&#x27; bridging them.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs. HTML: Structural and Functional Differences</h1></header>
+    <section>
+<table><tr><td>Feature</td><td>XML</td><td>HTML</td></tr><tr><td>Tags</td><td>Extensible—user-defined</td><td>Fixed—pre-determined and rigid</td></tr><tr><td>Purpose</td><td>Transport and store data</td><td>Display data and describe appearance</td></tr><tr><td>Orientation</td><td>Content-oriented</td><td>Presentation-oriented</td></tr><tr><td>Validation</td><td>Supports DTD and XML Schema</td><td>No built-in validation</td></tr><tr><td>Data Types</td><td>Supports custom and predefined types</td><td>No data typing</td></tr></table>
+<p>XML is designed for data transport and storage with rich validation; HTML is designed for human-readable presentation.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML Schema and Validation</h1></header>
+    <section>
+<ul><li>XML Schema is itself an XML document.</li><li>Supports predefined simple types (integers, booleans, dateTime) and user-defined complex types.</li><li>Provides validation capabilities including restrictions on types.</li><li>Alternative to DTD with added functionality and richer data typing.</li></ul>
+<p>XML Schema enables robust, type-safe validation of XML instances, unlike DTD.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML Processing Interfaces</h1></header>
+    <section>
+<ul><li>SAX (Simple API for XML): Event-based parsing.</li><li>DOM (Document Object Model): Loads XML into memory as a tree structure.</li><li>Python implements these via the PyXML package.</li></ul>
+<div class="image-placeholder">Image: Side-by-side visual: on the left, a scrolling stream of XML tokens triggering event handlers (SAX); on the right, a hierarchical tree of nodes representing the XML document (DOM).</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Stack: WSDL, SOAP, and Binding</h1></header>
+    <section>
+<table><tr><td>Component</td><td>Purpose</td><td>Example</td></tr><tr><td>WSDL</td><td>Describes available operations and message formats</td><td>&lt;portType name=&quot;Hello_PortType&quot;&gt;</td></tr><tr><td>SOAP Binding</td><td>Maps WSDL operations to transport protocols</td><td>&lt;soap:binding style=&quot;rpc&quot; transport=&quot;http://schemas.xmlsoap.org/soap/http&quot;/&gt;</td></tr><tr><td>SOAP Envelope</td><td>Encodes messages for transport</td><td>&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;</td></tr></table>
+<p>WSDL defines service contracts; SOAP bindings and envelopes enable platform-independent remote procedure calls.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Remote vs. Local Procedure Calls</h1></header>
+    <section>
+<table><tr><td>Aspect</td><td>Local RPC</td><td>Remote RPC</td></tr><tr><td>Execution</td><td>Same process address space</td><td>Different processes, possibly on different machines</td></tr><tr><td>Communication</td><td>Direct function call</td><td>Through stubs and network communication</td></tr><tr><td>Stubs</td><td>Not required</td><td>One stub per process for marshaling/unmarshaling</td></tr></table>
+<div class="image-placeholder">Image: Two diagrams: left side shows two functions in the same memory space calling each other directly; right side shows two processes on separate machines, each with a stub, connected by a network link labeled &#x27;transport stubs&#x27;.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Middleware Examples and Grid Computing</h1></header>
+    <section>
+<ul><li>CORBA: Common Object Request Broker Architecture.</li><li>DCOM: Distributed Component Object Model.</li><li>Grid Computing: Uses loosely coupled, heterogeneous, geographically dispersed clusters.</li></ul>
+<p>Middleware frameworks like CORBA and DCOM abstract platform and language differences; Grid Computing extends this across distributed, heterogeneous infrastructures.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization Trade-offs</h1></header>
+    <section>
+<ul><li>Enables abstraction of underlying hardware and OS.</li><li>Disadvantage: Requires modification of guest OS kernel to communicate with hypervisor.</li></ul>
+<div class="image-placeholder">Image: A layered architecture: physical hardware at bottom, hypervisor in middle, two virtual machines on top—one with a modified kernel (highlighted in red), one with standard kernel (grayed out), with annotations indicating kernel modification overhead.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

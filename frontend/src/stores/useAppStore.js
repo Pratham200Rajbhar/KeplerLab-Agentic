@@ -28,6 +28,8 @@ const useAppStore = create((set, get) => ({
 
   flashcards: null,
   quiz: null,
+  presentation: null,
+  presentationUpdateProgress: '',
   notes: [],
 
 
@@ -117,6 +119,8 @@ const useAppStore = create((set, get) => ({
 
   setFlashcards: (flashcards) => set({ flashcards }),
   setQuiz: (quiz) => set({ quiz }),
+  setPresentation: (presentation) => set({ presentation }),
+  setPresentationUpdateProgress: (msg) => set({ presentationUpdateProgress: msg }),
   setNotes: (notes) => set({ notes }),
   addNote: (content, source = null) => {
     const note = {
@@ -166,6 +170,7 @@ const useAppStore = create((set, get) => ({
       sessionId: null,
       flashcards: null,
       quiz: null,
+      presentation: null,
       notes: [],
       error: null,
       loading: {},
@@ -185,6 +190,7 @@ const useAppStore = create((set, get) => ({
       messages: [],
       flashcards: null,
       quiz: null,
+      presentation: null,
       notes: [],
       pendingChatMessage: null,
       loading: {},

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #F8F9FA;
+      font-family: 'Lato', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1024px;
+      height: 1024px;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #DEE2E6;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #0D6EFD;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #1A1A2E;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #0D6EFD;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #1A1A2E;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #DEE2E6;
+      padding: 16px;
+      vertical-align: top;
+      color: #1A1A2E;
+    }
+    .image-placeholder {
+      border: 4px dashed #0D6EFD44;
+      background: #0D6EFD08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #6C757D;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Distributed Systems &amp; Cloud Computing</h1></header>
+    <section>
+<h2>From RPC to Web Services to Cloud Infrastructure</h2>
+<ul><li>Distributed systems: independent computers appearing as a single coherent system</li><li>Middleware: software layer masking heterogeneity and enabling distributed programming</li><li>Cloud computing: utility-based delivery of virtualized computing resources over the Internet</li></ul>
+<p>Understanding distributed computing foundations is essential to grasp how cloud computing evolved and how modern web services operate.</p>
+<div class="image-placeholder">Image: Conceptual diagram showing multiple computers connected via network, with a transparent software layer (middleware) above OS and below applications, and a cloud icon representing cloud computing infrastructure</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed System Properties</h1></header>
+    <section>
+<table><tr><td>Property</td><td>Description</td></tr><tr><td>Transparency</td><td>Hides distribution from users; system perceived as single entity</td></tr><tr><td>Openness</td><td>Interoperability across heterogeneous platforms via standard interfaces</td></tr><tr><td>Scalability</td><td>Remains effective with significant increases in users and resources</td></tr><tr><td>Concurrency</td><td>Manages simultaneous access to shared resources</td></tr><tr><td>Heterogeneity</td><td>Enables interoperation across different OS, hardware, languages, and security models</td></tr><tr><td>Fault Tolerance</td><td>Continues operation despite component failures</td></tr></table>
+<div class="image-placeholder">Image: Modular diagram with seven interconnected nodes labeled with each property, connected to a central &#x27;Distributed System&#x27; core, with icons representing hardware, network, and software layers</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Remote Procedure Call (RPC) Architecture</h1></header>
+    <section>
+<p>RPC enables a process to call a subroutine in a different address space, typically on another machine, using stubs and network communication.</p>
+<ul><li>Client stub marshals parameters and sends message over network</li><li>Server stub unmarshals parameters and invokes target procedure</li><li>Network routines handle message transmission between stubs</li><li>Stubs act as proxies, making remote calls appear local to developers</li></ul>
+<div class="image-placeholder">Image: Side-by-side diagram showing client and server machines with processes, stubs, and network routines; arrows illustrate data flow from client call through stub, network, server stub, to server procedure</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>RPC Execution Steps</h1></header>
+    <section>
+<p>RPC involves 10 distinct steps from client invocation to result return, ensuring transparent remote execution despite network complexity.</p>
+<ul><li>1. Client calls stub with local procedure semantics</li><li>2. Stub builds message and sends via network routines</li><li>3. Message transmitted across network</li><li>4. Server OS delivers message to server stub</li><li>5. Server stub unmarshals parameters and calls server function</li><li>6. Server function executes and returns</li><li>7. Server stub marshals return value and sends response</li><li>8. Client stub receives and unmarshals response</li><li>9. Client stub returns result to client code</li><li>10. Client resumes execution with result</li></ul>
+<div class="image-placeholder">Image: Sequential numbered flowchart with 10 steps showing message flow between client stub, network, server stub, and server process; each step annotated with key action</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Distributed Object Technologies</h1></header>
+    <section>
+<table><tr><td>Technology</td><td>Language Scope</td><td>Key Characteristics</td></tr><tr><td>CORBA</td><td>Language-independent</td><td>Complex, uses IDL, supports multiple languages</td></tr><tr><td>RMI</td><td>Java-only</td><td>Simpler, Java-to-Java only, Java-specific serialization</td></tr><tr><td>DCOM</td><td>Microsoft ecosystem</td><td>Windows-centric, COM extension for distributed use</td></tr></table>
+<ul><li>Distributed objects enable method calls across hosts via remote methods</li><li>Client processes invoke methods on remote objects as if local</li><li>All use stubs/skeletons to abstract network communication</li></ul>
+<div class="image-placeholder">Image: Three-column comparison diagram showing CORBA (multi-language arrows), RMI (Java-only arrows), and DCOM (Windows ecosystem arrows), each with IDL or Java interface icons and network connection lines</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Fundamentals</h1></header>
+    <section>
+<p>Web services are self-contained, platform-independent, and loosely coupled software components accessible over the Internet.</p>
+<ul><li>Machine-oriented (unlike websites for humans); designed for application-to-application communication</li><li>Use standard protocols: HTTP, XML, SOAP, REST, WSDL, UDDI</li><li>Solve interoperability, firewall traversal, and complexity issues of earlier distributed systems</li></ul>
+<table><tr><td>Problem Solved</td><td>Solution</td></tr><tr><td>Interoperability</td><td>Standard XML-based messaging across platforms</td></tr><tr><td>Firewall Traversal</td><td>Use HTTP port 80, widely allowed through firewalls</td></tr><tr><td>Complexity</td><td>Developer-friendly with standardized interfaces</td></tr></table>
+<div class="image-placeholder">Image: Three-panel illustration: left shows legacy systems with proprietary protocols and firewall blocks; center shows XML message passing through HTTP; right shows web service registry with WSDL descriptions</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>SOAP vs REST Web Services</h1></header>
+    <section>
+<table><tr><td>Aspect</td><td>SOAP</td><td>REST</td></tr><tr><td>Nature</td><td>Protocol</td><td>Architectural style</td></tr><tr><td>Data Format</td><td>XML only</td><td>XML, JSON, HTML, Plain text</td></tr><tr><td>Security</td><td>Built-in WS-Security</td><td>Inherits from transport (e.g., HTTPS)</td></tr><tr><td>Bandwidth</td><td>Higher (XML overhead)</td><td>Lower, more efficient</td></tr><tr><td>Standards</td><td>Strict standards (WS-* stack)</td><td>Minimal standards, flexible</td></tr><tr><td>Java APIs</td><td>JAX-WS</td><td>JAX-RS</td></tr></table>
+<ul><li>SOAP: Protocol-based, XML-only, heavier but more standardized</li><li>REST: Style-based, format-flexible, lighter and more widely adopted</li></ul>
+<div class="image-placeholder">Image: Two-column comparison with SOAP icon (envelope with XML tags) and REST icon (URL bar with JSON/HTML snippets); arrows show message structures and data formats</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture Stack</h1></header>
+    <section>
+<p>Web services rely on XML-based technologies for messaging, description, and discovery—forming a layered architecture for service interaction.</p>
+<ul><li>XML Messaging: SOAP messages as XML streams over HTTP</li><li>WSDL: XML-based interface definition for service requester-provider interaction</li><li>UDDI: Registry for publishing and discovering web services</li></ul>
+<div class="image-placeholder">Image: Three-layer vertical stack: bottom layer XML (messaging), middle layer WSDL (description), top layer UDDI (registry); arrows show flow from discovery to invocation to response</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Lifecycle</h1></header>
+    <section>
+<p>A web service operation follows three core phases: publish, find, and bind—enabling dynamic service discovery and integration.</p>
+<ul><li>Publish: Service provider registers WSDL in UDDI registry</li><li>Find: Client queries registry to locate suitable service</li><li>Bind: Client uses WSDL to invoke service and exchange messages</li></ul>
+<div class="image-placeholder">Image: Circular workflow diagram with three labeled nodes: &#x27;Publish&#x27; (provider writing to registry), &#x27;Find&#x27; (client querying registry), &#x27;Bind&#x27; (client invoking service via WSDL); arrows connect in sequence</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Layers</h1></header>
+    <section>
+<p>Cloud computing delivers services in three primary models: IaaS, PaaS, and SaaS—each abstracting different infrastructure layers.</p>
+<table><tr><td>Model</td><td>What You Get</td><td>Key Users</td><td>Example Services</td></tr><tr><td>IaaS</td><td>Virtualized infrastructure (VMs, storage, networking)</td><td>Developers, DevOps</td><td>AWS EC2, Azure VMs, Google Compute Engine</td></tr><tr><td>PaaS</td><td>Runtime, middleware, databases, development tools</td><td>Developers</td><td>Google App Engine, Heroku, AWS Elastic Beanstalk</td></tr><tr><td>SaaS</td><td>Pre-configured applications</td><td>End users</td><td>Gmail, Salesforce, Google Docs</td></tr></table>
+<div class="image-placeholder">Image: Three-tiered pyramid: bottom IaaS (server rack icon), middle PaaS (code editor + database icons), top SaaS (laptop with app icons); arrows show upward abstraction</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>IaaS Characteristics &amp; Benefits</h1></header>
+    <section>
+<p>Infrastructure as a Service provides virtualized computing resources over the internet with dynamic scaling, utility pricing, and self-service provisioning.</p>
+<ul><li>Dynamic Scaling: Resources automatically scale based on demand</li><li>Rental Model: Pay-per-use pricing without owning physical hardware</li><li>Self-Service Provisioning: Users provision resources via web interfaces</li><li>No Hardware Investment: Provider manages physical infrastructure</li><li>Location Independence: Accessible from anywhere with internet</li><li>No Single Point of Failure: Redundancy across data centers</li></ul>
+<div class="image-placeholder">Image: Cloud icon with arrows pointing to four labeled boxes: &#x27;Dynamic Scaling&#x27;, &#x27;Rental Model&#x27;, &#x27;Self-Service&#x27;, &#x27;No Hardware Investment&#x27;; background shows data center rack and user laptop</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization in Cloud Infrastructure</h1></header>
+    <section>
+<p>Virtualization decouples OS from hardware, enabling efficient resource pooling, migration, and isolation—core to cloud elasticity.</p>
+<ul><li>Server Virtualization: Multiple VMs run on one physical server via hypervisor</li><li>Hypervisor Types: Type 1 (bare-metal, e.g., ESXi) vs Type 2 (hosted, e.g., VirtualBox)</li><li>Full Virtualization: Unmodified guest OS (e.g., VMware), uses binary translation</li><li>Para-Virtualization: Modified guest OS for performance (e.g., Xen)</li><li>Live Migration: Move running VMs between hosts with minimal downtime</li></ul>
+<div class="image-placeholder">Image: Layered architecture diagram: hardware at bottom, hypervisor layer, then multiple VMs with OS and apps; arrows show migration between VMs on different hosts</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

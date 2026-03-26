@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f3f4f6;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      display: grid;
+      gap: 24px;
+      justify-content: center;
+    }
+    slide {
+      display: block;
+    }
+    .slide {
+      width: 1024px;
+      height: 1024px;
+      background: white;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      padding: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    h1 { margin: 0; font-size: 42px; line-height: 1.2; }
+    h2 { margin: 0; font-size: 30px; color: #334155; }
+    p, li { font-size: 24px; line-height: 1.5; color: #0f172a; }
+    ul { margin: 0; padding-left: 28px; }
+    table { width: 100%; border-collapse: collapse; font-size: 20px; }
+    td { border: 1px solid #cbd5e1; padding: 10px; vertical-align: top; }
+    .image-placeholder {
+      border: 2px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 20px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Web Services and Cloud Computing Fundamentals</h1></header>
+    <section>
+<h1>Web Services and Cloud Computing Fundamentals</h1>
+<h2>XML, Web Services, and Distributed Systems</h2>
+<ul><li>XML for data transport and storage</li><li>Web Services using SOAP</li><li>Distributed system interoperability across heterogeneous environments</li></ul>
+<p>This presentation explores foundational concepts in web services and cloud computing, focusing on XML as a data transport mechanism, SOAP-based web services, and the principles enabling interoperability across diverse computing environments.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs HTML: Purpose and Structure</h1></header>
+    <section>
+<h1>XML vs HTML: Purpose and Structure</h1>
+<ul><li>XML: Content-oriented, extensible tags, designed to transport/store data</li><li>HTML: Presentation-oriented, fixed tags, designed to display data</li></ul>
+<p>XML allows users to define custom tags and attributes to describe data semantics, while HTML uses a rigid set of predefined tags to control visual presentation. XML is not intended for direct human consumption but for machine processing and data exchange.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML Document Structure and Validation</h1></header>
+    <section>
+<h1>XML Document Structure and Validation</h1>
+<p>An XML instance document includes an XML declaration, optional namespace declarations, and a hierarchical structure of elements. Unlike HTML, XML supports schema-based validation (e.g., via XSD), enabling strict data integrity checks.</p>
+<table><tr><td>Feature</td><td>XML</td><td>HTML</td></tr><tr><td>Tag Flexibility</td><td>Extensible, user-defined</td><td>Fixed, pre-defined</td></tr><tr><td>Validation</td><td>Supported via schemas</td><td>No native validation</td></tr><tr><td>Orientation</td><td>Content-oriented</td><td>Presentation-oriented</td></tr></table>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Example XML Document</h1></header>
+    <section>
+<h1>Example XML Document</h1>
+<p>The following XML snippet defines a books catalog with nested elements, attributes, and namespace declarations. It demonstrates XML’s ability to encode structured data with metadata (e.g., book year, author title).</p>
+<div class="image-placeholder">Image: Visual representation of an XML document tree showing root &lt;books&gt;, child &lt;book&gt; with attributes (year, book-title), and nested elements like &lt;author&gt;, &lt;title&gt;, &lt;publisher&gt;.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>SOAP Message Structure</h1></header>
+    <section>
+<h1>SOAP Message Structure</h1>
+<p>SOAP (Simple Object Access Protocol) messages use XML syntax to encode remote procedure calls and responses. A SOAP message consists of an Envelope, Header (optional), Body (required), and Fault (for errors).</p>
+<div class="image-placeholder">Image: Diagram of a SOAP envelope with labeled sections: Envelope, Header, Body containing a method call (e.g., calculateCarPayment) and parameters (loanAmount, loanTerm, loanRate).</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>SOAP Example: Car Payment Calculation</h1></header>
+    <section>
+<h1>SOAP Example: Car Payment Calculation</h1>
+<p>The example SOAP request invokes a remote service to calculate car loan payments. It includes parameters typed as xsd:string: loanAmount=5000, loanTerm=12, loanRate=8. The namespace identifies the service endpoint.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Interoperability Across Heterogeneous Environments</h1></header>
+    <section>
+<h1>Interoperability Across Heterogeneous Environments</h1>
+<ul><li>Operating systems</li><li>Hardware architectures</li><li>Programming languages</li><li>Communication protocols</li><li>Security measures</li><li>Information representation</li></ul>
+<p>Distributed systems must achieve openness by abstracting away differences in underlying hardware, platforms, and languages. Standards like XML, SOAP, CORBA, and DCOM enable this interoperability.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Full Virtualization Techniques</h1></header>
+    <section>
+<h1>Full Virtualization Techniques</h1>
+<ul><li>Uses binary translation for privileged/sensitive instructions</li><li>Direct execution for user-level instructions</li><li>No guest OS modification required</li><li>Complete hardware simulation</li></ul>
+<p>Full virtualization provides a total abstraction of the physical system, allowing unmodified guest operating systems to run unaware of the virtual environment. This approach incurs overhead due to instruction translation but ensures compatibility.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Virtualization Implementations</h1></header>
+    <section>
+<h1>Virtualization Implementations</h1>
+<table><tr><td>Type</td><td>Examples</td></tr><tr><td>Commercial</td><td>VMware ESX, Microsoft Virtual Server, Citrix XenServer</td></tr><tr><td>Open Source</td><td>Linux Xen (HVM), KVM</td></tr></table>
+<p>Full virtualization solutions include both commercial and open-source hypervisors. These systems enable multiple operating systems to run concurrently on a single physical machine without requiring changes to guest software.</p>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Foundational Enablers of Modern Computing</h1></header>
+    <section>
+<h1>Foundational Enablers of Modern Computing</h1>
+<ul><li>Virtualization</li><li>Distributed Computing</li><li>Autonomic Systems</li><li>Grid Technology</li><li>Broadband Networks</li><li>Web 2.0</li><li>Free and Open Source Software</li><li>Web Application Frameworks</li></ul>
+<p>Modern cloud and web computing rests on foundational technologies including virtualization, distributed systems, and open-source software. These elements collectively enable scalable, resilient, and interoperable services.</p>
+    </section>
+  </div>
+</slide>
+</body>
+</html>

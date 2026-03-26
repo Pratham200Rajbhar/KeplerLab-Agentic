@@ -22,6 +22,29 @@ _LANG_PATTERNS: List[tuple[str, str]] = [
     (r"\bin c\b|\bwrite c\b|\busing c\b", "c"),
 ]
 
+_LANG_EXEC_HINTS: dict[str, str] = {
+    "python": (
+        "For Python: return a complete script with valid syntax and include "
+        "`if __name__ == \"__main__\":` to demonstrate output."
+    ),
+    "java": (
+        "For Java: return a single-file program that compiles as `Main.java`; "
+        "use `public class Main` and include `public static void main(String[] args)`."
+    ),
+    "cpp": (
+        "For C++: return a complete compilable program with required includes and "
+        "`int main()` entrypoint."
+    ),
+    "c": (
+        "For C: return a complete compilable program with required headers and "
+        "`int main(void)` or `int main()` entrypoint."
+    ),
+    "javascript": (
+        "For JavaScript: return a complete Node.js script and include a direct runnable "
+        "entry path that logs output."
+    ),
+}
+
 def _detect_language(query: str) -> str:
     q = query.lower()
     for pattern, lang in _LANG_PATTERNS:
@@ -110,14 +133,17 @@ async def execute(
                 except Exception as exc:
                     logger.warning("Could not resolve material filenames: %s", exc)
 
-            base_prompt = get_code_generation_prompt(query)
+            base_prompt = get_code_generation_prompt(query, language=language)
 
         llm = get_llm(temperature=settings.LLM_TEMPERATURE_CODE)
         lang_instruction = (
             f"\n\nIMPORTANT: Generate the code in {language.upper()}. "
             f"Return only the raw {language} code — no markdown fences, no explanation."
         )
+        language_hint = _LANG_EXEC_HINTS.get(language, "")
         prompt = base_prompt + lang_instruction
+        if language_hint:
+            prompt = f"{prompt}\n\n{language_hint}"
         # Inject real filenames BEFORE rag context so LLM sees them prominently
         if files_section:
             prompt = f"{prompt}\n\n{files_section}"

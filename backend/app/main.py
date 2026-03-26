@@ -51,6 +51,7 @@ from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
 from app.routes.code_execution import router as code_execution_router
 from app.routes.artifacts import router as artifacts_router
+from app.services.presentation.router import router as presentation_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -213,6 +214,7 @@ app.include_router(mindmap_router)
 app.include_router(chat_router)
 app.include_router(jobs_router)
 app.include_router(ppt_router)
+app.include_router(presentation_router)
 app.include_router(search_router)
 app.include_router(proxy_router)
 app.include_router(explainer_router)

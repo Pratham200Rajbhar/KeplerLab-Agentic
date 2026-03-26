@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #F8F9FA;
+      font-family: 'Open Sans', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding: 40px 0;
+    }
+    slide {
+      display: block;
+      page-break-after: always;
+      scroll-snap-align: start;
+    }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      padding: 60px 80px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+    }
+    header {
+      margin-bottom: 30px;
+      border-bottom: 4px solid #3182CE;
+      padding-bottom: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      line-height: 1.1;
+      color: #2D3748;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+    section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #3182CE;
+      font-family: 'Inter', sans-serif;
+    }
+    p, li {
+      font-size: 28px;
+      line-height: 1.4;
+      color: #2D3748;
+      margin: 0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 40px;
+      list-style-type: square;
+    }
+    ol {
+      margin: 0;
+      padding-left: 40px;
+    }
+    li {
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 22px;
+      margin-top: 20px;
+    }
+    td {
+      border: 2px solid #E2E8F0;
+      padding: 16px;
+      vertical-align: top;
+      color: #2D3748;
+    }
+    .image-placeholder {
+      border: 4px dashed #3182CE44;
+      background: #3182CE08;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      color: #718096;
+      font-size: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    blockquote {
+      margin: 0;
+      border-left: 8px solid #3182CE;
+      padding: 16px 20px;
+      background: #3182CE10;
+      border-radius: 10px;
+      font-size: 26px;
+      color: #2D3748;
+      font-style: italic;
+    }
+    pre {
+      margin: 0;
+      border: 2px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 18px;
+      background: #F8F9FA;
+      overflow: hidden;
+    }
+    code {
+      font-size: 22px;
+      line-height: 1.35;
+      color: #2D3748;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .callout {
+      border: 3px solid #3182CE;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 24px;
+      color: #2D3748;
+      background: #3182CE12;
+    }
+    hr {
+      border: none;
+      border-top: 4px solid #E2E8F0;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+<slide>
+  <div class="slide">
+    <header><h1>Distributed Systems &amp; Cloud Computing Foundations</h1></header>
+    <section>
+<h2>Core Concepts, Architectures, and Service Models</h2>
+<div class="callout">A distributed system is a collection of interconnected stand-alone computers working cooperatively as a single integrated computing resource [Buyya].</div>
+<div class="image-placeholder">Image: A network diagram showing multiple interconnected computers (nodes) with arrows indicating bidirectional communication, forming a unified cloud-like structure labeled &#x27;Single Integrated Resource&#x27;. Background gradient from light blue to white.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Key Design Principles of Distributed Systems</h1></header>
+    <section>
+<ul><li>Loose Coupling: Minimizes dependencies between components</li><li>Standard-Based: Ensures interoperability via open standards</li><li>Flexibility: Adapts to changing requirements and environments</li><li>Reusability: Components can be reused across systems</li><li>Scalability: Supports growth in users, data, or resources</li><li>Reduced Complexity: Abstracts heterogeneity from developers</li></ul>
+<div class="callout">Systems must conform to well-defined interfaces, support application portability, and enable easy interoperability.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Transparency in Distributed Systems</h1></header>
+    <section>
+<table><tr><td>Transparency Type</td><td>Description</td></tr><tr><td>Access</td><td>Hide differences in data representation and resource access</td></tr><tr><td>Location</td><td>Hide where a resource is located</td></tr><tr><td>Migration</td><td>Hide that a resource may move to another location</td></tr><tr><td>Replication</td><td>Hide that a resource is replicated</td></tr><tr><td>Concurrency</td><td>Hide that a resource may be shared by several competitive users</td></tr><tr><td>Failure</td><td>Hide the failure and recovery of a resource</td></tr><tr><td>Persistence</td><td>Hide whether a resource is in memory or on disk</td></tr></table>
+<div class="callout">Transparencies collectively mask complexity, enabling developers to focus on logic rather than infrastructure behavior.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Middleware: The Distributed Systems Glue</h1></header>
+    <section>
+<blockquote>‘a software layer between applications and the OS whose purpose is to mask heterogeneity of the underlying components and to provide a convenient programming model to application programmers.’</blockquote>
+<ul><li>Manages complexity and heterogeneity in distributed systems</li><li>Resides above OS but below application programs</li><li>Provides common programming abstraction across distributed environments</li><li>Enables seamless communication and resource sharing</li></ul>
+<div class="image-placeholder">Image: Layered architecture diagram: Hardware at bottom, OS above it, middleware layer in middle labeled &#x27;Middleware&#x27;, applications on top. Arrows show bidirectional communication between layers. Use muted blue for middleware, dark gray for OS, light gray for apps.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Architecture (WSDL Elements)</h1></header>
+    <section>
+<table><tr><td>Element</td><td>Purpose</td></tr><tr><td>&lt;types&gt;</td><td>Provides data type definitions</td></tr><tr><td>&lt;message&gt;</td><td>Abstract definition of data being transmitted</td></tr><tr><td>&lt;portType&gt;</td><td>Set of abstract operations</td></tr><tr><td>&lt;binding&gt;</td><td>Concrete protocol and data format for operations</td></tr><tr><td>&lt;port&gt;</td><td>Address for a binding</td></tr><tr><td>&lt;service&gt;</td><td>Aggregates related ports</td></tr><tr><td>&lt;serviceType&gt;</td><td>Mechanism to aggregate portTypes</td></tr></table>
+<div class="callout">WSDL defines the interface of a Web service, enabling interaction between requester and provider.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>XML vs HTML: Purpose and Structure</h1></header>
+    <section>
+<table><tr><td>Feature</td><td>XML</td><td>HTML</td></tr><tr><td>Tags</td><td>Extensible: user-defined meaning</td><td>Fixed: pre-determined and rigid</td></tr><tr><td>Orientation</td><td>Content-oriented</td><td>Presentation-oriented</td></tr><tr><td>Design Goal</td><td>Transport and store data</td><td>Display data</td></tr><tr><td>Validation</td><td>Supports schema validation (XSD)</td><td>No built-in validation</td></tr><tr><td>Use Case</td><td>Data interchange between systems</td><td>Web page rendering</td></tr></table>
+<div class="callout">XML is for computers; HTML is for humans.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Service Models</h1></header>
+    <section>
+<table><tr><td>Model</td><td>What You Get</td><td>Technical Difficulty</td><td>Deals With</td><td>Popularity</td></tr><tr><td>IaaS</td><td>Infrastructure (VMs, storage, servers)</td><td>High</td><td>Virtualization, networking</td><td>Skilled developers &amp; researchers</td></tr><tr><td>PaaS</td><td>Platform (runtimes, DBs, web servers)</td><td>Medium</td><td>Development environment</td><td>Developers</td></tr><tr><td>SaaS</td><td>Pre-configured applications</td><td>None</td><td>End-user software (email, social media)</td><td>General users &amp; enterprises</td></tr></table>
+<div class="callout">Cloud computing delivers computing, storage, and software as a service via the internet.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Service-Oriented Computing (SOC)</h1></header>
+    <section>
+<blockquote>‘Service orientation is the core reference model for cloud computing systems.’</blockquote>
+<ul><li>Services are main building blocks of applications/systems</li><li>Supports rapid, low-cost development</li><li>Enables flexible, interoperable, and evolvable systems</li><li>Forms foundation of cloud middleware and service interfaces</li></ul>
+<div class="callout">SOC underpins the design of modern distributed and cloud systems.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Types &amp; Deployment Models</h1></header>
+    <section>
+<ul><li>Private Cloud: Owned by single organization, shared internal missions</li><li>Community Cloud: Shared by organizations with common concerns (e.g., security)</li><li>Public Cloud: Available to general public, owned by third-party provider</li><li>Hybrid Cloud: Combines two or more models (e.g., private + public)</li></ul>
+<div class="image-placeholder">Image: Venn diagram with four overlapping circles labeled &#x27;Private&#x27;, &#x27;Community&#x27;, &#x27;Public&#x27;, and &#x27;Hybrid&#x27;. Hybrid circle overlaps all others. Use muted blue for private, amber for community, green for public, and purple for hybrid. Background white.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Web Services Registry: UDDI</h1></header>
+    <section>
+<blockquote>‘Universal Description, Discovery and Integration (UDDI) serves as a business and service registry essential for the widespread use of Web services.&#x27;</blockquote>
+<ul><li>Central registry for publishing and discovering web services</li><li>Businesses populate descriptions of their services</li><li>Enables service integration over the Web</li><li>Supports dynamic discovery and binding of services</li></ul>
+<div class="callout">UDDI is foundational for service-oriented architectures in distributed environments.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Middleware Components</h1></header>
+    <section>
+<ol><li>Software as a Service (SaaS)</li><li>Infrastructure as a Service (IaaS)</li><li>Platform as a Service (PaaS)</li><li>MapReduce Programming</li><li>Management and Monitoring</li><li>Security</li><li>Cloud Middleware Layer</li></ol>
+<div class="callout">Cloud middleware abstracts infrastructure complexity and enables scalable application deployment.</div>
+    </section>
+  </div>
+</slide><slide>
+  <div class="slide">
+    <header><h1>Cloud Computing Needs &amp; Enablers</h1></header>
+    <section>
+<ul><li>Virtualization: Enables resource abstraction and pooling</li><li>Cloud Architecture: Supports elasticity and multi-tenancy</li><li>Service Models: IaaS, PaaS, SaaS define delivery boundaries</li><li>Management &amp; Monitoring: Ensures SLA compliance and performance</li><li>Security: Addresses data privacy, access control, compliance</li></ul>
+<div class="callout">Virtualization is the foundational technology enabling cloud computing scalability and efficiency.</div>
+    </section>
+  </div>
+</slide>
+</body>
+</html>
