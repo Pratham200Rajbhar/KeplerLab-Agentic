@@ -12,6 +12,7 @@ module.exports = {
         sans: ['var(--font-inter)', 'Google Sans', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['var(--font-inter)', 'Google Sans', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['var(--font-jetbrains)', 'JetBrains Mono', 'monospace'],
+        headline: ['var(--font-headline)', 'Plus Jakarta Sans', 'sans-serif'],
       },
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
@@ -51,6 +52,22 @@ module.exports = {
         'info-light': 'var(--info-light)',
         'info-subtle': 'var(--info-subtle)',
         'info-border': 'var(--info-border)',
+        
+        // Stitch Landing Page Colors
+        'stitch-primary': '#10b981',
+        'stitch-primary-container': '#064e3b',
+        'stitch-on-primary': '#ffffff',
+        'stitch-on-primary-container': '#d1fae5',
+        'stitch-secondary': '#34d399',
+        'stitch-secondary-container': '#065f46',
+        'stitch-surface': '#040d0a',
+        'stitch-surface-container': '#061511',
+        'stitch-surface-container-high': '#0b231d',
+        'stitch-surface-container-low': '#020806',
+        'stitch-outline-variant': '#1d3d34',
+        'stitch-on-surface-variant': '#a7f3d0',
+        'stitch-background': '#040d0a',
+        'stitch-on-background': '#ecfdf5'
       },
       boxShadow: {
         glow: '0 0 24px rgba(16, 185, 129, 0.15), 0 0 60px rgba(16, 185, 129, 0.05)',

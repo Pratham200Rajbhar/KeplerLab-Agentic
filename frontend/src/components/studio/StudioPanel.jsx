@@ -10,7 +10,6 @@ import {
   Mic,
   ChevronLeft,
   ChevronRight,
-  FlaskConical,
   AlertTriangle,
   Brain,
 } from 'lucide-react';
@@ -809,7 +808,7 @@ export default function StudioPanel() {
       case 'mindmap':
         if (mindmapFullscreen && mindmapData) {
           return (
-            <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 animate-fade-in shadow-2xl">
+            <div className="fixed inset-x-0 bottom-0 top-[86px] z-[220] flex flex-col bg-surface-50 animate-fade-in shadow-2xl">
               <div className="flex-1 min-h-0 relative">
                 <MindMapCanvas
                   mindmapData={mindmapData}
@@ -906,30 +905,9 @@ export default function StudioPanel() {
         />
       )}
 
-      {/* Mind Map Fullscreen Overlay */}
-      {activeView === 'mindmap' && mindmapData && mindmapFullscreen && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 animate-fade-in shadow-2xl">
-          <div className="flex-1 min-h-0 relative">
-            <MindMapCanvas
-              mindmapData={mindmapData}
-              onClose={() => {
-                setMindmapFullscreen(false);
-                setActiveView(null);
-              }}
-              onRate={handleMindMapRate}
-              contentId={mindmapContentId}
-              savedRating={mindmapRating}
-              isFullscreen={true}
-              onToggleFullscreen={handleToggleMindmapFullscreen}
-            />
-          </div>
-        </div>
-      )}
-
-
       <aside
         ref={panelRef}
-        className="glass-light h-full overflow-hidden flex flex-col relative"
+        className="glass-light workspace-studio-shell h-full overflow-hidden flex flex-col relative"
         style={{ width: `${width}px`, minWidth: `${PANEL.STUDIO.MIN_WIDTH}px` }}
         aria-label="Studio panel"
       >
@@ -946,7 +924,7 @@ export default function StudioPanel() {
         </div>
 
         { }
-        <div className="panel-header">
+        <div className="panel-header workspace-studio-header">
           <div className="flex items-center gap-2">
             {activeView ? (
               <>
@@ -963,21 +941,26 @@ export default function StudioPanel() {
               </>
             ) : (
               <>
-                <FlaskConical className="w-5 h-5 text-[var(--text-muted)]" />
+                <span className="material-symbols-outlined text-[18px] text-[var(--text-muted)]">labs</span>
                 <span className="panel-title">Studio</span>
               </>
             )}
           </div>
+          {!activeView && (
+            <div className="workspace-studio-chip text-[10px] font-semibold uppercase tracking-wider">
+              {selectedSources.length > 0 ? `${selectedSources.length} source${selectedSources.length === 1 ? '' : 's'}` : 'Ready'}
+            </div>
+          )}
         </div>
 
         { }
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="workspace-studio-body flex-1 overflow-hidden flex flex-col">
           <div className={`flex-1 relative flex flex-col ${activeView === 'mindmap' ? '' : 'overflow-y-auto p-4'}`}>
             {activeView ? (
               renderInlineContent()
             ) : effectiveMaterial ? (
               <>
-                  <p className="text-[11.5px] text-text-muted mb-4 leading-relaxed">
+                  <p className="workspace-studio-lead text-[11.5px] text-text-muted mb-4 leading-relaxed">
                     {selectedSources.length > 1 ? (
                       <>
                         Generating from{' '}
@@ -995,7 +978,7 @@ export default function StudioPanel() {
                     )}
                   </p>
 
-                  <div className="space-y-1.5">
+                  <div className="workspace-studio-actions space-y-2">
                     {outputs.map((output, i) => (
                       <div
                         key={output.id}
@@ -1042,7 +1025,7 @@ export default function StudioPanel() {
 
                   { }
                   {combinedHistory.length > 0 && (
-                    <div className="mt-10 flex flex-col">
+                    <div className="workspace-studio-history mt-10 flex flex-col">
                       { }
                       <div className="flex items-center gap-3 py-2 shrink-0">
                         <div className="flex-1 h-px bg-[var(--border)]" />
@@ -1065,14 +1048,24 @@ export default function StudioPanel() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-                    <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
-                    <FlaskConical className="w-6 h-6 text-accent relative z-10" />
+                  <div className="rounded-2xl px-8 py-8 max-w-[280px]" style={{
+                    background:
+                      'radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%), linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent))',
+                    border: '1px solid color-mix(in srgb, var(--border-strong) 85%, transparent)',
+                  }}>
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 mx-auto relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
+                      <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
+                      <span className="material-symbols-outlined text-[26px] text-accent relative z-10">labs</span>
+                    </div>
+                    <p className="text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
+                    <p className="text-xs text-text-muted max-w-[180px] mx-auto leading-relaxed mb-4">
+                      Select a source from the panel to generate study materials
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-medium"
+                      style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
+                      Studio will activate automatically
+                    </div>
                   </div>
-                  <p className="text-sm font-semibold text-text-secondary mb-1.5">No source selected</p>
-                  <p className="text-xs text-text-muted max-w-[180px] leading-relaxed">
-                    Select a source from the panel to generate study materials
-                  </p>
                 </div>
               )}
             </div>

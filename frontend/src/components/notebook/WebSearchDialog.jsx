@@ -59,18 +59,18 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
         </div>
       }
       footer={
-        <div className="flex justify-between items-center w-full bg-surface/50 backdrop-blur-md px-6 py-4 rounded-b-2xl">
+        <div className="workspace-websearch-footer flex justify-between items-center w-full px-6 py-4 rounded-b-2xl">
           <span className="text-sm text-text-muted font-bold tracking-wide">{selectedResults.size} resources selected</span>
           <div className="flex gap-3">
-            <button className="px-5 py-2.5 text-sm font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded-xl transition-all" onClick={() => { onClose(); setPreviewResult(null); }}>Cancel</button>
-            <button className="px-6 py-2.5 text-sm font-bold bg-accent hover:bg-accent-light text-white rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all" onClick={handleAdd} disabled={selectedResults.size === 0}>Add to Notebook</button>
+            <button className="workspace-websearch-cancel px-5 py-2.5 text-sm font-semibold rounded-xl transition-all" onClick={() => { onClose(); setPreviewResult(null); }}>Cancel</button>
+            <button className="workspace-websearch-add px-6 py-2.5 text-sm font-bold text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all" onClick={handleAdd} disabled={selectedResults.size === 0}>Add to Notebook</button>
           </div>
         </div>
       }
     >
-      <div className="flex h-[68vh] min-h-[520px] -mx-6 -mt-2 overflow-hidden relative">
+      <div className="workspace-websearch-shell flex h-[68vh] min-h-[520px] -mx-6 -mt-2 overflow-hidden relative">
         {}
-        <div className="flex-1 flex flex-col h-full bg-transparent relative z-10 w-full transition-all duration-500 overflow-hidden">
+        <div className="workspace-websearch-results flex-1 flex flex-col h-full relative z-10 w-full transition-all duration-500 overflow-hidden">
           <div className="flex justify-between items-center px-6 pb-6 pt-2 shrink-0">
             <p className="text-[13px] font-medium text-text-muted">
               Results found for <span className="text-[#10B981] font-bold px-3 py-1.5 rounded-lg bg-[#10B981]/15 ml-2">&quot;{query}&quot;</span>
@@ -114,14 +114,14 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                     key={result.link}
                     onMouseEnter={() => setPreviewResult(result)}
                     onClick={() => { toggleSelection(result); setPreviewResult(result); }}
-                    className={`relative py-3 px-4 rounded-2xl transition-all duration-300 cursor-pointer group ${
+                    className={`workspace-websearch-item relative py-3 px-4 rounded-2xl transition-all duration-300 cursor-pointer group ${
                       isSelected 
                         ? 'bg-surface-raised shadow-lg' 
                         : 'bg-transparent hover:bg-surface-raised/40'
                     } ${isPreviewed && !isSelected ? 'bg-surface-raised/20' : ''}`}
                   >
                     <div className="flex items-center gap-5">
-                      <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-[#10B981] shadow-md border-none' : 'border border-white/10 group-hover:border-white/20 bg-transparent cursor-pointer'}`}>
+                        <div className={`workspace-websearch-check shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-[#10B981] shadow-md border-none' : 'border bg-transparent cursor-pointer'}`}>
                         {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
@@ -153,7 +153,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
 
         {}
         {previewResult && (
-          <div className="w-[500px] shrink-0 h-full bg-[#1A1A1C] relative overflow-hidden animate-in slide-in-from-right-10 fade-in duration-500 shadow-2xl rounded-2xl my-2 mr-2 border border-white/5">
+          <div className="workspace-websearch-preview w-[500px] shrink-0 h-full relative overflow-hidden animate-in slide-in-from-right-10 fade-in duration-500 rounded-2xl my-2 mr-2">
             <div className="flex flex-col h-full relative z-10">
               <div className="px-8 pt-8 pb-10 flex-1 overflow-y-auto custom-scrollbar relative">
                 <div className="flex items-center gap-3 mb-6">
@@ -174,7 +174,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
               {}
               <div className="p-6 pt-0 mt-auto bg-gradient-to-t from-[#1A1A1C] to-transparent">
                 {isFileUrl(previewResult.link) ? (
-                  <a href={viewerHref(previewResult.link)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full px-7 py-4 bg-white text-black rounded-2xl transition-all shadow-lg hover:bg-gray-100 active:scale-[0.98] group">
+                  <a href={viewerHref(previewResult.link)} target="_blank" rel="noopener noreferrer" className="workspace-websearch-open-doc flex items-center justify-between w-full px-7 py-4 rounded-2xl transition-all shadow-lg active:scale-[0.98] group">
                     <div className="flex items-center gap-4">
                       <Eye className="w-5 h-5" strokeWidth={2.5}/>
                       <span className="text-[14px] font-black uppercase tracking-wide">Open Document Preview</span>
@@ -182,7 +182,7 @@ export default function WebSearchDialog({ isOpen, onClose, results = [], onAddSe
                     <span className="text-[11px] font-bold bg-black/10 text-black px-3 py-1 rounded-full uppercase tracking-widest">{getFileExt(previewResult.link).slice(1)}</span>
                   </a>
                 ) : (
-                  <a href={previewResult.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full px-7 py-4 bg-[#2C2C2E] hover:bg-[#3C3C3E] text-white rounded-2xl transition-all shadow-xl active:scale-[0.98] group">
+                  <a href={previewResult.link} target="_blank" rel="noopener noreferrer" className="workspace-websearch-open-link flex items-center justify-between w-full px-7 py-4 text-white rounded-2xl transition-all shadow-xl active:scale-[0.98] group">
                     <div className="flex items-center gap-4">
                       <ExternalLink className="w-5 h-5 text-white/80" strokeWidth={2.5}/>
                       <span className="text-[14px] font-black uppercase tracking-wide">Visit Website</span>

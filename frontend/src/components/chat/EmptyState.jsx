@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { BookOpen, Loader2, RefreshCw } from 'lucide-react';
+import { BookOpen, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { getEmptySuggestions } from '@/lib/api/chat';
 import useAppStore from '@/stores/useAppStore';
 
@@ -61,9 +61,18 @@ const EmptyState = memo(function EmptyState({ onSend }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 select-none overflow-y-auto">
-      <div className="max-w-lg w-full">
+    <div className="workspace-empty-shell flex flex-col items-center justify-center flex-1 px-6 py-12 select-none overflow-y-auto">
+      <div className="workspace-empty-card max-w-xl w-full rounded-2xl border p-5 md:p-6"
+        style={{
+          background:
+            'radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 52%), linear-gradient(170deg, color-mix(in srgb, var(--surface-raised) 85%, transparent), color-mix(in srgb, var(--surface-overlay) 65%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-strong) 85%, transparent)',
+        }}>
         <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-3" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
+            <Sparkles className="w-3 h-3" />
+            Smart assistant
+          </div>
           <h2 className="text-2xl font-semibold text-text-primary mb-2 tracking-tight">
             How can I help you?
           </h2>
@@ -160,14 +169,14 @@ const EmptyState = memo(function EmptyState({ onSend }) {
                   onClick={() => handleSuggestionClick(s)}
                   className="text-left px-4 py-2.5 rounded-lg border text-sm text-text-secondary hover:text-text-primary hover:bg-accent/5 transition-all"
                   style={{
-                    background: 'var(--surface-raised, rgba(255,255,255,0.03))',
-                    borderColor: 'rgba(255,255,255,0.06)',
+                    background: 'color-mix(in srgb, var(--surface-raised) 88%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--border) 80%, transparent)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(var(--color-accent-rgb, 99,102,241),0.3)';
+                    e.currentTarget.style.borderColor = 'var(--accent-border)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--border) 80%, transparent)';
                   }}
                 >
                   {s}

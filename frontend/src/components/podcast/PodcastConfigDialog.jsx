@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Mic, Globe, BookOpen, Search, PlayCircle, Layers3, Brain, Scale, MessagesSquare } from 'lucide-react';
+import { X, Globe, BookOpen, Search, PlayCircle, Layers3, Brain, Scale, MessagesSquare } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import VoicePicker from './VoicePicker';
 import { getLanguages, getVoicesForLanguage } from '@/lib/api/podcast';
@@ -150,35 +150,28 @@ export default function PodcastConfigDialog({ onClose }) {
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-[1120px]">
-      <div className="flex items-center gap-3 border-b border-[var(--border)] px-6 py-4">
-        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--accent-border)] bg-[var(--accent-subtle)]">
-          <Mic className="h-4 w-4 text-[var(--accent)]" />
+      <div className="studio-dialog-v3">
+        <div className="studio-dialog-v3-header">
+          <div className="studio-dialog-v3-icon">
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>podcasts</span>
+          </div>
+          <div>
+            <h3 className="studio-dialog-v3-title">AI Podcast Studio</h3>
+            <p className="studio-dialog-v3-subtitle">Configure voices, language, and discussion format</p>
+          </div>
+          <button onClick={onClose} className="studio-dialog-v3-close" aria-label="Close dialog">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">New AI Podcast</h3>
-          <p className="text-xs text-[var(--text-muted)]">Configure your two-host AI podcast</p>
-        </div>
-        <button onClick={onClose} className="ml-auto rounded-lg p-1.5 hover:bg-[var(--surface-overlay)]" aria-label="Close dialog">
-          <X className="h-4 w-4 text-[var(--text-muted)]" />
-        </button>
-      </div>
 
-      <div
-        className="space-y-5 px-6 py-5"
-        style={{
-          backgroundImage:
-            'radial-gradient(1200px 220px at 50% -80px, rgba(16,185,129,0.08), transparent), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-          backgroundSize: 'auto, 24px 24px, 24px 24px',
-          backgroundPosition: 'center top, 0 0, 0 0',
-        }}
-      >
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="studio-dialog-v3-body">
+          <div className="studio-dialog-v3-grid">
+            <div className="studio-dialog-v3-grid two-col">
           <section
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-4"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}
+                className="studio-dialog-v3-section space-y-4"
           >
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">What to Cover</p>
+                  <p className="studio-dialog-v3-label mb-2">What to Cover</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -204,14 +197,14 @@ export default function PodcastConfigDialog({ onClose }) {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="e.g. Chapter 3: Neural Networks"
-                  className="podcast-text-field mt-2.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                      className="studio-dialog-v3-input podcast-text-field mt-2.5"
                 />
               )}
             </div>
 
             <div>
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"><Globe className="h-3 w-3" /> Language</p>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)] px-3 py-2">
+                  <p className="studio-dialog-v3-label mb-2 flex items-center gap-1.5"><Globe className="h-3 w-3" /> Language</p>
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)] px-3 py-2">
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
@@ -233,10 +226,9 @@ export default function PodcastConfigDialog({ onClose }) {
           </section>
 
           <section
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}
+                className="studio-dialog-v3-section"
           >
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Podcast Style</p>
+                <p className="studio-dialog-v3-label mb-2">Podcast Style</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {MODES.map((m) => (
                 <button
@@ -254,16 +246,12 @@ export default function PodcastConfigDialog({ onClose }) {
               ))}
             </div>
           </section>
-        </div>
+            </div>
 
         <section
-          className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
-          style={{
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
-            backgroundImage: 'radial-gradient(420px 140px at 100% 0%, rgba(16,185,129,0.08), transparent)',
-          }}
+              className="studio-dialog-v3-section"
         >
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Host Voices</p>
+              <p className="studio-dialog-v3-label mb-3">Host Voices</p>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-overlay)]/55 p-3">
               <VoicePicker
@@ -287,13 +275,14 @@ export default function PodcastConfigDialog({ onClose }) {
             </div>
           </div>
         </section>
+          </div>
       </div>
 
-      <div className="flex items-center gap-2.5 border-t border-[var(--border)] px-6 py-4">
+        <div className="studio-dialog-v3-footer">
         <button
           onClick={onClose}
           disabled={loading}
-          className="flex-1 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] disabled:opacity-40"
+            className="studio-dialog-v3-btn ghost flex-1 disabled:opacity-40"
         >
           Cancel
         </button>
@@ -301,7 +290,7 @@ export default function PodcastConfigDialog({ onClose }) {
         <button
           onClick={handleGenerate}
           disabled={!canGenerate}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
+            className="studio-dialog-v3-btn primary flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-40"
         >
           {loading ? (
             <>
@@ -313,6 +302,7 @@ export default function PodcastConfigDialog({ onClose }) {
             </>
           )}
         </button>
+      </div>
       </div>
     </Modal>
   );

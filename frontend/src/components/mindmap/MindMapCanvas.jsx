@@ -529,8 +529,7 @@ function MindMapCanvasInner({
   return (
     <div
       ref={mapWrapperRef}
-      className={`transition-all duration-300 ease-in-out ${isFullscreen ? 'fixed inset-0 z-[100] flex flex-col' : 'h-full flex flex-col'
-        }`}
+      className={`relative overflow-hidden transition-all duration-300 ease-in-out ${isFullscreen ? 'h-full flex flex-col' : 'h-full flex flex-col'}`}
       style={{
         background: 'radial-gradient(circle at center, #1a1c1e 0%, #0b0c0d 100%)',
       }}
@@ -538,11 +537,14 @@ function MindMapCanvasInner({
       {/* Subtle background glow */}
       <div className="absolute inset-0 pointer-events-none opacity-20"
         style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%)' }} />
-      <header className={`flex items-center justify-between transition-all duration-500 ${isFullscreen
-          ? 'fixed top-6 left-1/2 -translate-x-1/2 z-[110] w-auto px-5 py-2.5 rounded-2xl glass-dark border border-white/10 shadow-2xl animate-fade-in'
-          : 'border-b border-white/5 bg-[#0b0c0d]/80 backdrop-blur-md shrink-0 gap-3 px-3 py-2'
-        }`}>
-        <div className={`flex items-center min-w-0 ${isFullscreen ? 'gap-3 mr-4' : 'gap-2'}`}>
+      <header className={`absolute top-3 left-0 right-0 z-[70] flex justify-center px-3 pointer-events-none ${isFullscreen ? 'sm:top-4' : 'top-2'}`}>
+        <div
+          className={`pointer-events-auto flex items-center justify-between gap-3 border border-white/10 backdrop-blur-xl shadow-2xl ${isFullscreen
+            ? 'w-full max-w-4xl rounded-2xl bg-[#0b0c0d]/86 px-4 py-2.5'
+            : 'w-full max-w-3xl rounded-xl bg-[#0b0c0d]/82 px-3 py-2'
+            }`}
+        >
+          <div className={`flex items-center min-w-0 ${isFullscreen ? 'gap-3' : 'gap-2'}`}>
           {!isFullscreen && (
             <button
               onClick={onClose}
@@ -552,20 +554,20 @@ function MindMapCanvasInner({
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
-          {isFullscreen && <Brain className="w-4 h-4 text-accent" />}
+            {isFullscreen && <Brain className="w-4 h-4 text-accent" />}
           <div className="flex flex-col min-w-0">
-            <h1 className={`font-bold leading-tight text-white truncate ${isFullscreen ? 'text-[13px]' : 'text-[12px]'}`}>
+              <h1 className={`font-bold leading-tight text-white truncate ${isFullscreen ? 'text-sm' : 'text-xs'}`}>
               {normalized.title || DEFAULT_TITLE}
             </h1>
             {isFullscreen && (
-              <p className="text-[10px] font-medium text-gray-400">
+                <p className="text-[11px] font-medium text-gray-400">
                 {normalized.sourceCount} source{normalized.sourceCount > 1 ? 's' : ''}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-gray-400">
+          <div className={`flex items-center gap-1.5 text-gray-400 ${isFullscreen ? 'ml-auto' : ''}`}>
           <button
             onClick={handleExpandAll}
             className={`flex items-center gap-1.5 rounded-lg transition-all border border-white/5 ${isFullscreen
@@ -615,6 +617,7 @@ function MindMapCanvasInner({
               <X className="w-4 h-4" />
             </button>
           )}
+        </div>
         </div>
       </header>
 

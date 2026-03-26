@@ -133,12 +133,12 @@ export default memo(function SourceItem({
 
   return (
     <div
-      className={`source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all
-        ${checked ? 'bg-accent/5 ring-0 shadow-sm' : 'hover:bg-surface-100'}
+      className={`workspace-source-item source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all
+        ${checked ? 'bg-accent/5 ring-0 shadow-sm workspace-source-item-selected' : 'hover:bg-surface-100'}
         ${isProcessing ? 'bg-surface-overlay/50' : ''}`}
     >
       {}
-      <div className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
+      <div className={`workspace-source-icon shrink-0 w-8 h-8 flex items-center justify-center rounded-lg backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
         <div className="scale-90 flex items-center justify-center drop-shadow-md">
           {getSourceIcon(sourceType, source.filename)}
         </div>
@@ -173,14 +173,14 @@ export default memo(function SourceItem({
       <div className="relative flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
         <button
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
-          className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-100 transition-colors"
+          className="workspace-source-menu-btn p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-100 transition-colors"
           title="More actions"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
         {menuOpen && (
           <div
-            className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl animate-scale-in"
+            className="workspace-source-menu absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl animate-scale-in"
             style={{ background: 'var(--surface-raised)', boxShadow: 'var(--shadow-elevated)' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -205,7 +205,7 @@ export default memo(function SourceItem({
       ) : (
         <button
           onClick={(e) => { e.stopPropagation(); onToggle(source); }}
-          className={`shrink-0 w-4 h-4 mt-0.5 rounded-[4px] flex items-center justify-center transition-all ${checked ? 'bg-accent shadow-sm shadow-accent/30' : 'bg-surface-raised hover:bg-surface-overlay'
+          className={`workspace-source-check shrink-0 w-4 h-4 mt-0.5 rounded-[4px] flex items-center justify-center transition-all ${checked ? 'bg-accent shadow-sm shadow-accent/30' : 'bg-surface-raised hover:bg-surface-overlay'
             }`}
           disabled={isFailed}
           title={checked ? 'Deselect' : 'Select'}

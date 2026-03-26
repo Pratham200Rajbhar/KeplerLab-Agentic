@@ -1,17 +1,36 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
-import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles } from 'lucide-react';
+import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles, CornerDownLeft } from 'lucide-react';
 import { parseSlashCommand } from '@/lib/utils/parseSlashCommand';
+import { SLASH_COMMANDS } from '@/lib/config/slashCommands';
 import useAppStore from '@/stores/useAppStore';
 import PromptOptimizerDialog from './PromptOptimizerDialog';
 
-const COMMAND_META = {
-  research: { icon: Globe,  title: 'Research Mode',    desc: 'Deep web research and summarization',     color: 'text-blue-400',   bg: 'bg-blue-500/10' },
-  code:     { icon: Code2,  title: 'Code Execution',   desc: 'Run Python analysis and generate charts', color: 'text-green-400',  bg: 'bg-green-500/10' },
-  web:      { icon: Search, title: 'Web Search',       desc: 'Search latest information online',        color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  agent:    { icon: Bot,    title: 'Agent Mode',       desc: 'Autonomous multi-step reasoning agent',   color: 'text-purple-400', bg: 'bg-purple-500/10' },
+const ICON_BY_KEY = {
+  globe: Globe,
+  search: Search,
+  code: Code2,
+  bot: Bot,
 };
+
+const COLOR_TOKEN_CLASSES = {
+  sky: { color: 'text-sky-300', bg: 'bg-sky-500/12', border: 'border-sky-400/25' },
+  emerald: { color: 'text-emerald-300', bg: 'bg-emerald-500/12', border: 'border-emerald-400/25' },
+  indigo: { color: 'text-indigo-300', bg: 'bg-indigo-500/12', border: 'border-indigo-400/25' },
+  fuchsia: { color: 'text-fuchsia-300', bg: 'bg-fuchsia-500/12', border: 'border-fuchsia-400/25' },
+};
+
+const COMMAND_CATALOG = SLASH_COMMANDS.map((cmd) => ({
+  ...cmd,
+  icon: ICON_BY_KEY[cmd.iconKey] || Bot,
+  ...(COLOR_TOKEN_CLASSES[cmd.colorToken] || COLOR_TOKEN_CLASSES.sky),
+}));
+
+const COMMAND_LOOKUP = COMMAND_CATALOG.reduce((acc, cmd) => {
+  acc[cmd.command] = cmd;
+  return acc;
+}, {});
 
 const BADGE_COLORS = {
   WEB_RESEARCH:   'bg-blue-500/15 text-blue-300 border-blue-500/30',
@@ -63,7 +82,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     const trimmed = syncedValue.trim();
     const parsed = parseSlashCommand(trimmed);
     const isTypingCmd = trimmed.startsWith('/') && !trimmed.includes(' ');
-    
+
     return {
       activeCommand: parsed.command ? { label: parsed.label, intent: parsed.intent, command: parsed.command } : null,
       showDropdown: isTypingCmd
@@ -80,8 +99,22 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   const filteredCommands = useMemo(() => {
     if (!syncedValue.startsWith('/')) return [];
     const partial = syncedValue.slice(1).toLowerCase();
-    return Object.entries(COMMAND_META).filter(([cmd]) => cmd.startsWith(partial));
+    if (!partial) return COMMAND_CATALOG;
+    return COMMAND_CATALOG.filter((cmd) =>
+      cmd.command.includes(partial) ||
+      cmd.title.toLowerCase().includes(partial) ||
+      cmd.desc.toLowerCase().includes(partial) ||
+      cmd.tags.some((tag) => tag.includes(partial))
+    );
   }, [syncedValue]);
+
+  useEffect(() => {
+    setDropdownIndex((current) => {
+      if (filteredCommands.length === 0) return 0;
+      if (current >= filteredCommands.length) return 0;
+      return current;
+    });
+  }, [filteredCommands]);
 
   const selectCommand = useCallback((cmd) => {
     handleValueChange(`/${cmd} `);
@@ -116,8 +149,8 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         }
         if (e.key === 'Tab' || e.key === 'Enter') {
           e.preventDefault();
-          const [cmd] = filteredCommands[dropdownIndex] ?? filteredCommands[0];
-          selectCommand(cmd);
+          const selected = filteredCommands[dropdownIndex] ?? filteredCommands[0];
+          if (selected) selectCommand(selected.command);
           return;
         }
         if (e.key === 'Escape') {
@@ -146,7 +179,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   }, [syncedValue, handleValueChange]);
 
   return (
-    <div className="px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full sticky bottom-0 z-10 bg-gradient-to-t from-surface-50 via-surface-50/95 to-transparent">
+    <div className="workspace-chat-input-dock px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full sticky bottom-0 z-10">
       <div className="max-w-3xl w-full relative">
 
         {/* Optimize Prompt button — above the input panel, left-aligned, visible only when there's text */}
@@ -159,9 +192,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
               <button
                 onClick={() => setShowOptimizer(true)}
                 disabled={disabled || queryToOptimize.length <= 10}
-                className="inline-flex items-center gap-2 h-8 px-4 rounded-lg border transition-all duration-150
-                  bg-surface-overlay border-border text-text-secondary
-                  hover:bg-accent-muted hover:border-accent-border hover:text-accent
+                className="workspace-optimize-btn inline-flex items-center gap-2 h-8 px-4 rounded-lg border transition-all duration-150
                   disabled:opacity-40 disabled:cursor-not-allowed"
                 title={queryToOptimize.length <= 10 ? 'Type more than 10 characters to optimize' : 'Optimize your prompt with AI'}
                 aria-label="Optimize Prompt"
@@ -184,43 +215,55 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
 
         {}
         {showDropdown && filteredCommands.length > 0 && (
-          <div
-            className="absolute bottom-full mb-2 left-0 right-0 rounded-xl border overflow-hidden shadow-2xl"
-            style={{ background: 'var(--surface-raised, #1e1e2e)', borderColor: 'rgba(255,255,255,0.1)' }}
-          >
-            <div className="px-3 py-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <span className="text-[11px] font-semibold text-text-muted tracking-widest uppercase">Commands</span>
+          <div className="slash-cmd-palette absolute bottom-full mb-2 left-0 right-0 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="slash-cmd-header px-3 py-2 border-b flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-widest uppercase">Command Palette</span>
+              <span className="text-[10px] text-text-muted">Use ↑ ↓ and Enter</span>
             </div>
-            {filteredCommands.map(([cmd, meta], idx) => {
-              const Icon = meta.icon;
+            <div className="slash-cmd-list p-2">
+            {filteredCommands.map((item, idx) => {
+              const Icon = item.icon;
               const isActive = idx === dropdownIndex;
               return (
                 <button
-                  key={cmd}
-                  onMouseDown={(e) => { e.preventDefault(); selectCommand(cmd); }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                    isActive ? 'bg-white/5' : 'hover:bg-white/[0.03]'
+                  key={item.command}
+                  onMouseDown={(e) => { e.preventDefault(); selectCommand(item.command); }}
+                  className={`slash-cmd-item w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl transition-colors ${
+                    isActive ? 'slash-cmd-item-active' : ''
                   }`}
                 >
-                  <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${meta.bg}`}>
-                    <Icon size={15} className={meta.color} />
+                  <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${item.bg} ${item.border}`}>
+                    <Icon size={15} className={item.color} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-text-primary leading-snug">{meta.title}</div>
-                    <div className="text-xs text-text-muted mt-0.5">{meta.desc}</div>
+                    <div className="text-sm font-medium text-text-primary leading-snug">{item.title}</div>
+                    <div className="text-xs text-text-muted mt-0.5">{item.desc}</div>
                   </div>
-                  <kbd className="shrink-0 text-[11px] text-text-muted/50 font-mono px-1.5 py-0.5 rounded bg-black/40">
-                    /{cmd}
-                  </kbd>
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    <kbd className="slash-cmd-kbd text-[11px] font-mono px-1.5 py-0.5 rounded">
+                      /{item.command}
+                    </kbd>
+                    <CornerDownLeft className="w-3.5 h-3.5 text-text-muted/60" />
+                  </div>
                 </button>
               );
             })}
+            </div>
           </div>
         )}
 
         {}
         {activeCommand && !showDropdown && (
           <div className="flex items-center gap-2 mb-2 px-1">
+            {(() => {
+              const meta = COMMAND_LOOKUP[activeCommand.command];
+              const Icon = meta?.icon;
+              return Icon ? (
+                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md border ${meta.bg} ${meta.border}`}>
+                  <Icon size={12} className={meta.color} />
+                </span>
+              ) : null;
+            })()}
             <span
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
                 BADGE_COLORS[activeCommand.intent] || 'bg-surface-overlay text-text-muted shadow-sm'
@@ -240,10 +283,9 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
 
         {}
         <div
-          className="flex items-end gap-2 rounded-2xl border px-4 py-2.5 transition-all duration-150"
+          className="workspace-chat-input-shell flex items-end gap-2 rounded-2xl border px-4 py-2.5 transition-all duration-150"
           style={{
-            background: 'var(--surface-raised, #1e1e2e)',
-            borderColor: activeCommand ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)',
+            borderColor: activeCommand ? 'var(--accent-border)' : 'color-mix(in srgb, var(--border-strong) 70%, transparent)',
           }}
         >
           <textarea
@@ -265,7 +307,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-error/15 text-error hover:bg-error/25 transition-colors"
+              className="workspace-stop-btn shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
               title="Stop generating"
               aria-label="Stop generating"
             >
@@ -275,7 +317,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             <button
               onClick={handleSend}
               disabled={!syncedValue.trim() || disabled}
-              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-accent text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-accent/80 transition-colors"
+              className="workspace-send-btn shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title="Send message"
               aria-label="Send message"
             >

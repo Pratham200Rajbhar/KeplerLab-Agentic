@@ -3,21 +3,29 @@
 import { memo } from 'react';
 import { Loader2, X, ArrowRight } from 'lucide-react';
 
+const MATERIAL_ICON_BY_LABEL = {
+  Flashcards: 'layers',
+  'Practice Quiz': 'checklist',
+  Presentation: 'slideshow',
+  'Explainer Video': 'video_camera_front',
+  'AI Podcast': 'mic',
+  'Mind Map': 'account_tree',
+};
+
 
 export default memo(function FeatureCard({ icon, label, description, onClick, loading, onCancel, disabled, accent }) {
-  
-  const accentStyle = accent || 'var(--accent)';
+  const materialIcon = MATERIAL_ICON_BY_LABEL[label] || 'auto_awesome';
 
   return (
     <button
       onClick={loading ? undefined : onClick}
       disabled={disabled && !loading}
-      className={`group relative w-full text-left p-3 rounded-xl transition-all duration-200 overflow-hidden border ${
+      className={`workspace-studio-feature-card group relative w-full text-left p-3.5 rounded-xl transition-all duration-200 overflow-hidden border ${
         loading
           ? 'border-[var(--accent)] bg-[var(--accent-subtle)] cursor-default'
           : disabled
             ? 'border-[var(--border)] opacity-40 cursor-not-allowed'
-            : 'border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-overlay)] cursor-pointer'
+            : 'border-[var(--border)] hover:border-[var(--accent)] cursor-pointer'
       }`}
     >
       {}
@@ -29,7 +37,7 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
 
       <div className="flex items-center gap-3 relative z-10">
         {}
-        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
+        <div className={`workspace-studio-feature-icon shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
           loading
             ? 'bg-[var(--accent-subtle)]'
             : 'bg-[var(--surface-overlay)] group-hover:bg-[var(--accent-subtle)]'
@@ -37,14 +45,14 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
           {loading ? (
             <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin" />
           ) : (
-            <div className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-200">
-              {icon}
-            </div>
+            <span className="material-symbols-outlined text-[18px] text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-200">
+              {materialIcon}
+            </span>
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[var(--text-primary)] leading-tight">
+          <p className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight tracking-tight">
             {label}
           </p>
           {description && (

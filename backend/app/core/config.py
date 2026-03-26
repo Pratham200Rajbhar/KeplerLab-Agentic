@@ -114,6 +114,7 @@ class Settings(BaseSettings):
     IMAGE_GENERATION_ENDPOINT: Optional[str] = None
     WEB_SEARCH_ENDPOINT: Optional[str] = None
     WEB_SCRAPE_ENDPOINT: Optional[str] = None
+    WEB_IMAGE_SEARCH_ENDPOINT: Optional[str] = "http://16.16.144.216:8001/scrape"
 
     @field_validator("LLM_PROVIDER", mode="after")
     @classmethod

@@ -50,15 +50,15 @@ export default function ConfirmDialog() {
   const isDanger = state.variant === 'danger';
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center" role="dialog" aria-modal="true" aria-label={state.title || 'Confirm'} ref={dialogRef}>
+    <div className="modal-v2-root fixed inset-0 z-[9998] flex items-center justify-center" role="dialog" aria-modal="true" aria-label={state.title || 'Confirm'} ref={dialogRef}>
       {}
       <div
-        className="absolute inset-0 bg-[var(--backdrop)] animate-fade-in"
+        className="modal-v2-backdrop absolute inset-0 animate-fade-in"
         onClick={handleClose}
       />
 
       {}
-      <div className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] max-w-sm w-full mx-4 animate-slide-up">
+      <div className="modal-v2-shell relative max-w-sm w-full mx-4 animate-slide-up">
         <div className="p-6">
           {}
           <div className="flex items-start gap-4 mb-4">
@@ -107,17 +107,17 @@ export default function ConfirmDialog() {
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm rounded-lg border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition-colors"
+              className="workspace-dialog-btn ghost px-4 py-2 text-sm rounded-lg border text-[var(--text-secondary)]"
             >
               {state.cancelLabel}
             </button>
             <button
               onClick={handleConfirm}
               disabled={state.prompt && !inputValue.trim()}
-              className={`px-4 py-2 text-sm rounded-lg text-white font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`workspace-dialog-btn px-4 py-2 text-sm rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed ${
                 isDanger
-                  ? 'bg-[var(--danger)] hover:bg-[var(--danger-dark)]'
-                  : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]'
+                  ? 'danger'
+                  : 'primary'
               }`}
               autoFocus={!state.prompt}
             >

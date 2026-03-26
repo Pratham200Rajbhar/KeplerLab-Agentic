@@ -320,15 +320,15 @@ export default function Sidebar({ onNavigate }) {
   return (
     <>
       <aside
-        className="h-full overflow-hidden flex flex-col relative bg-surface/60 backdrop-blur-2xl text-text-primary"
+        className="workspace-sidebar-shell h-full overflow-hidden flex flex-col relative text-text-primary"
         style={{ width: `${width}px` }}
       >
         {}
-        <div className="flex items-center justify-between p-5 shrink-0 bg-surface/40">
+        <div className="workspace-sidebar-header flex items-center justify-between p-5 shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="text-text-primary font-bold text-[13px] tracking-wide uppercase">Sources</span>
             {materials.length > 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-accent/10 text-accent">
+              <span className="workspace-sidebar-count text-[10px] font-bold px-2 py-0.5 rounded-md text-accent">
                 {materials.length}
               </span>
             )}
@@ -341,7 +341,7 @@ export default function Sidebar({ onNavigate }) {
         {}
         <div className="p-4 space-y-5 relative z-10">
           <button
-            className="group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
+            className="workspace-action-button group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
             onClick={() => setShowUploadDialog(true)}
             disabled={loading.upload}
           >
@@ -360,10 +360,10 @@ export default function Sidebar({ onNavigate }) {
           </button>
 
           {}
-          <div className="p-3.5 rounded-2xl space-y-3.5 relative bg-surface-raised/30 shadow-inner">
+          <div className="workspace-search-shell p-3.5 rounded-2xl space-y-3.5 relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transform translate-x-12 -translate-y-12" />
             
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-surface shadow-sm focus-within:ring-2 focus-within:ring-accent/20 transition-all relative z-10">
+            <div className="workspace-search-input flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all relative z-10">
               <Search className="w-4 h-4 text-text-muted" />
               <input
                 type="text"
@@ -379,7 +379,7 @@ export default function Sidebar({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => setIsFileTypeDropdownOpen(!isFileTypeDropdownOpen)}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 text-[12.5px] font-semibold text-text-secondary bg-surface rounded-xl hover:text-text-primary hover:bg-surface-raised transition-all shadow-sm ring-0 hover:shadow-md"
+                  className="workspace-filetype-select w-full flex items-center justify-between px-3.5 py-2.5 text-[12.5px] font-semibold rounded-xl transition-all"
                 >
                   <div className="flex items-center gap-2.5 truncate">
                     <FileText className="w-3.5 h-3.5 text-accent" />
@@ -409,7 +409,7 @@ export default function Sidebar({ onNavigate }) {
               <button
                 onClick={() => handleSearchSubmit({ key: 'Enter' })}
                 disabled={!searchQuery.trim()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent transition-all font-bold text-[13px] disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="workspace-web-btn flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-[13px] disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <Globe className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /> <span className="tracking-wide">Web</span>
               </button>
@@ -418,7 +418,7 @@ export default function Sidebar({ onNavigate }) {
         </div>
 
         {}
-        <div className="px-5 pt-3 pb-2 flex justify-between items-center relative z-10">
+        <div className="workspace-sources-meta px-5 pt-3 pb-2 flex justify-between items-center relative z-10">
           <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em]">All Sources</span>
           <button
             onClick={() => selectedSources.length === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
@@ -439,7 +439,7 @@ export default function Sidebar({ onNavigate }) {
 
         {}
         <div
-          className={`flex-1 overflow-y-auto transition-colors ${dragActive ? 'bg-accent/5' : ''}`}
+          className={`workspace-source-list flex-1 overflow-y-auto transition-colors ${dragActive ? 'bg-accent/5' : ''}`}
           onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
         >
           {loadError && (
@@ -468,7 +468,7 @@ export default function Sidebar({ onNavigate }) {
             </div>
           ) : (
             <div className="h-full p-4 flex items-center justify-center">
-              <div className={`dropzone w-full h-full flex flex-col items-center justify-center rounded-3xl transition-all ${dragActive ? 'bg-accent/5' : 'hover:bg-surface-raised/30'}`}>
+              <div className={`workspace-dropzone dropzone w-full h-full flex flex-col items-center justify-center rounded-3xl transition-all ${dragActive ? 'bg-accent/5' : ''}`}>
                 <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mb-5 shadow-sm"><Upload className="w-7 h-7 text-text-muted" strokeWidth={1.5} /></div>
                 <p className="text-[16px] font-bold text-text-primary tracking-tight">Add sources</p>
                 <p className="text-[13.5px] text-text-muted mt-2 text-center max-w-[200px] leading-relaxed font-medium">Upload PDFs, docs, or text files to get started.</p>
@@ -491,9 +491,9 @@ export default function Sidebar({ onNavigate }) {
 
       {}
       {showTextModal && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-all duration-[280ms] ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closePreviewModal}>
-          <div className={`bg-surface rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative shadow-[0_8px_60px_rgba(0,0,0,0.4)] transition-all duration-[280ms] ${modalVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-5'}`} onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-border bg-surface/90 backdrop-blur-xl z-10 shrink-0">
+        <div className={`workspace-doc-preview-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-[280ms] ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closePreviewModal}>
+          <div className={`workspace-doc-preview-shell rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative transition-all duration-[280ms] ${modalVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-5'}`} onClick={(e) => e.stopPropagation()}>
+            <div className="workspace-doc-preview-header p-4 sm:p-5 flex items-center justify-between border-b border-border z-10 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 rounded-xl bg-accent-subtle text-accent-light shrink-0">
                   <FileText className="w-5 h-5" />
@@ -513,7 +513,7 @@ export default function Sidebar({ onNavigate }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto bg-surface relative z-10 p-5 sm:p-8 custom-scrollbar">
+            <div className="workspace-doc-preview-body flex-1 overflow-y-auto relative z-10 p-5 sm:p-8 custom-scrollbar">
               {modalLoading ? (
                 <div className="flex flex-col items-center justify-center h-full gap-5">
                   <div className="relative">
@@ -528,7 +528,7 @@ export default function Sidebar({ onNavigate }) {
                 </div>
               )}
             </div>
-            <div className="px-4 py-3 bg-surface/95 backdrop-blur-xl flex items-center justify-between border-t border-border z-10 shrink-0">
+            <div className="workspace-doc-preview-footer px-4 py-3 flex items-center justify-between border-t border-border z-10 shrink-0">
               <p className="text-[12px] text-text-muted">Press <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border text-[11px] font-mono">Esc</kbd> to close</p>
               <button onClick={closePreviewModal} className="px-4 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close</button>
             </div>

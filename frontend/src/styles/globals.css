@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -940,6 +942,1031 @@ select,
   }
 }
 
+/* Notebook Workspace Shell */
+.notebook-workspace-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.notebook-workspace-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(55% 38% at 14% -8%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 72%),
+    radial-gradient(50% 40% at 92% 4%, rgba(34, 211, 238, 0.09), transparent 76%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, #020202 12%) 0%, var(--surface) 32%, var(--surface) 100%);
+}
+
+.workspace-panels-shell {
+  position: relative;
+  z-index: 1;
+  gap: 8px;
+  padding: 8px;
+}
+
+.workspace-meta-strip {
+  position: relative;
+  z-index: 2;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 68%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.workspace-meta-strip-elevated {
+  margin: 8px 8px 0;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
+  height: 38px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.workspace-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 38%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-overlay) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.workspace-meta-chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-meta-chip-glow {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: linear-gradient(135deg, var(--accent-subtle), color-mix(in srgb, rgba(34, 211, 238, 0.2) 25%, transparent));
+}
+
+.workspace-sidebar-shell,
+.workspace-chat-shell,
+.workspace-studio-shell {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 74%, transparent);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+}
+
+.workspace-sidebar-shell {
+  background:
+    radial-gradient(120% 90% at -10% -20%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%),
+    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 88%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+}
+
+.workspace-sidebar-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+}
+
+.workspace-sidebar-count {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+}
+
+.workspace-action-button {
+  border: 1px solid color-mix(in srgb, var(--accent-border) 95%, transparent);
+  box-shadow: 0 14px 24px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.workspace-search-shell {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--surface-raised) 82%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+}
+
+.workspace-search-input {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.workspace-filetype-select {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.workspace-filetype-select:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent-border) 80%, transparent);
+}
+
+.workspace-web-btn {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-border) 85%, transparent);
+}
+
+.workspace-web-btn:hover {
+  background: color-mix(in srgb, var(--accent-subtle) 68%, transparent);
+}
+
+.workspace-sources-meta {
+  border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+}
+
+.workspace-source-list {
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--surface-sunken) 26%, transparent) 100%);
+}
+
+.workspace-dropzone {
+  border: 1px dashed color-mix(in srgb, var(--border-strong) 80%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 62%, transparent);
+}
+
+.workspace-dropzone:hover {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--accent-subtle) 35%, transparent);
+}
+
+.workspace-source-item {
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.workspace-source-item:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 65%, transparent);
+}
+
+.workspace-source-item-selected {
+  border-color: var(--accent-border);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent-subtle) 70%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent));
+}
+
+.workspace-source-icon {
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.workspace-source-menu-btn {
+  border: 1px solid transparent;
+}
+
+.workspace-source-menu-btn:hover {
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.workspace-source-menu {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 84%, transparent);
+}
+
+.workspace-source-check {
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+}
+
+.workspace-chat-shell {
+  background:
+    radial-gradient(130% 120% at 10% -25%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface) 84%, transparent));
+}
+
+.workspace-chat-column {
+  border-left: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+.workspace-chat-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background:
+    linear-gradient(130deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
+}
+
+.workspace-session-chip {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+}
+
+.workspace-pill-btn {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 58%, transparent);
+  color: var(--text-secondary);
+}
+
+.workspace-pill-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.workspace-icon-btn {
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 58%, transparent);
+}
+
+.workspace-icon-btn:hover {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--accent-subtle) 45%, transparent);
+}
+
+.workspace-empty-shell {
+  background:
+    radial-gradient(100% 85% at 0% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 64%);
+}
+
+.workspace-empty-card {
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.26);
+}
+
+.workspace-chat-input-dock {
+  background: linear-gradient(to top, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface) 72%, transparent) 55%, transparent);
+}
+
+.workspace-optimize-btn {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  border-color: color-mix(in srgb, var(--border) 86%, transparent);
+  color: var(--text-secondary);
+}
+
+.workspace-optimize-btn:hover {
+  background: var(--accent-muted);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.workspace-chat-input-shell {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+}
+
+.workspace-send-btn {
+  background: linear-gradient(140deg, var(--accent-dark), var(--accent), color-mix(in srgb, #22d3ee 24%, var(--accent-light)));
+}
+
+.workspace-send-btn:hover {
+  filter: brightness(1.06);
+}
+
+.workspace-stop-btn {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger-subtle) 75%, transparent);
+}
+
+.workspace-stop-btn:hover {
+  background: color-mix(in srgb, var(--danger-subtle) 95%, transparent);
+}
+
+.workspace-studio-shell {
+  background:
+    radial-gradient(130% 120% at 100% -22%, rgba(34, 211, 238, 0.08), transparent 55%),
+    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+}
+
+.workspace-studio-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+}
+
+.workspace-studio-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 86%, transparent);
+  border: 1px solid var(--accent-border);
+}
+
+.workspace-studio-body {
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--surface-sunken) 20%, transparent) 100%);
+}
+
+.workspace-studio-lead {
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 58%, transparent);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.workspace-studio-actions {
+  margin-top: 8px;
+}
+
+.workspace-studio-feature-card {
+  border-color: color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: none;
+}
+
+.workspace-studio-feature-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(0);
+  background: color-mix(in srgb, var(--surface-overlay) 50%, transparent);
+  box-shadow: none;
+}
+
+.workspace-studio-feature-icon {
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: transparent;
+}
+
+.workspace-studio-history {
+  border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  padding-top: 6px;
+}
+
+.workspace-studio-history-item {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--surface-overlay) 32%, transparent);
+}
+
+.workspace-studio-history-item:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+}
+
+.workspace-studio-dialog-form {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.workspace-studio-dialog-header {
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 84%, transparent);
+}
+
+.workspace-studio-dialog-body {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+}
+
+.workspace-studio-dialog-footer {
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  border-top-color: color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.workspace-studio-input {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  border-color: color-mix(in srgb, var(--border-strong) 80%, transparent);
+}
+
+.workspace-studio-input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-subtle) 90%, transparent);
+}
+
+.workspace-studio-segment {
+  border-color: color-mix(in srgb, var(--border-strong) 80%, transparent);
+}
+
+.workspace-dialog-section {
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.workspace-dialog-toggle {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.workspace-dialog-range {
+  appearance: none;
+  height: 6px;
+  background: color-mix(in srgb, var(--surface-overlay) 74%, transparent);
+  border-radius: 999px;
+  outline: none;
+}
+
+.workspace-dialog-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.workspace-dialog-number {
+  background: color-mix(in srgb, var(--surface-overlay) 76%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+}
+
+.workspace-dialog-btn {
+  transition: all 0.16s ease;
+}
+
+.workspace-dialog-btn.primary {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent), var(--accent-light));
+  border: 1px solid var(--accent-border);
+}
+
+.workspace-dialog-btn.primary:hover {
+  filter: brightness(1.03);
+}
+
+.workspace-dialog-btn.ghost {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  color: var(--text-secondary);
+}
+
+.workspace-dialog-btn.ghost:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 86%, transparent);
+  color: var(--text-primary);
+}
+
+.workspace-dialog-btn.danger {
+  background: color-mix(in srgb, var(--danger-subtle) 80%, transparent);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.studio-dialog-v3 {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 94%, transparent), color-mix(in srgb, var(--surface-overlay) 70%, transparent));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(86vh, 920px);
+}
+
+.studio-dialog-v3-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background:
+    radial-gradient(85% 120% at 0% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+    color-mix(in srgb, var(--surface-raised) 90%, transparent);
+}
+
+.studio-dialog-v3-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid var(--accent-border);
+  background: color-mix(in srgb, var(--accent-subtle) 88%, transparent);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.studio-dialog-v3-title {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 650;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-dialog-v3-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-dialog-v3-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.16s ease;
+}
+
+.studio-dialog-v3-close:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+}
+
+.studio-dialog-v3-body {
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.studio-dialog-v3-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.studio-dialog-v3-grid.two-col {
+  grid-template-columns: 1fr;
+}
+
+.studio-dialog-v3-section {
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 13px;
+  padding: 12px;
+  background: linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 95%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
+  overflow: hidden;
+}
+
+.studio-dialog-v3-label-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.studio-dialog-v3-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+
+.studio-dialog-v3-label-muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.studio-dialog-v3-input,
+.studio-dialog-v3-select,
+.studio-dialog-v3-textarea,
+.studio-dialog-v3-number {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: all 0.16s ease;
+}
+
+.studio-dialog-v3-input,
+.studio-dialog-v3-select,
+.studio-dialog-v3-number {
+  padding: 9px 11px;
+}
+
+.studio-dialog-v3-textarea {
+  padding: 10px 11px;
+  min-height: 88px;
+  resize: none;
+}
+
+.studio-dialog-v3-input:focus,
+.studio-dialog-v3-select:focus,
+.studio-dialog-v3-textarea:focus,
+.studio-dialog-v3-number:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-subtle) 90%, transparent);
+}
+
+.studio-dialog-v3-toggle {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+  border-radius: 999px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.studio-dialog-v3-toggle input {
+  width: 12px;
+  height: 12px;
+  accent-color: var(--accent);
+}
+
+.studio-dialog-v3-range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.studio-dialog-v3-range {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-overlay) 74%, transparent);
+  outline: none;
+}
+
+.studio-dialog-v3-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.studio-dialog-v3-segments {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.studio-dialog-v3-segment {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 8px 10px;
+  transition: all 0.16s ease;
+}
+
+.studio-dialog-v3-segment:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent-border) 80%, transparent);
+}
+
+.studio-dialog-v3-segment.active {
+  color: #ffffff;
+  border-color: var(--accent-border);
+  background: linear-gradient(140deg, var(--accent-dark), var(--accent), var(--accent-light));
+}
+
+.studio-dialog-v3-note {
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-border) 72%, transparent);
+  background: color-mix(in srgb, var(--accent-subtle) 82%, transparent);
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.studio-dialog-v3-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  flex: 0 0 auto;
+}
+
+.studio-dialog-v3-btn {
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+
+.studio-dialog-v3-btn.ghost {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  color: var(--text-secondary);
+}
+
+.studio-dialog-v3-btn.ghost:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 86%, transparent);
+  color: var(--text-primary);
+}
+
+.studio-dialog-v3-btn.primary {
+  color: #ffffff;
+  border-color: var(--accent-border);
+  background: linear-gradient(140deg, var(--accent-dark), var(--accent), var(--accent-light));
+}
+
+.studio-dialog-v3-btn.primary:hover {
+  filter: brightness(1.04);
+}
+
+.studio-dialog-v3-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (min-width: 780px) {
+  .studio-dialog-v3-grid.two-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .studio-dialog-v3 {
+    max-height: calc(100vh - 22px);
+  }
+
+  .studio-dialog-v3-header {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .studio-dialog-v3-title,
+  .studio-dialog-v3-subtitle {
+    white-space: normal;
+  }
+
+  .studio-dialog-v3-body,
+  .studio-dialog-v3-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .studio-dialog-v3-segments {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.workspace-history-sidebar {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 78%, transparent);
+  border-radius: 16px;
+  margin: 8px;
+  background:
+    radial-gradient(120% 100% at 0% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.workspace-history-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+}
+
+.workspace-history-count {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+}
+
+.workspace-history-cta {
+  border: 1px solid var(--accent-border);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.workspace-history-search-input {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.workspace-history-search-input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-subtle) 90%, transparent);
+}
+
+.workspace-history-clear {
+  background: color-mix(in srgb, var(--surface-overlay) 75%, transparent);
+}
+
+.workspace-history-list {
+  border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+}
+
+.workspace-history-item {
+  border-color: transparent;
+}
+
+.workspace-history-item:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+}
+
+.workspace-history-item-active {
+  border-color: var(--accent-border);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent-subtle) 68%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+}
+
+.workspace-upload-overlay {
+  background: color-mix(in srgb, var(--backdrop) 100%, transparent);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.workspace-upload-shell {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+  background:
+    radial-gradient(120% 120% at -10% -20%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 70%, transparent));
+  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.42);
+}
+
+.workspace-upload-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+}
+
+.workspace-upload-tabs {
+  background: color-mix(in srgb, var(--surface-overlay) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.workspace-upload-tab {
+  border: 1px solid transparent;
+}
+
+.workspace-upload-tab-active {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border-color: color-mix(in srgb, var(--accent-border) 75%, transparent);
+}
+
+.workspace-upload-dropzone {
+  border: 1px dashed color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 30%, transparent);
+}
+
+.workspace-upload-dropzone:hover {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--accent-subtle) 30%, transparent);
+}
+
+.workspace-upload-drop-icon {
+  background: color-mix(in srgb, var(--surface-overlay) 80%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.workspace-upload-format-item {
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 64%, transparent);
+}
+
+.workspace-upload-primary {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent), var(--accent-light));
+}
+
+.workspace-upload-loading {
+  background: color-mix(in srgb, var(--backdrop) 85%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.workspace-websearch-shell {
+  border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+}
+
+.workspace-websearch-results {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
+}
+
+.workspace-websearch-item {
+  border: 1px solid transparent;
+}
+
+.workspace-websearch-item:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 80%, transparent);
+}
+
+.workspace-websearch-check {
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+}
+
+.workspace-websearch-preview {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 78%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+}
+
+.workspace-websearch-footer {
+  border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+}
+
+.workspace-websearch-cancel {
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 66%, transparent);
+}
+
+.workspace-websearch-cancel:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+}
+
+.workspace-websearch-add {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent), var(--accent-light));
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.workspace-websearch-open-doc {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--surface-raised) 95%, #ffffff 5%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+}
+
+.workspace-websearch-open-doc:hover {
+  border-color: var(--accent-border);
+}
+
+.workspace-websearch-open-link {
+  background: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+}
+
+.workspace-websearch-open-link:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+}
+
+.workspace-doc-preview-overlay {
+  background: color-mix(in srgb, var(--backdrop) 90%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.workspace-doc-preview-shell {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.44);
+}
+
+.workspace-doc-preview-header,
+.workspace-doc-preview-footer {
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.workspace-doc-preview-body {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
+.modal-v2-backdrop {
+  background: color-mix(in srgb, var(--backdrop) 96%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-v2-shell {
+  background:
+    radial-gradient(120% 100% at 0% -20%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 93%, transparent), color-mix(in srgb, var(--surface-overlay) 70%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.35);
+}
+
+.modal-v2-header,
+.modal-v2-footer {
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+}
+
+.modal-v2-body {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
+.modal-v2-close:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 76%, transparent);
+}
+
+@media (max-width: 768px) {
+  .workspace-meta-strip {
+    padding: 0 10px;
+  }
+
+  .workspace-meta-chip {
+    max-width: 46%;
+  }
+
+  .workspace-panels-shell {
+    gap: 0;
+    padding: 0;
+  }
+
+  .workspace-sidebar-shell,
+  .workspace-chat-shell,
+  .workspace-studio-shell {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .workspace-history-sidebar {
+    margin: 0;
+    border-radius: 0;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
+  }
+
+  .workspace-websearch-preview {
+    display: none;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    COMPONENT-LEVEL CUSTOM CLASSES
    ═══════════════════════════════════════════════════════ */
@@ -1044,9 +2071,9 @@ select,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  background: var(--surface-raised);
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 70%, transparent));
   flex-shrink: 0;
 }
 
@@ -1055,14 +2082,14 @@ select,
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+  font-family: var(--font-headline), "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 .glass-light {
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -1329,6 +2356,62 @@ select,
   transform: translateY(-1px);
 }
 
+.notebook-card-lux {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 95%, transparent), color-mix(in srgb, var(--surface-overlay) 78%, transparent));
+}
+
+.notebook-card-lux::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-border) 60%, transparent), transparent);
+  pointer-events: none;
+}
+
+.notebook-thumb-image {
+  transition: transform 320ms ease;
+}
+
+.notebook-card:hover .notebook-thumb-image {
+  transform: scale(1.04);
+}
+
+.notebook-thumb-fallback::before {
+  content: '';
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 999px;
+  right: -35px;
+  top: -35px;
+  border: 1px dashed color-mix(in srgb, var(--accent-border) 75%, transparent);
+  opacity: 0.55;
+}
+
+.notebook-time-chip {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.notebook-cover-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  font-size: 10px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--text-muted) 82%, var(--text-primary) 18%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 80%, transparent);
+  border-radius: 999px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Auth ── */
 .auth-container {
   min-height: 100vh;
@@ -1345,74 +2428,481 @@ select,
 }
 
 /* ── Auth Split-Screen Layout ── */
-.auth-split {
+.auth-orbit-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(1200px 680px at -12% -20%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%),
+    radial-gradient(820px 480px at 110% 0%, color-mix(in srgb, #22d3ee 18%, transparent), transparent 70%),
+    linear-gradient(175deg, var(--surface-sunken) 0%, var(--surface) 55%, var(--surface-50) 100%);
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
-  .auth-split {
+  .auth-orbit-shell {
     flex-direction: row;
   }
 
-  .auth-split-left {
-    flex: 1;
+  .auth-orbit-left {
+    flex: 1 1 58%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 3rem;
-    background: var(--surface-sunken);
-    border-right: 1px solid var(--border);
+    padding: 2.75rem;
+    border-right: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
     position: relative;
     overflow: hidden;
+    isolation: isolate;
   }
 
-  .auth-split-left::before {
+  .auth-orbit-noise {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 90%);
+  }
+
+  .auth-orbit-left::before {
     content: '';
     position: absolute;
-    top: -20%;
-    left: -10%;
-    width: 60%;
-    height: 60%;
-    background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
+    top: -28%;
+    left: -24%;
+    width: 78%;
+    height: 78%;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 28%, transparent) 0%, transparent 72%);
     pointer-events: none;
+    z-index: 0;
   }
 
-  .auth-split-left::after {
+  .auth-orbit-left::after {
     content: '';
     position: absolute;
-    bottom: -10%;
-    right: -10%;
-    width: 40%;
-    height: 40%;
-    background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.05) 0%, transparent 70%);
+    bottom: -22%;
+    right: -14%;
+    width: 64%;
+    height: 64%;
+    background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.16) 0%, transparent 72%);
     pointer-events: none;
+    z-index: 0;
   }
 
-  .auth-split-right {
-    flex: 1;
+  .auth-orbit-right {
+    flex: 1 1 42%;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
-    background: var(--surface);
+    padding: 1.5rem 1.75rem;
+    position: relative;
+  }
+}
+
+@media (min-width: 1280px) {
+  .auth-orbit-left {
+    padding: 3rem;
+  }
+
+  .auth-orbit-right {
+    padding: 2rem 2.25rem;
   }
 }
 
 @media (max-width: 767px) {
-  .auth-split-left {
+  .auth-orbit-left {
     display: none;
   }
 
-  .auth-split-right {
+  .auth-orbit-right {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
-    background: var(--surface);
+    padding: 1.25rem;
   }
+}
+
+.auth-orbit-brand,
+.auth-orbit-hero,
+.auth-orbit-grid,
+.auth-orbit-badge {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-orbit-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.auth-orbit-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent-light));
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.auth-orbit-kicker {
+  font-family: var(--font-headline), "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.auth-orbit-subkicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.auth-orbit-title {
+  max-width: 24ch;
+  font-family: var(--font-headline), "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: clamp(1.7rem, 2.35vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+
+.auth-orbit-description {
+  margin-top: 10px;
+  max-width: 52ch;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.auth-orbit-hero {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent-border) 70%, var(--border) 30%);
+  background:
+    radial-gradient(150% 100% at 0% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 54%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent));
+  padding: 16px 18px 15px;
+  overflow: hidden;
+}
+
+.auth-orbit-hero::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  top: -30px;
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--accent-border) 75%, transparent);
+  opacity: 0.7;
+}
+
+.auth-orbit-hero-chip {
+  width: fit-content;
+  margin-bottom: 8px;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 5px 9px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+}
+
+.auth-orbit-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.auth-orbit-feature {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  padding: 8px 9px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: linear-gradient(170deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+  backdrop-filter: blur(8px);
+  transition: transform 0.16s ease, border-color 0.16s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-orbit-feature:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-border);
+}
+
+.auth-orbit-feature::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.05) 50%, transparent 65%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.auth-orbit-feature:hover::before {
+  opacity: 1;
+}
+
+.auth-orbit-feature-xl {
+  grid-column: span 3;
+}
+
+.auth-orbit-feature-md {
+  grid-column: span 2;
+}
+
+.auth-orbit-feature-lg {
+  grid-column: span 3;
+}
+
+.auth-orbit-feature-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border);
+}
+
+.auth-orbit-feature-copy h4 {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.auth-orbit-feature-copy p {
+  margin-top: 1px;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
+.auth-orbit-badge {
+  margin-top: 12px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 85%, transparent);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .auth-orbit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .auth-orbit-feature-xl,
+  .auth-orbit-feature-md,
+  .auth-orbit-feature-lg {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 980px) {
+  .auth-orbit-left {
+    padding: 2rem 1.25rem;
+  }
+
+  .auth-orbit-right {
+    padding: 1.25rem;
+  }
+
+  .auth-orbit-card {
+    width: min(100%, 520px);
+  }
+}
+
+.auth-orbit-card {
+  width: min(100%, 430px);
+  border-radius: 20px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 75%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-orbit-card-glow {
+  position: absolute;
+  inset: -45% auto auto -18%;
+  width: 72%;
+  height: 60%;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%);
+}
+
+.auth-orbit-topbar {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-overlay) 75%, transparent);
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.auth-orbit-mode {
+  border: none;
+  border-radius: 9px;
+  padding: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.18s ease;
+}
+
+.auth-orbit-mode.active {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: var(--text-inverse);
+}
+
+.auth-orbit-form-title {
+  font-family: var(--font-headline), "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.auth-orbit-form-subtitle {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.auth-orbit-input {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  border-color: color-mix(in srgb, var(--border-strong) 75%, transparent);
+}
+
+.auth-orbit-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 70%, transparent);
+}
+
+.auth-orbit-eye {
+  color: var(--text-muted);
+  transition: color 0.18s ease;
+}
+
+.auth-orbit-eye:hover {
+  color: var(--text-secondary);
+}
+
+.auth-orbit-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-inverse);
+  background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 60%, var(--accent-light) 100%);
+  cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 14px 26px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.auth-orbit-submit:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.auth-orbit-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.auth-orbit-alert {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.auth-orbit-alert.success {
+  background: var(--success-subtle);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+}
+
+.auth-orbit-alert.warn {
+  background: var(--warning-subtle, rgba(234, 179, 8, 0.08));
+  border: 1px solid var(--warning-border, rgba(234, 179, 8, 0.25));
+  color: var(--warning, #ca8a04);
+}
+
+.auth-orbit-alert.danger {
+  background: var(--danger-subtle);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-light);
+}
+
+.auth-orbit-switch-copy {
+  color: var(--text-muted);
+}
+
+.auth-orbit-switch {
+  color: var(--accent);
+}
+
+.auth-orbit-switch:hover {
+  color: var(--accent-light);
+}
+
+.auth-orbit-legal {
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 0.71rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 /* ── Source Item ── */
@@ -2986,6 +4476,45 @@ select,
   padding: 0.375rem;
 }
 
+.slash-cmd-palette {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 94%, transparent), color-mix(in srgb, var(--surface-overlay) 72%, transparent));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+}
+
+.slash-cmd-header {
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+  color: color-mix(in srgb, var(--text-muted) 86%, var(--accent) 14%);
+}
+
+.slash-cmd-list {
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
+
+.slash-cmd-item {
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.slash-cmd-item:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 68%, transparent);
+}
+
+.slash-cmd-item-active {
+  border-color: var(--accent-border);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-subtle) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 66%, transparent));
+}
+
+.slash-cmd-kbd {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  color: var(--text-muted);
+}
+
 .slash-pills {
   display: flex;
   flex-wrap: wrap;
@@ -3164,4 +4693,56 @@ MINDMAP ANIMATIONS
 
 .mindmap-edge-group {
   animation: mindnode-enter 0.3s ease-out both;
+}
+
+/* ═══════════════════════════════════════════════════════
+   STITCH LANDING PAGE - CUSTOM CSS
+   ═══════════════════════════════════════════════════════ */
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.stitch-glass-card {
+  background: rgba(6, 25, 20, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+.stitch-bg-animate {
+  background: radial-gradient(circle at 50% 50%, #064e3b 0%, #040d0a 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.stitch-blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: stitch-move 25s infinite alternate ease-in-out;
+}
+
+@keyframes stitch-move {
+  from { transform: translate(-10%, -10%) scale(1); }
+  to { transform: translate(20%, 20%) scale(1.2); }
 }

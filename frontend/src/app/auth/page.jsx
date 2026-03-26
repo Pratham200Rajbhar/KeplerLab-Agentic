@@ -3,86 +3,126 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useAuthStore from '@/stores/useAuthStore';
-import { Layers, CheckCircle, Brain, GraduationCap, Sparkles, BookOpen, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import {
+  Layers,
+  CheckCircle,
+  Brain,
+  GraduationCap,
+  Sparkles,
+  BookOpen,
+  Presentation,
+  FlaskConical,
+  Network,
+  Compass,
+  Search,
+  FileText,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+} from 'lucide-react';
 
 
 const features = [
   {
     icon: Brain,
     title: 'AI Chat',
-    desc: 'Ask questions about your documents and get instant answers.',
+    desc: 'Document-aware answers',
   },
   {
     icon: GraduationCap,
-    title: 'Podcast Generation',
-    desc: 'Turn any document into a podcast-style audio summary.',
+    title: 'Podcast Studio',
+    desc: 'Audio summaries from notes',
   },
   {
     icon: BookOpen,
     title: 'Smart Notebooks',
-    desc: 'Organize, annotate, and collaborate on your study materials.',
+    desc: 'Organize and annotate',
+  },
+  {
+    icon: FileText,
+    title: 'Flashcards',
+    desc: 'Auto-generated study cards',
+  },
+  {
+    icon: FlaskConical,
+    title: 'Quizzes',
+    desc: 'Practice tests in one click',
+  },
+  {
+    icon: Network,
+    title: 'Mind Maps',
+    desc: 'Visual concept linking',
+  },
+  {
+    icon: Presentation,
+    title: 'PPT Builder',
+    desc: 'Slides from your sources',
+  },
+  {
+    icon: Compass,
+    title: 'Research Agent',
+    desc: 'Guided deep research',
+  },
+  {
+    icon: Search,
+    title: 'Web Search',
+    desc: 'Fetch fresh references',
   },
 ];
 
 function AuthLeftPanel() {
-  return (
-    <div className="auth-split-left">
-      {}
-      <div className="relative z-10 mb-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--accent)' }}
-          >
-            <Layers className="w-5 h-5" style={{ color: 'var(--text-inverse)' }} />
-          </div>
-          <span className="text-lg font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            KeplerLab
-          </span>
-        </div>
+  const featureSizeClass = (index) => {
+    if (index < 2) return 'auth-orbit-feature-xl';
+    if (index < 5) return 'auth-orbit-feature-md';
+    return 'auth-orbit-feature-lg';
+  };
 
-        <h2
-          className="text-2xl md:text-3xl font-semibold tracking-tight mb-3"
-          style={{ color: 'var(--text-primary)', lineHeight: 1.25 }}
-        >
-          Your AI-powered<br />learning workspace
+  return (
+    <div className="auth-orbit-left">
+      <div className="auth-orbit-noise" />
+
+      <div className="auth-orbit-brand animate-slide-up">
+        <div className="auth-orbit-logo">
+          <Layers className="w-5 h-5" style={{ color: 'var(--text-inverse)' }} />
+        </div>
+        <div>
+          <p className="auth-orbit-kicker">KeplerLab AI Notebook</p>
+          <p className="auth-orbit-subkicker">Study OS</p>
+        </div>
+      </div>
+
+      <div className="auth-orbit-hero animate-slide-up" style={{ animationDelay: '90ms' }}>
+        <div className="auth-orbit-hero-chip">AI Study Workspace</div>
+        <h2 className="auth-orbit-title">
+          Learn faster with an AI workspace built like a mission control room.
         </h2>
-        <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Upload documents, generate podcasts, and study smarter with AI assistance.
+        <p className="auth-orbit-description">
+          Upload class notes, generate podcasts, and map concepts in one focused workflow.
         </p>
       </div>
 
-      {}
-      <div className="relative z-10 space-y-4">
-        {features.map(({ icon: Icon, title, desc }) => (
+      <div className="auth-orbit-grid">
+        {features.map(({ icon: Icon, title, desc }, idx) => (
           <div
             key={title}
-            className="flex items-start gap-3.5 p-3.5 rounded-xl transition-colors duration-200"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-light)' }}
+            className={`auth-orbit-feature ${featureSizeClass(idx)} animate-slide-up`}
+            style={{ animationDelay: `${90 + idx * 35}ms` }}
           >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}
-            >
+            <div className="auth-orbit-feature-icon" aria-hidden="true">
               <Icon className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             </div>
-            <div>
-              <h4 className="text-sm font-medium mb-0.5" style={{ color: 'var(--text-primary)' }}>{title}</h4>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+            <div className="auth-orbit-feature-copy">
+              <h4>{title}</h4>
+              <p>{desc}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {}
-      <div className="mt-10 relative z-10">
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-          style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}
-        >
-          <Sparkles className="w-3 h-3" />
-          Powered by AI
-        </div>
+      <div className="auth-orbit-badge animate-slide-up" style={{ animationDelay: '340ms' }}>
+        <Sparkles className="w-3.5 h-3.5" />
+        Adaptive AI assistance enabled
       </div>
     </div>
   );
@@ -151,66 +191,58 @@ function AuthForm() {
 
   if (isAuthenticated) return null;
 
-  
   return (
-    <div className="auth-split-right">
-      <div className="w-full max-w-sm mx-auto">
-        {}
-        {signupDone && (
-          <div
-            className="mb-6 p-3.5 rounded-xl flex items-start gap-2.5 text-sm animate-fade-in"
-            style={{
-              background: 'var(--success-subtle)',
-              border: '1px solid var(--success-border)',
-              color: 'var(--success)',
-            }}
+    <div className="auth-orbit-right">
+      <div className="auth-orbit-card animate-slide-up">
+        <div className="auth-orbit-card-glow" />
+
+        <div className="auth-orbit-topbar">
+          <button
+            type="button"
+            onClick={() => setIsLogin(true)}
+            className={`auth-orbit-mode ${isLogin ? 'active' : ''}`}
           >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsLogin(false)}
+            className={`auth-orbit-mode ${!isLogin ? 'active' : ''}`}
+          >
+            Create account
+          </button>
+        </div>
+
+        {signupDone && (
+          <div className="auth-orbit-alert success animate-fade-in">
             <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>Account created successfully. Please sign in.</span>
           </div>
         )}
 
-        {}
         {sessionExpired && !signupDone && (
-          <div
-            className="mb-6 p-3.5 rounded-xl flex items-start gap-2.5 text-sm animate-fade-in"
-            style={{
-              background: 'var(--warning-subtle, rgba(234,179,8,0.08))',
-              border: '1px solid var(--warning-border, rgba(234,179,8,0.25))',
-              color: 'var(--warning, #ca8a04)',
-            }}
-          >
-            <span className="flex-shrink-0 mt-0.5">⚠️</span>
+          <div className="auth-orbit-alert warn animate-fade-in">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>Your session has expired. Please sign in again to continue.</span>
           </div>
         )}
 
-        {}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+        <div className="mb-5">
+          <h2 className="auth-orbit-form-title">
             {isLogin ? 'Welcome back' : 'Create account'}
           </h2>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <p className="auth-orbit-form-subtitle">
             {isLogin ? 'Sign in to continue to KeplerLab' : 'Get started with a free account'}
           </p>
         </div>
 
-        {}
         {error && (
-          <div
-            className="mb-4 p-3 rounded-xl text-sm animate-fade-in"
-            style={{
-              background: 'var(--danger-subtle)',
-              border: '1px solid var(--danger-border)',
-              color: 'var(--danger-light)',
-            }}
-          >
+          <div className="auth-orbit-alert danger animate-fade-in">
             {typeof error === 'object' ? error.message || 'An error occurred' : error}
           </div>
         )}
 
-        {}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-3.5 relative z-10">
           <div>
             <label className="form-label">Email</label>
             <input
@@ -218,7 +250,7 @@ function AuthForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="input w-full"
+              className="input auth-orbit-input w-full"
               required
             />
           </div>
@@ -231,7 +263,7 @@ function AuthForm() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose a username"
-                className="input w-full"
+                className="input auth-orbit-input w-full"
                 required
               />
             </div>
@@ -245,14 +277,13 @@ function AuthForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="input w-full pr-10"
+                className="input auth-orbit-input w-full pr-10"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ color: 'var(--text-muted)' }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 auth-orbit-eye"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -262,7 +293,7 @@ function AuthForm() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2 py-2.5"
+            className="auth-orbit-submit w-full"
           >
             {loading ? (
               <>
@@ -278,19 +309,17 @@ function AuthForm() {
           </button>
         </form>
 
-        {}
-        <p className="text-center mt-5 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-center mt-5 text-sm auth-orbit-switch-copy">
           {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
           <button
             onClick={switchMode}
-            className="font-medium transition-colors"
-            style={{ color: 'var(--accent)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-light)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+            className="font-medium transition-colors auth-orbit-switch"
           >
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+
+        <p className="auth-orbit-legal">By continuing, you agree to secure session handling and encrypted credential flow.</p>
       </div>
     </div>
   );
@@ -305,7 +334,7 @@ export default function AuthPage() {
         </div>
       }
     >
-      <div className="auth-split min-h-screen">
+      <div className="auth-orbit-shell min-h-screen">
         <AuthLeftPanel />
         <AuthForm />
       </div>

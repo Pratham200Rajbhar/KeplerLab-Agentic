@@ -8,7 +8,7 @@ import useAppStore from '@/stores/useAppStore';
 import { getNotebook } from '@/lib/api/notebooks';
 import Header from '@/components/layout/Header';
 import { PanelErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { X, Menu } from 'lucide-react';
+import { X, Menu, Sparkles, BookOpen, CheckCircle2 } from 'lucide-react';
 
 
 const Sidebar = dynamic(() => import('@/components/layout/Sidebar'), { ssr: false });
@@ -27,9 +27,17 @@ export default function NotebookPage() {
   const resetForNotebookSwitch = useAppStore((s) => s.resetForNotebookSwitch);
   const newlyCreatedNotebookId = useAppStore((s) => s.newlyCreatedNotebookId);
   const setNewlyCreatedNotebookId = useAppStore((s) => s.setNewlyCreatedNotebookId);
+  const selectedSources = useAppStore((s) => s.selectedSources);
+  const materials = useAppStore((s) => s.materials);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const selectedCount = selectedSources.length;
+
+  const completedSelectedCount = selectedSources.filter((sourceId) => {
+    const material = materials.find((m) => m.id === sourceId);
+    return material?.status === 'completed';
+  }).length;
 
   
   useEffect(() => {
@@ -92,9 +100,27 @@ export default function NotebookPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-surface">
+    <div className="h-screen flex flex-col overflow-hidden bg-surface notebook-workspace-shell">
+      <div className="notebook-workspace-atmosphere" aria-hidden="true" />
       <Header user={user} onBack={handleBack} />
-      <div className="flex-1 flex overflow-hidden workspace-panels">
+      <div className="workspace-meta-strip workspace-meta-strip-elevated">
+        <div className="workspace-meta-chip">
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>{currentNotebook?.name || 'Notebook'}</span>
+        </div>
+        <div className="workspace-meta-chip">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>{completedSelectedCount} ready source{completedSelectedCount === 1 ? '' : 's'}</span>
+        </div>
+        <div className="workspace-meta-chip">
+          <span>{selectedCount} selected</span>
+        </div>
+        <div className="workspace-meta-chip workspace-meta-chip-glow">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>AI Studio Live</span>
+        </div>
+      </div>
+      <div className="flex-1 flex overflow-hidden workspace-panels workspace-panels-shell">
         {}
         <div
           className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}

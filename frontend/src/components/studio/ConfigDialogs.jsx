@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
-import { X, Loader2, Info } from 'lucide-react';
+import { X, Loader2, Info, Sparkles, HelpCircle } from 'lucide-react';
 import { suggestFlashcardCount, suggestQuizCount } from '@/lib/api/generation';
-
 
 export function FlashcardConfigDialog({ onGenerate, onCancel, materialIds }) {
   const onConfirm = onGenerate;
@@ -38,139 +37,160 @@ export function FlashcardConfigDialog({ onGenerate, onCancel, materialIds }) {
     } else {
       setSuggestionReasoning('');
     }
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [aiSuggest, materialIds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onConfirm({ topic, cardCount: aiSuggest ? null : cardCount, difficulty, additionalInstructions: instructions });
+    onConfirm({
+      topic,
+      cardCount: aiSuggest ? null : cardCount,
+      difficulty,
+      additionalInstructions: instructions,
+    });
   };
 
   return (
     <Modal onClose={onClose} maxWidth="md">
-      <form onSubmit={handleSubmit}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-          <h3 className="text-base font-semibold text-[var(--text-primary)]">Flashcard Settings</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close flashcard settings">
-            <X className="w-4 h-4 text-[var(--text-muted)]" />
+      <form onSubmit={handleSubmit} className="studio-dialog-v3">
+        <div className="studio-dialog-v3-header">
+          <div className="studio-dialog-v3-icon">
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+              style
+            </span>
+          </div>
+          <div>
+            <h3 className="studio-dialog-v3-title">Flashcard Builder</h3>
+            <p className="studio-dialog-v3-subtitle">Shape card count, topic focus, and study depth</p>
+          </div>
+          <button type="button" onClick={onClose} className="studio-dialog-v3-close" aria-label="Close flashcard settings">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
-              Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Chapter 3 key concepts"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-            />
-          </div>
-
-          {}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-[var(--text-secondary)]">Number of Cards</label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={aiSuggest}
-                  onChange={(e) => setAiSuggest(e.target.checked)}
-                  className="w-3 h-3 accent-emerald-500"
-                />
-                <span className="text-[11px] text-[var(--accent)]">AI Suggest</span>
-              </label>
+        <div className="studio-dialog-v3-body">
+          <div className="studio-dialog-v3-grid">
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">
+                  Focus Topic <span className="studio-dialog-v3-label-muted">(optional)</span>
+                </label>
+              </div>
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. Chapter 3 key concepts"
+                className="studio-dialog-v3-input"
+              />
             </div>
-            {aiSuggest ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-8 bg-[var(--surface-overlay)] rounded-lg border border-[var(--border)] flex items-center px-3 relative overflow-hidden">
+
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">Number of Cards</label>
+                <label className="studio-dialog-v3-toggle cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aiSuggest}
+                    onChange={(e) => setAiSuggest(e.target.checked)}
+                  />
+                  <span>AI Suggest</span>
+                </label>
+              </div>
+
+              {aiSuggest ? (
+                <div>
+                  <div className="studio-dialog-v3-note">
                     {isSuggesting ? (
-                      <div className="flex items-center gap-2 text-[var(--text-muted)] animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span className="text-[11px]">AI is analyzing content...</span>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>AI is analyzing your selected materials...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-semibold text-[var(--accent)]">{cardCount} cards</span>
-                        <span className="text-[10px] text-[var(--text-muted)]">Suggested by AI</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-[var(--accent)] font-semibold">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          {cardCount} cards suggested
+                        </span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Adaptive estimate</span>
                       </div>
                     )}
                   </div>
+                  {suggestionReasoning && !isSuggesting && (
+                    <div className="studio-dialog-v3-note mt-2 flex gap-2">
+                      <Info className="w-3.5 h-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
+                      <span>{suggestionReasoning}</span>
+                    </div>
+                  )}
                 </div>
-                {suggestionReasoning && !isSuggesting && (
-                  <div className="flex gap-2 p-2 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border,var(--accent))] border-opacity-20 animate-fade-in">
-                    <Info className="w-3 h-3 text-[var(--accent)] shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{suggestionReasoning}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={5}
-                  max={150}
-                  value={cardCount}
-                  onChange={(e) => setCardCount(Number(e.target.value))}
-                  className="flex-1 accent-emerald-500"
-                />
-                <input
-                  type="number"
-                  min={5}
-                  max={150}
-                  value={cardCount}
-                  onChange={(e) => setCardCount(Math.min(150, Math.max(5, Number(e.target.value))))}
-                  className="w-14 px-2 py-1 text-xs rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] border border-[var(--border)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] text-center"
-                />
-              </div>
-            )}
-          </div>
-
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Difficulty</label>
-            <div className="flex gap-2">
-              {['easy', 'medium', 'hard'].map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setDifficulty(d)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${difficulty === d
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--surface-overlay)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                >
-                  {d}
-                </button>
-              ))}
+              ) : (
+                <div className="studio-dialog-v3-range-row">
+                  <input
+                    type="range"
+                    min={5}
+                    max={150}
+                    value={cardCount}
+                    onChange={(e) => setCardCount(Number(e.target.value))}
+                    className="studio-dialog-v3-range"
+                  />
+                  <input
+                    type="number"
+                    min={5}
+                    max={150}
+                    value={cardCount}
+                    onChange={(e) => setCardCount(Math.min(150, Math.max(5, Number(e.target.value))))}
+                    className="studio-dialog-v3-number w-20"
+                  />
+                </div>
+              )}
             </div>
-          </div>
 
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
-              Additional Instructions <span className="text-[var(--text-muted)]">(optional)</span>
-            </label>
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Any specific requirements..."
-              rows={2}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
-            />
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">Difficulty</label>
+              </div>
+              <div className="studio-dialog-v3-segments">
+                {['easy', 'medium', 'hard'].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`studio-dialog-v3-segment ${difficulty === d ? 'active' : ''}`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">
+                  Additional Instructions <span className="studio-dialog-v3-label-muted">(optional)</span>
+                </label>
+              </div>
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Any specific requirements..."
+                className="studio-dialog-v3-textarea"
+              />
+            </div>
+
+            <div className="studio-dialog-v3-note flex items-center gap-2">
+              <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span>Tip: Keep cards between 8 and 30 for faster review sessions.</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+        <div className="studio-dialog-v3-footer">
+          <button type="button" onClick={onClose} className="studio-dialog-v3-btn ghost">
             Cancel
           </button>
-          <button type="submit" className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
+          <button type="submit" className="studio-dialog-v3-btn primary">
             Generate Flashcards
           </button>
         </div>
@@ -178,7 +198,6 @@ export function FlashcardConfigDialog({ onGenerate, onCancel, materialIds }) {
     </Modal>
   );
 }
-
 
 export function QuizConfigDialog({ onGenerate, onCancel, materialIds }) {
   const onConfirm = onGenerate;
@@ -212,139 +231,155 @@ export function QuizConfigDialog({ onGenerate, onCancel, materialIds }) {
     } else {
       setSuggestionReasoning('');
     }
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [aiSuggest, materialIds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onConfirm({ topic, mcqCount: aiSuggest ? null : mcqCount, difficulty, additionalInstructions: instructions });
+    onConfirm({
+      topic,
+      mcqCount: aiSuggest ? null : mcqCount,
+      difficulty,
+      additionalInstructions: instructions,
+    });
   };
 
   return (
     <Modal onClose={onClose} maxWidth="md">
-      <form onSubmit={handleSubmit}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-          <h3 className="text-base font-semibold text-[var(--text-primary)]">Quiz Settings</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-overlay)] transition-colors" aria-label="Close quiz settings">
-            <X className="w-4 h-4 text-[var(--text-muted)]" />
+      <form onSubmit={handleSubmit} className="studio-dialog-v3">
+        <div className="studio-dialog-v3-header">
+          <div className="studio-dialog-v3-icon">
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+              quiz
+            </span>
+          </div>
+          <div>
+            <h3 className="studio-dialog-v3-title">Quiz Composer</h3>
+            <p className="studio-dialog-v3-subtitle">Tune question volume, challenge level, and focus</p>
+          </div>
+          <button type="button" onClick={onClose} className="studio-dialog-v3-close" aria-label="Close quiz settings">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
-              Focus Topic <span className="text-[var(--text-muted)]">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Machine Learning Basics"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-            />
-          </div>
-
-          {}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-[var(--text-secondary)]">Number of Questions</label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={aiSuggest}
-                  onChange={(e) => setAiSuggest(e.target.checked)}
-                  className="w-3 h-3 accent-emerald-500"
-                />
-                <span className="text-[11px] text-[var(--accent)]">AI Suggest</span>
-              </label>
+        <div className="studio-dialog-v3-body">
+          <div className="studio-dialog-v3-grid">
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">
+                  Focus Topic <span className="studio-dialog-v3-label-muted">(optional)</span>
+                </label>
+              </div>
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. Machine learning basics"
+                className="studio-dialog-v3-input"
+              />
             </div>
-            {aiSuggest ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-8 bg-[var(--surface-overlay)] rounded-lg border border-[var(--border)] flex items-center px-3 relative overflow-hidden">
+
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">Number of Questions</label>
+                <label className="studio-dialog-v3-toggle cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aiSuggest}
+                    onChange={(e) => setAiSuggest(e.target.checked)}
+                  />
+                  <span>AI Suggest</span>
+                </label>
+              </div>
+
+              {aiSuggest ? (
+                <div>
+                  <div className="studio-dialog-v3-note">
                     {isSuggesting ? (
-                      <div className="flex items-center gap-2 text-[var(--text-muted)] animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span className="text-[11px]">AI is analyzing content...</span>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Analyzing content complexity...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-semibold text-[var(--accent)]">{mcqCount} questions</span>
-                        <span className="text-[10px] text-[var(--text-muted)]">Suggested by AI</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-[var(--accent)] font-semibold">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          {mcqCount} questions suggested
+                        </span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Smart estimate</span>
                       </div>
                     )}
                   </div>
+                  {suggestionReasoning && !isSuggesting && (
+                    <div className="studio-dialog-v3-note mt-2 flex gap-2">
+                      <Info className="w-3.5 h-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
+                      <span>{suggestionReasoning}</span>
+                    </div>
+                  )}
                 </div>
-                {suggestionReasoning && !isSuggesting && (
-                  <div className="flex gap-2 p-2 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border,var(--accent))] border-opacity-20 animate-fade-in">
-                    <Info className="w-3 h-3 text-[var(--accent)] shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{suggestionReasoning}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={5}
-                  max={150}
-                  value={mcqCount}
-                  onChange={(e) => setMcqCount(Number(e.target.value))}
-                  className="flex-1 accent-emerald-500"
-                />
-                <input
-                  type="number"
-                  min={5}
-                  max={150}
-                  value={mcqCount}
-                  onChange={(e) => setMcqCount(Math.min(150, Math.max(5, Number(e.target.value))))}
-                  className="w-14 px-2 py-1 text-xs rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] border border-[var(--border)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] text-center"
-                />
-              </div>
-            )}
-          </div>
-
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">Difficulty</label>
-            <div className="flex gap-2">
-              {['easy', 'medium', 'hard'].map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setDifficulty(d)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${difficulty === d
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--surface-overlay)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                >
-                  {d}
-                </button>
-              ))}
+              ) : (
+                <div className="studio-dialog-v3-range-row">
+                  <input
+                    type="range"
+                    min={5}
+                    max={150}
+                    value={mcqCount}
+                    onChange={(e) => setMcqCount(Number(e.target.value))}
+                    className="studio-dialog-v3-range"
+                  />
+                  <input
+                    type="number"
+                    min={5}
+                    max={150}
+                    value={mcqCount}
+                    onChange={(e) => setMcqCount(Math.min(150, Math.max(5, Number(e.target.value))))}
+                    className="studio-dialog-v3-number w-20"
+                  />
+                </div>
+              )}
             </div>
-          </div>
 
-          {}
-          <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
-              Additional Instructions <span className="text-[var(--text-muted)]">(optional)</span>
-            </label>
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Any specific requirements..."
-              rows={2}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--surface-overlay)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
-            />
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">Difficulty</label>
+              </div>
+              <div className="studio-dialog-v3-segments">
+                {['easy', 'medium', 'hard'].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`studio-dialog-v3-segment ${difficulty === d ? 'active' : ''}`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="studio-dialog-v3-section">
+              <div className="studio-dialog-v3-label-row">
+                <label className="studio-dialog-v3-label">
+                  Additional Instructions <span className="studio-dialog-v3-label-muted">(optional)</span>
+                </label>
+              </div>
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Any specific requirements..."
+                className="studio-dialog-v3-textarea"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+        <div className="studio-dialog-v3-footer">
+          <button type="button" onClick={onClose} className="studio-dialog-v3-btn ghost">
             Cancel
           </button>
-          <button type="submit" className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] transition-colors">
+          <button type="submit" className="studio-dialog-v3-btn primary">
             Generate Quiz
           </button>
         </div>

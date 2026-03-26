@@ -196,17 +196,17 @@ export default function UploadDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in bg-backdrop backdrop-blur-sm"
+      className="workspace-upload-overlay fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label="Upload sources"
       ref={dialogRef}
     >
-      <div className="relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in bg-surface-raised shadow-[0_25px_80px_rgba(0,0,0,0.5)] max-h-[88vh]">
+      <div className="workspace-upload-shell relative w-full max-w-[680px] mx-4 flex flex-col rounded-2xl overflow-hidden animate-scale-in max-h-[88vh]">
         {}
         {}
-        <div className="flex items-center justify-between px-6 py-5 bg-surface-overlay/30">
+        <div className="workspace-upload-header flex items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-accent-subtle">
               <CloudUpload className="w-5 h-5 text-accent-light" />
@@ -223,16 +223,16 @@ export default function UploadDialog({
 
         {}
         <div className="px-6 pt-4 pb-0">
-          <div className="flex gap-1 p-1 rounded-xl bg-surface-overlay">
+          <div className="workspace-upload-tabs flex gap-1 p-1 rounded-xl">
             {TABS.map((tab) => {
               const TabIcon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center justify-center gap-2 flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`workspace-upload-tab flex items-center justify-center gap-2 flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     activeTab === tab.id
-                      ? 'text-text-primary bg-surface-raised shadow-sm'
+                      ? 'workspace-upload-tab-active text-text-primary shadow-sm'
                       : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
@@ -249,8 +249,8 @@ export default function UploadDialog({
           {activeTab === 'files' && (
             <div className="space-y-5">
               <div
-                className={`relative flex flex-col items-center justify-center rounded-2xl px-8 py-12 transition-all duration-200 cursor-pointer ${
-                  dragActive ? 'bg-accent/5' : 'bg-surface-overlay/20 hover:bg-surface-overlay/50'
+                className={`workspace-upload-dropzone relative flex flex-col items-center justify-center rounded-2xl px-8 py-12 transition-all duration-200 cursor-pointer ${
+                  dragActive ? 'bg-accent/5' : ''
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -258,7 +258,7 @@ export default function UploadDialog({
                 onDrop={handleDrop}
                 onClick={() => !loading && fileInputRef.current?.click()}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${dragActive ? 'scale-110 bg-accent-subtle' : 'bg-surface-overlay shadow-inner'}`}>
+                <div className={`workspace-upload-drop-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${dragActive ? 'scale-110 bg-accent-subtle' : ''}`}>
                   <CloudUpload className={`w-7 h-7 ${dragActive ? 'text-accent-light' : 'text-text-muted'}`} />
                 </div>
                 <p className="text-sm font-medium text-text-primary mb-1">
@@ -283,7 +283,7 @@ export default function UploadDialog({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {FORMAT_GROUPS.map(({ icon, label, formats }) => (
-                  <div key={label} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-surface-overlay shadow-sm">
+                  <div key={label} className="workspace-upload-format-item flex items-start gap-2.5 px-3 py-2.5 rounded-xl shadow-sm">
                     <span className="text-base leading-none mt-0.5">{icon}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-text-secondary">{label}</p>
@@ -313,7 +313,7 @@ export default function UploadDialog({
                       className="input pl-10"
                     />
                   </div>
-                  <button onClick={handleUrlUpload} disabled={loading || !url.trim()} className="btn-primary whitespace-nowrap px-5">
+                  <button onClick={handleUrlUpload} disabled={loading || !url.trim()} className="workspace-upload-primary btn-primary whitespace-nowrap px-5">
                     {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</> : 'Add Source'}
                   </button>
                 </div>
@@ -325,7 +325,7 @@ export default function UploadDialog({
                   { icon: '📰', title: 'News & Wikis', desc: 'Rich content parsing' },
                   { icon: '🔍', title: 'Auto Detect', desc: 'Smart source recognition' },
                 ].map(({ icon, title, desc }) => (
-                  <div key={title} className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-surface-overlay shadow-sm">
+                  <div key={title} className="workspace-upload-format-item flex items-center gap-3 px-3.5 py-3 rounded-xl shadow-sm">
                     <span className="text-lg">{icon}</span>
                     <div>
                       <p className="text-xs font-medium text-text-secondary">{title}</p>
@@ -347,7 +347,7 @@ export default function UploadDialog({
                 <label className="block text-xs font-medium text-text-secondary mb-2">Content</label>
                 <textarea placeholder="Paste or type your text here…" value={textContent} onChange={(e) => setTextContent(e.target.value)} rows={7} className="input resize-none leading-relaxed" />
               </div>
-              <button onClick={handleTextUpload} disabled={loading || !textContent.trim() || !textTitle.trim()} className="btn-primary w-full justify-center py-2.5">
+              <button onClick={handleTextUpload} disabled={loading || !textContent.trim() || !textTitle.trim()} className="workspace-upload-primary btn-primary w-full justify-center py-2.5">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Adding…</> : <><CheckCircle className="w-4 h-4" /> Add Text Source</>}
               </button>
             </div>
@@ -355,7 +355,7 @@ export default function UploadDialog({
         </div>
 
         {loading && (
-          <div className="absolute inset-0 rounded-2xl flex items-center justify-center z-10 bg-backdrop backdrop-blur-sm">
+          <div className="workspace-upload-loading absolute inset-0 rounded-2xl flex items-center justify-center z-10">
             <div className="flex flex-col items-center gap-3">
               <div className="loading-spinner w-8 h-8" />
               <p className="text-sm text-text-secondary">Processing your source…</p>

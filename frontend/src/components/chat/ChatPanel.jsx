@@ -247,7 +247,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
 
 
   return (
-    <main className="flex-1 bg-surface-50 flex flex-row overflow-hidden relative">
+    <main className="workspace-chat-shell flex-1 flex flex-row overflow-hidden relative">
       { }
       {isHistoryModalOpen && (
         <div
@@ -270,20 +270,14 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       />
 
       { }
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="workspace-chat-column flex-1 flex flex-col min-w-0">
 
         { }
-        <div
-          className="panel-header flex justify-between items-center px-4 py-2.5 shrink-0 gap-3"
-          style={{
-            background: 'var(--surface-raised)',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
-          }}
-        >
+        <div className="panel-header workspace-chat-header flex justify-between items-center px-4 py-2.5 shrink-0 gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="font-semibold text-text-primary text-sm">Chat</span>
             {currentSessionTitle && (
-              <span className="text-xs text-text-muted bg-surface-overlay px-2 py-0.5 rounded-full truncate max-w-[140px]">
+              <span className="workspace-session-chip text-xs text-text-muted px-2 py-0.5 rounded-full truncate max-w-[140px]">
                 {currentSessionTitle}
               </span>
             )}
@@ -291,7 +285,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setIsHistoryModalOpen(true)}
-              className="btn-secondary py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
+              className="workspace-pill-btn py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
               title="Chat history"
               aria-label="Open chat history"
             >
@@ -300,7 +294,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
             </button>
             <button
               onClick={handleCreateChatClick}
-              className="btn-icon p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted transition-all"
+              className="workspace-icon-btn p-1.5 rounded-lg text-text-muted transition-all"
               title="New Chat"
               aria-label="Start new chat"
             >

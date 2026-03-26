@@ -61,11 +61,11 @@ export default function ChatHistorySidebar({
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && onSelectSession(s.id)}
-                className={`group relative p-3 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-between
+                className={`workspace-history-item group relative p-3 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-between
                   ${
                     isActive
-                      ? 'bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                      : 'hover:bg-surface-raised border border-transparent'
+                      ? 'workspace-history-item-active border shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                      : 'border border-transparent'
                   }`}
               >
                 {isActive && (
@@ -117,15 +117,15 @@ export default function ChatHistorySidebar({
 
   return (
     <div
-      className={`absolute inset-y-0 right-0 z-30 transform transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col w-80 bg-surface/90 backdrop-blur-2xl shadow-2xl ${
+      className={`workspace-history-sidebar absolute inset-y-0 right-0 z-30 transform transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col w-80 ${
         isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
       }`}
     >
       {}
-      <div className="flex items-center justify-between p-5 shrink-0 bg-surface/50">
+      <div className="workspace-history-header flex items-center justify-between p-5 shrink-0">
         <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
           Chat History
-          <span className="text-[10px] py-0.5 px-2 rounded-full bg-surface-overlay text-text-muted font-bold">
+          <span className="workspace-history-count text-[10px] py-0.5 px-2 rounded-full text-text-muted font-bold">
             {sessions.length}
           </span>
         </h2>
@@ -142,7 +142,7 @@ export default function ChatHistorySidebar({
       <div className="p-5 flex flex-col gap-4 shrink-0 relative z-10">
         <button
           onClick={onCreateChat}
-          className="group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white"
+          className="workspace-history-cta group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white"
         >
           {}
           <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent-light opacity-90 group-hover:opacity-100 transition-opacity" />
@@ -152,19 +152,19 @@ export default function ChatHistorySidebar({
           <span className="relative z-10 tracking-wide text-[15px]">New Conversation</span>
         </button>
 
-        <div className="relative group/search">
+        <div className="workspace-history-search relative group/search">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within/search:text-accent transition-colors duration-300" />
           <input
             type="text"
             placeholder="Search conversations..."
             value={historySearchTerm}
             onChange={(e) => setHistorySearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-surface border border-transparent rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-300 text-text-primary placeholder:text-text-muted group-hover/search:border-border"
+            className="workspace-history-search-input w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none transition-all duration-300 text-text-primary placeholder:text-text-muted"
           />
           {historySearchTerm && (
             <button
               onClick={() => setHistorySearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors bg-surface-overlay p-1 rounded-md"
+              className="workspace-history-clear absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors p-1 rounded-md"
               aria-label="Clear search"
             >
               <X className="w-3 h-3" />
@@ -174,7 +174,7 @@ export default function ChatHistorySidebar({
       </div>
 
       {}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-6 relative z-0">
+      <div className="workspace-history-list flex-1 overflow-y-auto custom-scrollbar px-3 pb-6 relative z-0">
         {}
         <div className="sticky top-0 h-4 bg-gradient-to-b from-surface/90 to-transparent z-10 pointer-events-none -mx-3 mb-2" />
 
