@@ -35,6 +35,16 @@ venv.bak/
 *.log
 # backend/data
 data/
+backend/output/**
+!backend/output/
+!backend/output/generated/
+!backend/output/presentations/
+!backend/output/podcast/
+!backend/output/generated/.gitkeep
+!backend/output/presentations/.gitkeep
+!backend/output/podcast/.gitkeep
+backend/logs/app.log*
+!backend/logs/.gitkeep
 # Next.js
 .next/
 out/
