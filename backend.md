@@ -1,254 +1,206 @@
-# KeplerLab Backend: Complete Architecture and Feature Flows
+# KeplerLab Backend - Complete Architecture and Feature Flow
 
-This document captures the backend system in `/disk1/KeplerLab_Agentic/backend` in detail: architecture, modules, data model, route-level behavior, worker flows, chat/agent pipelines, and storage/runtime behavior.
+## 1. Scope and What Was Read
 
-## 1) Scope and Coverage
+This document is built from a full backend workspace scan and direct reads of key runtime files.
 
-This documentation is based on code-level inspection of:
-- `backend/app/main.py`
-- `backend/app/core/*`
-- `backend/app/db/*`
-- `backend/app/models/*`
-- `backend/app/routes/*`
-- `backend/app/services/**/*`
-- `backend/prisma/schema.prisma`
-- `backend/requirements.txt`
-- `backend/cli/*`
+- Workspace root: `/disk1/KeplerLab_Agentic`
+- Backend folder: `backend/`
+- Total files under backend folder (including generated/cache/data): `1626`
+- Source-focused backend files (excluding `__pycache__`): `189`
+- Core runtime files read directly: `app/main.py`, `app/core/config.py`, `prisma/schema.prisma`, major route files, chat router, worker/auth/orchestrator services, websocket manager.
 
 Notes:
-- The backend has many data/output files under `backend/data` and `backend/output`; those are runtime artifacts, not core business logic.
-- Focus is on application code paths and feature behavior.
+- Generated/cache/runtime directories exist (`__pycache__`, logs, output artifacts, uploaded/generated data).
+- This doc focuses on implementation source of truth and runtime architecture.
 
-## 2) High-Level Architecture
+## 2. High-Level Backend Architecture
 
-### 2.1 Runtime Stack
-- Framework: FastAPI (`app/main.py`)
-- DB access: Prisma async client (`app/db/prisma_client.py`) to PostgreSQL
-- Vector DB: Chroma persistent client (`app/db/chroma.py`)
-- LLM orchestration: provider abstraction in `app/services/llm_service/llm.py`
-- Background jobs: in-process async worker loop (`app/services/worker.py`) + DB-backed queue (`background_jobs` table)
-- Streaming protocols:
-  - SSE for chat, agent, research, code execution
-  - WebSocket for user-scoped real-time updates (`/ws/jobs/{user_id}`)
+The backend is a FastAPI monolith organized by layered domains.
 
-### 2.2 Layering
-- `routes/`: HTTP and WS boundary, request validation, auth dependency, response shaping.
-- `services/`: business logic and orchestration.
-- `db/`: Prisma and Chroma integration.
-- `core/`: app settings and shared utility.
-- `models/`: pydantic schemas and model catalog metadata.
-- `prompts/`: prompt templates for chat, generation, agent, and system behavior.
+- API layer: `app/routes/`
+- Business logic layer: `app/services/`
+- Data models/contracts: `app/models/` and Pydantic request/response schemas inside route/service modules
+- Persistence:
+- PostgreSQL via Prisma async client (`app/db/prisma_client.py` + `prisma/schema.prisma`)
+- Chroma vector store (`app/db/chroma.py`) for embeddings
+- Prompt system: `app/prompts/` (chat, code, generation, system, shared)
+- Async background processing: `app/services/worker.py` and `app/services/job_service.py`
+- Realtime channel: websocket connection manager + route (`app/services/ws_manager.py`, `app/routes/websocket_router.py`)
 
-### 2.3 Boot Sequence (`app/main.py`)
-1. Configure logging (stdout + rotating file `backend/logs/app.log`).
-2. Create FastAPI app with lifespan hook.
-3. On startup:
-   - Connect Prisma DB.
-   - Warm embedder model (`warm_up_embeddings`).
-   - Preload reranker (`get_reranker`).
-   - Start `job_processor()` background task.
-   - Ensure sandbox packages (`ensure_packages`).
-   - Cleanup stale temp dirs (`/tmp/kepler_sandbox_*`, `/tmp/kepler_analysis_*`).
-   - Ensure output folders (`output/generated`, `output/presentations`, explainers, podcast, `data/artifacts`).
-   - Cleanup expired refresh tokens.
-4. Register middleware:
-   - Performance middleware.
-   - Rate limiter middleware (currently pass-through).
-   - Request logging middleware with `X-Request-ID`.
-   - CORS middleware.
-   - Trusted host middleware in production.
-5. Include all routers.
-6. On shutdown:
-   - Graceful worker stop.
-   - DB disconnect.
+## 3. App Startup and Runtime Lifecycle
 
-## 3) Configuration and Environment (`app/core/config.py`)
+Source: `backend/app/main.py`.
 
-### 3.1 Critical settings groups
-- Runtime: `ENVIRONMENT`, `DEBUG`.
-- DB: `DATABASE_URL` (required).
-- Storage paths: `CHROMA_DIR`, `UPLOAD_DIR`, `MODELS_DIR`, `TEMPLATES_DIR`, `WORKSPACE_BASE_DIR`, output dirs.
+### 3.1 Startup Sequence
+
+On app lifespan startup:
+
+1. Connect Prisma DB (`connect_db`).
+2. Warm embedding model in thread pool (`services/rag/embedder.py`).
+3. Preload reranker in thread pool (`services/rag/reranker.py`).
+4. Start background job processor task (`services/worker.py:job_processor`).
+5. Ensure sandbox/on-demand code execution packages (`services/code_execution/sandbox_env.py`).
+6. Cleanup stale temp sandbox directories (`/tmp/kepler_sandbox_*`, `/tmp/kepler_analysis_*`).
+7. Ensure output directories exist (`output/generated`, `output/presentations`, `output/explainers`, `output/podcast`, `data/artifacts`).
+8. Cleanup expired refresh tokens at startup.
+
+### 3.2 Middleware and Error Handling
+
+Applied middleware stack:
+
+1. Performance monitoring middleware (`services/performance_logger.py`).
+2. Rate limiter middleware (`services/rate_limiter.py`).
+3. Request logger middleware with generated request ID and timing.
+4. CORS middleware (`settings.CORS_ORIGINS`).
+5. Trusted host middleware in production.
+
+Error handling:
+
+- `HTTPException` => JSON with explicit detail and CORS headers.
+- Unhandled exceptions => HTTP 500 with `request_id` for traceability.
+
+### 3.3 Shutdown Sequence
+
+1. Graceful worker shutdown signal.
+2. Cancel/wait for background job task with timeout.
+3. Disconnect Prisma DB.
+
+## 4. Configuration Model
+
+Source: `backend/app/core/config.py`.
+
+Major config domains:
+
+- Environment: `ENVIRONMENT`, `DEBUG`
+- Persistence: `DATABASE_URL`, `CHROMA_DIR`
+- Storage paths: `UPLOAD_DIR`, `WORKSPACE_BASE_DIR`, `ARTIFACTS_DIR`, output dirs
+- Upload and processing limits:
+- `MAX_UPLOAD_SIZE_MB=10240`
+- `OCR_TIMEOUT_SECONDS=300`
+- `WHISPER_TIMEOUT_SECONDS=600`
+- `LIBREOFFICE_TIMEOUT_SECONDS=120`
+- Code execution controls:
+- `CODE_EXECUTION_TIMEOUT=15`
+- `MAX_CODE_REPAIR_ATTEMPTS=3`
 - Auth/JWT:
-  - `JWT_SECRET_KEY` (required)
-  - `ACCESS_TOKEN_EXPIRE_MINUTES`
-  - `REFRESH_TOKEN_EXPIRE_DAYS`
-  - cookie controls (`COOKIE_*`)
-- LLM provider and params:
-  - `LLM_PROVIDER` in `{MYOPENLM, GOOGLE, NVIDIA, OLLAMA}`
-  - model names and API keys
-  - temperatures, top_p, top_k, token limits
-- RAG tuning:
-  - `INITIAL_VECTOR_K`, `MMR_K`, `FINAL_K`, `MMR_LAMBDA`
-  - context/token thresholds
-- Code execution:
-  - `MAX_CODE_REPAIR_ATTEMPTS`
-  - `CODE_EXECUTION_TIMEOUT`
-  - approved on-demand packages
-- Processing:
-  - OCR/Whisper/LibreOffice timeouts
-  - retry count
-- Integrations:
-  - optional `WEB_SEARCH_ENDPOINT`, `WEB_SCRAPE_ENDPOINT`, `IMAGE_GENERATION_ENDPOINT`
+- `JWT_SECRET_KEY`, `JWT_ALGORITHM=HS256`
+- Access token expiry (minutes), refresh token expiry (days)
+- Secure refresh cookie settings
+- LLM/provider controls:
+- `LLM_PROVIDER` in `{MYOPENLM, GOOGLE, NVIDIA, OLLAMA}`
+- provider-specific model names and keys
+- temperature/top-p/token controls
+- RAG controls:
+- embedding/reranker model IDs
+- retrieval K values, MMR lambda
+- chunk overlap/length/similarity thresholds
+- External endpoints:
+- image/web search/web scraping endpoint hooks
 
-### 3.2 Validation behavior
-- Strong validation of `JWT_SECRET_KEY` and `DATABASE_URL`.
-- Relative paths are converted to absolute under backend project root.
-- In production, `COOKIE_SECURE` forced true.
+Validators in config enforce:
 
-## 4) Data Model (Prisma Schema)
+- `JWT_SECRET_KEY` must exist
+- `DATABASE_URL` must exist
+- `LLM_PROVIDER` must be one of supported providers
+- Relative paths are normalized to project-root absolute paths
+- In production: `COOKIE_SECURE=True`
 
-Main entities in `backend/prisma/schema.prisma`:
+## 5. Data Architecture (Prisma Schema)
 
-- `User`: auth identity and role.
-- `Notebook`: user-owned workspace container.
-- `Material`: uploaded/ingested source (file/url/youtube/text) with status and text summary.
-- `ChatSession`, `ChatMessage`, `ResponseBlock`: multi-turn chat and paragraph-level block indexing.
-- `GeneratedContent`: generated outputs (presentation, flashcards, quiz, mindmap, etc.) with payload.
-- `GeneratedContentMaterial`: many-to-many join for generated content to materials.
-- `ExplainerVideo`: explainer pipeline tracking.
-- `RefreshToken`: rotating refresh token family tracking.
-- `BackgroundJob`: async queue state.
-- `UserTokenUsage`, `ApiUsageLog`, `AgentExecutionLog`: usage/perf telemetry entities.
-- `CodeExecutionSession`: code run history.
-- `ResearchSession`: web research reports and source URLs.
-- Podcast models:
-  - `PodcastSession`, `PodcastSegment`, `PodcastDoubt`, `PodcastExport`, `PodcastBookmark`, `PodcastAnnotation`, `PodcastSessionMaterial`
-- `Artifact`: files generated by code/agent/research and exposed via `/artifacts/{id}`.
+Source: `backend/prisma/schema.prisma`.
 
-Status enums include material/job/video/podcast lifecycle states.
+### 5.1 Core Entities
 
-## 5) Core Infrastructure Services
+- `User`
+- `Notebook`
+- `Material`
+- `ChatSession`
+- `ChatMessage`
+- `ResponseBlock`
+- `GeneratedContent`
+- `GeneratedContentMaterial` (join table)
+- `Artifact`
+- `BackgroundJob`
+- `RefreshToken`
+- `ExplainerVideo`
+- `CodeExecutionSession`
+- `ResearchSession`
+- Podcast suite:
+- `PodcastSession`
+- `PodcastSegment`
+- `PodcastDoubt`
+- `PodcastExport`
+- `PodcastBookmark`
+- `PodcastAnnotation`
+- `PodcastSessionMaterial` (join table)
+- Observability/audit:
+- `UserTokenUsage`
+- `ApiUsageLog`
+- `AgentExecutionLog`
 
-### 5.1 DB client (`app/db/prisma_client.py`)
-- Async connect with retries and exponential delay.
-- Safe disconnect.
+### 5.2 Key State Enums
 
-### 5.2 Chroma (`app/db/chroma.py`)
-- Persistent collection `chapters`.
-- Embedding function from configured sentence-transformer model.
-- Embedding version marker (`.embedding_version`) to enforce consistency.
-- Automatic wipe/rebuild on version mismatch or dimensionality mismatch.
-- Probe vector upsert to verify embedding dimensionality at startup.
-- Multi-retry Chroma client initialization with tenant/system cache recovery.
+- Material/job lifecycle: `pending`, `processing`, `ocr_running`, `transcribing`, `embedding`, `completed`, `failed`
+- Explainer video status lifecycle
+- Podcast session status lifecycle
 
-### 5.3 Model manager (`app/services/model_manager.py`)
-- Validates required models from `models/model_schemas.py`.
-- Supports sentence-transformer and cross-encoder verification.
-- Uses local cache in `MODELS_DIR`.
+### 5.3 Important Relations
 
-### 5.4 LLM abstraction (`app/services/llm_service/llm.py`)
-- Provider registry for OLLAMA/GOOGLE/NVIDIA/MYOPENLM.
-- Cached model instances by provider + params.
-- Separate factories for chat and structured outputs.
-- Chunk content extractor normalizes stream payload differences.
-- MyOpenLM path includes sync/async retry logic.
+- User owns notebooks/materials/chats/generated content/jobs/artifacts.
+- Notebook links materials/chats/generated content/research/code-exec/podcast/artifacts.
+- ChatMessage can have many ResponseBlocks and Artifacts.
+- GeneratedContent can have many materials via join table.
+- PodcastSession can have many materials via join table and many segments/doubts/exports/bookmarks/annotations.
 
-### 5.5 Performance logger (`app/services/performance_logger.py`)
-- Contextvars for request, retrieval, reranking, and llm timings.
-- Middleware adds dev headers (`X-Response-Time`, etc.).
+## 6. API Surface - Complete Route Map
 
-### 5.6 WS manager (`app/services/ws_manager.py`)
-- User connection pooling (max 10 per user).
-- `send_to_user` and broadcast helpers.
-- Dead connection pruning.
+Route files under `app/routes/` + `app/services/presentation/router.py`.
 
-## 6) Security Model
+### 6.1 Health and System
 
-### 6.1 Auth and tokens
-- Password hashing via passlib bcrypt.
-- JWT access + refresh with token type/jti/family.
-- Refresh token rotation persisted in `refresh_tokens`.
-- Reuse detection revokes entire token family.
-- Access auth from bearer token or `token` query param in `get_current_user`.
+- `GET /health`
+- `GET /health/simple`
+- `GET /models/status`
+- `POST /models/reload`
 
-### 6.2 Upload and file safety
-- `file_validator.py` blocks executable MIME types and extensions.
-- Filename sanitization and path traversal protections.
-- Size limits enforced by configured max upload size.
+### 6.2 Auth
 
-### 6.3 Path and URL safety
-- `safe_path` in routes utils prevents path traversal.
-- URL upload and proxy enforce anti-SSRF checks:
-  - block private/loopback/link-local/reserved targets.
-  - require HTTPS in proxy routes.
-
-### 6.4 Code execution safety
-- `services/code_execution/security.py`:
-  - blocked imports (network/process/system-dangerous modules)
-  - blocked dangerous call regexes (`eval`, `exec`, `os.system`, etc.)
-- sandbox execution with timeout and isolated temp directory.
-
-## 7) API Surface and Route Flows
-
-## 7.1 Health and infra
-- `GET /health`: authenticated deep health checks for DB/Chroma/LLM provider.
-- `GET /health/simple`: unauthenticated liveness.
-- `GET /jobs/{job_id}`: background job status polling.
-- `GET /models/status`: model cache and availability summary.
-- `POST /models/reload`: admin-only model revalidation.
-
-### 7.2 Auth
-Routes in `routes/auth.py`:
 - `POST /auth/signup`
 - `POST /auth/login`
 - `POST /auth/refresh`
 - `GET /auth/me`
 - `POST /auth/logout`
 
-Flow:
-1. Signup validates password/username and creates user.
-2. Login validates credentials, creates access+refresh tokens, stores hashed refresh token, sets cookie.
-3. Refresh reads cookie, validates/rotates old token, issues new access+refresh.
-4. Logout revokes user refresh tokens and clears cookie.
+### 6.3 Notebook
 
-### 7.3 Notebook management
-Routes in `routes/notebook.py`:
-- CRUD notebooks
-- CRUD generated content under notebook
-- content title/rating updates
+- `GET /notebooks`
+- `POST /notebooks`
+- `GET /notebooks/{notebook_id}`
+- `PUT /notebooks/{notebook_id}`
+- `DELETE /notebooks/{notebook_id}`
+- `POST /notebooks/{notebook_id}/thumbnail`
+- `POST /notebooks/{notebook_id}/content`
+- `GET /notebooks/{notebook_id}/content`
+- `DELETE /notebooks/{notebook_id}/content/{content_id}`
+- `PUT /notebooks/{notebook_id}/content/{content_id}`
+- `PATCH /notebooks/{notebook_id}/content/{content_id}/rating`
 
-Flow:
-1. Validate notebook ownership.
-2. Read/write via `notebook_service.py` + Prisma.
-3. Generated content payload persisted as JSON string in DB.
+### 6.4 Materials and Upload
 
-### 7.4 Material ingestion and management
-Routes:
-- `POST /upload` single file
+- `GET /materials`
+- `PATCH /materials/{material_id}`
+- `DELETE /materials/{material_id}`
+- `GET /materials/{material_id}/text`
+- `POST /upload`
 - `POST /upload/batch`
 - `POST /upload/url`
 - `POST /upload/text`
 - `GET /upload/supported-formats`
-- `GET /materials`
-- `PATCH /materials/{id}`
-- `DELETE /materials/{id}`
-- `GET /materials/{id}/text`
 
-End-to-end ingestion flow:
-1. Validate upload or URL input.
-2. Create material DB row in `pending`.
-3. Create background job with `material_processing` payload.
-4. Notify in-process queue.
-5. Worker consumes job, sets material statuses (`processing`, `ocr_running`, `transcribing`, `embedding`, `completed`/`failed`).
-6. Text extraction (`EnhancedTextExtractor`) by file/source type.
-7. Persist full text to filesystem (`data/material_text/{material_id}.txt`).
-8. Chunk text (`chunker.py`), including structured-data fast path for CSV/Excel.
-9. Embed chunks to Chroma with metadata including tenant IDs.
-10. Save summary and metadata in material record.
-11. Emit websocket updates `material_update` to user.
-12. Async post-completion naming refinement via LLM for material title and optionally notebook name.
+### 6.5 Chat (chat_v2 router)
 
-Deletion flow (`material_service.delete_material`):
-1. Delete embeddings in Chroma by `material_id`.
-2. Delete material text file and matching uploaded files.
-3. Delete material DB record.
-4. Partial failure handling marks failed state when needed.
-
-### 7.5 Chat v2 (`/chat`)
-Router actually comes from `services/chat_v2/router.py` and is exported by `routes/chat.py`.
-
-Endpoints:
-- `POST /chat` SSE chat stream
+- `POST /chat`
 - `POST /chat/block-followup`
 - `POST /chat/optimize-prompts`
 - `POST /chat/suggestions`
@@ -261,311 +213,467 @@ Endpoints:
 - `DELETE /chat/message/{message_id}`
 - `PATCH /chat/message/{message_id}`
 
-Capability router (`router_logic.py`) chooses:
-- `AGENT`
-- `WEB_RESEARCH`
-- `CODE_EXECUTION`
-- `RAG`
-- `WEB_SEARCH`
-- `NORMAL_CHAT`
+### 6.6 Generation Features
 
-Detailed flow in `orchestrator.py`:
-1. Determine capability from message + material selection + optional override.
-2. For RAG: run `rag_tool`, fetch secure context from Chroma.
-3. For web search: run `web_search_tool` iterative search/completeness.
-4. For web research: run deep research pipeline and stream phase/source/citation events.
-5. For code execution: generate runnable code via `python_tool` and emit code block metadata.
-6. For agent: run LangGraph orchestrator.
-7. Stream tokens and metadata (`intent`, `chunks_used`, source list, elapsed).
-8. Persist user and assistant messages plus response blocks.
-
-Chat persistence notes:
-- Chat sessions auto-created when missing.
-- Block splitting stores paragraph-level blocks in `response_blocks` for follow-up actions.
-- Message edit operation also removes the immediate assistant response pair to keep continuity.
-
-### 7.6 Agent mode (`/agent` behavior via `/chat`)
-Implemented in `services/agent/agent_orchestrator.py`.
-
-Graph nodes:
-- `analyse` -> `planner` -> `execute_step` <-> `reflect` -> `advance_step` -> `synthesize`
-- direct-response branch when plan is empty.
-
-Planner/tooling stack:
-- Intent classification (`planner.py`) with resource-aware routing.
-- Resource classification (`resource_router.py`) by material type.
-- Tool selection (`tool_selector.py`).
-- Tool registry (`tools_registry.py`) with tools:
-  - `rag`
-  - `web_search`
-  - `research`
-  - `python_auto` (generate+execute)
-
-Artifact-first code path:
-- `python_auto` uses `artifact_executor.py`:
-  - generate code
-  - execute code in sandbox
-  - auto-repair attempts
-  - detect output files
-  - register artifacts in DB
-  - emit `agent_artifact` SSE events
-
-Persistence:
-- Saves original user message and final assistant response.
-- Links produced artifacts to message ID.
-- Stores response blocks.
-
-### 7.7 Flashcards, quiz, mindmap
-Routes:
-- `POST /flashcard`, `POST /flashcard/suggest`
-- `POST /quiz`, `POST /quiz/suggest`
+- Flashcard:
+- `POST /flashcard`
+- `POST /flashcard/suggest`
+- Quiz:
+- `POST /quiz`
+- `POST /quiz/suggest`
+- Mindmap:
 - `POST /mindmap`
+- AI resource builder:
+- `POST /ai-resource-builder`
 
-Flow:
-1. Validate selected materials and user ownership.
-2. Load material text (single or combined).
-3. Optional topic focus prepended to context.
-4. LLM generation in executor thread.
-5. Mindmap additionally persists generated content and creates `generated_content_materials` joins for all source materials.
+### 6.7 Presentation and Explainer
 
-### 7.8 Presentation
-Two presentation stacks coexist:
-- legacy routes in `routes/ppt.py`
-- richer service routes in `services/presentation/router.py` (also mounted under `/presentation`)
+Two presentation routers coexist under prefix `/presentation`:
 
-Key operations:
-- suggest slide count
-- generate presentation from notebook/material IDs
-- fetch JSON/html/pptx/pdf
-- update presentation via instruction
+- Legacy PPT route file: `app/routes/ppt.py`
+- Structured presentation service router: `app/services/presentation/router.py`
 
-Core flow (`services/presentation/generator.py`):
-1. Validate notebook and completed materials.
-2. Retrieve RAG chunks to build dense context.
-3. Ask structured LLM for JSON payload (`theme_tokens`, `slides`).
-4. Validate payload with pydantic schema.
-5. Persist generated content record.
-6. Render HTML and export PPTX.
-7. Update DB with paths and final payload.
+Presentation endpoints combined:
 
-### 7.9 Explainer video
-Routes in `routes/explainer.py`:
+- `POST /presentation`
+- `POST /presentation/suggest`
+- `POST /presentation/async`
+- `GET /presentation/slides/{user_id}/{presentation_id}/{filename}`
+- `POST /presentation/generate`
+- `GET /presentation/{presentation_id}`
+- `GET /presentation/{presentation_id}/html`
+- `GET /presentation/{presentation_id}/ppt`
+- `GET /presentation/{presentation_id}/download`
+- `POST /presentation/update`
+
+Explainer:
+
 - `POST /explainer/check-presentations`
 - `POST /explainer/generate`
-- `GET /explainer/{id}/status`
-- `GET /explainer/{id}/video`
+- `GET /explainer/{explainer_id}/status`
+- `GET /explainer/{explainer_id}/video`
+
+### 6.8 Podcast Live
+
+- `POST /podcast/session`
+- `GET /podcast/session/{session_id}`
+- `GET /podcast/sessions/{notebook_id}`
+- `PATCH /podcast/session/{session_id}`
+- `DELETE /podcast/session/{session_id}`
+- `POST /podcast/session/{session_id}/start`
+- `GET /podcast/session/{session_id}/segment/{segment_index}/audio`
+- `GET /podcast/session/{session_id}/audio/{filename}`
+- `POST /podcast/session/{session_id}/question`
+- `GET /podcast/session/{session_id}/doubts`
+- `POST /podcast/session/{session_id}/bookmark`
+- `GET /podcast/session/{session_id}/bookmarks`
+- `DELETE /podcast/session/{session_id}/bookmark/{bookmark_id}`
+- `POST /podcast/session/{session_id}/annotation`
+- `DELETE /podcast/session/{session_id}/annotation/{annotation_id}`
+- `POST /podcast/session/{session_id}/export`
+- `GET /podcast/export/{export_id}`
+- `GET /podcast/export/file/{session_id}/{filename}`
+- `POST /podcast/session/{session_id}/summary`
+- `GET /podcast/voices`
+- `GET /podcast/voices/all`
+- `GET /podcast/languages`
+- `POST /podcast/voice/preview`
+- `POST /podcast/session/{session_id}/satisfaction`
+
+### 6.9 Other Runtime Endpoints
+
+- Code execution:
+- `POST /code-execution/execute-code`
+- `POST /code-execution/run-generated`
+- Search:
+- `POST /search/web`
+- Jobs:
+- `GET /jobs/{job_id}`
+- Artifacts:
+- `GET /artifacts/{artifact_id}`
+- Proxy:
+- `GET /api/v1/file-viewer/info`
+- Websocket channel prefix:
+- `/ws` (route file provides ws job channel)
+
+## 7. End-to-End Feature Flows
+
+## 7.1 Upload -> Processing -> Embedding -> Availability
+
+1. Request enters `/upload*`.
+2. Input validated (`file_validator`, route-level checks).
+3. Material DB row created in pending status.
+4. Background job created (`job_service`).
+5. Worker polls every 2s, pulls pending jobs with locking pattern.
+6. Worker dispatches by source type:
+- file -> `process_material_by_id`
+- url/web/youtube -> `process_url_material_by_id`
+- text -> `process_text_material_by_id`
+7. Text extraction/chunking/embedding pipelines run.
+8. Material status updated through lifecycle states.
+9. Completion updates visible to client (via websocket polling/updates).
+
+Operational details:
+
+- Concurrency cap: `MAX_CONCURRENT_JOBS=5`.
+- Stuck job recovery: processing jobs older than timeout reset to pending on startup.
+- Old job cleanup: periodic deletion of old completed/failed jobs.
+
+## 7.2 Chat Request Orchestration
+
+Source roots:
+
+- `app/services/chat_v2/router.py`
+- `app/services/chat_v2/orchestrator.py`
 
 Flow:
-1. Either reuse existing presentation or generate a new one.
-2. Resolve language and voice config.
-3. Create `explainer_videos` row in pending.
-4. Schedule background video processor task (`process_explainer_video`).
-5. Poll status until complete.
-6. Serve final MP4 file.
 
-### 7.10 Podcast live
-Routes in `routes/podcast_live.py` under `/podcast`:
-- session CRUD
-- start generation
-- audio segment/file serving
-- Q&A interruptions
-- doubts/bookmarks/annotations
-- exports and summaries
-- voices/languages/preview
-- satisfaction detector endpoint
+1. Validate selected materials belong to notebook/user.
+2. Filter only completed materials.
+3. Ensure/create chat session.
+4. Route capability by intent and context (`router_logic.py`):
+- `RAG`
+- `WEB_SEARCH`
+- `WEB_RESEARCH`
+- `CODE_EXECUTION`
+- `AGENT`
+- `IMAGE_GENERATION`
+5. Execute capability path:
+- RAG tool / web tool / research tool / python tool / agent pipeline / image generation
+6. Stream SSE chunks/events to client.
+7. Persist message, response blocks, metadata, and artifacts.
 
-Flow highlights:
-1. Create session with notebook/material IDs + mode/voices/language.
-2. Start generation and track status phases.
-3. Serve segment audio and full session audio files.
-4. Support in-session question answering (doubt queue).
-5. Maintain bookmarks/annotations.
-6. Export to PDF/JSON and provide downloadable file URLs.
+## 7.3 Agentic Pipeline
 
-### 7.11 Code execution
-Routes in `routes/code_execution.py`:
-- `POST /code-execution/execute-code` SSE
-- `POST /code-execution/run-generated`
+Source roots: `app/services/agent/*`.
 
-Execution flow:
-1. Validate/sanitize code.
-2. Run in sandbox with language-specific commands.
-3. If module missing and approved, auto-install and retry.
-4. If failed, attempt LLM code repair up to configured attempts and return repair suggestion.
-5. Detect output files and register as artifacts (`data/artifacts` + DB row).
-6. Emit events:
-   - `execution_start`
-   - `execution_blocked`
-   - `install_progress`
-   - `repair_suggestion`
-   - `artifact`
-   - `execution_done`
-7. Persist execution summary in `code_execution_sessions`.
+Pipeline stages:
 
-### 7.12 Artifacts
-- `GET /artifacts/{artifact_id}` serves stored file from `workspacePath`.
-- No token parameter enforced in this endpoint currently; file access is by artifact ID.
+1. Plan generation (`planner.py`).
+2. Step-wise execution (`executor.py`, `tool_selector.py`, `tools_registry.py`).
+3. Reflection/continuation logic.
+4. Synthesis response generation.
+5. Artifact registration + persistence.
 
-### 7.13 Search and proxy utilities
-- `POST /search/web`: external endpoint fallback then DDG fallback.
-- `/api/v1/proxy`: safe HTML proxy with restricted headers.
-- `/api/v1/file-viewer/info`: classify remote file and return viewer hints.
-- `/api/v1/file-viewer/proxy`: secure passthrough for pdf/text previewing.
+Safety controls are implemented in orchestration and code-exec path (max steps/tool-call windows, retries, execution time limits).
 
-### 7.14 WebSocket updates
-Route: `ws://.../ws/jobs/{user_id}`
-- Auth by token query or first auth message.
-- Enforces user ID/token match.
-- Supports ping/pong and server keepalive ping.
-- Delivers material/podcast/presentation progress messages via `ws_manager.send_to_user`.
+## 7.4 Code Execution Path
 
-## 8) RAG Pipeline Deep Details
+Source roots:
 
-### 8.1 Embedding and metadata
-Chunks written to Chroma include:
-- `user_id`
-- `material_id`
-- `notebook_id`
-- section/chunk metadata
-- embedding version
+- Route: `app/routes/code_execution.py`
+- Engine: `app/services/code_execution/sandbox.py`
+- Security: `app/services/code_execution/security.py`
+- Environment provisioning: `sandbox_env.py`
 
-### 8.2 Secure retrieval guarantees
-`secure_retriever.py` enforces tenant isolation by:
-- mandatory `user_id` filter checks before query
-- verifying returned metadata ownership
-- dropping leaked rows and logging security events
+Flow:
 
-### 8.3 Retrieval quality pipeline
-- initial vector retrieval (`INITIAL_VECTOR_K`)
-- optional MMR diversification (`MMR_K`, `MMR_LAMBDA`)
-- optional cross-encoder rerank
-- multi-source balancing for cross-document queries
-- context formatting with citations (`[SOURCE N]` + metadata)
-- structured data expansion loads full material text for structured chunks
+1. Accept code execution request with language/timeout/stdin.
+2. Run security checks and sanitization.
+3. Execute in isolated workspace/sandbox context.
+4. Capture stdout/stderr/plots/files.
+5. Return stream and/or artifact references.
 
-## 9) Text Processing Pipeline
+## 7.5 RAG and Retrieval
 
-Primary orchestrator: `services/text_processing/extractor.py`.
+Source roots: `app/services/rag/*`.
 
-Supported source families:
-- document: pdf/docx/pptx/xlsx/csv/txt/md/html/rtf/epub/odt/ods/odp/eml/msg
-- image: OCR path
-- audio/video: transcription path
-- url/youtube: web scraping + transcript
+Flow:
 
-Notable behavior:
-- singleton initialization of OCR and transcription services to avoid repeated heavy model setup.
-- retry wrappers and fallback extractors for robust ingestion.
-- structured files are transformed into schema-rich summary chunks for better retrieval and lower prompt load.
+1. Material chunks embedded and stored in Chroma.
+2. Query retrieval via secure retriever with user/material notebook constraints.
+3. Optional MMR and reranking.
+4. Context formatting + LLM synthesis.
+5. Citation validation pass.
 
-## 10) Worker and Job Lifecycle
+## 7.6 Presentation / Explainer / Podcast
 
-Queue mechanics:
-- Jobs inserted into `background_jobs` with `pending`.
-- Worker fetches jobs by SQL `FOR UPDATE SKIP LOCKED` update-to-processing.
-- Concurrency limit: `MAX_CONCURRENT_JOBS=5`.
-- Stuck-job recovery resets stale processing jobs on startup.
-- Cleanup cron removes old completed/failed jobs.
+Presentation:
 
-Job payload variants:
-- file: `{material_id, file_path, filename, user_id, notebook_id}`
-- url/youtube/web: `{material_id, url, source_type, ...}`
-- text: `{material_id, text, title, ...}`
+- Generation and update via `services/presentation/*` plus legacy PPT generator path.
+- Export paths for HTML/PPT/PDF.
 
-## 11) Storage Layout and Artifacts
+Explainer:
 
-### 11.1 Persistent directories
-- uploads: `backend/data/uploads/{user_id}/...`
-- material text: `backend/data/material_text/{material_id}.txt`
-- chroma: `backend/data/chroma/`
-- generated files: `backend/output/*`
-- artifacts: `backend/data/artifacts/{artifact_id}.{ext}`
+- Presentation-to-video pipeline (script + TTS + composition).
 
-### 11.2 Temporary directories
-- code sandbox temp dirs under `/tmp/kepler_sandbox_*` and `/tmp/kepler_analysis_*`.
-- startup cleanup removes stale dirs.
+Podcast:
 
-## 12) Prompt System
+- Session creation + script/audio generation + interactive Q&A/bookmarks/annotations/export.
 
-Prompt folders under `app/prompts`:
-- chat: chat base/rag/block follow-up and synthesis templates
-- code: generation and repair
-- generation: flashcard/quiz/mindmap/presentation/podcast/etc.
-- system/shared: safety/style/format/reasoning and agent instructions
+## 8. Authentication and Session Security Flow
 
-Prompt usage pattern:
-- compose templates with variables.
-- pass to LLM abstraction (chat/structured mode) based on feature.
+Source roots:
 
-## 13) CLI Utilities
+- `app/services/auth/security.py`
+- `app/services/auth/service.py`
+- `app/routes/auth.py`
 
-Scripts under `backend/cli`:
-- model download and validation
-- chroma backup/export/import
-- embedding reindex and migration helpers
+Flow:
 
-These are operational tools and not directly in request path.
+1. Signup hashes password and stores user.
+2. Login verifies password and issues:
+- short-lived access token (bearer)
+- refresh token (cookie)
+3. Refresh endpoint rotates refresh token with family/reuse detection.
+4. Token reuse triggers family revocation.
+5. Startup and periodic cleanup remove expired tokens.
 
-## 14) End-to-End Feature Matrix
+## 9. Realtime and Async Infrastructure
 
-### 14.1 Upload to AI answer
-1. User uploads material.
-2. Material record + job created.
-3. Worker extracts/chunks/embeds content.
-4. Material status updates via WS.
-5. User selects completed material in UI.
-6. Chat request routes to RAG/agent/code/web.
-7. Response streamed by SSE and persisted to chat history.
+### 9.1 Websocket Manager
 
-### 14.2 Agent-generated report/file
-1. User asks complex action via chat.
-2. Capability routed to AGENT.
-3. LangGraph plans and executes tool steps.
-4. `python_auto` executes code and registers artifacts.
-5. Artifacts attached to response and available for download via `/artifacts/{id}`.
+Source: `app/services/ws_manager.py`.
 
-### 14.3 Presentation to explainer video
-1. Generate presentation from selected materials.
-2. Store JSON + HTML + PPT path.
-3. Request explainer generation referencing presentation.
-4. Background processor generates script/audio/video.
-5. Poll status endpoint.
-6. Fetch completed MP4.
+- Per-user connection registry.
+- Max 10 concurrent websocket connections per user.
+- Supports user-targeted send and broadcast.
+- Dead connections are pruned on send failures.
 
-### 14.4 Podcast flow
-1. Create podcast session with mode/language/materials.
-2. Start generation.
-3. Receive WS progress and segment readiness.
-4. Play audio segments.
-5. Ask interruptions and manage doubts/bookmarks/annotations.
-6. Export summary/report artifacts.
+### 9.2 Worker Queue
 
-## 15) Operational Observations
+Source: `app/services/worker.py` + `app/services/job_service.py`.
 
-- Rate limiter middleware currently no-op (`services/rate_limiter.py`).
-- Artifact serving endpoint uses artifact ID lookup and file path existence checks; there is no explicit ownership check in route itself.
-- Some feature overlap exists between legacy `routes/ppt.py` and newer `services/presentation/router.py` under same prefix.
-- Large upload and generation features rely heavily on in-process background tasks; horizontal scaling strategy should account for this.
+- Poll loop with event-notify optimization.
+- Concurrent processing with backoff on loop errors.
+- Graceful shutdown with timeout.
 
-## 16) Backend File Map (Source)
+## 10. Prompt and LLM Instruction Assets
 
-Primary source domains:
-- `app/main.py`
-- `app/routes/*.py`
-- `app/services/agent/*`
-- `app/services/chat_v2/*`
-- `app/services/code_execution/*`
-- `app/services/rag/*`
-- `app/services/text_processing/*`
-- `app/services/presentation/*`
-- `app/services/podcast/*`
-- `app/services/explainer/*`
-- `app/services/material_service.py`
-- `app/services/notebook_service.py`
-- `app/services/job_service.py`
-- `app/services/worker.py`
-- `app/services/auth/*`
-- `app/db/*`
-- `prisma/schema.prisma`
+Prompt packs under `app/prompts/`:
 
-This backend is a multi-modal AI learning platform backend with strong modularization around feature services, explicit asynchronous pipelines, and tenant-aware retrieval controls.
+- `chat/`: chat behavior, block actions, synthesis
+- `code/`: code generation/execution prompting
+- `generation/`: quiz/flashcard/mindmap/presentation/podcast/etc.
+- `system/`: planner/reflection/tool/router/system prompts
+- `shared/`: style/reasoning/formatting/safety
+
+This structure allows centralized prompt governance while feature services call into consistent prompt assets.
+
+## 11. CLI and Operational Utilities
+
+`backend/cli/` includes maintenance workflows:
+
+- `download_models.py`
+- `reindex.py`
+- `backup_chroma.py`
+- `export_embeddings.py`
+- `import_embeddings.py`
+- `migrate_material_joins.py`
+
+Used for indexing/model bootstrap/data migration/backup operations.
+
+## 12. Backend Source Inventory (Complete, Source-Focused)
+
+All source-focused backend files discovered:
+
+```text
+app/core/config.py
+app/core/__init__.py
+app/core/utils.py
+app/core/web_search.py
+app/db/chroma.py
+app/db/__init__.py
+app/db/prisma_client.py
+app/__init__.py
+app/main.py
+app/models/__init__.py
+app/models/model_schemas.py
+app/models/shared_enums.py
+app/prompts/chat/agent_synthesis.md
+app/prompts/chat/block_ask.md
+app/prompts/chat/block_explain.md
+app/prompts/chat/block_simplify.md
+app/prompts/chat/block_translate.md
+app/prompts/chat/chat_agent.md
+app/prompts/chat/chat_base.md
+app/prompts/chat/chat_rag.md
+app/prompts/chat/direct_response.md
+app/prompts/chat/web_search_synthesis.md
+app/prompts/code/code_execution.md
+app/prompts/code/code_generation.md
+app/prompts/generation/explainer.md
+app/prompts/generation/flashcard.md
+app/prompts/generation/flashcard_suggest.md
+app/prompts/generation/mindmap.md
+app/prompts/generation/notes.md
+app/prompts/generation/optimize.md
+app/prompts/generation/podcast.md
+app/prompts/generation/podcast_qa.md
+app/prompts/generation/presentation.md
+app/prompts/generation/presentation_suggest.md
+app/prompts/generation/quiz.md
+app/prompts/generation/quiz_suggest.md
+app/prompts/generation/study_guide.md
+app/prompts/generation/summary.md
+app/prompts/generation/web_completeness_check.md
+app/prompts/__init__.py
+app/prompts/shared/formatting.md
+app/prompts/shared/reasoning.md
+app/prompts/shared/safety.md
+app/prompts/shared/style.md
+app/prompts/system/agent_intent_classifier.md
+app/prompts/system/agent_planner.md
+app/prompts/system/agent_reflection.md
+app/prompts/system/agent_system.md
+app/prompts/system/agent_tool_selector.md
+app/prompts/system/base_system.md
+app/prompts/system/json_repair.md
+app/prompts/system/rag_system.md
+app/prompts/system/tool_system.md
+app/routes/ai_resource.py
+app/routes/artifacts.py
+app/routes/auth.py
+app/routes/chat.py
+app/routes/code_execution.py
+app/routes/explainer.py
+app/routes/flashcard.py
+app/routes/health.py
+app/routes/__init__.py
+app/routes/jobs.py
+app/routes/materials.py
+app/routes/mindmap.py
+app/routes/models.py
+app/routes/notebook.py
+app/routes/podcast_live.py
+app/routes/ppt.py
+app/routes/proxy.py
+app/routes/quiz.py
+app/routes/search.py
+app/routes/upload.py
+app/routes/utils.py
+app/routes/websocket_router.py
+app/services/agent/agent_orchestrator.py
+app/services/agent/artifact_executor.py
+app/services/agent/executor.py
+app/services/agent/__init__.py
+app/services/agent/kepler_fpdf.py
+app/services/agent/log_utils.py
+app/services/agent/material_files.py
+app/services/agent/memory.py
+app/services/agent/planner.py
+app/services/agent/prompts.py
+app/services/agent/resource_router.py
+app/services/agent/state.py
+app/services/agent/tool_selector.py
+app/services/agent/tools_registry.py
+app/services/ai_resource_builder.py
+app/services/auth/__init__.py
+app/services/auth/security.py
+app/services/auth/service.py
+app/services/chat_v2/context_builder.py
+app/services/chat_v2/__init__.py
+app/services/chat_v2/message_store.py
+app/services/chat_v2/orchestrator.py
+app/services/chat_v2/prompt_optimizer.py
+app/services/chat_v2/router_logic.py
+app/services/chat_v2/router.py
+app/services/chat_v2/schemas.py
+app/services/chat_v2/service.py
+app/services/chat_v2/streaming.py
+app/services/code_execution/__init__.py
+app/services/code_execution/sandbox_env.py
+app/services/code_execution/sandbox.py
+app/services/code_execution/security.py
+app/services/explainer/__init__.py
+app/services/explainer/processor.py
+app/services/explainer/script_generator.py
+app/services/explainer/tts.py
+app/services/explainer/video_composer.py
+app/services/file_validator.py
+app/services/flashcard/generator.py
+app/services/flashcard/__init__.py
+app/services/image_generation/gemini_service.py
+app/services/__init__.py
+app/services/job_service.py
+app/services/llm_service/__init__.py
+app/services/llm_service/llm.py
+app/services/llm_service/llm_schemas.py
+app/services/llm_service/structured_invoker.py
+app/services/material_service.py
+app/services/mindmap/generator.py
+app/services/model_manager.py
+app/services/notebook_name_generator.py
+app/services/notebook_service.py
+app/services/notebook_thumbnail_service.py
+app/services/performance_logger.py
+app/services/podcast/export_service.py
+app/services/podcast/__init__.py
+app/services/podcast/qa_service.py
+app/services/podcast/satisfaction_detector.py
+app/services/podcast/script_generator.py
+app/services/podcast/session_manager.py
+app/services/podcast/tts_service.py
+app/services/podcast/voice_map.py
+app/services/ppt/generator.py
+app/services/ppt/__init__.py
+app/services/ppt/screenshot_service.py
+app/services/ppt/slide_extractor.py
+app/services/presentation/editor_service.py
+app/services/presentation/generator.py
+app/services/presentation/html_renderer.py
+app/services/presentation/__init__.py
+app/services/presentation/pdf_exporter.py
+app/services/presentation/ppt_exporter.py
+app/services/presentation/router.py
+app/services/presentation/schemas.py
+app/services/quiz/generator.py
+app/services/quiz/__init__.py
+app/services/rag/citation_validator.py
+app/services/rag/context_builder.py
+app/services/rag/context_formatter.py
+app/services/rag/embedder.py
+app/services/rag/__init__.py
+app/services/rag/pipeline.py
+app/services/rag/reranker.py
+app/services/rag/secure_retriever.py
+app/services/rate_limiter.py
+app/services/research/__init__.py
+app/services/research/pdf_exporter.py
+app/services/research/pipeline.py
+app/services/storage_service.py
+app/services/text_processing/chunker.py
+app/services/text_processing/extractor.py
+app/services/text_processing/file_detector.py
+app/services/text_processing/__init__.py
+app/services/text_processing/ocr_service.py
+app/services/text_processing/pdf_extractor.py
+app/services/text_processing/resilient_runner.py
+app/services/text_processing/transcription_service.py
+app/services/text_processing/web_scraping.py
+app/services/text_processing/youtube_service.py
+app/services/tools/__init__.py
+app/services/tools/python_tool.py
+app/services/tools/rag_tool.py
+app/services/tools/research_tool.py
+app/services/tools/web_search_tool.py
+app/services/worker.py
+app/services/ws_manager.py
+cli/backup_chroma.py
+cli/download_models.py
+cli/export_embeddings.py
+cli/import_embeddings.py
+cli/__init__.py
+cli/migrate_material_joins.py
+cli/reindex.py
+prisma/schema.prisma
+```
+
+## 13. Backend Dependencies Snapshot
+
+Primary backend dependencies from `backend/requirements.txt` include:
+
+- FastAPI/Uvicorn ecosystem
+- LangChain/LangGraph + multiple model providers
+- Sentence-transformers + Torch + Transformers
+- Chroma vector DB
+- Prisma client
+- OCR/transcription stack (pytesseract/easyocr/whisper)
+- Document/media processing stack (pypdf/pymupdf/pdf2image/python-pptx/ffmpeg)
+- Web scraping/search support (`ddgs`, `trafilatura`, `youtube-transcript-api`, `yt-dlp`)
+- Security/auth (`python-jose`, `passlib`, `bcrypt`)
+- Testing (`pytest`, `pytest-asyncio`)
+
+---
+
+If you want, a second pass can add function-level call graphs for each route handler (per endpoint -> exact service functions -> exact DB table mutations).

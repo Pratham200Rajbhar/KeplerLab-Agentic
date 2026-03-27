@@ -1,167 +1,25 @@
-2026-03-27 12:03:06,918 app.db.prisma_client INFO Prisma client connected to database
-2026-03-27 12:03:06,919 main INFO Warming up embedding model (running in thread pool)…
-2026-03-27 12:03:07,029 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
-2026-03-27 12:03:07,029 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-27 12:03:09,776 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
-2026-03-27 12:03:10,432 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-27 12:03:11,423 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-27 12:03:11,436 app.db.chroma INFO ChromaDB collection 'chapters' ready (5975 existing chunks).
-2026-03-27 12:03:11,510 app.services.rag.embedder INFO Embedding model warm-up complete (5975 existing chunks).
-2026-03-27 12:03:11,511 main INFO Preloading reranker model (running in thread pool)…
-2026-03-27 12:03:13,607 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-27 12:03:16,452 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-27 12:03:16,452 app.services.rag.reranker INFO Reranker loaded successfully in 4.94s
-2026-03-27 12:03:16,453 main INFO Reranker preloaded.
-2026-03-27 12:03:16,458 main INFO Background job processor task created.
-2026-03-27 12:03:16,459 main INFO Ensuring sandbox packages are installed…
-2026-03-27 12:03:16,991 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-27 12:03:16,992 main INFO Output directories ensured.
-2026-03-27 12:03:16,992 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-27 12:03:17,031 app.services.worker WARNING [WORKER] Recovered 5 stuck job(s) → reset to pending: ['84a37c04-641b-4a4c-a707-62757d2b3358', '9117ef7d-cf18-4cde-bc81-fbf1b6a0dfac', '61274f0c-0f35-4ebf-b556-711b4da4c006', 'fdc5c210-0f50-4a7b-b603-ff8022b9f2c6', 'e6c1cea6-7667-4667-8b6b-7dd912726b16']
-2026-03-27 12:03:17,040 app.services.worker INFO Processing job 9117ef7d-cf18-4cde-bc81-fbf1b6a0dfac | material=aa32107e-f50f-4ffe-9e97-1e55a061ff32 type=youtube user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:03:17,046 app.services.worker INFO Processing job 61274f0c-0f35-4ebf-b556-711b4da4c006 | material=d6cf608f-7954-4c6c-a6ac-91ccbb41ceb0 type=url user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:03:17,068 app.services.worker INFO Processing job 84a37c04-641b-4a4c-a707-62757d2b3358 | material=fba1fe7b-1423-4382-9cd4-5487e87c4221 type=url user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:03:17,105 app.services.worker INFO Processing job fdc5c210-0f50-4a7b-b603-ff8022b9f2c6 | material=1637622e-ba33-491a-a776-83237d1c7443 type=url user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:03:17,130 app.services.worker INFO Processing job e6c1cea6-7667-4667-8b6b-7dd912726b16 | material=f3ccab77-2c41-492b-92b5-76f7e2028255 type=url user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:03:17,791 app.services.text_processing.extractor INFO URL category=html — downloading for direct extraction: https://www.usatoday.com/live-story/news/world/2026/03/26/iran-war-trump-israel-live-updates/89326321007/
-2026-03-27 12:03:17,794 app.services.text_processing.extractor INFO URL category=html — downloading for direct extraction: https://apnews.com/live/iran-war-israel-trump-03-26-2026
-2026-03-27 12:03:17,799 app.services.text_processing.extractor INFO URL category=html — downloading for direct extraction: https://www.nytimes.com/live/2026/03/25/world/iran-war-trump-oil-news/heres-the-latest
-2026-03-27 12:03:17,938 app.services.text_processing.extractor INFO Extracting file: /tmp/tmpb6j08gcu.tmp  ext=tmp  mime=application/octet-stream  category=document
-2026-03-27 12:03:17,939 app.services.text_processing.extractor INFO No registered extractor for ext=tmp — trying generic text fallback
-2026-03-27 12:03:18,133 app.services.storage_service INFO Saved material text: 1637622e-ba33-491a-a776-83237d1c7443 (73989 chars)
-2026-03-27 12:03:18,134 app.services.material_service INFO PERF save_text: 1.0ms  material=1637622e-ba33-491a-a776-83237d1c7443  chars=73989
-2026-03-27 12:03:18,134 app.services.text_processing.chunker INFO Detected Markdown structure, using heading-aware chunking
-2026-03-27 12:03:18,139 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
-2026-03-27 12:03:18,139 app.services.text_processing.chunker INFO Created 13 chunks from 3 sections (filtered 0 low-quality)
-2026-03-27 12:03:18,139 app.services.text_processing.extractor INFO Extracting file: /tmp/tmpigi5b6jp.tmp  ext=tmp  mime=application/octet-stream  category=document
-2026-03-27 12:03:18,139 app.services.text_processing.extractor INFO No registered extractor for ext=tmp — trying generic text fallback
-2026-03-27 12:03:18,139 app.services.material_service INFO PERF chunking: 5.5ms  chunks=13  material=1637622e-ba33-491a-a776-83237d1c7443
-2026-03-27 12:03:18,145 app.services.text_processing.extractor INFO URL category=html — downloading for direct extraction: https://www.news18.com/world/dubai-uae-iran-war-news-live-west-asia-conflict-latest-updates-abu-dhabi-kuwait-saudi-arabia-airport-flight-status-missile-drone-attacks-liveblog-ws-l-9997534.html
-2026-03-27 12:03:18,543 app.services.storage_service INFO Saved material text: d6cf608f-7954-4c6c-a6ac-91ccbb41ceb0 (158585 chars)
-2026-03-27 12:03:18,546 app.services.material_service INFO PERF save_text: 4.2ms  material=d6cf608f-7954-4c6c-a6ac-91ccbb41ceb0  chars=158585
-2026-03-27 12:03:18,548 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
-2026-03-27 12:03:18,558 app.services.text_processing.chunker INFO Filtered 2 low-quality chunks
-2026-03-27 12:03:18,558 app.services.text_processing.chunker INFO Created 9 chunks from 1 sections (filtered 2 low-quality)
-2026-03-27 12:03:18,558 app.services.material_service INFO PERF chunking: 12.2ms  chunks=9  material=d6cf608f-7954-4c6c-a6ac-91ccbb41ceb0
-2026-03-27 12:03:18,562 app.services.text_processing.extractor INFO Extracting file: /tmp/tmp3sjw7bpy.tmp  ext=html  mime=text/html  category=document
-2026-03-27 12:03:18,865 app.services.text_processing.extractor INFO Extracting file: /tmp/tmpkk8v1q8r.html  ext=html  mime=text/html  category=document
-2026-03-27 12:03:19,332 app.services.storage_service INFO Saved material text: f3ccab77-2c41-492b-92b5-76f7e2028255 (58830 chars)
-2026-03-27 12:03:19,391 app.services.material_service INFO PERF save_text: 121.7ms  material=f3ccab77-2c41-492b-92b5-76f7e2028255  chars=58830
-2026-03-27 12:03:19,416 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
-2026-03-27 12:03:19,419 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
-2026-03-27 12:03:19,419 app.services.text_processing.chunker INFO Created 43 chunks from 1 sections (filtered 0 low-quality)
-2026-03-27 12:03:19,421 app.services.material_service INFO PERF chunking: 8.4ms  chunks=43  material=f3ccab77-2c41-492b-92b5-76f7e2028255
-2026-03-27 12:03:19,427 app.services.storage_service INFO Saved material text: fba1fe7b-1423-4382-9cd4-5487e87c4221 (91983 chars)
-2026-03-27 12:03:19,428 app.services.material_service INFO PERF save_text: 7.4ms  material=fba1fe7b-1423-4382-9cd4-5487e87c4221  chars=91983
-2026-03-27 12:03:19,437 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
-2026-03-27 12:03:19,446 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
-2026-03-27 12:03:19,447 app.services.text_processing.chunker INFO Created 8 chunks from 1 sections (filtered 0 low-quality)
-2026-03-27 12:03:19,448 app.services.material_service INFO PERF chunking: 13.4ms  chunks=8  material=fba1fe7b-1423-4382-9cd4-5487e87c4221
-2026-03-27 12:03:44,788 app.services.text_processing.youtube_service WARNING Failed to get video metadata for https://www.youtube.com/watch?v=zG6RRR2qtOM: [0;31mERROR:[0m [youtube] zG6RRR2qtOM: Requested format is not available. Use --list-formats for a list of available formats
-2026-03-27 12:03:47,819 app.services.text_processing.youtube_service WARNING Failed to fetch transcript with preferred language 'en' for zG6RRR2qtOM: 
-Could not retrieve a transcript for the video https://www.youtube.com/watch?v=zG6RRR2qtOM! This is most likely caused by:
-
-No transcripts were found for any of the requested language codes: ['en']
-
-For this video (zG6RRR2qtOM) transcripts are available in the following languages:
-
-(MANUALLY CREATED)
-None
-
-(GENERATED)
- - hi ("Hindi (auto-generated)")
-
-(TRANSLATION LANGUAGES)
-None
-
-If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
-2026-03-27 12:03:52,560 app.services.storage_service INFO Saved material text: aa32107e-f50f-4ffe-9e97-1e55a061ff32 (24385 chars)
-2026-03-27 12:03:52,562 app.services.material_service INFO PERF save_text: 3.7ms  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32  chars=24385
-2026-03-27 12:03:52,563 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
-2026-03-27 12:03:52,566 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
-2026-03-27 12:03:52,566 app.services.text_processing.chunker INFO Created 2 chunks from 1 sections (filtered 0 low-quality)
-2026-03-27 12:03:52,566 app.services.material_service INFO PERF chunking: 3.8ms  chunks=2  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32
-2026-03-27 12:06:36,149 app.services.rag.embedder INFO Stored 43/43 chunks  material=f3ccab77-2c41-492b-92b5-76f7e2028255  user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:06:36,169 app.services.material_service INFO PERF embedding: 196729.8ms  chunks=43  material=f3ccab77-2c41-492b-92b5-76f7e2028255
-2026-03-27 12:06:36,451 app.services.material_service INFO PERF _process_material total (critical path): 197181.1ms  material=f3ccab77-2c41-492b-92b5-76f7e2028255
-2026-03-27 12:06:36,520 app.services.worker INFO [WORKER] job_processing_time=199323.1ms  job=e6c1cea6-7667-4667-8b6b-7dd912726b16  material=f3ccab77-2c41-492b-92b5-76f7e2028255  status=completed
-2026-03-27 12:06:39,215 app.services.material_service INFO Background AI title updated: material=f3ccab77-2c41-492b-92b5-76f7e2028255  title='U.S., Iran, and Israel Escalate Conflict Over Cease-Fire Ter'
-2026-03-27 12:07:50,709 app.services.rag.embedder INFO Stored 2/2 chunks  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32  user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
-2026-03-27 12:07:50,739 app.services.material_service INFO PERF embedding: 238077.0ms  chunks=2  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32
-2026-03-27 12:07:50,970 app.services.material_service INFO PERF _process_material total (critical path): 238411.9ms  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32
-2026-03-27 12:07:50,982 app.services.worker INFO [WORKER] job_processing_time=273931.4ms  job=9117ef7d-cf18-4cde-bc81-fbf1b6a0dfac  material=aa32107e-f50f-4ffe-9e97-1e55a061ff32  status=completed
-2026-03-27 12:09:13,576 main INFO POST /auth/refresh 200 0.36s [74d745ca]
-2026-03-27 12:09:13,756 main INFO GET /auth/me 200 0.09s [b61ce5d6]
-2026-03-27 12:09:14,118 performance INFO request_performance
-2026-03-27 12:09:14,120 main INFO GET /notebooks 200 0.21s [fa7b73a3]
-2026-03-27 12:09:14,180 performance INFO request_performance
-2026-03-27 12:09:14,180 main INFO GET /notebooks 200 0.05s [ee950ac1]
-2026-03-27 12:09:37,236 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
-2026-03-27 12:09:37,395 performance INFO request_performance
-2026-03-27 12:09:37,396 main INFO POST /chat/empty-suggestions 200 0.23s [733e0a90]
-2026-03-27 12:09:49,190 performance INFO request_performance
-2026-03-27 12:09:49,214 main INFO POST /chat/empty-suggestions 200 0.74s [608e186b]
-2026-03-27 12:09:52,157 performance INFO request_performance
-2026-03-27 12:09:52,158 main INFO POST /chat/empty-suggestions 200 0.10s [ab854397]
-2026-03-27 12:09:53,171 performance INFO request_performance
-2026-03-27 12:09:53,172 main INFO POST /chat/empty-suggestions 200 0.03s [670a0eba]
-2026-03-27 12:09:53,913 performance INFO request_performance
-2026-03-27 12:09:53,913 main INFO POST /chat/empty-suggestions 200 0.01s [ff00f715]
-2026-03-27 12:11:38,904 performance INFO request_performance
-2026-03-27 12:11:38,923 main INFO POST /notebooks 200 0.48s [56aa5202]
-2026-03-27 12:11:39,054 performance INFO request_performance
-2026-03-27 12:11:39,054 main INFO POST /chat/sessions 200 0.06s [7c5c7656]
-2026-03-27 12:11:39,270 main INFO GET /materials 200 0.12s [9e18975c]
-2026-03-27 12:11:39,476 main INFO GET /podcast/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.25s [fe4fbfaa]
-2026-03-27 12:11:39,540 performance INFO request_performance
-2026-03-27 12:11:39,541 main INFO GET /chat/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.36s [ab20b98d]
-2026-03-27 12:11:39,714 performance INFO request_performance
-2026-03-27 12:11:39,717 main INFO GET /notebooks/2e75500f-d9c1-4bc0-af41-2e6e19e43ece/content 200 0.49s [24da6f7c]
-2026-03-27 12:11:39,772 app.services.chat_v2.router_logic INFO Capability routed to NORMAL_CHAT (default)
-2026-03-27 12:11:39,781 performance INFO request_performance
-2026-03-27 12:11:39,783 main INFO POST /chat 200 0.48s [e93714a2]
-2026-03-27 12:11:41,863 performance INFO request_performance
-2026-03-27 12:11:41,868 main INFO GET /chat/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.04s [1adb187b]
-2026-03-27 12:11:42,035 performance INFO request_performance
-2026-03-27 12:11:42,036 main INFO GET /chat/history/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.06s [a8b8893a]
-2026-03-27 12:11:50,534 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
-2026-03-27 12:11:50,539 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
-2026-03-27 12:11:52,805 main INFO POST /auth/refresh 200 0.16s [2db2f236]
-2026-03-27 12:11:53,323 main INFO GET /auth/me 200 0.06s [fda30a32]
-2026-03-27 12:11:55,810 performance INFO request_performance
-2026-03-27 12:11:55,821 main INFO POST /chat/empty-suggestions 200 0.07s [909ecf56]
-2026-03-27 12:11:55,862 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
-2026-03-27 12:11:56,548 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
-2026-03-27 12:11:56,548 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
-2026-03-27 12:11:57,080 performance INFO request_performance
-2026-03-27 12:11:57,085 main INFO GET /notebooks 200 0.21s [96b392fc]
-2026-03-27 12:11:57,195 performance INFO request_performance
-2026-03-27 12:11:57,207 main INFO GET /notebooks 200 0.10s [52badfc7]
-2026-03-27 12:11:59,062 performance INFO request_performance
-2026-03-27 12:11:59,063 main INFO POST /notebooks/2e75500f-d9c1-4bc0-af41-2e6e19e43ece/thumbnail 200 1.82s [adb7d51a]
-2026-03-27 12:12:01,418 performance INFO request_performance
-2026-03-27 12:12:01,421 main INFO GET /notebooks/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.39s [95bbfe61]
-2026-03-27 12:12:01,477 performance INFO request_performance
-2026-03-27 12:12:01,481 main INFO GET /notebooks/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.05s [2ea44c2a]
-2026-03-27 12:12:01,842 main INFO GET /materials 200 0.30s [7368bec5]
-2026-03-27 12:12:01,911 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
-2026-03-27 12:12:02,017 performance INFO request_performance
-2026-03-27 12:12:02,038 main INFO POST /chat/empty-suggestions 200 0.49s [68bbf79f]
-2026-03-27 12:12:02,082 performance INFO request_performance
-2026-03-27 12:12:02,143 main INFO GET /chat/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.40s [f591250b]
-2026-03-27 12:12:02,154 main INFO GET /materials 200 0.15s [54f556cb]
-2026-03-27 12:12:02,154 main INFO GET /podcast/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.35s [70dcfc36]
-2026-03-27 12:12:02,158 performance INFO request_performance
-2026-03-27 12:12:02,160 main INFO GET /notebooks/2e75500f-d9c1-4bc0-af41-2e6e19e43ece/content 200 0.34s [4e749334]
-2026-03-27 12:12:02,161 performance INFO request_performance
-2026-03-27 12:12:02,161 main INFO GET /chat/history/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.33s [4f7a4bb4]
-2026-03-27 12:12:02,208 performance INFO request_performance
-2026-03-27 12:12:02,210 main INFO GET /chat/history/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.02s [5edd170e]
-2026-03-27 12:12:02,211 performance INFO request_performance
-2026-03-27 12:12:02,212 main INFO GET /chat/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.02s [8860d351]
-2026-03-27 12:12:03,274 performance INFO request_performance
-2026-03-27 12:12:03,297 main INFO GET /chat/sessions/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.10s [0c150f2c]
-2026-03-27 12:12:03,337 performance INFO request_performance
-2026-03-27 12:12:03,347 main INFO GET /chat/history/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.12s [0c5db5a3]
-2026-03-27 12:12:03,418 performance INFO request_performance
-2026-03-27 12:12:03,422 main INFO GET /chat/history/2e75500f-d9c1-4bc0-af41-2e6e19e43ece 200 0.06s [0cc4b84c]
+2026-03-27 21:59:55,888 app.db.prisma_client INFO Prisma client connected to database
+2026-03-27 21:59:55,888 main INFO Warming up embedding model (running in thread pool)…
+2026-03-27 21:59:56,007 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
+2026-03-27 21:59:56,007 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-27 21:59:58,866 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
+2026-03-27 21:59:59,599 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-27 22:00:00,453 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-27 22:00:00,467 app.db.chroma INFO ChromaDB collection 'chapters' ready (6233 existing chunks).
+2026-03-27 22:00:00,569 app.services.rag.embedder INFO Embedding model warm-up complete (6233 existing chunks).
+2026-03-27 22:00:00,570 main INFO Preloading reranker model (running in thread pool)…
+2026-03-27 22:00:00,707 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-27 22:00:03,839 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-27 22:00:03,839 app.services.rag.reranker INFO Reranker loaded successfully in 3.27s
+2026-03-27 22:00:03,840 main INFO Reranker preloaded.
+2026-03-27 22:00:03,841 main INFO Background job processor task created.
+2026-03-27 22:00:03,842 main INFO Ensuring sandbox packages are installed…
+2026-03-27 22:00:04,444 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-27 22:00:04,446 main INFO Output directories ensured.
+2026-03-27 22:00:04,447 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-27 22:00:18,463 main INFO POST /auth/refresh 200 0.03s [6cd833f2]
+2026-03-27 22:00:18,473 main INFO GET /auth/me 200 0.00s [37ea7fda]
+2026-03-27 22:00:18,538 performance INFO request_performance
+2026-03-27 22:00:18,538 main INFO GET /notebooks 200 0.01s [7afa7d48]
+2026-03-27 22:00:18,542 performance INFO request_performance
+2026-03-27 22:00:18,543 main INFO GET /notebooks 200 0.00s [7a9bfd5b]
