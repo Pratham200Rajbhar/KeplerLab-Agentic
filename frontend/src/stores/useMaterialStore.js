@@ -1,10 +1,12 @@
 import { create } from 'zustand';
+import { generateResources, uploadGeneratedResources } from '@/lib/api/aiResource';
 
 const useMaterialStore = create((set, get) => ({
   
   materials: [],
   currentMaterial: null,
   selectedSources: [],
+  aiResourceResult: null,
 
   
   setMaterials: (materialsOrUpdater) =>
@@ -63,6 +65,23 @@ const useMaterialStore = create((set, get) => ({
           ? sourcesOrUpdater(state.selectedSources)
           : sourcesOrUpdater,
     })),
+
+  generateAIResources: async (query, notebookId = null) => {
+    const result = await generateResources(query, notebookId);
+    set({ aiResourceResult: result });
+    return result;
+  },
+
+  uploadAIResources: async ({ result, notebookId = null, autoCreateNotebook = false, notesTitle } = {}) => {
+    const payload = {
+      resources: result?.resources || [],
+      notes: result?.notes || '',
+      notebookId,
+      autoCreateNotebook,
+      notesTitle,
+    };
+    return uploadGeneratedResources(payload);
+  },
 }));
 
 export default useMaterialStore;

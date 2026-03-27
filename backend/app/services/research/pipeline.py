@@ -220,6 +220,7 @@ async def stream_research(
     user_id: str,
     notebook_id: str,
     session_id: str,
+    material_ids: Optional[List[str]] = None,
 ) -> AsyncIterator[str]:
     start = time.time()
     all_sources: List[Dict[str, str]] = []

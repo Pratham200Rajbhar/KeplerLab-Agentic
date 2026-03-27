@@ -148,6 +148,97 @@ function getDocStats(text) {
   return { words, lines, chars, sections };
 }
 
+function splitKeyValuePairs(line) {
+  const pairs = [];
+  const pairRegex = /([A-Za-z][A-Za-z0-9 _-]{1,40}):\s*([^\n]+?)(?=\s+[A-Za-z][A-Za-z0-9 _-]{1,40}:|$)/g;
+  let match;
+  while ((match = pairRegex.exec(line)) !== null) {
+    const key = match[1].trim();
+    const value = match[2].trim();
+    if (key && value) pairs.push({ key, value });
+  }
+  return pairs;
+}
+
+function normalizeTranscriptText(text) {
+  if (!text) return '';
+  if (text.includes('\n')) return text;
+
+  // Add breathing space in long single-line transcripts.
+  const punctuated = text.replace(/([.!?।])\s+/g, '$1\n');
+  if (punctuated.includes('\n')) return punctuated;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  for (let i = 0; i < words.length; i += 18) {
+    lines.push(words.slice(i, i + 18).join(' '));
+  }
+  return lines.join('\n');
+}
+
+function parseResourceStructuredContent(text) {
+  const lines = text.split('\n');
+  const metadata = [];
+  const sections = [];
+  let sawBody = false;
+  let currentSection = null;
+
+  const flushSection = () => {
+    if (!currentSection) return;
+    const content = currentSection.content.join('\n').trim();
+    if (content) {
+      sections.push({
+        title: currentSection.title,
+        kind: currentSection.kind,
+        content: currentSection.kind === 'transcript' ? normalizeTranscriptText(content) : content,
+      });
+    }
+    currentSection = null;
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (!line) {
+      if (currentSection) currentSection.content.push('');
+      continue;
+    }
+
+    const sectionMatch = line.match(/^(Description|Transcript|Summary|Notes|Key Points)\s*:\s*(.*)$/i);
+    if (sectionMatch) {
+      sawBody = true;
+      flushSection();
+      const title = sectionMatch[1][0].toUpperCase() + sectionMatch[1].slice(1).toLowerCase();
+      const kind = title.toLowerCase() === 'transcript' ? 'transcript' : 'text';
+      currentSection = { title, kind, content: [] };
+      if (sectionMatch[2]) currentSection.content.push(sectionMatch[2]);
+      continue;
+    }
+
+    if (!sawBody) {
+      const pairs = splitKeyValuePairs(line);
+      if (pairs.length > 0) {
+        metadata.push(...pairs);
+        continue;
+      }
+    }
+
+    sawBody = true;
+    if (!currentSection) {
+      currentSection = { title: 'Content', kind: 'text', content: [] };
+    }
+    currentSection.content.push(rawLine);
+  }
+
+  flushSection();
+
+  if (metadata.length < 2 && sections.length === 0) {
+    return null;
+  }
+
+  return { metadata, sections };
+}
+
 function DocStatsBar({ text }) {
   const stats = useMemo(() => getDocStats(text), [text]);
   return (
@@ -165,6 +256,7 @@ function DocStatsBar({ text }) {
 }
 
 function TextPreview({ text, type }) {
+  const structured = useMemo(() => parseResourceStructuredContent(text), [text]);
   const sections = useMemo(() => {
     const sectionRegex = /===\s*(.+?)\s*===/g;
     const parts = [];
@@ -191,18 +283,66 @@ function TextPreview({ text, type }) {
         <div className="doc-preview-type-badge">{getTypeBadge(type)}</div>
         <DocStatsBar text={text} />
       </div>
-      <div className="doc-preview-text-content">
-        {sections.map((section, i) => {
-          if (section.type === 'header') {
-            return (
-              <div key={i} className="doc-preview-section-header">
-                <div className="doc-preview-section-line" /><span>{section.content}</span><div className="doc-preview-section-line" />
-              </div>
-            );
-          }
-          return <div key={i} className="doc-preview-text-block markdown-content"><MarkdownRenderer content={section.content} /></div>;
-        })}
-      </div>
+
+      {structured && (
+        <div className="mb-5 space-y-4">
+          {structured.metadata.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {structured.metadata.map((item, idx) => (
+                <div key={`${item.key}-${idx}`} className="rounded-lg border border-border bg-surface-raised/50 p-3">
+                  <div className="text-[11px] uppercase tracking-wide text-text-muted mb-1">{item.key}</div>
+                  {item.value.startsWith('http://') || item.value.startsWith('https://') ? (
+                    <a
+                      href={item.value}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-accent-light hover:underline break-all"
+                    >
+                      {item.value}
+                    </a>
+                  ) : (
+                    <div className="text-sm text-text-primary leading-relaxed break-words">{item.value}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {structured.sections.length > 0 && (
+            <div className="space-y-3">
+              {structured.sections.map((section, idx) => (
+                <div key={`${section.title}-${idx}`} className="rounded-lg border border-border bg-surface-overlay/50 p-3 sm:p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">{section.title}</div>
+                  {section.kind === 'transcript' ? (
+                    <pre className="text-[13px] leading-7 text-text-primary whitespace-pre-wrap break-words font-sans">
+                      {section.content}
+                    </pre>
+                  ) : (
+                    <div className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                      {section.content}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!structured && (
+        <div className="doc-preview-text-content">
+          {sections.map((section, i) => {
+            if (section.type === 'header') {
+              return (
+                <div key={i} className="doc-preview-section-header">
+                  <div className="doc-preview-section-line" /><span>{section.content}</span><div className="doc-preview-section-line" />
+                </div>
+              );
+            }
+            return <div key={i} className="doc-preview-text-block markdown-content"><MarkdownRenderer content={section.content} /></div>;
+          })}
+        </div>
+      )}
     </div>
   );
 }

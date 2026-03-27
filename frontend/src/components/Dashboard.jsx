@@ -30,8 +30,8 @@ import {
 
 export default function Dashboard() {
   const { user, logout, isAuthenticated, isLoading } = useAuthStore();
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
   const router = useRouter();
   const toast = useToast();

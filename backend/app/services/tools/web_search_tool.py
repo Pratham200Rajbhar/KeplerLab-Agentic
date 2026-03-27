@@ -27,8 +27,8 @@ from app.services.chat_v2.streaming import (
 logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────
-_MAX_ROUNDS = 3          # max iterative search rounds
-_URLS_PER_ROUND = 10     # URLs to scrape per round
+_MAX_ROUNDS = 2          # max iterative search rounds
+_URLS_PER_ROUND = 8      # URLs to scrape per round
 _DDG_RESULTS = 8         # DDG results requested per query
 _CONTENT_LIMIT = 5000    # chars kept per scraped page for synthesis
 _COMPLETENESS_THRESHOLD = 80   # confidence % above which we stop iterating
@@ -158,7 +158,7 @@ async def _search_and_scrape(
     async def _one_scrape(hit: Dict) -> Optional[Dict]:
         url = hit["url"]
         try:
-            fetched = await fetch_url_content(url)
+            fetched = await fetch_url_content(url, timeout=10)
             if fetched and fetched.get("text"):
                 return {
                     "title": fetched.get("title") or hit.get("title", ""),

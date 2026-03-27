@@ -20,16 +20,21 @@ export default function ChatPanelWithParams() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParamsString = searchParams.toString();
 
   const currentSessionId = searchParams.get('session') || null;
   const setCurrentSessionId = useCallback(
     (id) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const current = new URLSearchParams(searchParamsString).get('session') || null;
+      if ((id || null) === current) return;
+
+      const params = new URLSearchParams(searchParamsString);
       if (id) params.set('session', id);
       else params.delete('session');
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
-    [searchParams, router, pathname],
+    [searchParamsString, router, pathname],
   );
 
   return (
@@ -109,17 +114,17 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       const data = await loadSessions();
       if (cancelled) return;
       setSessions(data);
-
-      const isValid = currentSessionId && data.some((s) => s.id === currentSessionId);
-      if (!isValid && data.length > 0) {
-        setCurrentSessionId(data[0].id);
-      } else if (!isValid) {
-        setCurrentSessionId(null);
-      }
     })();
 
     return () => { cancelled = true; };
-  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, loadSessions, currentSessionId, setCurrentSessionId]);
+  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, loadSessions, setCurrentSessionId]);
+
+  useEffect(() => {
+    if (!currentSessionId) return;
+    const exists = sessions.some((s) => s.id === currentSessionId);
+    if (exists) return;
+    setCurrentSessionId(sessions.length > 0 ? sessions[0].id : null);
+  }, [sessions, currentSessionId, setCurrentSessionId]);
 
   useEffect(() => {
     if (sessions.length > 0 && !currentSessionId) {

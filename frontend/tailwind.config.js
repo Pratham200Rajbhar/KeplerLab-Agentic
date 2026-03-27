@@ -53,21 +53,21 @@ module.exports = {
         'info-subtle': 'var(--info-subtle)',
         'info-border': 'var(--info-border)',
         
-        // Stitch Landing Page Colors
-        'stitch-primary': '#10b981',
-        'stitch-primary-container': '#064e3b',
-        'stitch-on-primary': '#ffffff',
-        'stitch-on-primary-container': '#d1fae5',
-        'stitch-secondary': '#34d399',
-        'stitch-secondary-container': '#065f46',
-        'stitch-surface': '#040d0a',
-        'stitch-surface-container': '#061511',
-        'stitch-surface-container-high': '#0b231d',
-        'stitch-surface-container-low': '#020806',
-        'stitch-outline-variant': '#1d3d34',
-        'stitch-on-surface-variant': '#a7f3d0',
-        'stitch-background': '#040d0a',
-        'stitch-on-background': '#ecfdf5'
+        // Stitch Landing Page Colors (theme-aware via CSS variables)
+        'stitch-primary': 'rgb(var(--stitch-primary-rgb) / <alpha-value>)',
+        'stitch-primary-container': 'rgb(var(--stitch-primary-container-rgb) / <alpha-value>)',
+        'stitch-on-primary': 'rgb(var(--stitch-on-primary-rgb) / <alpha-value>)',
+        'stitch-on-primary-container': 'rgb(var(--stitch-on-primary-container-rgb) / <alpha-value>)',
+        'stitch-secondary': 'rgb(var(--stitch-secondary-rgb) / <alpha-value>)',
+        'stitch-secondary-container': 'rgb(var(--stitch-secondary-container-rgb) / <alpha-value>)',
+        'stitch-surface': 'rgb(var(--stitch-surface-rgb) / <alpha-value>)',
+        'stitch-surface-container': 'rgb(var(--stitch-surface-container-rgb) / <alpha-value>)',
+        'stitch-surface-container-high': 'rgb(var(--stitch-surface-container-high-rgb) / <alpha-value>)',
+        'stitch-surface-container-low': 'rgb(var(--stitch-surface-container-low-rgb) / <alpha-value>)',
+        'stitch-outline-variant': 'rgb(var(--stitch-outline-variant-rgb) / <alpha-value>)',
+        'stitch-on-surface-variant': 'rgb(var(--stitch-on-surface-variant-rgb) / <alpha-value>)',
+        'stitch-background': 'rgb(var(--stitch-background-rgb) / <alpha-value>)',
+        'stitch-on-background': 'rgb(var(--stitch-on-background-rgb) / <alpha-value>)'
       },
       boxShadow: {
         glow: '0 0 24px rgba(16, 185, 129, 0.15), 0 0 60px rgba(16, 185, 129, 0.05)',

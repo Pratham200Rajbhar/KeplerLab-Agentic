@@ -1,145 +1,242 @@
-2026-03-13 10:52:52,302 app.db.prisma_client INFO Prisma client connected to database
-2026-03-13 10:52:52,303 main INFO Warming up embedding model (running in thread pool)…
-2026-03-13 10:52:52,415 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
-2026-03-13 10:52:52,415 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-13 10:52:55,072 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
-2026-03-13 10:52:56,012 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-13 10:52:56,175 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-13 10:52:56,176 app.db.chroma INFO ChromaDB collection 'chapters' ready (2429 existing chunks).
-2026-03-13 10:52:56,260 app.services.rag.embedder INFO Embedding model warm-up complete (2429 existing chunks).
-2026-03-13 10:52:56,260 main INFO Preloading reranker model (running in thread pool)…
-2026-03-13 10:52:58,375 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-13 10:53:00,384 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-13 10:53:00,385 app.services.rag.reranker INFO Reranker loaded successfully in 4.12s
-2026-03-13 10:53:00,385 main INFO Reranker preloaded.
-2026-03-13 10:53:00,386 main INFO Background job processor task created.
-2026-03-13 10:53:00,388 main INFO Ensuring sandbox packages are installed…
-2026-03-13 10:53:00,983 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-13 10:53:00,984 main INFO Output directories ensured.
-2026-03-13 10:53:00,985 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-13 10:53:10,235 main INFO POST /auth/refresh 200 0.01s [6cb8c9b0]
-2026-03-13 10:53:10,273 main INFO GET /auth/me 200 0.00s [6ab31534]
-2026-03-13 10:53:10,290 performance INFO request_performance
-2026-03-13 10:53:10,290 main INFO GET /notebooks 200 0.01s [e02542a9]
-2026-03-13 10:53:19,158 performance INFO request_performance
-2026-03-13 10:53:19,158 main INFO POST /chat/empty-suggestions 200 0.00s [cec73ba9]
-2026-03-13 10:53:19,181 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 connected
-2026-03-13 10:53:20,835 app.services.notebook_service INFO Created notebook: cedf940e-4637-4f80-bf41-f1db527e6bc4 for user: 1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:53:20,836 performance INFO request_performance
-2026-03-13 10:53:20,837 main INFO POST /notebooks 201 0.02s [7bac9ca8]
-2026-03-13 10:53:20,858 performance INFO request_performance
-2026-03-13 10:53:20,858 main INFO POST /chat/sessions 200 0.01s [23171982]
-2026-03-13 10:53:20,881 main INFO GET /materials 200 0.02s [4ddbf93b]
-2026-03-13 10:53:20,891 main INFO GET /podcast/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.02s [1de227cd]
-2026-03-13 10:53:20,895 performance INFO request_performance
-2026-03-13 10:53:20,896 app.services.chat_v2.router_logic INFO Capability routed to NORMAL_CHAT (default)
-2026-03-13 10:53:20,897 performance INFO request_performance
-2026-03-13 10:53:20,897 main INFO GET /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4/content 200 0.03s [6699f820]
-2026-03-13 10:53:20,897 main INFO POST /chat 200 0.02s [6706d97e]
-2026-03-13 10:53:20,964 performance INFO request_performance
-2026-03-13 10:53:20,964 main INFO GET /chat/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.09s [4dd81d43]
-2026-03-13 10:53:23,315 performance INFO request_performance
-2026-03-13 10:53:23,316 main INFO GET /chat/history/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [30613c67]
-2026-03-13 10:53:37,902 app.routes.upload INFO Batch upload started: 1 files user=1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:53:37,907 app.routes.upload INFO Batch stream: 4.5ms  file=Introduction.pdf  size=2793703 bytes
-2026-03-13 10:53:37,914 app.services.file_validator INFO File validation passed: Introduction.pdf → b5c3120c62cb4aed8e0600bd2397b5a6.pdf (application/pdf, 2793703 bytes)
-2026-03-13 10:53:37,914 app.routes.upload INFO Validation passed: Introduction.pdf -> b5c3120c62cb4aed8e0600bd2397b5a6.pdf (application/pdf)
-2026-03-13 10:53:37,924 app.services.material_service INFO Created material record 1697abad-82a2-430b-9dfa-5394b7944d23 (pending) for user 1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:53:37,932 app.services.job_service INFO Created background job 88b7fc37-0d93-46da-bb82-89f4d824d97c type=material_processing for user=1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:53:37,934 main INFO POST /upload/batch 202 0.07s [c6aa61e7]
-2026-03-13 10:53:37,936 app.services.worker INFO Processing job 88b7fc37-0d93-46da-bb82-89f4d824d97c | material=1697abad-82a2-430b-9dfa-5394b7944d23 type=file user=1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:53:37,943 app.services.text_processing.extractor INFO Extracting file: /disk1/KeplerLab_Agentic/backend/./data/uploads/1973bf30-b664-4e3b-ab20-1d3806f27416/81ce728639de430ba150d978f69aa921_Introduction.pdf  ext=pdf  mime=application/pdf  category=document
-2026-03-13 10:53:38,086 app.services.text_processing.pdf_extractor INFO Digital PDF detected (avg 275 chars/page), using PyMuPDF
-2026-03-13 10:53:39,377 app.services.text_processing.resilient_runner INFO PDF-OCR attempt 1/2 (timeout=300s)
-2026-03-13 10:53:39,487 app.services.text_processing.ocr_service INFO OCR GPU mode: NVIDIA GeForce RTX 3050 6GB Laptop GPU (CUDA 12.8)
-2026-03-13 10:53:39,488 app.services.text_processing.extractor INFO Initialising OCRService singleton — first use.
-2026-03-13 10:53:40,956 app.services.text_processing.ocr_service INFO EasyOCR initialised in GPU mode
-2026-03-13 10:53:41,301 app.services.text_processing.ocr_service INFO EasyOCR warm-up complete
-2026-03-13 10:53:41,302 app.services.text_processing.ocr_service INFO OCR: processing 11/61 pages  pdf=/disk1/KeplerLab_Agentic/backend/./data/uploads/1973bf30-b664-4e3b-ab20-1d3806f27416/81ce728639de430ba150d978f69aa921_Introduction.pdf
-2026-03-13 10:53:41,899 app.services.text_processing.ocr_service INFO OCR processing page 1/61
-2026-03-13 10:53:43,160 app.services.text_processing.ocr_service INFO OCR processing page 9/61
-2026-03-13 10:53:44,307 app.services.text_processing.ocr_service INFO OCR processing page 10/61
-2026-03-13 10:53:45,535 app.services.text_processing.ocr_service INFO OCR processing page 38/61
-2026-03-13 10:53:45,978 main INFO GET /materials 200 0.01s [01c47daa]
-2026-03-13 10:53:46,611 app.services.text_processing.ocr_service INFO OCR processing page 39/61
-2026-03-13 10:53:47,990 app.services.text_processing.ocr_service INFO OCR processing page 40/61
-2026-03-13 10:53:49,069 app.services.text_processing.ocr_service INFO OCR processing page 44/61
-2026-03-13 10:53:50,307 app.services.text_processing.ocr_service INFO OCR processing page 46/61
-2026-03-13 10:53:53,026 app.services.text_processing.ocr_service INFO OCR processing page 47/61
-2026-03-13 10:53:54,009 main INFO GET /materials 200 0.01s [05ef33b8]
-2026-03-13 10:53:54,025 app.services.text_processing.ocr_service INFO OCR processing page 49/61
-2026-03-13 10:53:55,212 app.services.text_processing.ocr_service INFO OCR processing page 50/61
-2026-03-13 10:53:56,448 app.services.material_service INFO PERF extraction: 18506.7ms  material=1697abad-82a2-430b-9dfa-5394b7944d23  category=document
-2026-03-13 10:53:56,454 app.services.storage_service INFO Saved material text: 1697abad-82a2-430b-9dfa-5394b7944d23 (34589 chars)
-2026-03-13 10:53:56,454 app.services.material_service INFO PERF save_text: 5.6ms  material=1697abad-82a2-430b-9dfa-5394b7944d23  chars=34589
-2026-03-13 10:53:56,454 app.services.text_processing.chunker INFO Detected Markdown structure, using heading-aware chunking
-2026-03-13 10:53:56,457 app.services.text_processing.chunker INFO Filtered 112 low-quality chunks
-2026-03-13 10:53:56,457 app.services.text_processing.chunker INFO Created 64 chunks from 70 sections (filtered 112 low-quality)
-2026-03-13 10:53:56,457 app.services.material_service INFO PERF chunking: 3.0ms  chunks=64  material=1697abad-82a2-430b-9dfa-5394b7944d23
-2026-03-13 10:54:04,493 main INFO GET /materials 200 0.01s [f1e3da52]
-2026-03-13 10:54:12,546 main INFO GET /materials 200 0.01s [aaf8e9a1]
-2026-03-13 10:54:20,589 main INFO GET /materials 200 0.01s [18297f42]
-2026-03-13 10:54:21,495 app.services.rag.embedder INFO Stored 64/64 chunks  material=1697abad-82a2-430b-9dfa-5394b7944d23  user=1973bf30-b664-4e3b-ab20-1d3806f27416
-2026-03-13 10:54:21,496 app.services.material_service INFO PERF embedding: 25034.2ms  chunks=64  material=1697abad-82a2-430b-9dfa-5394b7944d23
-2026-03-13 10:54:21,500 app.services.material_service INFO PERF _process_material total (critical path): 25051.3ms  material=1697abad-82a2-430b-9dfa-5394b7944d23
-2026-03-13 10:54:21,500 app.services.material_service INFO PERF process_material_by_id total: 43564.3ms  material=1697abad-82a2-430b-9dfa-5394b7944d23
-2026-03-13 10:54:21,505 app.services.worker INFO [WORKER] job_processing_time=43564.4ms  job=88b7fc37-0d93-46da-bb82-89f4d824d97c  material=1697abad-82a2-430b-9dfa-5394b7944d23  status=completed
-2026-03-13 10:54:21,511 main INFO GET /materials 200 0.01s [2ec69e2d]
-2026-03-13 10:54:23,292 app.services.material_service INFO Background AI title updated: material=1697abad-82a2-430b-9dfa-5394b7944d23  title='Cloud Computing Course Outline'
-2026-03-13 10:54:23,311 main INFO GET /materials 200 0.01s [4000698e]
-2026-03-13 10:55:01,245 app.routes.mindmap INFO MindMap generation started | user=1973bf30-b664-4e3b-ab20-1d3806f27416 | notebook=cedf940e-4637-4f80-bf41-f1db527e6bc4 | material_ids=['1697abad-82a2-430b-9dfa-5394b7944d23']
-2026-03-13 10:55:01,247 app.routes.mindmap INFO MindMap LLM call dispatched | user=1973bf30-b664-4e3b-ab20-1d3806f27416 | notebook=cedf940e-4637-4f80-bf41-f1db527e6bc4
-2026-03-13 10:57:34,151 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
-2026-03-13 10:57:34,181 app.routes.mindmap INFO MindMap generation complete | user=1973bf30-b664-4e3b-ab20-1d3806f27416 | notebook=cedf940e-4637-4f80-bf41-f1db527e6bc4 | nodes=69 | elapsed=152.93s
-2026-03-13 10:57:34,183 main INFO POST /mindmap 200 152.94s [690aa9f6]
-2026-03-13 10:57:34,205 performance INFO request_performance
-2026-03-13 10:57:34,206 main INFO POST /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4/content 422 0.01s [9c27c882]
-2026-03-13 11:06:10,293 main INFO POST /auth/refresh 200 0.01s [e2c1e627]
-2026-03-13 11:06:55,898 performance INFO request_performance
-2026-03-13 11:06:55,899 main INFO GET /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4/content 200 0.01s [590faf0b]
-2026-03-13 11:06:55,937 main INFO GET /podcast/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.05s [9a5173ac]
-2026-03-13 11:10:21,588 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 disconnected
-2026-03-13 11:10:21,589 app.services.ws_manager INFO WS disconnect: user=1973bf30-b664-4e3b-ab20-1d3806f27416  remaining=0
-2026-03-13 11:10:21,735 main INFO POST /auth/refresh 200 0.02s [db39c178]
-2026-03-13 11:10:21,778 main INFO GET /auth/me 200 0.01s [421205be]
-2026-03-13 11:10:22,106 performance INFO request_performance
-2026-03-13 11:10:22,107 main INFO POST /chat/empty-suggestions 200 0.00s [0daef0c7]
-2026-03-13 11:10:22,116 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 connected
-2026-03-13 11:10:25,170 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 disconnected
-2026-03-13 11:10:25,170 app.services.ws_manager INFO WS disconnect: user=1973bf30-b664-4e3b-ab20-1d3806f27416  remaining=0
-2026-03-13 11:10:25,195 performance INFO request_performance
-2026-03-13 11:10:25,195 main INFO GET /notebooks 200 0.01s [d6b91cb4]
-2026-03-13 11:10:25,204 performance INFO request_performance
-2026-03-13 11:10:25,205 main INFO GET /notebooks 200 0.01s [273edb17]
-2026-03-13 11:10:25,953 performance INFO request_performance
-2026-03-13 11:10:25,953 main INFO GET /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [285160a7]
-2026-03-13 11:10:25,959 performance INFO request_performance
-2026-03-13 11:10:25,960 main INFO GET /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [8cbd8b90]
-2026-03-13 11:10:25,983 performance INFO request_performance
-2026-03-13 11:10:25,983 main INFO POST /chat/empty-suggestions 200 0.01s [c0acf5c0]
-2026-03-13 11:10:26,001 main INFO GET /materials 200 0.02s [daf11355]
-2026-03-13 11:10:26,002 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 connected
-2026-03-13 11:10:26,006 main INFO GET /podcast/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.02s [fc7d50ef]
-2026-03-13 11:10:26,027 performance INFO request_performance
-2026-03-13 11:10:26,028 main INFO GET /chat/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.04s [0700c14d]
-2026-03-13 11:10:26,031 performance INFO request_performance
-2026-03-13 11:10:26,034 main INFO GET /chat/history/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.05s [80a32786]
-2026-03-13 11:10:26,043 performance INFO request_performance
-2026-03-13 11:10:26,044 main INFO GET /chat/sessions/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [5ac7f938]
-2026-03-13 11:10:26,047 performance INFO request_performance
-2026-03-13 11:10:26,047 main INFO GET /notebooks/cedf940e-4637-4f80-bf41-f1db527e6bc4/content 200 0.05s [a99e4a51]
-2026-03-13 11:10:26,049 performance INFO request_performance
-2026-03-13 11:10:26,049 main INFO GET /chat/history/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [de86c1f8]
-2026-03-13 11:10:26,059 main INFO GET /materials 200 0.06s [60759421]
-2026-03-13 11:10:26,145 performance INFO request_performance
-2026-03-13 11:10:26,145 main INFO GET /chat/history/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [821c7993]
-2026-03-13 11:10:26,154 performance INFO request_performance
-2026-03-13 11:10:26,154 main INFO GET /chat/history/cedf940e-4637-4f80-bf41-f1db527e6bc4 200 0.01s [7d495966]
-2026-03-13 11:10:33,822 performance INFO request_performance
-2026-03-13 11:10:33,823 main INFO POST /chat/empty-suggestions 200 7.80s [ced8f8d8]
-2026-03-13 11:23:22,041 main INFO POST /auth/refresh 200 0.03s [020248ab]
-2026-03-13 11:27:12,457 app.routes.websocket_router INFO WS /ws/jobs/1973bf30-b664-4e3b-ab20-1d3806f27416 disconnected
-2026-03-13 11:27:12,458 app.services.ws_manager INFO WS disconnect: user=1973bf30-b664-4e3b-ab20-1d3806f27416  remaining=0
-2026-03-13 11:27:12,557 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
-2026-03-13 11:27:12,557 main INFO Background job processor stopped.
-2026-03-13 11:27:12,558 app.db.prisma_client INFO Prisma client disconnected from database
+2026-03-27 08:27:47,916 app.db.prisma_client INFO Prisma client connected to database
+2026-03-27 08:27:47,916 main INFO Warming up embedding model (running in thread pool)…
+2026-03-27 08:27:48,094 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
+2026-03-27 08:27:48,094 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-27 08:27:52,793 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
+2026-03-27 08:27:53,913 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-27 08:27:54,803 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-27 08:27:54,816 app.db.chroma INFO ChromaDB collection 'chapters' ready (5641 existing chunks).
+2026-03-27 08:27:54,935 app.services.rag.embedder INFO Embedding model warm-up complete (5641 existing chunks).
+2026-03-27 08:27:54,936 main INFO Preloading reranker model (running in thread pool)…
+2026-03-27 08:27:57,156 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-27 08:28:01,434 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-27 08:28:01,435 app.services.rag.reranker INFO Reranker loaded successfully in 6.50s
+2026-03-27 08:28:01,435 main INFO Reranker preloaded.
+2026-03-27 08:28:01,437 main INFO Background job processor task created.
+2026-03-27 08:28:01,439 main INFO Ensuring sandbox packages are installed…
+2026-03-27 08:28:02,580 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-27 08:28:02,583 main INFO Output directories ensured.
+2026-03-27 08:28:02,585 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-27 08:28:02,637 app.services.worker INFO Processing job 3cd5a077-1011-4d07-a238-d42a4e43f5e2 | material=f840a1f8-b591-4087-ba6b-2288a8bf2d53 type=url user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 08:28:02,646 app.services.worker INFO Processing job 313e6038-6cf5-4525-96b5-213a41d949cb | material=06fe71ba-2067-4553-ac5b-a954d48e2aa9 type=text user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 08:28:02,658 app.services.storage_service INFO Saved material text: 06fe71ba-2067-4553-ac5b-a954d48e2aa9 (2844 chars)
+2026-03-27 08:28:02,658 app.services.material_service INFO PERF save_text: 0.8ms  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9  chars=2844
+2026-03-27 08:28:02,659 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
+2026-03-27 08:28:02,659 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
+2026-03-27 08:28:02,659 app.services.text_processing.chunker INFO Created 7 chunks from 1 sections (filtered 0 low-quality)
+2026-03-27 08:28:02,660 app.services.material_service INFO PERF chunking: 1.2ms  chunks=7  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9
+2026-03-27 08:28:03,666 app.services.text_processing.extractor INFO URL category=html — downloading for direct extraction: https://www.britannica.com/event/2026-Iran-War
+2026-03-27 08:28:04,097 app.services.text_processing.extractor INFO Extracting file: /tmp/tmpcog_4uys.tmp  ext=tmp  mime=application/javascript  category=document
+2026-03-27 08:28:04,098 app.services.text_processing.extractor INFO No registered extractor for ext=tmp — trying generic text fallback
+2026-03-27 08:28:04,239 app.services.storage_service INFO Saved material text: f840a1f8-b591-4087-ba6b-2288a8bf2d53 (135770 chars)
+2026-03-27 08:28:04,239 app.services.material_service INFO PERF save_text: 1.1ms  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53  chars=135770
+2026-03-27 08:28:04,243 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
+2026-03-27 08:28:04,252 app.services.text_processing.chunker INFO Filtered 57 low-quality chunks
+2026-03-27 08:28:04,252 app.services.text_processing.chunker INFO Created 163 chunks from 1 sections (filtered 57 low-quality)
+2026-03-27 08:28:04,252 app.services.material_service INFO PERF chunking: 12.9ms  chunks=163  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53
+2026-03-27 08:28:10,960 app.services.rag.embedder INFO Stored 7/7 chunks  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9  user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 08:28:10,960 app.services.material_service INFO PERF embedding: 8293.1ms  chunks=7  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9
+2026-03-27 08:28:10,968 app.services.material_service INFO PERF _process_material total (critical path): 8310.7ms  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9
+2026-03-27 08:28:10,975 app.services.worker INFO [WORKER] job_processing_time=8322.5ms  job=313e6038-6cf5-4525-96b5-213a41d949cb  material=06fe71ba-2067-4553-ac5b-a954d48e2aa9  status=completed
+2026-03-27 08:28:27,855 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:31:05,012 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:31:05,014 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:31:05,206 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:32:20,035 app.services.rag.embedder INFO Stored 163/163 chunks  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53  user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 08:32:20,036 app.services.material_service INFO PERF embedding: 255776.3ms  chunks=163  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53
+2026-03-27 08:32:20,048 app.services.material_service INFO PERF _process_material total (critical path): 255809.6ms  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53
+2026-03-27 08:32:20,054 app.services.worker INFO [WORKER] job_processing_time=257410.9ms  job=3cd5a077-1011-4d07-a238-d42a4e43f5e2  material=f840a1f8-b591-4087-ba6b-2288a8bf2d53  status=completed
+2026-03-27 08:32:21,318 app.services.material_service INFO Background AI title updated: material=f840a1f8-b591-4087-ba6b-2288a8bf2d53  title='2026 Iran War'
+2026-03-27 08:33:36,458 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:33:36,458 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:34:03,315 main INFO POST /auth/refresh 200 0.03s [61977272]
+2026-03-27 08:34:03,368 main INFO GET /auth/me 200 0.01s [b7ab0597]
+2026-03-27 08:34:04,235 performance INFO request_performance
+2026-03-27 08:34:04,236 main INFO POST /chat/empty-suggestions 200 0.01s [57b68f0d]
+2026-03-27 08:34:04,254 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:35:00,810 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:35:00,810 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:35:00,863 performance INFO request_performance
+2026-03-27 08:35:00,863 main INFO GET /notebooks 200 0.02s [d13795d0]
+2026-03-27 08:35:00,878 performance INFO request_performance
+2026-03-27 08:35:00,879 main INFO GET /notebooks 200 0.01s [9fb91b5d]
+2026-03-27 08:38:38,400 performance INFO request_performance
+2026-03-27 08:38:38,400 main INFO GET /notebooks 200 0.02s [159514b2]
+2026-03-27 08:47:04,073 main INFO POST /auth/refresh 200 0.06s [a80196c9]
+2026-03-27 08:52:26,503 performance INFO request_performance
+2026-03-27 08:52:26,504 main INFO GET /notebooks/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.01s [220946c7]
+2026-03-27 08:52:26,513 performance INFO request_performance
+2026-03-27 08:52:26,513 main INFO GET /notebooks/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.01s [12baf227]
+2026-03-27 08:52:26,574 main INFO GET /materials 200 0.02s [9769fa47]
+2026-03-27 08:52:26,614 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:52:26,652 performance INFO request_performance
+2026-03-27 08:52:26,653 main INFO GET /chat/sessions/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.06s [4f20647e]
+2026-03-27 08:52:26,675 performance INFO request_performance
+2026-03-27 08:52:26,676 performance INFO request_performance
+2026-03-27 08:52:26,676 main INFO POST /chat/empty-suggestions 200 0.12s [27933036]
+2026-03-27 08:52:26,677 main INFO GET /chat/sessions/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.02s [3b81df54]
+2026-03-27 08:52:26,699 main INFO GET /materials 200 0.11s [543ea2db]
+2026-03-27 08:52:26,783 performance INFO request_performance
+2026-03-27 08:52:26,784 main INFO GET /chat/history/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.19s [80f4bb94]
+2026-03-27 08:52:26,796 main INFO GET /podcast/sessions/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.19s [d985591b]
+2026-03-27 08:52:26,800 performance INFO request_performance
+2026-03-27 08:52:26,801 main INFO GET /chat/history/79f119e5-d944-496d-b280-18cabdcfe56d 200 0.02s [3c519af2]
+2026-03-27 08:52:26,802 performance INFO request_performance
+2026-03-27 08:52:26,802 main INFO GET /notebooks/79f119e5-d944-496d-b280-18cabdcfe56d/content 200 0.20s [f3b75d79]
+2026-03-27 08:52:29,296 performance INFO request_performance
+2026-03-27 08:52:29,296 main INFO POST /chat/empty-suggestions 200 0.01s [8fee6528]
+2026-03-27 08:52:29,369 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:52:29,370 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:52:29,403 performance INFO request_performance
+2026-03-27 08:52:29,404 main INFO GET /notebooks 200 0.02s [cc500f3e]
+2026-03-27 08:52:29,425 performance INFO request_performance
+2026-03-27 08:52:29,425 main INFO GET /notebooks 200 0.02s [31f3343d]
+2026-03-27 08:52:30,259 performance INFO request_performance
+2026-03-27 08:52:30,260 main INFO POST /chat/empty-suggestions 200 0.01s [58eb5015]
+2026-03-27 08:52:30,276 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:52:30,873 performance INFO request_performance
+2026-03-27 08:52:30,873 main INFO POST /chat/empty-suggestions 200 4.19s [bea82953]
+2026-03-27 08:55:13,465 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:55:13,465 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:55:13,796 main INFO POST /auth/refresh 200 0.02s [5da6797a]
+2026-03-27 08:55:13,883 main INFO GET /auth/me 200 0.01s [7f2b9793]
+2026-03-27 08:55:14,385 performance INFO request_performance
+2026-03-27 08:55:14,386 main INFO POST /chat/empty-suggestions 200 0.01s [d235324d]
+2026-03-27 08:55:14,412 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:56:25,863 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 08:56:25,863 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 08:56:25,914 performance INFO request_performance
+2026-03-27 08:56:25,914 main INFO GET /notebooks 200 0.01s [8f9923d3]
+2026-03-27 08:56:25,930 performance INFO request_performance
+2026-03-27 08:56:25,930 main INFO GET /notebooks 200 0.01s [2981ac71]
+2026-03-27 08:56:27,064 performance INFO request_performance
+2026-03-27 08:56:27,064 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [f234600c]
+2026-03-27 08:56:27,074 performance INFO request_performance
+2026-03-27 08:56:27,074 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [ab765e2a]
+2026-03-27 08:56:27,109 performance INFO request_performance
+2026-03-27 08:56:27,109 main INFO POST /chat/empty-suggestions 200 0.01s [cb41da4c]
+2026-03-27 08:56:27,114 main INFO GET /materials 200 0.01s [628b66d6]
+2026-03-27 08:56:27,130 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 08:56:27,133 performance INFO request_performance
+2026-03-27 08:56:27,137 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.02s [f91d6094]
+2026-03-27 08:56:27,144 performance INFO request_performance
+2026-03-27 08:56:27,144 main INFO GET /podcast/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.02s [8867ec69]
+2026-03-27 08:56:27,144 main INFO GET /materials 200 0.02s [670534fd]
+2026-03-27 08:56:27,145 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af/content 200 0.02s [ab72c119]
+2026-03-27 08:56:27,148 performance INFO request_performance
+2026-03-27 08:56:27,148 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.03s [7484b37d]
+2026-03-27 08:56:27,152 performance INFO request_performance
+2026-03-27 08:56:27,153 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [cd368adc]
+2026-03-27 08:56:27,160 performance INFO request_performance
+2026-03-27 08:56:27,161 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [d37fdc73]
+2026-03-27 08:56:27,503 performance INFO request_performance
+2026-03-27 08:56:27,504 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [cff24b2a]
+2026-03-27 08:56:27,508 performance INFO request_performance
+2026-03-27 08:56:27,508 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [fa308619]
+2026-03-27 08:56:27,544 performance INFO request_performance
+2026-03-27 08:56:27,544 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [6f0161c9]
+2026-03-27 08:56:29,419 performance INFO request_performance
+2026-03-27 08:56:29,419 main INFO POST /chat/empty-suggestions 200 2.26s [02ed0f56]
+2026-03-27 09:01:25,176 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 09:01:25,181 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 09:01:25,193 performance INFO request_performance
+2026-03-27 09:01:25,193 main INFO GET /notebooks 200 0.01s [39438069]
+2026-03-27 09:01:25,205 performance INFO request_performance
+2026-03-27 09:01:25,205 main INFO GET /notebooks 200 0.01s [6f61bed6]
+2026-03-27 09:01:26,587 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 09:01:26,588 main INFO GET /materials 200 0.03s [04e5fd04]
+2026-03-27 09:01:26,595 performance INFO request_performance
+2026-03-27 09:01:26,599 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.04s [20481d25]
+2026-03-27 09:01:26,600 main INFO GET /podcast/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.04s [ebc89bd2]
+2026-03-27 09:01:26,607 performance INFO request_performance
+2026-03-27 09:01:26,607 performance INFO request_performance
+2026-03-27 09:01:26,608 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af/content 200 0.04s [19eb9cc0]
+2026-03-27 09:01:26,608 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.05s [483b2ba1]
+2026-03-27 09:01:26,609 main INFO GET /materials 200 0.02s [1e680e43]
+2026-03-27 09:01:26,614 performance INFO request_performance
+2026-03-27 09:01:26,616 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [2145d6e3]
+2026-03-27 09:01:26,621 performance INFO request_performance
+2026-03-27 09:01:26,621 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [b40e70d7]
+2026-03-27 09:01:26,997 performance INFO request_performance
+2026-03-27 09:01:26,998 performance INFO request_performance
+2026-03-27 09:01:26,998 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [cc9a29bb]
+2026-03-27 09:01:26,998 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [3899cc4f]
+2026-03-27 09:01:49,545 app.routes.flashcard INFO Flashcard generation started | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | material_ids=['226481ed-0eab-481c-9b72-30b303f7f5e7'] | count=9 | difficulty=easy | topic=none
+2026-03-27 09:01:49,557 app.routes.flashcard INFO Flashcard LLM call dispatched | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 09:01:59,949 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
+2026-03-27 09:01:59,953 app.routes.flashcard INFO Flashcard generation complete | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | cards=9
+2026-03-27 09:01:59,954 performance INFO request_performance
+2026-03-27 09:01:59,954 main INFO POST /flashcard 200 10.42s [bed93d39]
+2026-03-27 09:02:00,011 app.services.notebook_service INFO Saved flashcards content for notebook dfbd3ea5-9e35-4277-8626-a67faf1da3af (id=bdb1f436-fccd-42a8-959c-d8658803149c)
+2026-03-27 09:02:00,012 performance INFO request_performance
+2026-03-27 09:02:00,012 main INFO POST /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af/content 200 0.04s [dbd2113f]
+2026-03-27 09:02:43,125 app.routes.quiz INFO Quiz generation started | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | material_ids=['226481ed-0eab-481c-9b72-30b303f7f5e7'] | count=20 | difficulty=easy | topic=none
+2026-03-27 09:02:43,134 app.routes.quiz INFO Quiz LLM call dispatched | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967
+2026-03-27 09:03:12,214 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
+2026-03-27 09:03:12,215 app.routes.quiz INFO Quiz generation complete | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | questions=20
+2026-03-27 09:03:12,215 performance INFO request_performance
+2026-03-27 09:03:12,216 main INFO POST /quiz 200 29.10s [f7e5f70a]
+2026-03-27 09:03:12,256 app.services.notebook_service INFO Saved quiz content for notebook dfbd3ea5-9e35-4277-8626-a67faf1da3af (id=2f14937e-df90-40a7-af01-f0e992a831d9)
+2026-03-27 09:03:12,256 performance INFO request_performance
+2026-03-27 09:03:12,257 main INFO POST /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af/content 200 0.03s [bd16f21e]
+2026-03-27 09:03:24,850 app.routes.mindmap INFO Mind map generation started | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | notebook=dfbd3ea5-9e35-4277-8626-a67faf1da3af | material_count=1 | topic=none
+2026-03-27 09:03:24,858 app.services.mindmap.generator INFO Generating mind map | focus_topic=None
+2026-03-27 09:03:56,452 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
+2026-03-27 09:03:56,471 app.services.notebook_service INFO Saved mindmap content for notebook dfbd3ea5-9e35-4277-8626-a67faf1da3af (id=47e51c57-c6a2-46bf-a9f4-32d9ba9599b8)
+2026-03-27 09:03:56,478 app.routes.mindmap INFO Mind map generation complete | user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967 | id=47e51c57-c6a2-46bf-a9f4-32d9ba9599b8
+2026-03-27 09:03:56,481 main INFO POST /mindmap 200 31.65s [4f1438e2]
+2026-03-27 09:07:05,017 app.services.chat_v2.router_logic INFO Capability routed to RAG (materials selected: 1)
+2026-03-27 09:07:05,018 performance INFO request_performance
+2026-03-27 09:07:05,018 main INFO POST /chat 200 0.05s [3393d2f8]
+2026-03-27 09:07:05,025 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: Explain about Core Statement by S. Jaishankar and its sub-to...
+2026-03-27 09:07:05,182 app.services.rag.secure_retriever INFO Retrieved 2 valid chunks
+2026-03-27 09:07:05,475 app.services.rag.secure_retriever INFO Reranked to top 2 chunks
+2026-03-27 09:07:05,475 app.services.rag.context_formatter INFO Formatted 2 sources with citation metadata
+2026-03-27 09:07:22,758 performance INFO request_performance
+2026-03-27 09:07:22,758 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [3160ce88]
+2026-03-27 09:07:36,972 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 disconnected
+2026-03-27 09:07:36,972 app.services.ws_manager INFO WS disconnect: user=5ed09e67-2186-4d4c-a7f8-a7b48d68c967  remaining=0
+2026-03-27 09:07:37,228 performance INFO request_performance
+2026-03-27 09:07:37,228 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af 401 0.00s [91b7c1b3]
+2026-03-27 09:07:37,234 main INFO POST /auth/refresh 200 0.02s [0ef3bfe2]
+2026-03-27 09:07:37,247 main INFO POST /auth/refresh 200 0.01s [eb269b2e]
+2026-03-27 09:07:37,248 main INFO GET /auth/me 200 0.00s [64bd126f]
+2026-03-27 09:07:37,256 performance INFO request_performance
+2026-03-27 09:07:37,257 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [d4ec7cf2]
+2026-03-27 09:07:37,614 performance INFO request_performance
+2026-03-27 09:07:37,615 main INFO GET /materials 200 0.01s [9927b084]
+2026-03-27 09:07:37,618 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [04f42ad8]
+2026-03-27 09:07:37,620 performance INFO request_performance
+2026-03-27 09:07:37,622 main INFO POST /chat/empty-suggestions 200 0.02s [0bf22266]
+2026-03-27 09:07:37,623 app.routes.websocket_router INFO WS /ws/jobs/5ed09e67-2186-4d4c-a7f8-a7b48d68c967 connected
+2026-03-27 09:07:37,626 main INFO GET /podcast/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.02s [113d3fe8]
+2026-03-27 09:07:37,649 main INFO GET /materials 200 0.03s [cc7f7620]
+2026-03-27 09:07:37,662 performance INFO request_performance
+2026-03-27 09:07:37,662 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.06s [b7811b10]
+2026-03-27 09:07:37,678 performance INFO request_performance
+2026-03-27 09:07:37,678 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [daf892ca]
+2026-03-27 09:07:37,679 performance INFO request_performance
+2026-03-27 09:07:37,680 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.06s [9ebd6290]
+2026-03-27 09:07:37,691 performance INFO request_performance
+2026-03-27 09:07:37,691 main INFO GET /notebooks/dfbd3ea5-9e35-4277-8626-a67faf1da3af/content 200 0.09s [c39f373d]
+2026-03-27 09:07:37,698 performance INFO request_performance
+2026-03-27 09:07:37,698 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.02s [3dbb46ea]
+2026-03-27 09:07:38,134 performance INFO request_performance
+2026-03-27 09:07:38,134 performance INFO request_performance
+2026-03-27 09:07:38,134 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [faf5fcd1]
+2026-03-27 09:07:38,135 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [3c3a1b8c]
+2026-03-27 09:07:38,585 performance INFO request_performance
+2026-03-27 09:07:38,585 main INFO GET /chat/sessions/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [0fa9e1d5]
+2026-03-27 09:07:38,587 performance INFO request_performance
+2026-03-27 09:07:38,588 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [6e24d0c7]
+2026-03-27 09:07:39,894 performance INFO request_performance
+2026-03-27 09:07:39,895 main INFO POST /chat/empty-suggestions 200 2.25s [5c1e318e]
+2026-03-27 09:07:55,806 app.services.chat_v2.router_logic INFO Capability routed to RAG (materials selected: 1)
+2026-03-27 09:07:55,806 performance INFO request_performance
+2026-03-27 09:07:55,806 main INFO POST /chat 200 0.01s [cdeee875]
+2026-03-27 09:07:55,815 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: Explain about Retaliatory Iranian missile/drone strikes...
+2026-03-27 09:07:55,910 app.services.rag.secure_retriever INFO Retrieved 2 valid chunks
+2026-03-27 09:07:56,024 app.services.rag.secure_retriever INFO Reranked to top 2 chunks
+2026-03-27 09:07:56,024 app.services.rag.context_formatter INFO Formatted 2 sources with citation metadata
+2026-03-27 09:08:07,030 performance INFO request_performance
+2026-03-27 09:08:07,030 main INFO GET /chat/history/dfbd3ea5-9e35-4277-8626-a67faf1da3af 200 0.01s [468192d9]

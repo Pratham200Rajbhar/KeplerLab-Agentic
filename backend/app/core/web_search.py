@@ -66,6 +66,19 @@ def _ddg_search_sync(query: str, max_results: int = 5) -> list:
                 logger.debug("[ddg_search] %s backend error: %s", backend, exc)
                 break
 
+    # Fallback: retry once with a simplified query if verbose prompts produce poor hits.
+    simple_query = " ".join(query.split())
+    if len(simple_query) > 120:
+        simple_query = simple_query[:120]
+    if simple_query and simple_query != query:
+        try:
+            d = DDGS()
+            results = list(d.text(simple_query, max_results=max_results, backend="auto"))
+            if results:
+                return results
+        except Exception as exc:
+            last_exc = exc
+
     if last_exc is not None:
         raise last_exc
     return []
@@ -117,11 +130,12 @@ def _fetch_and_extract_sync(url: str) -> Optional[Dict[str, str]]:
     }
 
 
-async def fetch_url_content(url: str) -> Optional[Dict[str, str]]:
+async def fetch_url_content(url: str, timeout: Optional[float] = None) -> Optional[Dict[str, str]]:
+    effective_timeout = timeout if timeout is not None else _FETCH_TIMEOUT
     try:
         return await asyncio.wait_for(
             asyncio.to_thread(_fetch_and_extract_sync, url),
-            timeout=_FETCH_TIMEOUT,
+            timeout=effective_timeout,
         )
     except asyncio.TimeoutError:
         logger.debug("[fetch_url] Timeout fetching %s", url)

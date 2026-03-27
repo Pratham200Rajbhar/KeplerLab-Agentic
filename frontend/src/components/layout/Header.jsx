@@ -24,8 +24,8 @@ export default function Header({ user, onBack }) {
   const menuRef = useRef(null);
   const { logout } = useAuthStore();
   const currentNotebook = useAppStore((s) => s.currentNotebook);
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
   const toast = useToast();
 

@@ -36,6 +36,7 @@ import {
   Brain,
   Target,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import '@xyflow/react/dist/style.css';
 
 import useAppStore from '@/stores/useAppStore';
@@ -106,7 +107,7 @@ function normalizeMindMapData(rawData) {
   return { title, sourceCount, root: rootNode };
 }
 
-function buildTreeLayout(rootData, expandedIds) {
+function buildTreeLayout(rootData, expandedIds, isDark) {
   if (!rootData) return { nodes: [], edges: [] };
 
   const nodes = [];
@@ -138,6 +139,7 @@ function buildTreeLayout(rootData, expandedIds) {
         depth,
         childCount: nodeChildren.length,
         childLabels: nodeChildren.map(c => toLabel(c.label || c.title)),
+        isDark,
       },
       position: { x: 0, y: 0 },
     };
@@ -218,6 +220,7 @@ function buildTreeLayout(rootData, expandedIds) {
 const MindNode = memo(({ data }) => {
   const toggle = useMindMapStore(s => s.toggleExpand);
   const color = data.isRoot ? '#6b7280' : BRANCH_COLORS[data.branchIndex];
+  const isDark = !!data.isDark;
 
   return (
     <div className="relative flex items-center mindnode-container">
@@ -225,7 +228,7 @@ const MindNode = memo(({ data }) => {
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
 
       <div
-        className="mindnode-card flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1a1c1e] border shadow-lg cursor-pointer hover:bg-white/5 transition-colors"
+        className={`mindnode-card flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg cursor-pointer transition-colors ${isDark ? 'bg-[#1a1c1e] hover:bg-white/5' : 'bg-white hover:bg-[#f3f6fa]'}`}
         style={{
           borderColor: `${color}50`,
           minWidth: 100,
@@ -237,13 +240,13 @@ const MindNode = memo(({ data }) => {
           className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: color }}
         />
-        <span className="flex-1 text-sm font-medium text-white/90 whitespace-normal break-words leading-relaxed">
+        <span className={`flex-1 text-sm font-medium whitespace-normal break-words leading-relaxed ${isDark ? 'text-white/90' : 'text-[#1b2737]'}`}>
           {data.label}
         </span>
         {data.hasChildren && (
           <button
             onClick={e => { e.stopPropagation(); toggle(data.nodeId); }}
-            className="mindnode-toggle p-1 rounded-lg hover:bg-white/10 text-gray-400 transition-transform"
+            className={`mindnode-toggle p-1 rounded-lg transition-transform ${isDark ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-slate-200 text-slate-500'}`}
             style={{
               transform: data.isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
               color: data.isExpanded ? color : undefined
@@ -271,6 +274,8 @@ function MindMapCanvasInner({
   savedRating,
 }) {
   const normalized = useMemo(() => normalizeMindMapData(mindmapData), [mindmapData]);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const expandedIds = useMindMapStore(s => s.expandedNodeIds);
   const toggle = useMindMapStore(s => s.toggleExpand);
   const setExpandedNodeIds = useMindMapStore(s => s.setExpandedNodeIds);
@@ -314,8 +319,8 @@ function MindMapCanvasInner({
   }, []); // removed setExpandedNodeIds dependencies to avoid reset on every material/notebook change if not intended, but specifically removed the call.
 
   const { nodes: layoutNodes, edges: layoutEdges } = useMemo(
-    () => buildTreeLayout(normalized.root, expandedIds),
-    [normalized.root, expandedIds]
+    () => buildTreeLayout(normalized.root, expandedIds, isDark),
+    [normalized.root, expandedIds, isDark]
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
@@ -531,24 +536,34 @@ function MindMapCanvasInner({
       ref={mapWrapperRef}
       className={`relative overflow-hidden transition-all duration-300 ease-in-out ${isFullscreen ? 'h-full flex flex-col' : 'h-full flex flex-col'}`}
       style={{
-        background: 'radial-gradient(circle at center, #1a1c1e 0%, #0b0c0d 100%)',
+        background: isDark
+          ? 'radial-gradient(circle at center, #1a1c1e 0%, #0b0c0d 100%)'
+          : 'radial-gradient(circle at center, #f7fbff 0%, #edf3f8 100%)',
       }}
     >
       {/* Subtle background glow */}
       <div className="absolute inset-0 pointer-events-none opacity-20"
-        style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%)' }} />
+        style={{
+          background: isDark
+            ? 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%)'
+            : 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%)'
+        }} />
       <header className={`absolute top-3 left-0 right-0 z-[70] flex justify-center px-3 pointer-events-none ${isFullscreen ? 'sm:top-4' : 'top-2'}`}>
         <div
-          className={`pointer-events-auto flex items-center justify-between gap-3 border border-white/10 backdrop-blur-xl shadow-2xl ${isFullscreen
-            ? 'w-full max-w-4xl rounded-2xl bg-[#0b0c0d]/86 px-4 py-2.5'
-            : 'w-full max-w-3xl rounded-xl bg-[#0b0c0d]/82 px-3 py-2'
+          className={`pointer-events-auto flex items-center justify-between gap-3 border backdrop-blur-xl shadow-2xl ${isFullscreen
+            ? 'w-full max-w-4xl rounded-2xl px-4 py-2.5'
+            : 'w-full max-w-3xl rounded-xl px-3 py-2'
             }`}
+          style={{
+            borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(148,163,184,0.45)',
+            background: isDark ? 'rgba(11,12,13,0.86)' : 'rgba(248,252,255,0.9)',
+          }}
         >
           <div className={`flex items-center min-w-0 ${isFullscreen ? 'gap-3' : 'gap-2'}`}>
           {!isFullscreen && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors border border-white/5 mr-1"
+              className={`p-1.5 rounded-lg transition-colors border mr-1 ${isDark ? 'hover:bg-white/10 text-gray-400 hover:text-white border-white/5' : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800 border-slate-300/60'}`}
               title="Back to Studio"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -556,23 +571,23 @@ function MindMapCanvasInner({
           )}
             {isFullscreen && <Brain className="w-4 h-4 text-accent" />}
           <div className="flex flex-col min-w-0">
-              <h1 className={`font-bold leading-tight text-white truncate ${isFullscreen ? 'text-sm' : 'text-xs'}`}>
+              <h1 className={`font-bold leading-tight truncate ${isFullscreen ? 'text-sm' : 'text-xs'} ${isDark ? 'text-white' : 'text-[#152234]'}`}>
               {normalized.title || DEFAULT_TITLE}
             </h1>
             {isFullscreen && (
-                <p className="text-[11px] font-medium text-gray-400">
+                <p className={`text-[11px] font-medium ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
                 {normalized.sourceCount} source{normalized.sourceCount > 1 ? 's' : ''}
               </p>
             )}
           </div>
         </div>
 
-          <div className={`flex items-center gap-1.5 text-gray-400 ${isFullscreen ? 'ml-auto' : ''}`}>
+          <div className={`flex items-center gap-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'} ${isFullscreen ? 'ml-auto' : ''}`}>
           <button
             onClick={handleExpandAll}
-            className={`flex items-center gap-1.5 rounded-lg transition-all border border-white/5 ${isFullscreen
-                ? 'px-2.5 py-1.5 text-[11px] font-bold hover:bg-white/10 text-gray-300 hover:text-white'
-                : 'p-1.5 hover:bg-white/10'
+            className={`flex items-center gap-1.5 rounded-lg transition-all border ${isDark ? 'border-white/5' : 'border-slate-300/65'} ${isFullscreen
+              ? `px-2.5 py-1.5 text-[11px] font-bold ${isDark ? 'hover:bg-white/10 text-gray-300 hover:text-white' : 'hover:bg-slate-200 text-slate-600 hover:text-slate-900'}`
+              : `${isDark ? 'p-1.5 hover:bg-white/10' : 'p-1.5 hover:bg-slate-200'}`
               }`}
             title={expandedIds.size > 0 ? "Collapse All" : "Expand All"}
           >
@@ -582,7 +597,7 @@ function MindMapCanvasInner({
           <button
             onClick={handleDownload}
             disabled={isExporting}
-            className={`rounded-lg hover:bg-white/5 transition-all p-1.5 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`rounded-lg transition-all p-1.5 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''} ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-200'}`}
             title="Download as PDF"
           >
             {isExporting ? (
@@ -592,13 +607,13 @@ function MindMapCanvasInner({
             )}
           </button>
 
-          {isFullscreen && <div className="w-px h-4 bg-white/10 mx-1" />}
+          {isFullscreen && <div className={`w-px h-4 mx-1 ${isDark ? 'bg-white/10' : 'bg-slate-300/80'}`} />}
 
           <button
             onClick={onToggleFullscreen}
-            className={`flex items-center gap-1.5 rounded-lg transition-all border border-white/5 ${isFullscreen
-                ? 'p-1.5 hover:bg-white/10 text-gray-400 hover:text-white'
-                : 'p-1.5 bg-accent/20 text-accent hover:bg-accent/30 hidden sm:flex'
+            className={`flex items-center gap-1.5 rounded-lg transition-all border ${isDark ? 'border-white/5' : 'border-slate-300/65'} ${isFullscreen
+              ? `${isDark ? 'p-1.5 hover:bg-white/10 text-gray-400 hover:text-white' : 'p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-900'}`
+              : 'p-1.5 bg-accent/20 text-accent hover:bg-accent/30 hidden sm:flex'
               }`}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
@@ -608,9 +623,9 @@ function MindMapCanvasInner({
           {isFullscreen && (
             <button
               onClick={onClose}
-              className={`rounded-lg transition-all ${isFullscreen
-                  ? 'p-1.5 hover:bg-red-500/10 text-gray-400 hover:text-red-400'
-                  : 'p-1.5 hover:bg-white/10 hover:text-white'
+                className={`rounded-lg transition-all ${isFullscreen
+                  ? `${isDark ? 'p-1.5 hover:bg-red-500/10 text-gray-400 hover:text-red-400' : 'p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600'}`
+                  : `${isDark ? 'p-1.5 hover:bg-white/10 hover:text-white' : 'p-1.5 hover:bg-slate-200 hover:text-slate-900'}`
                 }`}
               title="Close"
             >
@@ -623,10 +638,11 @@ function MindMapCanvasInner({
 
       <div className="relative flex-1 min-h-0">
         {(isLoading || isExporting) ? (
-          <div className="absolute inset-0 flex items-center justify-center z-[200] bg-[#0b0c0d]/40 backdrop-blur-sm">
+          <div className="absolute inset-0 flex items-center justify-center z-[200] backdrop-blur-sm"
+            style={{ background: isDark ? 'rgba(11,12,13,0.4)' : 'rgba(239,246,255,0.55)' }}>
             <div className="flex flex-col items-center gap-3">
               <Loader2 className={`text-accent animate-spin ${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`} />
-              <p className="text-sm font-medium text-white shadow-sm">
+              <p className={`text-sm font-medium shadow-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {isExporting ? 'Preparing PDF...' : 'Loading...'}
               </p>
             </div>
@@ -642,7 +658,7 @@ function MindMapCanvasInner({
           edgeTypes={edgeTypes}
           fitView
           fitViewOptions={{ padding: 0.3 }}
-          colorMode="dark"
+          colorMode={isDark ? 'dark' : 'light'}
           minZoom={0.35}
           maxZoom={2}
           nodesDraggable
@@ -667,7 +683,7 @@ function MindMapCanvasInner({
             variant={BackgroundVariant.Dots}
             gap={isFullscreen ? 24 : 20}
             size={isFullscreen ? 1.5 : 1}
-            color="#ffffff08"
+            color={isDark ? '#ffffff10' : '#0f172221'}
           />
           {/* MiniMap removed as per user request */}
         </ReactFlow>
@@ -679,7 +695,7 @@ function MindMapCanvasInner({
             className={`flex items-center gap-2 rounded-xl text-xs font-bold transition-all backdrop-blur-md border ${isFullscreen ? 'px-4 py-2' : 'px-2 py-1'
               } ${rating === 'positive'
                 ? 'bg-green-500/20 text-green-400 border-green-500/40 shadow-lg shadow-green-500/10'
-                : 'bg-white/5 text-gray-400 border-white/5 hover:bg-green-500/10 hover:text-green-400 hover:border-green-500/20'
+                : `${isDark ? 'bg-white/5 text-gray-400 border-white/5 hover:bg-green-500/10 hover:text-green-400 hover:border-green-500/20' : 'bg-white text-slate-500 border-slate-300/70 hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`
               }`}
           >
             {rating === 'positive' ? <Check className="w-3.5 h-3.5" /> : <ThumbsUp className="w-3.5 h-3.5" />}
@@ -691,7 +707,7 @@ function MindMapCanvasInner({
             className={`flex items-center gap-2 rounded-xl text-xs font-bold transition-all backdrop-blur-md border ${isFullscreen ? 'px-4 py-2' : 'px-2 py-1'
               } ${rating === 'negative'
                 ? 'bg-red-500/20 text-red-400 border-red-500/40 shadow-lg shadow-red-500/10'
-                : 'bg-white/5 text-gray-400 border-white/5 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20'
+                : `${isDark ? 'bg-white/5 text-gray-400 border-white/5 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20' : 'bg-white text-slate-500 border-slate-300/70 hover:bg-red-50 hover:text-red-700 hover:border-red-300'}`
               }`}
           >
             {rating === 'negative' ? <Check className="w-3.5 h-3.5" /> : <ThumbsDown className="w-3.5 h-3.5" />}
@@ -699,26 +715,32 @@ function MindMapCanvasInner({
           </button>
         </div>
 
-        <div className={`absolute right-6 flex flex-col gap-1 p-1 rounded-2xl border border-white/10 bg-[#1a1c1e]/60 backdrop-blur-xl shadow-2xl transition-all ${isFullscreen ? 'bottom-6' : 'bottom-3 right-3'
-          }`}>
+        <div
+          className={`absolute right-6 flex flex-col gap-1 p-1 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${isFullscreen ? 'bottom-6' : 'bottom-3 right-3'
+            }`}
+          style={{
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(148,163,184,0.55)',
+            background: isDark ? 'rgba(26,28,30,0.6)' : 'rgba(255,255,255,0.92)',
+          }}
+        >
           <button
             onClick={() => fitView({ duration: 300 })}
-            className={`${isFullscreen ? 'p-2.5' : 'p-2'} text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all`}
+            className={`${isFullscreen ? 'p-2.5' : 'p-2'} rounded-xl transition-all ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             title="Reset View"
           >
             <Target className="w-4 h-4" />
           </button>
-          <div className="h-px bg-white/10 mx-2" />
+          <div className={`h-px mx-2 ${isDark ? 'bg-white/10' : 'bg-slate-300/80'}`} />
           <button
             onClick={() => zoomIn()}
-            className={`${isFullscreen ? 'p-2.5' : 'p-2'} text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all`}
+            className={`${isFullscreen ? 'p-2.5' : 'p-2'} rounded-xl transition-all ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             title="Zoom In"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={() => zoomOut()}
-            className={`${isFullscreen ? 'p-2.5' : 'p-2'} text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all`}
+            className={`${isFullscreen ? 'p-2.5' : 'p-2'} rounded-xl transition-all ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             title="Zoom Out"
           >
             <Minus className="w-4 h-4" />

@@ -1,13 +1,20 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Layers } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Layers, Moon, Sun } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const handleThemeToggle = () => {
+    setTheme(isDark ? 'light' : 'dark');
+  };
 
   return (
-    <div className="dark bg-stitch-background text-stitch-on-background selection:bg-stitch-primary/30 min-h-screen">
+    <div className="landing-page bg-stitch-background text-stitch-on-background selection:bg-stitch-primary/30 min-h-screen">
       {/* Animated Background */}
       <div className="stitch-bg-animate">
         <div className="stitch-blob" style={{ top: '-10%', left: '-10%' }}></div>
@@ -17,16 +24,26 @@ export default function LandingPage() {
       {/* Top Navigation Bar */}
       <nav className="fixed top-0 w-full z-50 bg-stitch-surface/70 backdrop-blur-xl border-b border-stitch-outline-variant/30">
         <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-          <div className="text-xl font-bold tracking-tight text-white font-headline flex items-center gap-2">
+          <div className="text-xl font-bold tracking-tight text-stitch-on-background font-headline flex items-center gap-2">
             <span className="material-symbols-outlined text-stitch-primary">orbit</span>
             KeplerLab AI Notebook
           </div>
-          <button 
-            onClick={() => router.push('/auth')}
-            className="bg-stitch-primary hover:bg-stitch-secondary text-stitch-surface font-bold px-6 py-2 rounded-xl active:scale-95 transition-all shadow-lg shadow-stitch-primary/20"
-          >
-            Get Started
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleThemeToggle}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-stitch-outline-variant/40 bg-stitch-surface-container/60 text-stitch-on-background hover:bg-stitch-surface-container-high transition-colors"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => router.push('/auth')}
+              className="bg-stitch-primary hover:bg-stitch-secondary text-stitch-on-primary font-bold px-6 py-2 rounded-xl active:scale-95 transition-all shadow-lg shadow-stitch-primary/20"
+            >
+              Get Started
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -37,7 +54,7 @@ export default function LandingPage() {
             <span className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest uppercase rounded-full bg-stitch-surface-container-high border border-stitch-primary/20 text-stitch-primary">
               Next-Gen Knowledge Canvas
             </span>
-            <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl font-headline leading-[1.1] text-white">
+            <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl font-headline leading-[1.1] text-stitch-on-background">
               Your Ideas, Enhanced by <span className="bg-clip-text text-transparent bg-gradient-to-r from-stitch-primary to-stitch-secondary">Universal Intelligence.</span>
             </h1>
             <p className="text-lg lg:text-xl text-stitch-on-surface-variant/80 max-w-2xl mb-12 leading-relaxed">
@@ -46,11 +63,11 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
                 onClick={() => router.push('/auth')}
-                className="bg-stitch-primary text-stitch-surface px-8 py-4 rounded-xl font-bold text-lg shadow-xl shadow-stitch-primary/20 hover:shadow-stitch-primary/40 transition-all"
+                className="bg-stitch-primary text-stitch-on-primary px-8 py-4 rounded-xl font-bold text-lg shadow-xl shadow-stitch-primary/20 hover:shadow-stitch-primary/40 transition-all"
               >
                 Get Started for Free
               </button>
-              <button className="px-8 py-4 rounded-xl font-bold text-lg border border-stitch-outline-variant hover:bg-stitch-surface-container-high transition-colors text-white">
+              <button className="px-8 py-4 rounded-xl font-bold text-lg border border-stitch-outline-variant hover:bg-stitch-surface-container-high transition-colors text-stitch-on-background">
                 Watch Demo
               </button>
             </div>
@@ -97,7 +114,7 @@ export default function LandingPage() {
         <section className="py-24 px-6 bg-stitch-surface-container-low/50 relative border-y border-stitch-outline-variant/10" id="about">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-4xl font-bold mb-8 font-headline leading-tight text-white">
+              <h2 className="text-4xl font-bold mb-8 font-headline leading-tight text-stitch-on-background">
                 A Notebook Built for <br /> <span className="text-stitch-primary">Infinite Context.</span>
               </h2>
               <p className="text-stitch-on-surface-variant/80 text-lg mb-10 leading-relaxed">
@@ -109,7 +126,7 @@ export default function LandingPage() {
                     <span className="material-symbols-outlined text-stitch-primary">upload_file</span>
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg mb-1 text-white">Multi-Modal Ingestion</h4>
+                    <h4 className="font-bold text-lg mb-1 text-stitch-on-background">Multi-Modal Ingestion</h4>
                     <p className="text-stitch-on-surface-variant/70 text-sm">Upload videos, URLs, and files. We transcribe and index everything instantly.</p>
                   </div>
                 </div>
@@ -118,7 +135,7 @@ export default function LandingPage() {
                     <span className="material-symbols-outlined text-stitch-primary">smart_toy</span>
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg mb-1 text-white">Agent-Driven Synthesis</h4>
+                    <h4 className="font-bold text-lg mb-1 text-stitch-on-background">Agent-Driven Synthesis</h4>
                     <p className="text-stitch-on-surface-variant/70 text-sm">Deploy AI agents to cross-reference your notes and generate summaries.</p>
                   </div>
                 </div>
@@ -127,7 +144,7 @@ export default function LandingPage() {
                     <span className="material-symbols-outlined text-stitch-primary">movie</span>
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg mb-1 text-white">Media Generation</h4>
+                    <h4 className="font-bold text-lg mb-1 text-stitch-on-background">Media Generation</h4>
                     <p className="text-stitch-on-surface-variant/70 text-sm">Turn research into presentations, podcasts, or videos with one click.</p>
                   </div>
                 </div>
@@ -149,14 +166,14 @@ export default function LandingPage() {
         {/* Features Bento Grid */}
         <section className="py-24 px-6 max-w-7xl mx-auto" id="features">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold font-headline mb-4 text-white">Precision Tools for Modern Minds</h2>
+            <h2 className="text-4xl font-bold font-headline mb-4 text-stitch-on-background">Precision Tools for Modern Minds</h2>
             <p className="text-stitch-on-surface-variant/80 max-w-2xl mx-auto">A unified suite of AI-native features designed to eliminate the friction between thought and execution.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {/* Large Feature */}
             <div className="md:col-span-2 stitch-glass-card p-8 rounded-2xl hover:bg-stitch-surface-container-high transition-all group border border-stitch-primary/10">
               <span className="material-symbols-outlined text-stitch-primary text-4xl mb-6">forum</span>
-              <h3 className="text-2xl font-bold mb-3 font-headline text-white">Advanced AI Chat</h3>
+              <h3 className="text-2xl font-bold mb-3 font-headline text-stitch-on-background">Advanced AI Chat</h3>
               <p className="text-stitch-on-surface-variant/70 mb-6">Experience fluid conversation with full context awareness of your entire notebook library.</p>
               <div className="h-32 bg-stitch-surface-container-low rounded-xl p-4 overflow-hidden border border-stitch-outline-variant/30">
                 <div className="h-2 bg-stitch-primary/20 rounded mb-2 w-3/4"></div>
@@ -168,33 +185,33 @@ export default function LandingPage() {
             {/* Studio Card */}
             <div className="stitch-glass-card p-8 rounded-2xl hover:bg-stitch-surface-container-high transition-all border border-stitch-primary/10">
               <span className="material-symbols-outlined text-stitch-primary text-3xl mb-6">mic_external_on</span>
-              <h3 className="text-xl font-bold mb-2 font-headline text-white">Podcast Studio</h3>
+              <h3 className="text-xl font-bold mb-2 font-headline text-stitch-on-background">Podcast Studio</h3>
               <p className="text-stitch-on-surface-variant/70 text-sm">Generate conversational audio discussions from your research papers automatically.</p>
             </div>
             <div className="stitch-glass-card p-8 rounded-2xl hover:bg-stitch-surface-container-high transition-all border border-stitch-primary/10">
               <span className="material-symbols-outlined text-stitch-primary text-3xl mb-6">auto_awesome_motion</span>
-              <h3 className="text-xl font-bold mb-2 font-headline text-white">Presentation Gen</h3>
+              <h3 className="text-xl font-bold mb-2 font-headline text-stitch-on-background">Presentation Gen</h3>
               <p className="text-stitch-on-surface-variant/70 text-sm">Slide decks crafted by AI, populated with your unique data and insights.</p>
             </div>
             {/* Secondary Row */}
             <div className="stitch-glass-card p-6 rounded-2xl border border-stitch-primary/5">
               <span className="material-symbols-outlined text-stitch-secondary mb-4">terminal</span>
-              <h4 className="font-bold mb-2 text-white">Code Execution</h4>
+              <h4 className="font-bold mb-2 text-stitch-on-background">Code Execution</h4>
               <p className="text-stitch-on-surface-variant/70 text-xs">Run Python snippets directly inside your notes for live data analysis.</p>
             </div>
             <div className="stitch-glass-card p-6 rounded-2xl border border-stitch-primary/5">
               <span className="material-symbols-outlined text-stitch-secondary mb-4">account_tree</span>
-              <h4 className="font-bold mb-2 text-white">Knowledge Graph</h4>
+              <h4 className="font-bold mb-2 text-stitch-on-background">Knowledge Graph</h4>
               <p className="text-stitch-on-surface-variant/70 text-xs">Visualize how your concepts connect across different sources.</p>
             </div>
             <div className="stitch-glass-card p-6 rounded-2xl border border-stitch-primary/5">
               <span className="material-symbols-outlined text-stitch-secondary mb-4">bolt</span>
-              <h4 className="font-bold mb-2 text-white">Agent Mode</h4>
+              <h4 className="font-bold mb-2 text-stitch-on-background">Agent Mode</h4>
               <p className="text-stitch-on-surface-variant/70 text-xs">Autonomous agents that perform deep research and verify facts for you.</p>
             </div>
             <div className="stitch-glass-card p-6 rounded-2xl border border-stitch-primary/5">
               <span className="material-symbols-outlined text-stitch-secondary mb-4">quiz</span>
-              <h4 className="font-bold mb-2 text-white">Quizzes & Cards</h4>
+              <h4 className="font-bold mb-2 text-stitch-on-background">Quizzes & Cards</h4>
               <p className="text-stitch-on-surface-variant/70 text-xs">Transform any note into an interactive learning experience instantly.</p>
             </div>
           </div>
@@ -205,7 +222,7 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
               <div className="max-w-xl">
-                <h2 className="text-4xl font-bold font-headline mb-6 text-white">From Data to <span className="text-stitch-primary">Delivered.</span></h2>
+                <h2 className="text-4xl font-bold font-headline mb-6 text-stitch-on-background">From Data to <span className="text-stitch-primary">Delivered.</span></h2>
                 <p className="text-stitch-on-surface-variant/80 text-lg">A linear, intuitive process that takes you from raw inputs to polished final outputs in minutes.</p>
               </div>
               <div className="h-1 bg-stitch-primary/10 flex-1 mx-8 mb-4 hidden md:block"></div>
@@ -214,31 +231,31 @@ export default function LandingPage() {
               {/* Step 1 */}
               <div className="flex flex-col gap-4 group">
                 <div className="text-6xl font-black text-stitch-primary/10 font-headline group-hover:text-stitch-primary/20 transition-colors">01</div>
-                <h4 className="font-bold text-xl text-white">Upload</h4>
+                <h4 className="font-bold text-xl text-stitch-on-background">Upload</h4>
                 <p className="text-stitch-on-surface-variant/70 text-sm">Drag in PDFs, paste URLs, or upload MP4s.</p>
               </div>
               {/* Step 2 */}
               <div className="flex flex-col gap-4 group">
                 <div className="text-6xl font-black text-stitch-primary/10 font-headline group-hover:text-stitch-primary/20 transition-colors">02</div>
-                <h4 className="font-bold text-xl text-white">Process</h4>
+                <h4 className="font-bold text-xl text-stitch-on-background">Process</h4>
                 <p className="text-stitch-on-surface-variant/70 text-sm">AI transcribes, indexes, and extracts key entities.</p>
               </div>
               {/* Step 3 */}
               <div className="flex flex-col gap-4 group">
                 <div className="text-6xl font-black text-stitch-primary/10 font-headline group-hover:text-stitch-primary/20 transition-colors">03</div>
-                <h4 className="font-bold text-xl text-white">Chat</h4>
+                <h4 className="font-bold text-xl text-stitch-on-background">Chat</h4>
                 <p className="text-stitch-on-surface-variant/70 text-sm">Query your documents with natural language.</p>
               </div>
               {/* Step 4 */}
               <div className="flex flex-col gap-4 group">
                 <div className="text-6xl font-black text-stitch-primary/10 font-headline group-hover:text-stitch-primary/20 transition-colors">04</div>
-                <h4 className="font-bold text-xl text-white">Generate</h4>
+                <h4 className="font-bold text-xl text-stitch-on-background">Generate</h4>
                 <p className="text-stitch-on-surface-variant/70 text-sm">Create studio-quality assets from your workspace.</p>
               </div>
               {/* Step 5 */}
               <div className="flex flex-col gap-4 group">
                 <div className="text-6xl font-black text-stitch-primary/10 font-headline group-hover:text-stitch-primary/20 transition-colors">05</div>
-                <h4 className="font-bold text-xl text-white">Export</h4>
+                <h4 className="font-bold text-xl text-stitch-on-background">Export</h4>
                 <p className="text-stitch-on-surface-variant/70 text-sm">Publish to web or export in various formats.</p>
               </div>
             </div>
@@ -255,27 +272,27 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="order-1 lg:order-2">
-              <h2 className="text-4xl font-bold font-headline mb-8 text-white">Why Intelligence Prefers <span className="text-stitch-primary">KeplerLab</span></h2>
+              <h2 className="text-4xl font-bold font-headline mb-8 text-stitch-on-background">Why Intelligence Prefers <span className="text-stitch-primary">KeplerLab</span></h2>
               <ul className="space-y-8">
                 <li className="flex gap-6">
                   <span className="material-symbols-outlined text-stitch-primary text-3xl">verified_user</span>
                   <div>
-                    <h4 className="font-bold text-xl mb-2 text-white">Secure Retrieval</h4>
+                    <h4 className="font-bold text-xl mb-2 text-stitch-on-background">Secure Retrieval</h4>
                     <p className="text-stitch-on-surface-variant/70">Your data is yours. We use private vector stores to ensure your intellectual property never leaves your environment.</p>
                   </div>
                 </li>
                 <li className="flex gap-6">
                   <span className="material-symbols-outlined text-stitch-primary text-3xl">stream</span>
                   <div>
-                    <h4 className="font-bold text-xl mb-2 text-white">Real-Time Streaming</h4>
+                    <h4 className="font-bold text-xl mb-2 text-stitch-on-background">Real-Time Streaming</h4>
                     <p className="text-stitch-on-surface-variant/70">No more waiting. Watch AI responses and processing tasks happen in real-time as you work.</p>
                   </div>
                 </li>
                 <li className="flex gap-6">
                   <span className="material-symbols-outlined text-stitch-primary text-3xl">cloud_sync</span>
                   <div>
-                    <h4 className="font-bold text-xl mb-2 text-white">Background Resilience</h4>
-                    <p className="text-stitch-on-surface-variant/70">Long-running synthesis jobs run in the background. Close the tab, we'll notify you when it's done.</p>
+                    <h4 className="font-bold text-xl mb-2 text-stitch-on-background">Background Resilience</h4>
+                    <p className="text-stitch-on-surface-variant/70">Long-running synthesis jobs run in the background. Close the tab, we&apos;ll notify you when it&apos;s done.</p>
                   </div>
                 </li>
               </ul>
@@ -288,12 +305,12 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto stitch-glass-card p-12 lg:p-20 rounded-[2rem] border border-stitch-primary/20 relative overflow-hidden text-center">
             <div className="absolute top-0 right-0 w-64 h-64 bg-stitch-primary/5 blur-[100px] rounded-full"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-stitch-primary/5 blur-[100px] rounded-full"></div>
-            <h2 className="text-4xl lg:text-6xl font-bold font-headline mb-8 relative z-10 text-white">Start using KeplerLab AI Notebook</h2>
+            <h2 className="text-4xl lg:text-6xl font-bold font-headline mb-8 relative z-10 text-stitch-on-background">Start using KeplerLab AI Notebook</h2>
             <p className="text-stitch-on-surface-variant/80 text-lg lg:text-xl mb-12 max-w-2xl mx-auto relative z-10">Join thousands of researchers, students, and creators building the future of knowledge work.</p>
             <div className="flex justify-center relative z-10">
               <button 
                 onClick={() => router.push('/auth')}
-                className="bg-stitch-primary hover:bg-stitch-secondary text-stitch-surface font-bold px-12 py-5 rounded-xl text-xl hover:shadow-2xl hover:shadow-stitch-primary/30 transition-all active:scale-95"
+                className="bg-stitch-primary hover:bg-stitch-secondary text-stitch-on-primary font-bold px-12 py-5 rounded-xl text-xl hover:shadow-2xl hover:shadow-stitch-primary/30 transition-all active:scale-95"
               >
                 Get Started
               </button>
@@ -306,7 +323,7 @@ export default function LandingPage() {
       <footer className="bg-stitch-surface-container-low w-full py-12 border-t border-stitch-outline-variant/30">
         <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-4">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="text-lg font-bold text-white font-headline flex items-center gap-2">
+            <div className="text-lg font-bold text-stitch-on-background font-headline flex items-center gap-2">
               <span className="material-symbols-outlined text-stitch-primary text-sm">orbit</span>
               KeplerLab AI
             </div>

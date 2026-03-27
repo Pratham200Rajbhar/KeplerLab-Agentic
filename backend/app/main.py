@@ -51,6 +51,7 @@ from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
 from app.routes.code_execution import router as code_execution_router
 from app.routes.artifacts import router as artifacts_router
+from app.routes.ai_resource import router as ai_resource_router
 from app.services.presentation.router import router as presentation_router
 
 from app.services.rate_limiter import rate_limit_middleware
@@ -221,5 +222,6 @@ app.include_router(explainer_router)
 app.include_router(podcast_live_router)
 app.include_router(code_execution_router)
 app.include_router(artifacts_router)
+app.include_router(ai_resource_router)
 
 app.include_router(ws_router)

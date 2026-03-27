@@ -11,20 +11,20 @@
 
 :root {
   /* ═══ LIGHT THEME ═══ */
-  --surface: #fafafa;
+  --surface: #f3f6f8;
   --surface-raised: #ffffff;
-  --surface-overlay: #f0f0f0;
-  --surface-sunken: #e8e8e8;
-  --surface-50: #f5f5f5;
-  --surface-100: #ebebeb;
+  --surface-overlay: #e9eff4;
+  --surface-sunken: #dde6ed;
+  --surface-50: #f1f5f8;
+  --surface-100: #e6edf3;
 
-  --border: #e2e2e2;
-  --border-light: #ececec;
-  --border-strong: #d0d0d0;
+  --border: #d6dfe7;
+  --border-light: #e4ebf1;
+  --border-strong: #bcc8d3;
 
-  --text-primary: #0a0a0a;
-  --text-secondary: #525252;
-  --text-muted: #a0a0a0;
+  --text-primary: #0f1722;
+  --text-secondary: #435162;
+  --text-muted: #667689;
   --text-inverse: #ffffff;
 
   --accent: #059669;
@@ -69,6 +69,27 @@
   --info-border: rgba(59, 130, 246, 0.2);
 
   --accent-rgb: 5 150 105;
+
+  /* Landing (Stitch) palette - light */
+  --stitch-primary-rgb: 15 118 110;
+  --stitch-primary-container-rgb: 204 251 241;
+  --stitch-on-primary-rgb: 244 255 252;
+  --stitch-on-primary-container-rgb: 19 78 74;
+  --stitch-secondary-rgb: 14 165 233;
+  --stitch-secondary-container-rgb: 224 242 254;
+  --stitch-surface-rgb: 243 248 246;
+  --stitch-surface-container-rgb: 234 244 239;
+  --stitch-surface-container-high-rgb: 225 238 232;
+  --stitch-surface-container-low-rgb: 255 255 255;
+  --stitch-outline-variant-rgb: 193 217 208;
+  --stitch-on-surface-variant-rgb: 45 78 69;
+  --stitch-background-rgb: 240 247 244;
+  --stitch-on-background-rgb: 12 33 28;
+  --stitch-card-bg: rgba(255, 255, 255, 0.72);
+  --stitch-card-border: rgba(15, 118, 110, 0.14);
+  --stitch-bg-core: #dff4ee;
+  --stitch-bg-edge: #edf7f4;
+  --stitch-blob: rgba(14, 165, 233, 0.14);
 }
 
 .dark {
@@ -143,6 +164,27 @@
   --info-border: rgba(59, 130, 246, 0.20);
 
   --accent-rgb: 16 185 129;
+
+  /* Landing (Stitch) palette - dark */
+  --stitch-primary-rgb: 16 185 129;
+  --stitch-primary-container-rgb: 6 78 59;
+  --stitch-on-primary-rgb: 255 255 255;
+  --stitch-on-primary-container-rgb: 209 250 229;
+  --stitch-secondary-rgb: 52 211 153;
+  --stitch-secondary-container-rgb: 6 95 70;
+  --stitch-surface-rgb: 4 13 10;
+  --stitch-surface-container-rgb: 6 21 17;
+  --stitch-surface-container-high-rgb: 11 35 29;
+  --stitch-surface-container-low-rgb: 2 8 6;
+  --stitch-outline-variant-rgb: 29 61 52;
+  --stitch-on-surface-variant-rgb: 167 243 208;
+  --stitch-background-rgb: 4 13 10;
+  --stitch-on-background-rgb: 236 253 245;
+  --stitch-card-bg: rgba(6, 25, 20, 0.6);
+  --stitch-card-border: rgba(16, 185, 129, 0.1);
+  --stitch-bg-core: #064e3b;
+  --stitch-bg-edge: #040d0a;
+  --stitch-blob: rgba(16, 185, 129, 0.08);
 }
 
 /* ── Base Styles ── */
@@ -238,13 +280,13 @@ select,
 }
 
 .podcast-language-select option {
-  background-color: #0f1115;
-  color: #f5f7fa;
+  background-color: var(--surface-overlay);
+  color: var(--text-primary);
 }
 
 .podcast-language-select optgroup {
-  background-color: #0f1115;
-  color: #f5f7fa;
+  background-color: var(--surface-overlay);
+  color: var(--text-primary);
 }
 
 /* AI podcast studio surface */
@@ -968,7 +1010,7 @@ select,
 
 .workspace-meta-strip {
   position: relative;
-  z-index: 2;
+  z-index: 0;
   height: 34px;
   display: flex;
   align-items: center;
@@ -985,7 +1027,7 @@ select,
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   height: 38px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
 }
 
 .workspace-meta-chip {
@@ -1315,6 +1357,82 @@ select,
 
 .workspace-studio-segment {
   border-color: color-mix(in srgb, var(--border-strong) 80%, transparent);
+}
+
+/* Light mode contrast pass for notebook workspace */
+:root:not(.dark) .notebook-workspace-atmosphere {
+  background:
+    radial-gradient(56% 42% at 13% -8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 72%),
+    radial-gradient(48% 36% at 92% 4%, rgba(56, 189, 248, 0.1), transparent 78%),
+    linear-gradient(180deg, #edf3f7 0%, var(--surface) 34%, var(--surface) 100%);
+}
+
+:root:not(.dark) .workspace-meta-strip {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 96%, transparent);
+}
+
+:root:not(.dark) .workspace-meta-strip-elevated {
+  box-shadow: 0 8px 24px rgba(37, 57, 82, 0.08);
+}
+
+:root:not(.dark) .workspace-sidebar-shell,
+:root:not(.dark) .workspace-chat-shell,
+:root:not(.dark) .workspace-studio-shell {
+  border-color: color-mix(in srgb, var(--border-strong) 88%, transparent);
+  box-shadow: 0 10px 24px rgba(36, 56, 80, 0.08);
+}
+
+:root:not(.dark) .workspace-sidebar-shell {
+  background:
+    radial-gradient(120% 90% at -10% -20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
+    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
+}
+
+:root:not(.dark) .workspace-search-shell {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
+}
+
+:root:not(.dark) .workspace-source-item:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 84%, transparent);
+}
+
+:root:not(.dark) .workspace-chat-shell {
+  background:
+    radial-gradient(130% 120% at 10% -25%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
+}
+
+:root:not(.dark) .workspace-chat-header {
+  background: linear-gradient(130deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface-overlay) 84%, transparent));
+}
+
+:root:not(.dark) .workspace-empty-card {
+  border-color: color-mix(in srgb, var(--border-strong) 86%, transparent);
+  box-shadow: 0 10px 28px rgba(36, 56, 80, 0.09);
+}
+
+:root:not(.dark) .workspace-chat-input-shell {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 99%, transparent), color-mix(in srgb, var(--surface-overlay) 84%, transparent));
+  box-shadow: 0 8px 22px rgba(36, 56, 80, 0.1);
+}
+
+:root:not(.dark) .workspace-studio-shell {
+  background:
+    radial-gradient(130% 120% at 100% -22%, rgba(56, 189, 248, 0.08), transparent 55%),
+    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
+}
+
+:root:not(.dark) .workspace-studio-lead {
+  background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+}
+
+:root:not(.dark) .workspace-studio-feature-card {
+  background: color-mix(in srgb, var(--surface-raised) 99%, transparent);
+}
+
+:root:not(.dark) .workspace-studio-feature-card:hover {
+  background: color-mix(in srgb, var(--surface-overlay) 70%, transparent);
 }
 
 .workspace-dialog-section {
@@ -1755,26 +1873,28 @@ select,
 }
 
 .workspace-upload-overlay {
-  background: color-mix(in srgb, var(--backdrop) 100%, transparent);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(11, 18, 28, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .workspace-upload-shell {
+  position: relative;
+  z-index: 0;
   border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
-  background:
-    radial-gradient(120% 120% at -10% -20%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 70%, transparent));
-  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.42);
+  background: var(--surface-raised);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px color-mix(in srgb, var(--border) 68%, transparent);
 }
 
 .workspace-upload-header {
+  position: relative;
+  z-index: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  background: var(--surface-raised);
 }
 
 .workspace-upload-tabs {
-  background: color-mix(in srgb, var(--surface-overlay) 82%, transparent);
+  background: var(--surface-50);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 }
 
@@ -1783,18 +1903,19 @@ select,
 }
 
 .workspace-upload-tab-active {
-  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  background: var(--surface-raised);
   border-color: color-mix(in srgb, var(--accent-border) 75%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 34, 0.08);
 }
 
 .workspace-upload-dropzone {
   border: 1px dashed color-mix(in srgb, var(--border-strong) 82%, transparent);
-  background: color-mix(in srgb, var(--surface-overlay) 30%, transparent);
+  background: var(--surface-50);
 }
 
 .workspace-upload-dropzone:hover {
   border-color: var(--accent-border);
-  background: color-mix(in srgb, var(--accent-subtle) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-subtle) 48%, var(--surface-50));
 }
 
 .workspace-upload-drop-icon {
@@ -1804,7 +1925,7 @@ select,
 
 .workspace-upload-format-item {
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  background: color-mix(in srgb, var(--surface-overlay) 64%, transparent);
+  background: var(--surface-50);
 }
 
 .workspace-upload-primary {
@@ -1812,8 +1933,23 @@ select,
 }
 
 .workspace-upload-loading {
-  background: color-mix(in srgb, var(--backdrop) 85%, transparent);
+  background: rgba(11, 18, 28, 0.45);
   backdrop-filter: blur(4px);
+}
+
+.dark .workspace-upload-overlay {
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.dark .workspace-upload-shell {
+  background: var(--surface-raised);
+  box-shadow: 0 30px 66px rgba(0, 0, 0, 0.62), 0 0 0 1px color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.dark .workspace-upload-tabs,
+.dark .workspace-upload-dropzone,
+.dark .workspace-upload-format-item {
+  background: color-mix(in srgb, var(--surface-overlay) 84%, var(--surface-raised));
 }
 
 .workspace-websearch-shell {
@@ -4716,13 +4852,17 @@ MINDMAP ANIMATIONS
 }
 
 .stitch-glass-card {
-  background: rgba(6, 25, 20, 0.6);
+  background: var(--stitch-card-bg);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--stitch-card-border);
+  box-shadow: 0 22px 44px rgba(3, 15, 11, 0.08);
 }
 
 .stitch-bg-animate {
-  background: radial-gradient(circle at 50% 50%, #064e3b 0%, #040d0a 100%);
+  background:
+    radial-gradient(900px 460px at 80% -10%, color-mix(in srgb, rgb(var(--stitch-secondary-rgb)) 16%, transparent), transparent 70%),
+    radial-gradient(780px 400px at -5% 8%, color-mix(in srgb, rgb(var(--stitch-primary-rgb)) 18%, transparent), transparent 72%),
+    radial-gradient(circle at 50% 50%, var(--stitch-bg-core) 0%, var(--stitch-bg-edge) 100%);
   position: fixed;
   top: 0;
   left: 0;
@@ -4736,7 +4876,7 @@ MINDMAP ANIMATIONS
   position: absolute;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--stitch-blob) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(80px);
   animation: stitch-move 25s infinite alternate ease-in-out;

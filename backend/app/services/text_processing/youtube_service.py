@@ -1,5 +1,7 @@
 import re
 from urllib.parse import urlparse
+import requests
+from html import unescape
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
 import yt_dlp
@@ -17,6 +19,9 @@ class YouTubeService:
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            'ignoreconfig': True,
+            'skip_download': True,
+            'noplaylist': True,
         }
     
     def extract_transcript_from_url(self, url: str, language: str = 'en') -> Dict[str, Any]:
@@ -27,7 +32,7 @@ class YouTubeService:
             
             metadata = self._get_video_metadata(url)
             
-            transcript_result = self._get_transcript(video_id, language)
+            transcript_result = self._get_transcript(video_id, url, language)
             
             result = {
                 'url': url,
@@ -38,6 +43,7 @@ class YouTubeService:
                 'uploader': metadata.get('uploader', ''),
                 'upload_date': metadata.get('upload_date', ''),
                 'view_count': metadata.get('view_count', 0),
+                'thumbnail': metadata.get('thumbnail', ''),
                 'transcript': transcript_result['text'],
                 'transcript_language': transcript_result['language'],
                 'transcript_source': transcript_result['source'],
@@ -74,7 +80,7 @@ class YouTubeService:
         
         return None
     
-    def _get_transcript(self, video_id: str, preferred_language: str = 'en') -> Dict[str, Any]:
+    def _get_transcript(self, video_id: str, url: str, preferred_language: str = 'en') -> Dict[str, Any]:
         try:
             fetched = self.ytt_api.fetch(video_id, languages=[preferred_language])
             text = self.formatter.format_transcript(fetched)
@@ -125,6 +131,15 @@ class YouTubeService:
                 }
         except Exception as e:
             logger.error(f"Failed to get any transcript for video {video_id}: {e}")
+
+        subtitle_fallback = self._get_subtitles_via_ytdlp(url, preferred_language)
+        if subtitle_fallback:
+            return {
+                'text': subtitle_fallback,
+                'language': preferred_language,
+                'source': 'ytdlp_subtitles',
+                'entries_count': len(subtitle_fallback.split()),
+            }
         
         return {
             'text': '',
@@ -153,7 +168,107 @@ class YouTubeService:
                 
         except Exception as e:
             logger.warning(f"Failed to get video metadata for {url}: {e}")
+            fallback = self._get_video_metadata_oembed(url)
+            if fallback:
+                return fallback
             return {}
+
+    def _get_video_metadata_oembed(self, url: str) -> Dict[str, Any]:
+        try:
+            resp = requests.get(
+                "https://www.youtube.com/oembed",
+                params={"url": url, "format": "json"},
+                timeout=8,
+            )
+            if not resp.ok:
+                return {}
+            data = resp.json()
+            return {
+                'title': data.get('title', ''),
+                'description': '',
+                'duration': 0,
+                'uploader': data.get('author_name', ''),
+                'upload_date': '',
+                'view_count': 0,
+                'like_count': 0,
+                'thumbnail': data.get('thumbnail_url', ''),
+                'tags': [],
+                'categories': []
+            }
+        except Exception:
+            return {}
+
+    def _clean_vtt(self, text: str) -> str:
+        cleaned_lines: List[str] = []
+        for line in text.splitlines():
+            s = line.strip()
+            if not s:
+                continue
+            if s.startswith("WEBVTT"):
+                continue
+            if "-->" in s:
+                continue
+            if s.isdigit():
+                continue
+            s = re.sub(r"<[^>]+>", " ", s)
+            s = unescape(s)
+            s = re.sub(r"\s+", " ", s).strip()
+            if s:
+                cleaned_lines.append(s)
+        merged = " ".join(cleaned_lines)
+        merged = re.sub(r"\s+", " ", merged).strip()
+        return merged
+
+    def _get_subtitles_via_ytdlp(self, url: str, preferred_language: str = 'en') -> str:
+        try:
+            opts = {
+                **self.ydl_opts,
+                'writesubtitles': False,
+                'writeautomaticsub': False,
+            }
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+
+            tracks = []
+            subtitles = info.get('subtitles') or {}
+            auto_subs = info.get('automatic_captions') or {}
+
+            def _collect(lang_map, source_name):
+                for lang, entries in lang_map.items():
+                    for ent in entries or []:
+                        if ent.get('ext') in {'vtt', 'srv3', 'ttml'} and ent.get('url'):
+                            tracks.append((lang, ent['url'], source_name))
+
+            _collect(subtitles, 'manual')
+            _collect(auto_subs, 'auto')
+
+            if not tracks:
+                return ''
+
+            def _lang_rank(lang_code: str) -> int:
+                if lang_code == preferred_language:
+                    return 0
+                if lang_code.startswith(preferred_language + '-'):
+                    return 1
+                if lang_code.startswith('en'):
+                    return 2
+                return 3
+
+            tracks.sort(key=lambda t: (_lang_rank(t[0]), 0 if t[2] == 'manual' else 1))
+
+            for _, sub_url, _ in tracks[:6]:
+                try:
+                    resp = requests.get(sub_url, timeout=8)
+                    if not resp.ok or not resp.text:
+                        continue
+                    parsed = self._clean_vtt(resp.text)
+                    if parsed:
+                        return parsed
+                except Exception:
+                    continue
+            return ''
+        except Exception:
+            return ''
     
     def _clean_transcript_text(self, text: str) -> str:
         text = re.sub(r'\s+', ' ', text)

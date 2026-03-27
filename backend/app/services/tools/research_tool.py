@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import AsyncIterator, List
+from typing import AsyncIterator, List, Optional
 
 from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import sse_tool_start, sse_tool_result

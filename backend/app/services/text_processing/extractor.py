@@ -609,13 +609,36 @@ class EnhancedTextExtractor:
         from .youtube_service import YouTubeService
         r = YouTubeService().extract_transcript_from_url(url)
         text = r.get("transcript", "")
-        if not text and r.get("description"):
-            text = f"[Video Title: {r.get('title', '')}]\n\n{r['description']}"
+
+        # Build a richer fallback context so material is still useful when transcripts are partial.
+        title = (r.get("title") or "").strip()
+        uploader = (r.get("uploader") or "").strip()
+        description = (r.get("description") or "").strip()
+        duration = r.get("duration")
+
+        header_parts = []
+        if title:
+            header_parts.append(f"Title: {title}")
+        if uploader:
+            header_parts.append(f"Channel: {uploader}")
+        if duration:
+            header_parts.append(f"Duration: {duration} sec")
+        header_parts.append(f"URL: {url}")
+
+        body_sections = []
+        if description:
+            body_sections.append("Description:\n" + description)
+        if text:
+            body_sections.append("Transcript:\n" + text)
+
+        if body_sections:
+            text = "\n".join(header_parts) + "\n\n" + "\n\n".join(body_sections)
+
         if not text:
             return _fail(url, r.get("error", "No transcript available"), "youtube")
         return _ok(
             text, url, "youtube",
-            title=r.get("title"),
+            title=title,
             duration=r.get("duration"),
             transcript_lang=r.get("transcript_language"),
         )
