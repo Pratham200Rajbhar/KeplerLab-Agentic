@@ -960,115 +960,115 @@ export default function StudioPanel() {
               renderInlineContent()
             ) : effectiveMaterial ? (
               <>
-                  <p className="workspace-studio-lead text-[11.5px] text-text-muted mb-4 leading-relaxed">
-                    {selectedSources.length > 1 ? (
-                      <>
-                        Generating from{' '}
-                        <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
-                          {selectedSources.length} sources
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        Create from{' '}
-                        <span className="text-text-primary font-semibold">
-                          {effectiveMaterial.title || effectiveMaterial.filename}
-                        </span>
-                      </>
-                    )}
-                  </p>
+                <p className="workspace-studio-lead text-[11.5px] text-text-muted mb-4 leading-relaxed">
+                  {selectedSources.length > 1 ? (
+                    <>
+                      Generating from{' '}
+                      <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
+                        {selectedSources.length} sources
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Create from{' '}
+                      <span className="text-text-primary font-semibold">
+                        {effectiveMaterial.title || effectiveMaterial.filename}
+                      </span>
+                    </>
+                  )}
+                </p>
 
-                  <div className="workspace-studio-actions space-y-2">
-                    {outputs.map((output, i) => (
-                      <div
-                        key={output.id}
-                        className="animate-fade-up"
-                        style={{
-                          animationDelay: `${i * 50}ms`,
-                          animationFillMode: 'backwards',
-                        }}
-                      >
-                        <FeatureCard
-                          icon={output.icon}
-                          label={output.title}
-                          description={output.description}
-                          onClick={output.onClick}
-                          loading={loading[output.id]}
-                          disabled={!effectiveMaterial}
-                          onCancel={output.onCancel}
-                        />
-                      </div>
-                    ))}
+                <div className="workspace-studio-actions space-y-2">
+                  {outputs.map((output, i) => (
+                    <div
+                      key={output.id}
+                      className="animate-fade-up"
+                      style={{
+                        animationDelay: `${i * 50}ms`,
+                        animationFillMode: 'backwards',
+                      }}
+                    >
+                      <FeatureCard
+                        icon={output.icon}
+                        label={output.title}
+                        description={output.description}
+                        onClick={output.onClick}
+                        loading={loading[output.id]}
+                        disabled={!effectiveMaterial}
+                        onCancel={output.onCancel}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                { }
+                <PodcastProgress phase={podcastPhase} progress={podcastProgress} />
+
+                { }
+                {podcastError && podcastPhase === 'idle' && (
+                  <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
+                      <span className="text-xs text-[var(--danger)]">{podcastError}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setPodcastError(null);
+                        setShowPodcastConfig(true);
+                      }}
+                      className="mt-2 text-xs text-[var(--danger)] hover:underline"
+                    >
+                      Try Again
+                    </button>
                   </div>
+                )}
 
-                  { }
-                  <PodcastProgress phase={podcastPhase} progress={podcastProgress} />
+                { }
+                {combinedHistory.length > 0 && (
+                  <div className="workspace-studio-history mt-10 flex flex-col">
+                    { }
+                    <div className="flex items-center gap-3 py-2 shrink-0">
+                      <div className="flex-1 h-px bg-[var(--border)]" />
+                      <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                        Created
+                      </span>
+                      <div className="flex-1 h-px bg-[var(--border)]" />
+                    </div>
+                    <div className="pb-2">
+                      <ContentHistory
+                        items={combinedHistory}
+                        onSelect={handleViewHistoryItem}
+                        onRename={openHistoryRenameModal}
+                        onDelete={handleHistoryDelete}
+                      />
+                    </div>
+                  </div>
+                )}
 
-                  { }
-                  {podcastError && podcastPhase === 'idle' && (
-                    <div className="mt-3 p-3 rounded-xl bg-[var(--danger-subtle)] border border-[var(--danger-border)] animate-fade-in">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-[var(--danger)] shrink-0" />
-                        <span className="text-xs text-[var(--danger)]">{podcastError}</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setPodcastError(null);
-                          setShowPodcastConfig(true);
-                        }}
-                        className="mt-2 text-xs text-[var(--danger)] hover:underline"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  )}
-
-                  { }
-                  {combinedHistory.length > 0 && (
-                    <div className="workspace-studio-history mt-10 flex flex-col">
-                      { }
-                      <div className="flex items-center gap-3 py-2 shrink-0">
-                        <div className="flex-1 h-px bg-[var(--border)]" />
-                        <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
-                          Created
-                        </span>
-                        <div className="flex-1 h-px bg-[var(--border)]" />
-                      </div>
-                      <div className="pb-2">
-                        <ContentHistory
-                          items={combinedHistory}
-                          onSelect={handleViewHistoryItem}
-                          onRename={openHistoryRenameModal}
-                          onDelete={handleHistoryDelete}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-                  <div className="rounded-2xl px-8 py-8 max-w-[280px]" style={{
-                    background:
-                      'radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%), linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent))',
-                    border: '1px solid color-mix(in srgb, var(--border-strong) 85%, transparent)',
-                  }}>
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 mx-auto relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-                      <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
-                      <span className="material-symbols-outlined text-[26px] text-accent relative z-10">labs</span>
-                    </div>
-                    <p className="text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
-                    <p className="text-xs text-text-muted max-w-[180px] mx-auto leading-relaxed mb-4">
-                      Select a source from the panel to generate study materials
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-medium"
-                      style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
-                      Studio will activate automatically
-                    </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+                <div className="rounded-2xl px-8 py-8 max-w-[280px]" style={{
+                  background:
+                    'radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%), linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent))',
+                  border: '1px solid color-mix(in srgb, var(--border-strong) 85%, transparent)',
+                }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 mx-auto relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
+                    <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
+                    <span className="material-symbols-outlined text-[26px] text-accent relative z-10">labs</span>
+                  </div>
+                  <p className="text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
+                  <p className="text-xs text-text-muted max-w-[180px] mx-auto leading-relaxed mb-4">
+                    Select a source from the panel to generate study materials
+                  </p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-medium"
+                    style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
+                    Studio will activate automatically
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </>

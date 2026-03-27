@@ -7,11 +7,9 @@ import useAutoScroll from '@/hooks/useAutoScroll';
 
 export default function MessageList({ messages, isStreaming, error, onRetry, onEdit, onDelete, notebookId, sessionId }) {
   const lastMessage = messages[messages.length - 1];
-  const showTyping =
-    isStreaming &&
-    lastMessage?.role === 'assistant' &&
-    !lastMessage.content &&
-    !lastMessage.codeBlocks?.length;
+  // Avoid duplicate left-side status icons: when an assistant placeholder message
+  // is already present, MessageItem handles the streaming UI by itself.
+  const showTyping = isStreaming && lastMessage?.role !== 'assistant';
 
   const { containerRef, scrollToBottom, isAtBottom } = useAutoScroll([
     messages.length,

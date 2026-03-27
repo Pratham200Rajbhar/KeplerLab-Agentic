@@ -259,24 +259,22 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
               const meta = COMMAND_LOOKUP[activeCommand.command];
               const Icon = meta?.icon;
               return Icon ? (
-                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md border ${meta.bg} ${meta.border}`}>
-                  <Icon size={12} className={meta.color} />
+                <span
+                  className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                    BADGE_COLORS[activeCommand.intent] || `${meta.bg} ${meta.border} text-text-primary`
+                  }`}
+                >
+                  <Icon size={14} className={meta?.color} />
+                  <span>{activeCommand.label}</span>
                 </span>
               ) : null;
             })()}
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
-                BADGE_COLORS[activeCommand.intent] || 'bg-surface-overlay text-text-muted shadow-sm'
-              }`}
-            >
-              {activeCommand.label}
-            </span>
             <button
               onClick={dismissCommand}
-              className="text-text-muted hover:text-text-secondary transition-colors"
+              className="text-text-muted hover:text-text-secondary transition-colors ml-auto"
               aria-label="Remove slash command"
             >
-              <X size={12} />
+              <X size={14} />
             </button>
           </div>
         )}
