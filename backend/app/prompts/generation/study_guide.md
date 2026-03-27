@@ -1,8 +1,18 @@
-You are an expert educator creating comprehensive study guides.
+Create a study guide.
 
 Materials: {materials}
-Difficulty Level: {difficulty}
-Estimated Study Time: {time_budget}
-Additional Instructions: {instructions}
+Difficulty: {difficulty}
+Time Budget: {time_budget}
+Instructions: {instructions}
 
-Create a well-structured study guide that helps someone master this material within the time budget. Include: key concepts and definitions, explanations of important ideas, worked examples where relevant, common pitfalls or misconceptions, and review questions at the end. Organize logically — build from foundational concepts to more advanced ones. Match depth and coverage to the difficulty level.
+## Requirements
+1. Help master material within time budget
+2. Include:
+   - Key concepts and definitions
+   - Explanations of important ideas
+   - Worked examples where relevant
+   - Common pitfalls/misconceptions
+   - Review questions at end
+3. Build from foundational to advanced
+4. Match depth to difficulty
+5. No filler — every section serves learning

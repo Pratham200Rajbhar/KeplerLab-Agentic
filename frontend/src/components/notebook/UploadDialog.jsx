@@ -10,6 +10,7 @@ import {
 import { X, CloudUpload, Globe, File, FileText, Loader2, Link, CheckCircle, AlertCircle, Zap, Clock } from 'lucide-react';
 import { useToast } from '@/stores/useToastStore';
 import useAppStore from '@/stores/useAppStore';
+import Portal from '@/components/ui/Portal';
 
 const TABS = [
   { id: 'files', label: 'Upload Files', icon: File, desc: 'PDF, DOCX, images & more' },
@@ -272,280 +273,282 @@ export default function UploadDialog({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="workspace-upload-overlay fixed inset-0 z-[120] flex items-start sm:items-center justify-center px-4 pt-24 sm:pt-0 animate-fade-in"
-      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Upload sources"
-      ref={dialogRef}
-    >
-      <div className="workspace-upload-shell relative w-full max-w-[680px] flex flex-col rounded-2xl overflow-hidden animate-scale-in max-h-[calc(100vh-7rem)] sm:max-h-[88vh]">
-        {}
-        {}
-        <div className="workspace-upload-header flex items-center justify-between px-6 py-5 border-b border-divider">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/10">
-              <CloudUpload className="w-5 h-5 text-accent-light" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">Add Sources</h2>
-              <p className="text-xs text-text-muted mt-0.5">Drag files, paste links, or add content</p>
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} className="btn-icon w-8 h-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" title="Close (Esc)">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {}
-        <div className="px-6 pt-4 pb-2">
-          <div className="workspace-upload-tabs flex gap-1 p-1 bg-neutral-50 dark:bg-neutral-900 rounded-xl">
-            {TABS.map((tab) => {
-              const TabIcon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`workspace-upload-tab flex items-center gap-2 flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    activeTab === tab.id
-                      ? 'workspace-upload-tab-active bg-white dark:bg-neutral-800 text-text-primary shadow-sm'
-                      : 'text-text-muted hover:text-text-secondary'
-                  }`}
-                  title={tab.desc}
-                >
-                  <TabIcon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {activeTab === 'files' && (
-            <div className="space-y-5">
-              <div
-                className={`workspace-upload-dropzone relative flex flex-col items-center justify-center rounded-2xl px-8 py-16 transition-all duration-200 cursor-pointer border-2 border-dashed ${
-                  dragActive 
-                    ? 'bg-accent/8 border-accent-light scale-[1.02]' 
-                    : 'bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-accent/40'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => !loading && fileInputRef.current?.click()}
-              >
-                <div className={`workspace-upload-drop-icon w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${dragActive ? 'scale-110 bg-accent-light/20' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
-                  <CloudUpload className={`w-8 h-8 transition-colors ${dragActive ? 'text-accent-light' : 'text-text-muted'}`} />
-                </div>
-                <p className="text-base font-semibold text-text-primary mb-1">
-                  {dragActive ? 'Drop files here' : 'Drag files here to upload'}
-                </p>
-                <p className="text-sm text-text-muted mb-5">or click to browse • max {getMaxUploadSizeMB()} MB per file</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.mp3,.wav,.m4a,.mp4,.avi,.mov,.mkv"
-                  onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
-                />
-                <button
-                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  disabled={loading}
-                  className="btn-primary text-sm px-6 py-2.5 flex items-center gap-2"
-                >
-                  {loading ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-                  ) : (
-                    <><File className="w-4 h-4" /> Choose Files</>
-                  )}
-                </button>
+    <Portal>
+      <div
+        className="workspace-upload-overlay fixed inset-0 z-[120] flex items-start sm:items-center justify-center px-4 pt-24 sm:pt-0 animate-fade-in"
+        onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload sources"
+        ref={dialogRef}
+      >
+        <div className="workspace-upload-shell relative w-full max-w-[680px] flex flex-col rounded-2xl overflow-hidden animate-scale-in max-h-[calc(100vh-7rem)] sm:max-h-[88vh]">
+          {}
+          {}
+          <div className="workspace-upload-header flex items-center justify-between px-6 py-5 border-b border-divider">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/10">
+                <CloudUpload className="w-5 h-5 text-accent-light" />
               </div>
-
-              {uploadedFiles.length > 0 && (
-                <div className="space-y-2 max-h-[120px] overflow-y-auto">
-                  {uploadedFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
-                      <span className="text-lg">{getFileIcon(file.name)}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">{file.name}</p>
-                        <p className="text-xs text-text-muted">{formatFileSize(file.size)}</p>
-                      </div>
-                      {file.status === 'pending' && <Loader2 className="w-4 h-4 animate-spin text-accent-light" />}
-                      {file.status === 'complete' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                {FORMAT_GROUPS.slice(0, 3).map(({ icon, label, formats }) => (
-                  <div key={label} className="workspace-upload-format-item flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-                    <span className="text-base leading-none mt-0.5">{icon}</span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-text-secondary">{label}</p>
-                      <p className="text-2xs text-text-muted truncate">{formats}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'web' && (
-            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-text-secondary mb-2">Website or YouTube URL</label>
-                <div className="flex gap-2.5">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
-                      <Link className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="url"
-                      placeholder="https://example.com or https://youtube.com/watch?v=..."
-                      value={url}
-                      onChange={(e) => {
-                        setUrl(e.target.value);
-                        setUrlError('');
-                      }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
-                      className={`input pl-10 ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                    />
+                <h2 className="text-lg font-semibold text-text-primary">Add Sources</h2>
+                <p className="text-xs text-text-muted mt-0.5">Drag files, paste links, or add content</p>
+              </div>
+            </div>
+            <button onClick={onClose} disabled={loading} className="btn-icon w-8 h-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" title="Close (Esc)">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {}
+          <div className="px-6 pt-4 pb-2">
+            <div className="workspace-upload-tabs flex gap-1 p-1 bg-neutral-50 dark:bg-neutral-900 rounded-xl">
+              {TABS.map((tab) => {
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`workspace-upload-tab flex items-center gap-2 flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                      activeTab === tab.id
+                        ? 'workspace-upload-tab-active bg-white dark:bg-neutral-800 text-text-primary shadow-sm'
+                        : 'text-text-muted hover:text-text-secondary'
+                    }`}
+                    title={tab.desc}
+                  >
+                    <TabIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {}
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            {activeTab === 'files' && (
+              <div className="space-y-5">
+                <div
+                  className={`workspace-upload-dropzone relative flex flex-col items-center justify-center rounded-2xl px-8 py-16 transition-all duration-200 cursor-pointer border-2 border-dashed ${
+                    dragActive 
+                      ? 'bg-accent/8 border-accent-light scale-[1.02]' 
+                      : 'bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-accent/40'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => !loading && fileInputRef.current?.click()}
+                >
+                  <div className={`workspace-upload-drop-icon w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${dragActive ? 'scale-110 bg-accent-light/20' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
+                    <CloudUpload className={`w-8 h-8 transition-colors ${dragActive ? 'text-accent-light' : 'text-text-muted'}`} />
                   </div>
-                  <button onClick={handleUrlUpload} disabled={loading || !url.trim()} className="workspace-upload-primary btn-primary whitespace-nowrap px-5 flex items-center gap-2">
+                  <p className="text-base font-semibold text-text-primary mb-1">
+                    {dragActive ? 'Drop files here' : 'Drag files here to upload'}
+                  </p>
+                  <p className="text-sm text-text-muted mb-5">or click to browse • max {getMaxUploadSizeMB()} MB per file</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.mp3,.wav,.m4a,.mp4,.avi,.mov,.mkv"
+                    onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    disabled={loading}
+                    className="btn-primary text-sm px-6 py-2.5 flex items-center gap-2"
+                  >
                     {loading ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
                     ) : (
-                      <><Link className="w-4 h-4" /> Add</>
+                      <><File className="w-4 h-4" /> Choose Files</>
                     )}
                   </button>
                 </div>
-                {urlError && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-red-600 dark:text-red-400">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>{urlError}</span>
-                  </div>
-                )}
-              </div>
 
-              {recentSources.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-4 h-4 text-text-muted" />
-                    <label className="text-xs font-semibold text-text-secondary">Recent</label>
-                  </div>
-                  <div className="space-y-2">
-                    {recentSources.map((source, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setUrl(source.url);
-                          setUrlError('');
-                        }}
-                        className="w-full text-left flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                      >
-                        <Globe className="w-4 h-4 text-accent-light flex-shrink-0" />
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                    {uploadedFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
+                        <span className="text-lg">{getFileIcon(file.name)}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-text-primary truncate">{source.title}</p>
-                          <p className="text-xs text-text-muted truncate">{source.url}</p>
+                          <p className="text-sm font-medium text-text-primary truncate">{file.name}</p>
+                          <p className="text-xs text-text-muted">{formatFileSize(file.size)}</p>
                         </div>
-                      </button>
+                        {file.status === 'pending' && <Loader2 className="w-4 h-4 animate-spin text-accent-light" />}
+                        {file.status === 'complete' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  { icon: '🌐', title: 'Any Website', desc: 'Articles, blogs, docs' },
-                  { icon: '▶️', title: 'YouTube', desc: 'Auto transcript extraction' },
-                  { icon: '📰', title: 'News', desc: 'Rich content parsing' },
-                  { icon: '🔍', title: 'Auto Detect', desc: 'Smart recognition' },
-                ].map(({ icon, title, desc }) => (
-                  <div key={title} className="workspace-upload-format-item flex items-center gap-3 px-3.5 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-                    <span className="text-lg">{icon}</span>
-                    <div>
-                      <p className="text-xs font-semibold text-text-secondary">{title}</p>
-                      <p className="text-2xs text-text-muted">{desc}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {FORMAT_GROUPS.slice(0, 3).map(({ icon, label, formats }) => (
+                    <div key={label} className="workspace-upload-format-item flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                      <span className="text-base leading-none mt-0.5">{icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-text-secondary">{label}</p>
+                        <p className="text-2xs text-text-muted truncate">{formats}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'web' && (
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-text-secondary mb-2">Website or YouTube URL</label>
+                  <div className="flex gap-2.5">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
+                        <Link className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://example.com or https://youtube.com/watch?v=..."
+                        value={url}
+                        onChange={(e) => {
+                          setUrl(e.target.value);
+                          setUrlError('');
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
+                        className={`input pl-10 ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                      />
+                    </div>
+                    <button onClick={handleUrlUpload} disabled={loading || !url.trim()} className="workspace-upload-primary btn-primary whitespace-nowrap px-5 flex items-center gap-2">
+                      {loading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                      ) : (
+                        <><Link className="w-4 h-4" /> Add</>
+                      )}
+                    </button>
+                  </div>
+                  {urlError && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-red-600 dark:text-red-400">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{urlError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {recentSources.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-4 h-4 text-text-muted" />
+                      <label className="text-xs font-semibold text-text-secondary">Recent</label>
+                    </div>
+                    <div className="space-y-2">
+                      {recentSources.map((source, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setUrl(source.url);
+                            setUrlError('');
+                          }}
+                          className="w-full text-left flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        >
+                          <Globe className="w-4 h-4 text-accent-light flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-text-primary truncate">{source.title}</p>
+                            <p className="text-xs text-text-muted truncate">{source.url}</p>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'text' && (
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-text-secondary">Title *</label>
-                  <span className="text-xs text-text-muted">{textTitle.length} characters</span>
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="e.g., My Research Notes, Meeting Summary…" 
-                  value={textTitle} 
-                  onChange={(e) => setTextTitle(e.target.value)} 
-                  maxLength={100}
-                  className="input" 
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-text-secondary">Content *</label>
-                  <span className="text-xs text-text-muted">{textContent.length} characters</span>
-                </div>
-                <textarea 
-                  placeholder="Paste or type your text here… (minimum 10 characters)" 
-                  value={textContent} 
-                  onChange={(e) => setTextContent(e.target.value)} 
-                  rows={8}
-                  className="input resize-none leading-relaxed focus:ring-2 focus:ring-accent-light" 
-                />
-              </div>
-              <button 
-                onClick={handleTextUpload} 
-                disabled={loading || !textContent.trim() || !textTitle.trim() || textContent.length < 10} 
-                className="workspace-upload-primary btn-primary w-full justify-center py-2.5 flex items-center gap-2"
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Adding…</>
-                ) : (
-                  <><CheckCircle className="w-4 h-4" /> Add Text Source</>
                 )}
-              </button>
-            </div>
-          )}
 
-          {activeTab === 'ai' && (
-            <AIResourceBuilder
-              currentNotebook={currentNotebook}
-              draftMode={draftMode}
-              onMaterialAdded={onMaterialAdded}
-              setCurrentNotebook={setCurrentNotebook}
-              setDraftMode={setDraftMode}
-              onClose={onClose}
-            />
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    { icon: '🌐', title: 'Any Website', desc: 'Articles, blogs, docs' },
+                    { icon: '▶️', title: 'YouTube', desc: 'Auto transcript extraction' },
+                    { icon: '📰', title: 'News', desc: 'Rich content parsing' },
+                    { icon: '🔍', title: 'Auto Detect', desc: 'Smart recognition' },
+                  ].map(({ icon, title, desc }) => (
+                    <div key={title} className="workspace-upload-format-item flex items-center gap-3 px-3.5 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                      <span className="text-lg">{icon}</span>
+                      <div>
+                        <p className="text-xs font-semibold text-text-secondary">{title}</p>
+                        <p className="text-2xs text-text-muted">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'text' && (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-text-secondary">Title *</label>
+                    <span className="text-xs text-text-muted">{textTitle.length} characters</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="e.g., My Research Notes, Meeting Summary…" 
+                    value={textTitle} 
+                    onChange={(e) => setTextTitle(e.target.value)} 
+                    maxLength={100}
+                    className="input" 
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-text-secondary">Content *</label>
+                    <span className="text-xs text-text-muted">{textContent.length} characters</span>
+                  </div>
+                  <textarea 
+                    placeholder="Paste or type your text here… (minimum 10 characters)" 
+                    value={textContent} 
+                    onChange={(e) => setTextContent(e.target.value)} 
+                    rows={8}
+                    className="input resize-none leading-relaxed focus:ring-2 focus:ring-accent-light" 
+                  />
+                </div>
+                <button 
+                  onClick={handleTextUpload} 
+                  disabled={loading || !textContent.trim() || !textTitle.trim() || textContent.length < 10} 
+                  className="workspace-upload-primary btn-primary w-full justify-center py-2.5 flex items-center gap-2"
+                >
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Adding…</>
+                  ) : (
+                    <><CheckCircle className="w-4 h-4" /> Add Text Source</>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'ai' && (
+              <AIResourceBuilder
+                currentNotebook={currentNotebook}
+                draftMode={draftMode}
+                onMaterialAdded={onMaterialAdded}
+                setCurrentNotebook={setCurrentNotebook}
+                setDraftMode={setDraftMode}
+                onClose={onClose}
+              />
+            )}
+          </div>
+
+          {loading && (
+            <div className="workspace-upload-loading absolute inset-0 rounded-2xl flex items-center justify-center z-10 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4">
+                <div className="loading-spinner w-10 h-10 border-2 border-neutral-200 dark:border-neutral-800 border-t-accent-light rounded-full animate-spin" />
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-text-primary">Processing your source…</p>
+                  <p className="text-xs text-text-muted mt-1">This may take a moment</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
-
-        {loading && (
-          <div className="workspace-upload-loading absolute inset-0 rounded-2xl flex items-center justify-center z-10 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-4">
-              <div className="loading-spinner w-10 h-10 border-2 border-neutral-200 dark:border-neutral-800 border-t-accent-light rounded-full animate-spin" />
-              <div className="text-center">
-                <p className="text-sm font-semibold text-text-primary">Processing your source…</p>
-                <p className="text-xs text-text-muted mt-1">This may take a moment</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </Portal>
   );
 }

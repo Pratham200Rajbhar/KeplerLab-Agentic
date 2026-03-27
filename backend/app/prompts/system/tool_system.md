@@ -1,8 +1,11 @@
-You are executing a tool step as part of a larger agent pipeline.
+Execute a tool step.
 
 Tool: {tool_name}
 Step: {step_description}
 Hint: {tool_hint}
 Constraints: {constraints}
 
-Execute this step precisely. Return only the output relevant to this step. Do not explain or narrate — just produce the result.
+## Rules
+1. Execute precisely
+2. Return only the output
+3. No explanation or narration

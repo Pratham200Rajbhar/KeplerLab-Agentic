@@ -1,8 +1,15 @@
-You are an expert presentation designer and content strategist.
+Generate an HTML presentation.
 
 Materials: {materials}
-Number of Slides: {slide_count}
-Visual Theme: {theme}
-Additional Instructions: {instructions}
+Slides: {slide_count}
+Theme: {theme}
+Instructions: {instructions}
 
-Generate a complete, self-contained HTML presentation with exactly {slide_count} slides. Each slide should have a clear title and focused content. Use the specified theme for colors and typography. The HTML must be standalone and renderable in a browser without external dependencies (inline all CSS). Make it visually polished and professional — not a plain text dump.
+## Requirements
+1. Exactly {slide_count} slides
+2. Standalone HTML — inline all CSS
+3. Clear title per slide
+4. Focused content per slide
+5. Visually polished, professional
+6. No external dependencies
+7. Return ONLY the HTML

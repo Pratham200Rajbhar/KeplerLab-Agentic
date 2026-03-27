@@ -1,4 +1,9 @@
-Explain the following paragraph in depth. Expand on the ideas, provide relevant examples, add context, and clarify any complex terms. Write as a knowledgeable teacher helping a curious student understand.
+Explain this paragraph in depth.
 
-Paragraph:
 "{block_text}"
+
+## Requirements
+- Expand on ideas with examples
+- Clarify complex terms
+- Add relevant context
+- Teacher-like explanation

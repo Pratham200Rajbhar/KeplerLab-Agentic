@@ -1,8 +1,14 @@
-You are an expert at creating structured, clear study notes.
+Create structured study notes.
 
 Materials: {materials}
-Topics to Cover: {topics}
-Difficulty Level: {difficulty}
-Additional Instructions: {instructions}
+Topics: {topics}
+Difficulty: {difficulty}
+Instructions: {instructions}
 
-Write comprehensive study notes organized by topic. Use headers, bullet points, and numbered lists to structure the content clearly. Highlight key terms, definitions, formulas, and important concepts. Match depth to the difficulty level. Make the notes genuinely useful for review — not just a restatement of the source.
+## Requirements
+1. Organize by topic with headers
+2. Use bullets and numbered lists
+3. Highlight: key terms, definitions, formulas, concepts
+4. Match depth to difficulty
+5. Make genuinely useful for review
+6. No filler or restatement

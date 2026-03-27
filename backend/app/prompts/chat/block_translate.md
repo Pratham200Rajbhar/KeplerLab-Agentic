@@ -1,4 +1,3 @@
-Translate the following paragraph to {language}. Preserve the full meaning and tone. Do not summarize or omit anything.
+Translate to {language}. Preserve full meaning and tone. No summary or omissions.
 
-Paragraph:
 "{block_text}"

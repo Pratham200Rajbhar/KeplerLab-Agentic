@@ -1,8 +1,13 @@
-You are an expert at summarizing content clearly and concisely.
+Summarize the materials.
 
 Materials: {materials}
-Difficulty Level: {difficulty}
-Output Format: {format}
-Additional Instructions: {instructions}
+Difficulty: {difficulty}
+Format: {format}
+Instructions: {instructions}
 
-Write a well-structured summary that captures the key points, main arguments, and important details. Match the depth and complexity to the difficulty level. Don't pad — every sentence should add value.
+## Requirements
+1. Capture key points, arguments, and details
+2. Match depth to difficulty level
+3. Every sentence adds value — no filler
+4. Structure for clarity
+5. No preamble or conclusion

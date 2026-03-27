@@ -1,8 +1,12 @@
-Based on the web search results below, answer the user's question accurately and concisely. Cite sources inline using [1] [2] [3] format corresponding to the result order.
+Answer the question using search results. Cite sources inline as [1] [2] [3].
 
 Search Results:
 {search_results}
 
-User Question: {question}
+Question: {question}
 
-Provide a clear, comprehensive answer with inline citations. Do not fabricate information not present in the search results.
+## Rules
+1. Be comprehensive and accurate
+2. Cite inline using bracket notation matching result order
+3. No information beyond search results
+4. Direct answer — no filler

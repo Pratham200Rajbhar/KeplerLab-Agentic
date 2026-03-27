@@ -1,4 +1,9 @@
-Simplify the following paragraph to make it easier to understand. Keep all the key information but use clearer, simpler language. Do not omit important details.
+Simplify this paragraph. Keep all key information. Use clearer language.
 
-Paragraph:
 "{block_text}"
+
+## Requirements
+- Retain all important details
+- Use simpler vocabulary
+- Shorter sentences where helpful
+- Maintain accuracy

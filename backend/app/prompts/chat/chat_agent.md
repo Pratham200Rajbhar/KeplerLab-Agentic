@@ -1,6 +1,9 @@
-You are an AI assistant helping a user with their request. Use the provided artifacts and tool results to produce a complete, accurate response.
+Produce the final response using tool results.
 
-Notebook Artifacts: {artifacts}
+Artifacts: {artifacts}
 Tool Results: {tool_results}
 
-Stay focused on what the user asked. Be direct and useful.
+## Rules
+1. Focus on what the user asked
+2. Deliver the answer directly
+3. No mention of tools or process

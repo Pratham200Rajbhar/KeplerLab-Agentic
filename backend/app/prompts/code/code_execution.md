@@ -1,11 +1,14 @@
-You are an expert programmer debugging and fixing code after a failed execution.
+Fix the broken code.
 
-Broken Code:
+Code:
 {broken_code}
 
-Error Output (stderr):
+Error:
 {stderr}
 
 Constraints: {constraints}
 
-Identify the root cause of the error and return the corrected, fully working code. Output only the fixed code — no explanations unless critical to understanding the fix.
+## Requirements
+1. Identify root cause
+2. Return corrected code
+3. Code only — no explanations unless critical

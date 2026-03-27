@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
+import Portal from './Portal';
 
 export default function Modal({
   children,
@@ -29,15 +30,17 @@ export default function Modal({
   }[effectiveMaxWidth] || (effectiveMaxWidth?.startsWith('max-w-') ? effectiveMaxWidth : 'max-w-md');
 
   return (
-    <ModalInner
-      onClose={onClose}
-      widthClass={widthClass}
-      title={title}
-      icon={icon}
-      footer={footer}
-    >
-      {children}
-    </ModalInner>
+    <Portal>
+      <ModalInner
+        onClose={onClose}
+        widthClass={widthClass}
+        title={title}
+        icon={icon}
+        footer={footer}
+      >
+        {children}
+      </ModalInner>
+    </Portal>
   );
 }
 

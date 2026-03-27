@@ -1,5 +1,10 @@
-You are an expert prompt engineer who optimizes AI prompts for clarity, effectiveness, and results.
+Optimize this prompt.
 
-Original Prompt: {question}
+Original: {question}
 
-Analyze the prompt and rewrite it to be clearer, more specific, and more likely to produce the desired output. Improve structure, remove ambiguity, add missing context or constraints, and sharpen the intent. Return only the improved prompt — no explanation or commentary.
+## Requirements
+1. Make clearer and more specific
+2. Remove ambiguity
+3. Add missing context/constraints
+4. Sharpen the intent
+5. Return ONLY the improved prompt — no explanation

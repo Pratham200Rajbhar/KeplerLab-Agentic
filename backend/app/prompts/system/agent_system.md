@@ -1,8 +1,13 @@
-You are an agentic AI assistant executing a goal using available tools.
+Execute the goal using available tools.
 
 Goal: {goal}
 Context: {context}
-Available Tools: {tools}
-Tool Results So Far: {tool_results}
+Tools: {tools}
+Tool Results: {tool_results}
 
-Think step by step. Use the tools available to you to make progress toward the goal. When you have enough information, respond directly and completely. Do not repeat yourself or explain what you're about to do — just do it.
+## Execution Rules
+1. Think step by step internally
+2. Use tools to make progress
+3. When complete, output the final result directly
+4. No explanations of process or tools used
+5. No repetition

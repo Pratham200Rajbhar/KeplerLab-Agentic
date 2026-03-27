@@ -1,55 +1,301 @@
-2026-03-27 23:03:00,527 app.db.prisma_client INFO Prisma client connected to database
-2026-03-27 23:03:00,527 main INFO Warming up embedding model (running in thread pool)…
-2026-03-27 23:03:00,628 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
-2026-03-27 23:03:00,628 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-27 23:03:03,081 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
-2026-03-27 23:03:03,718 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-27 23:03:03,911 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-27 23:03:03,923 app.db.chroma INFO ChromaDB collection 'chapters' ready (6233 existing chunks).
-2026-03-27 23:03:04,021 app.services.rag.embedder INFO Embedding model warm-up complete (6233 existing chunks).
-2026-03-27 23:03:04,022 main INFO Preloading reranker model (running in thread pool)…
-2026-03-27 23:03:04,166 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-27 23:03:10,815 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-27 23:03:10,823 app.services.rag.reranker INFO Reranker loaded successfully in 6.80s
-2026-03-27 23:03:10,858 main INFO Reranker preloaded.
-2026-03-27 23:03:10,879 main INFO Background job processor task created.
-2026-03-27 23:03:10,889 main INFO Ensuring sandbox packages are installed…
-2026-03-27 23:03:12,194 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-27 23:03:12,199 main INFO Output directories ensured.
-2026-03-27 23:03:12,223 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-27 23:03:20,306 main INFO POST /auth/refresh 200 0.06s [cdf87d82]
-2026-03-27 23:03:20,365 main INFO GET /auth/me 200 0.01s [79859cf4]
-2026-03-27 23:03:20,389 performance INFO request_performance
-2026-03-27 23:03:20,389 main INFO GET /notebooks 200 0.01s [1106f450]
-2026-03-27 23:03:20,398 performance INFO request_performance
-2026-03-27 23:03:20,399 main INFO GET /notebooks 200 0.01s [a745baa8]
-2026-03-27 23:03:21,619 performance INFO request_performance
-2026-03-27 23:03:21,619 main INFO GET /notebooks/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.06s [783cec34]
-2026-03-27 23:03:21,625 performance INFO request_performance
-2026-03-27 23:03:21,625 main INFO GET /notebooks/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.00s [7dc83e3f]
-2026-03-27 23:03:22,012 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
-2026-03-27 23:03:22,013 main INFO GET /materials 200 0.04s [e8fb271f]
-2026-03-27 23:03:22,035 performance INFO request_performance
-2026-03-27 23:03:22,038 performance INFO request_performance
-2026-03-27 23:03:22,038 main INFO POST /chat/empty-suggestions 200 0.05s [9387c9fc]
-2026-03-27 23:03:22,039 main INFO GET /chat/sessions/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.04s [36f1f96f]
-2026-03-27 23:03:22,051 performance INFO request_performance
-2026-03-27 23:03:22,055 performance INFO request_performance
-2026-03-27 23:03:22,057 main INFO GET /chat/history/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.06s [3dbd4c70]
-2026-03-27 23:03:22,057 main INFO GET /notebooks/17fd5d7f-20f4-4934-b88b-52ae8188457a/content 200 0.06s [5c8ef18e]
-2026-03-27 23:03:22,068 performance INFO request_performance
-2026-03-27 23:03:22,068 main INFO GET /podcast/sessions/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.07s [c7d0fbc6]
-2026-03-27 23:03:22,069 main INFO GET /chat/sessions/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.03s [00273f1e]
-2026-03-27 23:03:22,154 main INFO GET /materials 200 0.12s [39864da4]
-2026-03-27 23:03:22,154 performance INFO request_performance
-2026-03-27 23:03:22,155 main INFO GET /chat/history/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.10s [70710434]
-2026-03-27 23:03:22,881 performance INFO request_performance
-2026-03-27 23:03:22,882 main INFO GET /chat/history/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.01s [4919b524]
-2026-03-27 23:03:22,882 performance INFO request_performance
-2026-03-27 23:03:22,882 main INFO GET /chat/sessions/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.01s [11b332fc]
-2026-03-27 23:03:22,940 performance INFO request_performance
-2026-03-27 23:03:22,940 main INFO GET /chat/history/17fd5d7f-20f4-4934-b88b-52ae8188457a 200 0.01s [dfbefe66]
-2026-03-27 23:03:52,234 performance INFO request_performance
-2026-03-27 23:03:52,235 main INFO POST /chat/empty-suggestions 200 29.26s [e0a12bae]
-2026-03-27 23:03:52,634 performance INFO request_performance
-2026-03-27 23:03:52,635 main INFO POST /chat/empty-suggestions 200 30.59s [af8bc535]
+2026-03-28 00:06:26,544 app.db.prisma_client INFO Prisma client connected to database
+2026-03-28 00:06:26,544 main INFO Warming up embedding model (running in thread pool)…
+2026-03-28 00:06:26,733 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
+2026-03-28 00:06:26,734 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-28 00:06:30,841 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
+2026-03-28 00:06:31,901 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-28 00:06:32,194 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-28 00:06:32,210 app.db.chroma INFO ChromaDB collection 'chapters' ready (6233 existing chunks).
+2026-03-28 00:06:32,367 app.services.rag.embedder INFO Embedding model warm-up complete (6233 existing chunks).
+2026-03-28 00:06:32,368 main INFO Preloading reranker model (running in thread pool)…
+2026-03-28 00:06:32,523 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-28 00:06:34,559 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-28 00:06:34,559 app.services.rag.reranker INFO Reranker loaded successfully in 2.19s
+2026-03-28 00:06:34,559 main INFO Reranker preloaded.
+2026-03-28 00:06:34,565 main INFO Background job processor task created.
+2026-03-28 00:06:34,566 main INFO Ensuring sandbox packages are installed…
+2026-03-28 00:06:35,506 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-28 00:06:35,508 main INFO Output directories ensured.
+2026-03-28 00:06:35,509 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-28 00:06:46,336 main INFO POST /auth/refresh 200 0.02s [eaac2b24]
+2026-03-28 00:06:46,349 main INFO GET /auth/me 200 0.01s [8737bad5]
+2026-03-28 00:06:46,487 performance INFO request_performance
+2026-03-28 00:06:46,487 main INFO GET /notebooks 200 0.01s [1a9fe138]
+2026-03-28 00:06:46,500 performance INFO request_performance
+2026-03-28 00:06:46,500 main INFO GET /notebooks 200 0.01s [cc63a3e4]
+2026-03-28 00:06:48,033 performance INFO request_performance
+2026-03-28 00:06:48,034 main INFO POST /chat/empty-suggestions 200 0.01s [93da59af]
+2026-03-28 00:06:48,067 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:06:49,313 performance INFO request_performance
+2026-03-28 00:06:49,314 main INFO POST /notebooks 200 0.03s [d8758761]
+2026-03-28 00:06:49,350 performance INFO request_performance
+2026-03-28 00:06:49,351 main INFO POST /chat/sessions 200 0.02s [344c4a62]
+2026-03-28 00:06:49,385 main INFO GET /materials 200 0.02s [0e9ce5b6]
+2026-03-28 00:06:49,405 main INFO GET /podcast/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.03s [c09dcc35]
+2026-03-28 00:06:49,418 performance INFO request_performance
+2026-03-28 00:06:49,419 main INFO GET /notebooks/9eb69241-6975-4158-8072-33113cf3df83/content 200 0.04s [871182dc]
+2026-03-28 00:06:49,423 app.services.chat_v2.router_logic INFO Capability routed to NORMAL_CHAT (default)
+2026-03-28 00:06:49,425 performance INFO request_performance
+2026-03-28 00:06:49,425 main INFO POST /chat 200 0.03s [536d0cd5]
+2026-03-28 00:06:49,509 performance INFO request_performance
+2026-03-28 00:06:49,509 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.14s [624f2194]
+2026-03-28 00:06:49,523 performance INFO request_performance
+2026-03-28 00:06:49,523 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [b9d7dc03]
+2026-03-28 00:06:49,582 performance INFO request_performance
+2026-03-28 00:06:49,582 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [f30855d6]
+2026-03-28 00:06:49,742 performance INFO request_performance
+2026-03-28 00:06:49,743 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [32a6cd8f]
+2026-03-28 00:07:01,727 performance INFO request_performance
+2026-03-28 00:07:01,728 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [8fab5b71]
+2026-03-28 00:07:17,871 app.services.chat_v2.router_logic INFO Capability routed to NORMAL_CHAT (default)
+2026-03-28 00:07:17,873 performance INFO request_performance
+2026-03-28 00:07:17,874 main INFO POST /chat 200 0.02s [cc262ef4]
+2026-03-28 00:07:22,064 performance INFO request_performance
+2026-03-28 00:07:22,064 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [6cdd384f]
+2026-03-28 00:07:52,762 app.services.chat_v2.router_logic INFO Capability routed to NORMAL_CHAT (default)
+2026-03-28 00:07:52,764 performance INFO request_performance
+2026-03-28 00:07:52,765 main INFO POST /chat 200 0.01s [57ce366b]
+2026-03-28 00:08:07,733 performance INFO request_performance
+2026-03-28 00:08:07,733 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [0522b730]
+2026-03-28 00:08:21,668 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-28 00:08:21,668 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-28 00:08:21,689 performance INFO request_performance
+2026-03-28 00:08:21,689 main INFO GET /notebooks 200 0.01s [0e3fe21f]
+2026-03-28 00:08:21,702 performance INFO request_performance
+2026-03-28 00:08:21,702 main INFO GET /notebooks 200 0.01s [714f6c4d]
+2026-03-28 00:08:22,743 performance INFO request_performance
+2026-03-28 00:08:22,743 main INFO POST /notebooks/9eb69241-6975-4158-8072-33113cf3df83/thumbnail 200 1.04s [fd6f2e35]
+2026-03-28 00:08:26,859 performance INFO request_performance
+2026-03-28 00:08:26,859 main INFO DELETE /notebooks/9eb69241-6975-4158-8072-33113cf3df83 200 0.03s [b535c681]
+2026-03-28 00:08:28,571 main INFO GET /materials 200 0.01s [c181c07a]
+2026-03-28 00:08:28,605 performance INFO request_performance
+2026-03-28 00:08:28,614 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.04s [5ba4c81d]
+2026-03-28 00:08:28,625 performance INFO request_performance
+2026-03-28 00:08:28,627 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.05s [657ed47d]
+2026-03-28 00:08:28,628 main INFO GET /podcast/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.05s [83656fcf]
+2026-03-28 00:08:28,628 main INFO GET /materials 200 0.05s [60c26928]
+2026-03-28 00:08:28,634 performance INFO request_performance
+2026-03-28 00:08:28,636 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [1c7d1278]
+2026-03-28 00:08:28,644 performance INFO request_performance
+2026-03-28 00:08:28,645 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [1bf7b3ed]
+2026-03-28 00:08:28,669 performance INFO request_performance
+2026-03-28 00:08:28,669 main INFO GET /notebooks/9eb69241-6975-4158-8072-33113cf3df83/content 404 0.09s [09b76d7f]
+2026-03-28 00:08:28,721 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:08:28,883 performance INFO request_performance
+2026-03-28 00:08:28,884 main INFO POST /chat/empty-suggestions 200 0.01s [f7612f86]
+2026-03-28 00:08:29,040 performance INFO request_performance
+2026-03-28 00:08:29,040 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [8ffd4378]
+2026-03-28 00:08:29,042 performance INFO request_performance
+2026-03-28 00:08:29,043 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [5c9c7cbd]
+2026-03-28 00:08:29,273 performance INFO request_performance
+2026-03-28 00:08:29,274 performance INFO request_performance
+2026-03-28 00:08:29,274 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [aa8bc04a]
+2026-03-28 00:08:29,274 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [e833b0dd]
+2026-03-28 00:08:29,353 performance INFO request_performance
+2026-03-28 00:08:29,354 performance INFO request_performance
+2026-03-28 00:08:29,354 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [e1b755af]
+2026-03-28 00:08:29,354 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [308287a6]
+2026-03-28 00:08:29,448 performance INFO request_performance
+2026-03-28 00:08:29,448 performance INFO request_performance
+2026-03-28 00:08:29,448 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [1a01cde6]
+2026-03-28 00:08:29,448 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [88eaea37]
+2026-03-28 00:08:29,580 performance INFO request_performance
+2026-03-28 00:08:29,581 performance INFO request_performance
+2026-03-28 00:08:29,582 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [0dfab294]
+2026-03-28 00:08:29,583 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [c4eaeec6]
+2026-03-28 00:08:29,681 performance INFO request_performance
+2026-03-28 00:08:29,682 performance INFO request_performance
+2026-03-28 00:08:29,682 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [cc6f4b42]
+2026-03-28 00:08:29,683 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [44316c38]
+2026-03-28 00:08:29,772 performance INFO request_performance
+2026-03-28 00:08:29,773 performance INFO request_performance
+2026-03-28 00:08:29,773 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [b3118abf]
+2026-03-28 00:08:29,774 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [b5cdc0a1]
+2026-03-28 00:08:29,915 performance INFO request_performance
+2026-03-28 00:08:29,916 performance INFO request_performance
+2026-03-28 00:08:29,917 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [a5cf64d2]
+2026-03-28 00:08:29,917 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [7b475fe5]
+2026-03-28 00:08:30,002 performance INFO request_performance
+2026-03-28 00:08:30,002 performance INFO request_performance
+2026-03-28 00:08:30,003 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [693d193e]
+2026-03-28 00:08:30,004 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [2488b0e0]
+2026-03-28 00:08:30,159 performance INFO request_performance
+2026-03-28 00:08:30,160 performance INFO request_performance
+2026-03-28 00:08:30,161 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [135c52b2]
+2026-03-28 00:08:30,162 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [6ee55a5a]
+2026-03-28 00:08:30,237 performance INFO request_performance
+2026-03-28 00:08:30,237 performance INFO request_performance
+2026-03-28 00:08:30,237 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [e95f5325]
+2026-03-28 00:08:30,238 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [3cc7dc1d]
+2026-03-28 00:08:30,342 performance INFO request_performance
+2026-03-28 00:08:30,343 performance INFO request_performance
+2026-03-28 00:08:30,344 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [baee534b]
+2026-03-28 00:08:30,344 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [cede1e01]
+2026-03-28 00:08:30,410 performance INFO request_performance
+2026-03-28 00:08:30,411 performance INFO request_performance
+2026-03-28 00:08:30,411 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [decf22b8]
+2026-03-28 00:08:30,412 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [b8a84195]
+2026-03-28 00:08:30,501 performance INFO request_performance
+2026-03-28 00:08:30,502 performance INFO request_performance
+2026-03-28 00:08:30,503 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [888b95ad]
+2026-03-28 00:08:30,503 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [0beb3c93]
+2026-03-28 00:08:30,615 performance INFO request_performance
+2026-03-28 00:08:30,616 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [5171852a]
+2026-03-28 00:08:30,620 performance INFO request_performance
+2026-03-28 00:08:30,620 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [31c1ea70]
+2026-03-28 00:08:30,725 performance INFO request_performance
+2026-03-28 00:08:30,725 performance INFO request_performance
+2026-03-28 00:08:30,726 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [fe0b52d9]
+2026-03-28 00:08:30,726 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [254cbf6d]
+2026-03-28 00:08:30,794 performance INFO request_performance
+2026-03-28 00:08:30,794 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [06335cd1]
+2026-03-28 00:08:30,795 performance INFO request_performance
+2026-03-28 00:08:30,796 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [45249325]
+2026-03-28 00:08:30,924 performance INFO request_performance
+2026-03-28 00:08:30,925 performance INFO request_performance
+2026-03-28 00:08:30,925 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [61d5403f]
+2026-03-28 00:08:30,926 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [6c3611c4]
+2026-03-28 00:08:31,017 performance INFO request_performance
+2026-03-28 00:08:31,017 performance INFO request_performance
+2026-03-28 00:08:31,018 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [993c694a]
+2026-03-28 00:08:31,018 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [df4935df]
+2026-03-28 00:08:31,152 performance INFO request_performance
+2026-03-28 00:08:31,153 performance INFO request_performance
+2026-03-28 00:08:31,153 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [8ae9f4c5]
+2026-03-28 00:08:31,154 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [f71e6e0e]
+2026-03-28 00:08:31,217 performance INFO request_performance
+2026-03-28 00:08:31,218 performance INFO request_performance
+2026-03-28 00:08:31,218 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [71bdbd4f]
+2026-03-28 00:08:31,218 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [bb8c01eb]
+2026-03-28 00:08:31,318 performance INFO request_performance
+2026-03-28 00:08:31,318 performance INFO request_performance
+2026-03-28 00:08:31,318 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [effc0b93]
+2026-03-28 00:08:31,319 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [f134436e]
+2026-03-28 00:08:31,384 performance INFO request_performance
+2026-03-28 00:08:31,385 performance INFO request_performance
+2026-03-28 00:08:31,385 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [8aa866a5]
+2026-03-28 00:08:31,386 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [424ec553]
+2026-03-28 00:08:31,487 performance INFO request_performance
+2026-03-28 00:08:31,488 performance INFO request_performance
+2026-03-28 00:08:31,488 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [ce86de06]
+2026-03-28 00:08:31,489 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [7d6cc06f]
+2026-03-28 00:08:31,635 performance INFO request_performance
+2026-03-28 00:08:31,636 performance INFO request_performance
+2026-03-28 00:08:31,636 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [76ce4af4]
+2026-03-28 00:08:31,636 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [b91cbfb9]
+2026-03-28 00:08:31,750 performance INFO request_performance
+2026-03-28 00:08:31,750 performance INFO request_performance
+2026-03-28 00:08:31,750 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [be39555c]
+2026-03-28 00:08:31,751 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [7ce8ac1a]
+2026-03-28 00:08:31,823 performance INFO request_performance
+2026-03-28 00:08:31,823 performance INFO request_performance
+2026-03-28 00:08:31,823 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [611586c9]
+2026-03-28 00:08:31,824 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [7e800259]
+2026-03-28 00:08:31,918 performance INFO request_performance
+2026-03-28 00:08:31,921 performance INFO request_performance
+2026-03-28 00:08:31,921 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [5f9da522]
+2026-03-28 00:08:31,922 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [0924b1dc]
+2026-03-28 00:08:31,991 performance INFO request_performance
+2026-03-28 00:08:31,991 performance INFO request_performance
+2026-03-28 00:08:31,992 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [def4c69d]
+2026-03-28 00:08:31,992 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [3fa2d753]
+2026-03-28 00:08:32,151 performance INFO request_performance
+2026-03-28 00:08:32,152 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [e4d378ff]
+2026-03-28 00:08:32,152 performance INFO request_performance
+2026-03-28 00:08:32,153 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [16d1fb24]
+2026-03-28 00:08:32,214 performance INFO request_performance
+2026-03-28 00:08:32,215 performance INFO request_performance
+2026-03-28 00:08:32,215 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [94e82327]
+2026-03-28 00:08:32,215 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [40f6a546]
+2026-03-28 00:08:32,311 performance INFO request_performance
+2026-03-28 00:08:32,313 performance INFO request_performance
+2026-03-28 00:08:32,313 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [18599857]
+2026-03-28 00:08:32,314 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [fd5595ce]
+2026-03-28 00:08:32,375 performance INFO request_performance
+2026-03-28 00:08:32,375 performance INFO request_performance
+2026-03-28 00:08:32,376 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [6533552b]
+2026-03-28 00:08:32,376 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [f01813bc]
+2026-03-28 00:08:32,482 performance INFO request_performance
+2026-03-28 00:08:32,483 performance INFO request_performance
+2026-03-28 00:08:32,484 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [f0b9247b]
+2026-03-28 00:08:32,484 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [3adc2e28]
+2026-03-28 00:08:32,628 performance INFO request_performance
+2026-03-28 00:08:32,628 performance INFO request_performance
+2026-03-28 00:08:32,629 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [adb4df4f]
+2026-03-28 00:08:32,629 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [a3e4d87d]
+2026-03-28 00:08:32,714 performance INFO request_performance
+2026-03-28 00:08:32,714 performance INFO request_performance
+2026-03-28 00:08:32,714 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [87c1d8eb]
+2026-03-28 00:08:32,715 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [ed4631eb]
+2026-03-28 00:08:32,790 performance INFO request_performance
+2026-03-28 00:08:32,791 performance INFO request_performance
+2026-03-28 00:08:32,791 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [11ffcb1b]
+2026-03-28 00:08:32,792 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [3e4d1dac]
+2026-03-28 00:08:32,888 performance INFO request_performance
+2026-03-28 00:08:32,889 performance INFO request_performance
+2026-03-28 00:08:32,889 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [2f743398]
+2026-03-28 00:08:32,890 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [b7449b9d]
+2026-03-28 00:08:32,954 performance INFO request_performance
+2026-03-28 00:08:32,954 performance INFO request_performance
+2026-03-28 00:08:32,955 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [9061aaa7]
+2026-03-28 00:08:32,955 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [f4f5918e]
+2026-03-28 00:08:33,114 performance INFO request_performance
+2026-03-28 00:08:33,115 performance INFO request_performance
+2026-03-28 00:08:33,115 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [40ae8e6e]
+2026-03-28 00:08:33,116 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [087af813]
+2026-03-28 00:08:33,193 performance INFO request_performance
+2026-03-28 00:08:33,194 performance INFO request_performance
+2026-03-28 00:08:33,194 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [90a36b69]
+2026-03-28 00:08:33,194 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [0909019a]
+2026-03-28 00:08:33,265 performance INFO request_performance
+2026-03-28 00:08:33,266 performance INFO request_performance
+2026-03-28 00:08:33,266 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [97092252]
+2026-03-28 00:08:33,267 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [9ee27db0]
+2026-03-28 00:08:33,333 performance INFO request_performance
+2026-03-28 00:08:33,333 performance INFO request_performance
+2026-03-28 00:08:33,333 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [d50df805]
+2026-03-28 00:08:33,334 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [21cc709b]
+2026-03-28 00:08:33,453 performance INFO request_performance
+2026-03-28 00:08:33,454 performance INFO request_performance
+2026-03-28 00:08:33,454 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [d4776add]
+2026-03-28 00:08:33,455 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [42f9a13d]
+2026-03-28 00:08:33,562 performance INFO request_performance
+2026-03-28 00:08:33,563 performance INFO request_performance
+2026-03-28 00:08:33,563 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [91223806]
+2026-03-28 00:08:33,564 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [2dabbb9a]
+2026-03-28 00:08:33,654 performance INFO request_performance
+2026-03-28 00:08:33,654 performance INFO request_performance
+2026-03-28 00:08:33,654 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [33bb6efd]
+2026-03-28 00:08:33,655 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [9ef58d89]
+2026-03-28 00:08:33,716 performance INFO request_performance
+2026-03-28 00:08:33,716 performance INFO request_performance
+2026-03-28 00:08:33,716 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [7f70ab8d]
+2026-03-28 00:08:33,717 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [528c60fe]
+2026-03-28 00:08:33,831 performance INFO request_performance
+2026-03-28 00:08:33,832 performance INFO request_performance
+2026-03-28 00:08:33,832 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [4d697004]
+2026-03-28 00:08:33,832 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.02s [6ff342c3]
+2026-03-28 00:08:33,891 performance INFO request_performance
+2026-03-28 00:08:33,892 performance INFO request_performance
+2026-03-28 00:08:33,892 main INFO GET /chat/sessions/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [837b1442]
+2026-03-28 00:08:33,892 main INFO GET /chat/history/9eb69241-6975-4158-8072-33113cf3df83 200 0.01s [8850c056]
+2026-03-28 00:08:34,069 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-28 00:08:34,070 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-28 00:08:34,361 main INFO POST /auth/refresh 200 0.03s [fbf7d43d]
+2026-03-28 00:08:34,428 main INFO GET /auth/me 200 0.01s [01e2eaba]
+2026-03-28 00:08:34,898 performance INFO request_performance
+2026-03-28 00:08:34,899 main INFO POST /chat/empty-suggestions 200 0.01s [65b43534]
+2026-03-28 00:08:34,914 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:15:53,606 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-28 00:15:53,606 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-28 00:15:53,622 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:16:09,887 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-28 00:16:09,887 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-28 00:16:09,898 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:16:56,544 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-28 00:16:56,545 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-28 00:16:56,824 main INFO POST /auth/refresh 200 0.07s [a7110457]
+2026-03-28 00:16:56,860 main INFO GET /auth/me 200 0.01s [a4233340]
+2026-03-28 00:16:57,644 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-28 00:16:57,648 performance INFO request_performance
+2026-03-28 00:16:57,648 main INFO POST /chat/empty-suggestions 200 0.01s [fe17a828]

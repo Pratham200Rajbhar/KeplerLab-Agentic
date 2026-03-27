@@ -1,24 +1,25 @@
-# Flashcard Generation Strategy
+Create flashcards from materials.
 
-You are an expert educator creating flashcards for studying.
+Materials: {materials}
+Card Count: {count}
+Difficulty: {difficulty}
+Instructions: {instructions}
 
-## Materials
-{materials}
+## Output Format (JSON only, no markdown)
+```json
+{
+  "title": "Flashcard set title",
+  "flashcards": [
+    {
+      "question": "Term or question",
+      "answer": "Definition or answer"
+    }
+  ]
+}
+```
 
-## Flashcard Configuration
-- Number of Cards: {count}
-- Difficulty Level: {difficulty}
-- Additional Instructions: {instructions}
-
-## Output Format
-Return a JSON object with:
-- `title`: A concise, informative title for the flashcard set.
-- `flashcards`: A list of flashcard objects, each containing:
-    - `question`: The flashcard question or term.
-    - `answer`: The flashcard answer or definition.
-
-## Constraints
-- Each card must test a distinct, meaningful concept from the material.
-- Vary the question types (e.g., definitions, applications, consequences).
-- Match the depth of analysis to the specified difficulty level.
-- Return ONLY the JSON object.
+## Requirements
+1. Each card tests a distinct concept
+2. Vary types: definitions, applications, consequences
+3. Match depth to difficulty
+4. Return ONLY JSON

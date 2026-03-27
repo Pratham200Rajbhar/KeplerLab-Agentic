@@ -21,6 +21,7 @@ import UploadDialog from '@/components/notebook/UploadDialog';
 import WebSearchDialog from '@/components/notebook/WebSearchDialog';
 import DocumentPreview from '@/components/chat/DocumentPreview';
 import { PANEL } from '@/lib/utils/constants';
+import Portal from '@/components/ui/Portal';
 
 const ALL_FILE_TYPES = [
   { id: '', label: 'Any type' },
@@ -491,49 +492,51 @@ export default function Sidebar({ onNavigate }) {
 
       {}
       {showTextModal && (
-        <div className={`workspace-doc-preview-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-[280ms] ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closePreviewModal}>
-          <div className={`workspace-doc-preview-shell rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative transition-all duration-[280ms] ${modalVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-5'}`} onClick={(e) => e.stopPropagation()}>
-            <div className="workspace-doc-preview-header p-4 sm:p-5 flex items-center justify-between border-b border-border z-10 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 rounded-xl bg-accent-subtle text-accent-light shrink-0">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-[15px] font-semibold text-text-primary truncate">{modalFilename}</h3>
-                  <p className="text-[12px] text-text-muted flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                    Document Preview
-                    {modalSourceFilename && !modalLoading && (
-                      <span className="text-text-muted/50">· {modalSourceFilename.split('.').pop()?.toUpperCase()}</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <button onClick={closePreviewModal} className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors shrink-0" aria-label="Close document preview">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="workspace-doc-preview-body flex-1 overflow-y-auto relative z-10 p-5 sm:p-8 custom-scrollbar">
-              {modalLoading ? (
-                <div className="flex flex-col items-center justify-center h-full gap-5">
-                  <div className="relative">
-                    <div className="loading-spinner w-12 h-12 text-accent" />
-                    <div className="absolute inset-0 bg-accent-subtle blur-xl rounded-full" />
+        <Portal>
+          <div className={`workspace-doc-preview-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-[280ms] ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closePreviewModal}>
+            <div className={`workspace-doc-preview-shell rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative transition-all duration-[280ms] ${modalVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-5'}`} onClick={(e) => e.stopPropagation()}>
+              <div className="workspace-doc-preview-header p-4 sm:p-5 flex items-center justify-between border-b border-border z-10 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-xl bg-accent-subtle text-accent-light shrink-0">
+                    <FileText className="w-5 h-5" />
                   </div>
-                  <p className="text-[14px] text-text-muted font-medium tracking-wide animate-pulse">Analyzing document content...</p>
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-semibold text-text-primary truncate">{modalFilename}</h3>
+                    <p className="text-[12px] text-text-muted flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Document Preview
+                      {modalSourceFilename && !modalLoading && (
+                        <span className="text-text-muted/50">· {modalSourceFilename.split('.').pop()?.toUpperCase()}</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="max-w-5xl mx-auto rounded-xl">
-                  <DocumentPreview content={modalText} filename={modalSourceFilename} />
-                </div>
-              )}
-            </div>
-            <div className="workspace-doc-preview-footer px-4 py-3 flex items-center justify-between border-t border-border z-10 shrink-0">
-              <p className="text-[12px] text-text-muted">Press <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border text-[11px] font-mono">Esc</kbd> to close</p>
-              <button onClick={closePreviewModal} className="px-4 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close</button>
+                <button onClick={closePreviewModal} className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors shrink-0" aria-label="Close document preview">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="workspace-doc-preview-body flex-1 overflow-y-auto relative z-10 p-5 sm:p-8 custom-scrollbar">
+                {modalLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-5">
+                    <div className="relative">
+                      <div className="loading-spinner w-12 h-12 text-accent" />
+                      <div className="absolute inset-0 bg-accent-subtle blur-xl rounded-full" />
+                    </div>
+                    <p className="text-[14px] text-text-muted font-medium tracking-wide animate-pulse">Analyzing document content...</p>
+                  </div>
+                ) : (
+                  <div className="max-w-5xl mx-auto rounded-xl">
+                    <DocumentPreview content={modalText} filename={modalSourceFilename} />
+                  </div>
+                )}
+              </div>
+              <div className="workspace-doc-preview-footer px-4 py-3 flex items-center justify-between border-t border-border z-10 shrink-0">
+                <p className="text-[12px] text-text-muted">Press <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border text-[11px] font-mono">Esc</kbd> to close</p>
+                <button onClick={closePreviewModal} className="px-4 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors">Close</button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       <UploadDialog

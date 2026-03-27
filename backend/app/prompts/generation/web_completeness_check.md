@@ -1,21 +1,23 @@
-You are evaluating whether a set of web search results fully answers a user's question.
+Evaluate web search completeness.
 
-User Question: {question}
+Question: {question}
 
-Search Results So Far:
+Search Results:
 {search_results}
 
-Evaluate completeness. Answer with JSON only:
+## Output Format (JSON only)
+```json
 {
-  "is_complete": true or false,
-  "confidence": 0-100,
-  "missing_aspects": ["aspect 1", "aspect 2"],
-  "follow_up_queries": ["query 1", "query 2", "query 3"]
+  "is_complete": true,
+  "confidence": 85,
+  "missing_aspects": ["aspect 1"],
+  "follow_up_queries": ["query 1", "query 2"]
 }
+```
 
-- `is_complete`: true if the question is fully answered with sufficient detail and accuracy
-- `confidence`: how confident you are that the answer is complete (0-100)
-- `missing_aspects`: specific angles, facts, or details that are still unclear or missing
-- `follow_up_queries`: 2-4 precise search queries that would fill the gaps (empty array if complete)
-
-Return ONLY the JSON object, no other text.
+## Requirements
+1. `is_complete`: true if fully answered
+2. `confidence`: 0-100
+3. `missing_aspects`: what's unclear or missing
+4. `follow_up_queries`: 2-4 queries to fill gaps (empty if complete)
+5. Return ONLY JSON
