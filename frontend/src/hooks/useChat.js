@@ -34,6 +34,17 @@ export default function useChat({ notebookId, materialIds = [] }) {
 
   const sendMessage = useCallback(
     async (content, notebookIdOverride, intentOverride = null) => {
+            const trimmedContent = content.trim();
+            const inferredIntent = (() => {
+              if (intentOverride) return intentOverride;
+              if (trimmedContent.startsWith('/image')) return 'IMAGE_GENERATION';
+              if (trimmedContent.startsWith('/agent')) return 'AGENT';
+              if (trimmedContent.startsWith('/web')) return 'WEB_SEARCH';
+              if (trimmedContent.startsWith('/research')) return 'WEB_RESEARCH';
+              if (trimmedContent.startsWith('/code')) return 'CODE_EXECUTION';
+              return null;
+            })();
+
       if (!content?.trim() || isStreaming) return;
 
       const effectiveNotebookId = notebookIdOverride || notebookId;
@@ -61,9 +72,9 @@ export default function useChat({ notebookId, materialIds = [] }) {
       const userMsg = {
         id: generateId(),
         role: 'user',
-        content: content.trim(),
+        content: trimmedContent,
         createdAt: Date.now(),
-        intentOverride: intentOverride || undefined,
+        intentOverride: inferredIntent || undefined,
       };
       addMessage(userMsg);
 
@@ -73,6 +84,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
         role: 'assistant',
         content: '',
         createdAt: Date.now(),
+        intentOverride: inferredIntent || undefined,
       };
       addMessage(assistantMsg);
 
@@ -148,7 +160,13 @@ export default function useChat({ notebookId, materialIds = [] }) {
             },
             tool_start: () => { },
             validation: () => { },
-            intent: () => { },
+            intent: (data) => {
+              if (!data?.intent) return;
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: data.intent,
+              }));
+            },
             dataset_profile: () => { },
             web_search_update: (data) => {
               useChatStore.getState().updateLastMessage((prev) => ({
@@ -239,6 +257,12 @@ export default function useChat({ notebookId, materialIds = [] }) {
               useChatStore.getState().updateLastMessage((prev) => ({
                 ...prev,
                 blocks: data.blocks,
+              }));
+            },
+            image: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                images: [...(prev.images || []), data],
               }));
             },
 
@@ -420,6 +444,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 else if (trimmed.startsWith('/web')) intentOverride = 'WEB_SEARCH';
                 else if (trimmed.startsWith('/research')) intentOverride = 'WEB_RESEARCH';
                 else if (trimmed.startsWith('/code')) intentOverride = 'CODE_EXECUTION';
+                else if (trimmed.startsWith('/image')) intentOverride = 'IMAGE_GENERATION';
               }
 
               const codeBlockFromMeta = meta.code_block?.code
@@ -460,6 +485,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
                 blocks: msg.blocks,
                 artifacts: msg.artifacts?.length ? msg.artifacts : undefined,
                 codeBlocks,
+                images: meta.images || undefined,
               };
             }),
           );

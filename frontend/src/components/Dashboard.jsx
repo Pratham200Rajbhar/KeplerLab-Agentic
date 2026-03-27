@@ -233,69 +233,80 @@ export default function Dashboard() {
 
       {/* Header */}
       <header
-        className="z-30 sticky top-0 flex items-center justify-between h-14 px-6"
+        className="z-30 sticky top-0"
         style={{
-          background: 'rgba(10,10,11,0.7)',
-          backdropFilter: 'blur(16px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+          background: isDark ? 'rgba(11,14,19,0.72)' : 'rgba(248,250,252,0.84)',
+          backdropFilter: 'blur(18px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(18px) saturate(160%)',
           borderBottom: '1px solid var(--border)',
+          boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.2)' : '0 10px 28px rgba(15,23,42,0.07)',
         }}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
-            <Layers className="w-4 h-4" style={{ color: 'var(--text-inverse)' }} />
-          </div>
-          <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>KeplerLab</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button onClick={toggleTheme} className="btn-icon-sm" title={isDark ? 'Light mode' : 'Dark mode'}>
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold ml-1 transition-colors duration-200"
+        <div className="max-w-[1280px] mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
               style={{
-                background: 'var(--accent-subtle)',
-                color: 'var(--accent)',
-                border: '1px solid var(--accent-border)',
+                background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ffffff 30%))',
               }}
             >
-              {userInitial}
+              <Layers className="w-4 h-4" style={{ color: 'var(--text-inverse)' }} />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[15px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>KeplerLab</span>
+              <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>AI Workspace</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={toggleTheme} className="btn-icon-sm" title={isDark ? 'Light mode' : 'Dark mode'}>
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div
-                  className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden z-50 animate-scale-in"
-                  style={{
-                    background: 'var(--surface-raised)',
-                    border: '1px solid var(--border-strong)',
-                    boxShadow: 'var(--shadow-glass)',
-                  }}
-                >
-                  <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--surface-overlay)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.username || 'User'}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-semibold ml-1 transition-colors duration-200"
+                style={{
+                  background: 'var(--accent-subtle)',
+                  color: 'var(--accent)',
+                  border: '1px solid var(--accent-border)',
+                }}
+              >
+                {userInitial}
+              </button>
+
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                  <div
+                    className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden z-50 animate-scale-in"
+                    style={{
+                      background: 'var(--surface-raised)',
+                      border: '1px solid var(--border-strong)',
+                      boxShadow: 'var(--shadow-glass)',
+                    }}
+                  >
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--surface-overlay)' }}>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.username || 'User'}</p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
+                    </div>
+                    <div className="p-1.5">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-3 py-2 text-left text-sm rounded-lg flex items-center gap-3 transition-colors duration-200"
+                        style={{ color: 'var(--danger)' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--danger-subtle)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
                   </div>
-                  <div className="p-1.5">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full px-3 py-2 text-left text-sm rounded-lg flex items-center gap-3 transition-colors duration-200"
-                      style={{ color: 'var(--danger)' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--danger-subtle)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

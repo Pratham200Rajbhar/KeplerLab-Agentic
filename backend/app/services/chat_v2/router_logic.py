@@ -51,6 +51,10 @@ def route_capability(
         except ValueError:
             logger.warning("Unknown intent_override '%s', falling through", intent_override)
 
+    if message.lstrip().startswith("/image"):
+        logger.info("Capability routed to IMAGE_GENERATION (/image prefix)")
+        return Capability.IMAGE_GENERATION
+
     if message.lstrip().startswith("/agent"):
         logger.info("Capability routed to AGENT (/agent prefix)")
         return Capability.AGENT

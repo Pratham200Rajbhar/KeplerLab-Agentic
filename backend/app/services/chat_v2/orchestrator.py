@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import re
 import time
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -11,11 +13,13 @@ from . import context_builder, message_store
 from .router_logic import route_capability
 from .schemas import Capability, ToolResult
 from .streaming import (
+    sse,
     sse_token,
     sse_error,
     sse_done,
     sse_blocks,
     sse_meta,
+    sse_image,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,6 +37,18 @@ async def run(
 
     if capability == Capability.AGENT:
         async for event in _handle_agent(message, notebook_id, user_id, session_id, material_ids):
+            yield event
+        return
+
+    if capability == Capability.IMAGE_GENERATION:
+        async for event in _handle_image_generation(
+            message,
+            notebook_id,
+            user_id,
+            session_id,
+            material_ids,
+            start_time,
+        ):
             yield event
         return
 
@@ -216,6 +232,157 @@ async def _handle_agent(goal, notebook_id, user_id, session_id, material_ids):
         material_ids=material_ids or [],
     ):
         yield event
+
+async def _resolve_image_grounding_context(
+    prompt_raw: str,
+    material_ids: List[str],
+    user_id: str,
+    notebook_id: str,
+) -> Dict[str, Any]:
+    """Fetch compact RAG context so /image can reflect selected resources."""
+    if not material_ids:
+        return {"context": "", "chunks_used": 0, "grounded": False}
+
+    try:
+        from app.core.config import settings
+        from app.services.rag.secure_retriever import secure_similarity_search_enhanced
+
+        raw_context = await asyncio.to_thread(
+            secure_similarity_search_enhanced,
+            user_id=user_id,
+            query=prompt_raw,
+            material_ids=material_ids,
+            notebook_id=notebook_id,
+            use_mmr=True,
+            use_reranker=settings.USE_RERANKER,
+            return_formatted=True,
+        )
+
+        if not raw_context or raw_context.strip() == "No relevant context found.":
+            return {"context": "", "chunks_used": 0, "grounded": False}
+
+        chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", raw_context))
+        # Keep grounding concise so prompt stays within practical model limits.
+        compact_context = raw_context[:3500].strip()
+        return {
+            "context": compact_context,
+            "chunks_used": chunks_used,
+            "grounded": True,
+        }
+    except Exception as exc:
+        logger.warning("Image grounding context retrieval failed: %s", exc)
+        return {"context": "", "chunks_used": 0, "grounded": False}
+
+
+def _build_grounded_image_prompt(prompt_raw: str, rag_context: str) -> str:
+    if not rag_context:
+        return prompt_raw
+
+    return (
+        "You are generating an image from a user request and selected learning resources. "
+        "Use resource facts for subject fidelity, entities, and terminology while still producing "
+        "a visually compelling image.\n\n"
+        f"User request:\n{prompt_raw}\n\n"
+        "Selected resource context:\n"
+        f"{rag_context}\n\n"
+        "Instruction: Generate a single image prompt that preserves the user's intent and style, "
+        "but aligns details with the resource context when relevant."
+    )
+
+
+async def _handle_image_generation(message, notebook_id, user_id, session_id, material_ids, start_time):
+    prompt_raw = message.lstrip()[len("/image"):].strip()
+    if not prompt_raw:
+        yield sse_error("Please provide an image prompt after /image")
+        yield sse_done({"elapsed": round(time.time() - start_time, 2)})
+        return
+
+    # Yield status immediately
+    yield sse("status", {"message": "🎨 Generating image..."})
+
+    try:
+        from app.services.image_generation.gemini_service import generate_image
+        import uuid
+        import os
+        import secrets
+        from datetime import datetime, timedelta, timezone
+        from app.core.config import settings
+        from app.db.prisma_client import prisma
+
+        grounding = await _resolve_image_grounding_context(
+            prompt_raw=prompt_raw,
+            material_ids=material_ids or [],
+            user_id=user_id,
+            notebook_id=notebook_id,
+        )
+
+        grounded_prompt = _build_grounded_image_prompt(
+            prompt_raw=prompt_raw,
+            rag_context=grounding["context"],
+        )
+
+        # Run synchronously blocking REST call via executor
+        image_bytes, _generated_prompt = await asyncio.to_thread(generate_image, grounded_prompt)
+
+        # Build DB artifact
+        artifact_id = str(uuid.uuid4())
+        artifacts_dir = os.path.abspath(settings.ARTIFACTS_DIR)
+        os.makedirs(artifacts_dir, exist_ok=True)
+        # Use JPEG extension because Gemini payload format is often JPEG, but prompt dictates PNG saving logic
+        permanent_path = os.path.join(artifacts_dir, f"{artifact_id}.png")
+
+        with open(permanent_path, "wb") as f:
+            f.write(image_bytes)
+
+        token = secrets.token_urlsafe(48)
+        expiry = datetime.now(timezone.utc) + timedelta(days=3650)
+
+        filename_short = f"{prompt_raw[:30].strip()}.png"
+
+        record = await prisma.artifact.create(
+            data={
+                "id": artifact_id,
+                "userId": user_id,
+                "notebookId": notebook_id,
+                "sessionId": session_id,
+                "filename": filename_short,
+                "mimeType": "image/png",
+                "displayType": "image",
+                "sizeBytes": len(image_bytes),
+                "downloadToken": token,
+                "tokenExpiry": expiry,
+                "workspacePath": permanent_path,
+            }
+        )
+
+        url = f"/api/artifacts/{record.id}"
+
+        # Yield SSE event
+        yield sse_image(url=url, prompt=prompt_raw, original_prompt=prompt_raw)
+
+        # Persist standard message
+        meta = {
+            "intent": Capability.IMAGE_GENERATION.value, 
+            "elapsed": round(time.time() - start_time, 2),
+            "grounded_with_materials": grounding["grounded"],
+            "chunks_used": grounding["chunks_used"],
+            "images": [
+                {
+                    "url": url,
+                    "prompt": prompt_raw,
+                    "original_prompt": prompt_raw
+                }
+            ]
+        }
+        fake_assistant_response = f"Generated Image:\nPrompt: {prompt_raw}"
+        await _persist(notebook_id, user_id, session_id, message, fake_assistant_response, meta)
+
+        yield sse_done(meta)
+
+    except Exception as exc:
+        logger.error(f"Image generation failed: {exc}")
+        yield sse_error("Image generation failed. Please try again later.")
+        yield sse_done({"elapsed": round(time.time() - start_time, 2)})
 
 def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
     parts: List[str] = []

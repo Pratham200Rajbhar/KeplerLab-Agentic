@@ -1,191 +1,256 @@
-You are working on an existing full-stack AI application with:
+You are working on an existing AI platform with:
 
-* Backend: FastAPI + Prisma + Agent system + Web Search + Artifact pipeline
-* Frontend: Next.js (App Router) + Zustand stores + Sidebar-based UI
+* Backend: FastAPI + Chat SSE + Agent system + Artifact storage
+* Frontend: Next.js + Zustand + streaming chat UI
 
-Your task is to implement a new feature called **"AI Resource Builder"** inside the **Add Resource section in the left sidebar**.
-
----
-
-## 🎯 FEATURE GOAL
-
-Allow users to input a natural language request like:
-
-"prepare materials for class 10 english subject from chapter 1 to 5"
-
-Then automatically:
-
-1. Perform web search and research
-2. Collect useful resources:
-
-   * PDFs
-   * YouTube videos
-   * Articles
-3. Generate structured notes from gathered content
-4. Show preview to user
-5. On user confirmation → upload everything as materials into the notebook
+Your task is to implement a **slash command `/image`** for generating images using Gemini API.
 
 ---
 
-# 🧩 FRONTEND IMPLEMENTATION
+# 🎯 FEATURE GOAL
 
-## 1. Sidebar बदलाव
+When user types:
 
-Modify:
-`components/layout/Sidebar.jsx`
+/image futuristic classroom with AI students
 
-Inside "Add Resource" section, add a new tab:
+The system should:
 
-* Upload File
-* Upload URL
-* Upload Text
-* ✅ AI Resource Builder (NEW)
-
----
-
-## 2. New Component
-
-Create:
-`components/materials/AIResourceBuilder.jsx`
-
-### UI Requirements:
-
-* Textarea input for user query
-* "Generate" button
-* Loading state
-* Preview section:
-
-  * List of resources (title + type + link)
-  * Notes preview (scrollable)
-* "Upload All" button
-
----
-
-## 3. State Management
-
-Update:
-`stores/useMaterialStore.js`
-
-Add functions:
-
-* `generateAIResources(query)`
-  → calls backend `/ai-resource-builder`
-
-* `uploadAIResources(result)`
-  → loops over resources and:
-
-  * calls `/upload/url` for links
-  * calls `/upload/text` for notes
-
----
-
-## 4. API Integration
-
-Create:
-`lib/api/aiResource.js`
-
-Functions:
-
-* `generateResources(query)`
-* `uploadGeneratedResources(data)`
+1. Detect `/image` command
+2. Extract prompt text
+3. Generate image using Gemini
+4. Save image as artifact
+5. Stream image to chat UI
+6. Display image message
 
 ---
 
 # ⚙️ BACKEND IMPLEMENTATION
 
-## 1. New Route
-
-Create route:
-`POST /ai-resource-builder`
+## 1. Command Parsing
 
 File:
-`routes/ai_resource.py`
+`services/chat_v2/router_logic.py`
 
-Request:
-{
-"query": "user input"
-}
+Add logic:
 
----
+IF message starts with "/image":
 
-## 2. Core Logic
+* Extract prompt:
+  message.replace("/image", "").strip()
 
-Inside service:
-
-1. Call agent system (reuse existing):
-
-   * capability: AGENT
-   * tools:
-
-     * web_search
-     * research
-
-2. Use this system prompt:
-
-"You are an AI Resource Builder.
-Your job is to:
-
-* Search the web
-* Find high-quality PDFs, YouTube videos, and articles
-* Extract useful information
-* Generate structured study notes
-
-Return JSON:
-{
-"resources": [
-{
-"type": "pdf | youtube | article",
-"title": "...",
-"url": "..."
-}
-],
-"notes": "structured notes"
-}"
+* Return:
+  capability = "IMAGE_GENERATION"
+  with extracted prompt
 
 ---
 
-## 3. Response Format
+## 2. Modify Capability Routing
+
+Ensure `/image` overrides ALL other routing:
+
+* Ignore RAG
+* Ignore agent
+* Ignore web search
+
+---
+
+## 3. Image Generation Service
+
+Use:
+Gemini model → "gemini-3.1-flash-lite-preview"
+
+Create:
+`services/image_generation/gemini_service.py`
+
+Function:
+generate_image(prompt: str)
+
+Steps:
+
+### Step 1: Enhance Prompt
+
+* Add style (cinematic, realistic, 3D, illustration)
+* Add lighting
+* Add environment
+* Add camera angle
+
+### Step 2: Generate Image
+
+* Use Gemini API
+* response_modalities = ["TEXT", "IMAGE"]
+
+### Step 3: Extract Image
+
+* Get base64 image data
+* Convert to bytes
+
+---
+
+## 4. Save as Artifact
+
+Store file:
+data/artifacts/{artifact_id}.png
+
+Create DB entry (Artifact model)
 
 Return:
 {
-"resources": [...],
-"notes": "..."
+"artifact_id": "...",
+"url": "/artifacts/{id}",
+"prompt": "enhanced prompt"
 }
 
 ---
 
-## 4. Upload Integration
+## 5. Chat Orchestrator Integration
 
-DO NOT upload automatically.
+File:
+`services/chat_v2/orchestrator.py`
 
-Frontend will handle:
+Add:
 
-* `/upload/url`
-* `/upload/text`
+IF capability == "IMAGE_GENERATION":
+
+* call generate_image()
+* save artifact
+* stream SSE event:
+
+{
+"event": "image",
+"data": {
+"url": "...",
+"prompt": "...",
+"original_prompt": "..."
+}
+}
 
 ---
 
-# 🧠 IMPORTANT RULES
+## 6. Streaming Behavior
 
-* Do NOT break existing upload system
-* Reuse agent + web search (no duplicate logic)
-* Ensure user-specific isolation (user_id)
-* Validate URLs before returning
-* Limit resources (max 5–10)
+Before image:
+
+* send status event:
+  "🎨 Generating image..."
+
+After generation:
+
+* send image event
 
 ---
 
-# 🚀 UX FLOW
+## 7. Error Handling
 
-1. User → Sidebar → Add Resource
-2. Click → "AI Resource Builder"
-3. Enter query
-4. Click Generate
-5. See preview
-6. Click "Upload All"
-7. Materials appear in notebook
+If:
+
+* empty prompt → return error message
+* Gemini fails → fallback message
+
+DO NOT crash chat stream
+
+---
+
+# 🧩 FRONTEND IMPLEMENTATION
+
+## 1. Input Handling
+
+User types:
+
+/image something
+
+NO special UI needed — reuse chat input
+
+---
+
+## 2. Stream Handler Update
+
+File:
+`hooks/useChat.js`
+
+Handle:
+
+event.type === "image"
+
+---
+
+## 3. Message Format
+
+{
+type: "image",
+url: "...",
+prompt: "...",
+original_prompt: "..."
+}
+
+---
+
+## 4. Render Image
+
+File:
+`components/chat/ChatPanel.jsx`
+
+Render:
+
+* Image preview
+* Prompt (small text)
+* Optional:
+
+  * Download button
+  * Regenerate button
+
+---
+
+## 5. UX Enhancements
+
+While generating:
+
+* show loading message
+
+After:
+
+* replace with image
+
+---
+
+# 🧠 RULES
+
+* `/image` MUST override all logic
+* Only 1 image per request (initially)
+* Do NOT create new API endpoint
+* Reuse artifact system
+* Keep streaming consistent with chat
+
+---
+
+# 🚀 OPTIONAL EXTENSIONS
+
+* `/image 3 futuristic cars` → multiple images
+* `/image --style anime cat`
+* `/image --hd mountain sunset`
+
+---
+
+# ✅ FINAL FLOW
+
+User:
+→ "/image cyberpunk city at night"
+
+Backend:
+→ detect command
+→ extract prompt
+→ enhance prompt
+→ generate image (Gemini)
+→ save artifact
+
+Frontend:
+→ receive SSE
+→ render image
 
 ---
 
 Implement clean, modular, production-ready code following existing architecture.
-Do not rewrite existing systems — integrate with them.
+Do not rewrite existing systems — extend them.
+
+
+
+this is api key = AIzaSyBF7oCyPXrbnOAHjMk_bWPRBRdFaB2zIl0

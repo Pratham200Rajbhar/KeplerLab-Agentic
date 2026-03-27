@@ -73,40 +73,19 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Dashboard Preview (Product Preview) */}
-          <div className="mt-24 relative rounded-2xl border border-stitch-primary/10 bg-stitch-surface-container-low p-2 shadow-2xl overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-stitch-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="rounded-xl overflow-hidden bg-stitch-surface-container-low border border-stitch-outline-variant/30 aspect-video flex">
-              {/* Sidebar Mockup */}
-              <div className="w-64 bg-stitch-surface-container hidden md:flex flex-col p-4 gap-4 border-r border-stitch-outline-variant/30">
-                <div className="h-8 w-32 bg-stitch-primary/10 rounded-lg mb-4"></div>
-                <div className="space-y-3">
-                  <div className="h-4 w-full bg-stitch-primary/5 rounded"></div>
-                  <div className="h-4 w-4/5 bg-stitch-primary/5 rounded"></div>
-                  <div className="h-4 w-5/6 bg-stitch-primary/5 rounded"></div>
-                </div>
-              </div>
-              {/* Main Canvas Mockup */}
-              <div className="flex-1 p-6 flex flex-col gap-6">
-                <div className="flex justify-between items-center">
-                  <div className="h-6 w-48 bg-stitch-primary/10 rounded"></div>
-                  <div className="flex gap-2">
-                    <div className="h-8 w-8 bg-stitch-primary/10 rounded-full"></div>
-                    <div className="h-8 w-8 bg-stitch-primary/10 rounded-full"></div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-6 flex-1">
-                  <div className="col-span-2 space-y-4">
-                    <div className="h-32 w-full stitch-glass-card rounded-xl"></div>
-                    <div className="h-64 w-full stitch-glass-card rounded-xl"></div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="h-full w-full stitch-glass-card rounded-xl"></div>
-                  </div>
-                </div>
+          {/* Dashboard Preview (Real Product Screenshot) */}
+          <div className="mt-20 lg:mt-24 relative group">
+            <div className="absolute -inset-1 rounded-[1.6rem] bg-gradient-to-r from-stitch-primary/30 via-transparent to-stitch-secondary/25 blur-xl opacity-70 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative rounded-[1.4rem] border border-stitch-outline-variant/30 bg-stitch-surface-container-low/80 p-3 lg:p-4 shadow-2xl">
+              <div className="relative rounded-xl overflow-hidden border border-stitch-outline-variant/30 bg-stitch-surface aspect-[16/9]">
+                <img
+                  src="/images/landing/workspace-preview.png"
+                  alt="KeplerLab workspace preview"
+                  className="w-full h-full object-contain [filter:contrast(1.03)_saturate(1.06)] transition-transform duration-500 group-hover:scale-[1.01]"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-stitch-background/40 to-transparent"></div>
               </div>
             </div>
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-stitch-primary/20 blur-3xl"></div>
           </div>
         </section>
 

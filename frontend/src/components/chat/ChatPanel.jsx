@@ -275,7 +275,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       />
 
       { }
-      <div className="workspace-chat-column flex-1 flex flex-col min-w-0">
+      <div className="workspace-chat-column flex-1 flex flex-col min-w-0 min-h-0">
 
         { }
         <div className="panel-header workspace-chat-header flex justify-between items-center px-4 py-2.5 shrink-0 gap-3">

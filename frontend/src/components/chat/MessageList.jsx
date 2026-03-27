@@ -21,8 +21,8 @@ export default function MessageList({ messages, isStreaming, error, onRetry, onE
   ]);
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto scroll-smooth">
-      <div className="py-4">
+    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
+      <div className="pt-4 pb-24">
         {messages.map((msg, index) => {
           const isLastAssistant =
             index === messages.length - 1 && msg.role === 'assistant';

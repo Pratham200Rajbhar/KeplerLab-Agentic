@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useCallback, useMemo } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';
 import CodeWorkspace from './CodeWorkspace';
 import ArtifactViewer from './ArtifactViewer';
@@ -25,6 +25,31 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editText, setEditText] = useState(message.content || '');
+  const [fullscreenImage, setFullscreenImage] = useState(null);
+  const [loadedImages, setLoadedImages] = useState(new Set());
+
+  useEffect(() => {
+    setLoadedImages(new Set());
+  }, [message.images?.length]);
+
+  useEffect(() => {
+    if (!fullscreenImage) return;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') setFullscreenImage(null);
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [fullscreenImage]);
+
+  const handleImageLoad = useCallback((index) => {
+    setLoadedImages(prev => {
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }, []);
 
   const handleCopy = useCallback(() => {
     if (!message.content) return;
@@ -146,6 +171,9 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
   const hasContent  = !!message.content;
   const hasArtifactsOnly = message.artifacts?.length > 0 && !isCodeMode && !isResearchMode && !isAgentMode;
   const hasAgentArtifacts = isAgentMode && message.artifacts?.length > 0;
+  const hasGeneratedImages = message.images?.length > 0;
+  const imageCount = message.images?.length || 0;
+  const isImageGenerationMessage = message.intentOverride === 'IMAGE_GENERATION' || hasGeneratedImages;
 
   
   const showTypingFallback = !hasContent && !isCodeMode && !isResearchMode && !isAgentMode && !isStreaming;
@@ -285,6 +313,64 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
             </div>
           )}
 
+          {isStreaming && isImageGenerationMessage && !hasGeneratedImages && (
+            <div
+              className="mt-4 max-w-3xl w-full rounded-2xl border overflow-hidden shadow-md bg-surface-raised"
+              style={{
+                borderColor: 'var(--border, #cbd5e1)',
+              }}
+            >
+              <div className="p-4 sm:p-5 space-y-3">
+                <div className="h-3.5 w-36 rounded-md animate-pulse bg-surface-overlay" />
+                <div className="h-3 w-28 rounded-md animate-pulse bg-surface-overlay" />
+                <div className="h-56 sm:h-72 w-full rounded-xl animate-pulse bg-surface-overlay" />
+              </div>
+            </div>
+          )}
+
+          {hasGeneratedImages && (
+            <div className="mt-4 flex flex-col gap-4 max-w-5xl">
+              <div className={`grid gap-4 ${imageCount === 1 ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
+              {message.images.map((img, i) => {
+                const isLoaded = loadedImages.has(i);
+
+                return (
+                <article
+                  key={i}
+                  className="relative inline-flex w-fit max-w-full flex-col rounded-2xl overflow-hidden border shadow-md transition-transform duration-300 hover:-translate-y-0.5 bg-surface"
+                  style={{
+                    borderColor: 'var(--border, #cbd5e1)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="relative cursor-zoom-in text-left bg-surface"
+                    onClick={() => setFullscreenImage({ ...img, index: i })}
+                    aria-label={`Open generated image ${i + 1}`}
+                  >
+                    {!isLoaded && (
+                      <div className="absolute inset-0 bg-surface-raised flex items-center justify-center min-h-[280px]">
+                        <div className="w-full h-full p-4 sm:p-5 space-y-3">
+                          <div className="h-3.5 w-28 rounded-md animate-pulse bg-surface-overlay" />
+                          <div className="h-3 w-20 rounded-md animate-pulse bg-surface-overlay" />
+                          <div className="h-[calc(100%-2.5rem)] min-h-[220px] rounded-xl animate-pulse bg-surface-overlay" />
+                        </div>
+                      </div>
+                    )}
+                    <img
+                      src={img.url}
+                      alt={img.prompt || `Generated image ${i + 1}`}
+                      onLoad={() => handleImageLoad(i)}
+                      className={`block h-auto w-auto max-w-full max-h-[620px] object-contain transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                  </button>
+                </article>
+                );
+              })}
+              </div>
+            </div>
+          )}
+
           {}
           {showTypingFallback && (
             <div className="text-sm text-text-muted italic">No response generated.</div>
@@ -315,6 +401,26 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
           )}
         </div>
       </div>
+
+      {fullscreenImage && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 cursor-zoom-out animate-in fade-in zoom-in-95 duration-200"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <img
+            src={fullscreenImage.url}
+            alt={fullscreenImage.prompt}
+            className="max-w-full max-h-[78vh] object-contain rounded-xl shadow-2xl"
+          />
+          <button
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            onClick={(e) => { e.stopPropagation(); setFullscreenImage(null); }}
+            aria-label="Close image preview"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 });

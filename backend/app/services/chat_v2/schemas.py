@@ -13,6 +13,7 @@ class Capability(str, Enum):
     WEB_SEARCH = "WEB_SEARCH"
     WEB_RESEARCH = "WEB_RESEARCH"
     AGENT = "AGENT"
+    IMAGE_GENERATION = "IMAGE_GENERATION"
 
 class ChatRequest(BaseModel):
 

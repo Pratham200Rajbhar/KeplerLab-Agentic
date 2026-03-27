@@ -179,7 +179,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   }, [syncedValue, handleValueChange]);
 
   return (
-    <div className="workspace-chat-input-dock px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full sticky bottom-0 z-10">
+    <div className="workspace-chat-input-dock px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full shrink-0 relative z-10">
       <div className="max-w-3xl w-full relative">
 
         {/* Optimize Prompt button — above the input panel, left-aligned, visible only when there's text */}

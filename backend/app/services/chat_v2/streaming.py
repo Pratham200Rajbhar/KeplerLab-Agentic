@@ -45,6 +45,9 @@ def sse_code_block(code: str, language: str = "python", session_id: str = "", st
         data["step_index"] = step_index
     return sse("code_block", data)
 
+def sse_image(url: str, prompt: str, original_prompt: str) -> str:
+    return sse("image", {"url": url, "prompt": prompt, "original_prompt": original_prompt})
+
 def sse_web_sources(sources: List[Dict[str, Any]]) -> str:
     return sse("web_sources", {"sources": sources})
 
