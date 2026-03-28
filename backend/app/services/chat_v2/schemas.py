@@ -43,6 +43,10 @@ class CreateSessionRequest(BaseModel):
     notebook_id: str
     title: Optional[str] = "New Chat"
 
+class SourceSelectionRequest(BaseModel):
+    notebook_id: str
+    material_ids: List[str] = Field(default_factory=list)
+
 class OptimizePromptsRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=5000)
     count: int = Field(default=4, ge=2, le=6)

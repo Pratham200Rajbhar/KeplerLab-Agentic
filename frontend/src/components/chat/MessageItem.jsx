@@ -126,7 +126,7 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
           ) : (
             <>
               <div
-                className="px-4 py-2.5 rounded-2xl rounded-tr-md text-sm text-text-primary whitespace-pre-wrap break-words leading-relaxed transition-all"
+                className="px-4 py-2.5 rounded-2xl rounded-tr-md text-[14px] text-text-primary whitespace-pre-wrap break-words leading-[1.65] transition-all"
                 style={{ background: 'var(--surface-overlay, rgba(255,255,255,0.07))' }}
               >
                 {message.content}
@@ -179,8 +179,8 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
   const showTypingFallback = !hasContent && !isCodeMode && !isResearchMode && !isAgentMode && !isStreaming;
 
   return (
-    <div className="group px-4 sm:px-6 py-4">
-      <div className="max-w-3xl mx-auto flex gap-3.5">
+    <div className="group px-4 sm:px-6 py-3.5">
+      <div className="max-w-4xl mx-auto flex gap-3.5">
         { }
         <div className="shrink-0 mt-0.5">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/5 text-accent border border-accent/10">
@@ -190,6 +190,13 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
 
         { }
         <div className="flex-1 min-w-0 message-selection-container overflow-hidden">
+          {isStreaming && (
+            <div className="streaming-status-chip mb-2.5 inline-flex items-center gap-1.5">
+              <span className="streaming-status-dot" aria-hidden="true" />
+              Live response
+            </div>
+          )}
+
           { }
           {isResearchMode && (
             <ResearchReport
@@ -232,7 +239,8 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
           )}
 
           {hasContent && !isResearchMode && (
-            <div className="text-sm text-text-primary leading-relaxed prose-chat">
+            <div className={`chat-assistant-text-shell ${isStreaming ? 'chat-assistant-text-shell-streaming' : ''}`}>
+              <div className="text-[15px] text-text-primary leading-[1.72] prose-chat">
               {message.blocks?.length > 0 && !isStreaming ? (
                 (() => {
                   const parents = [];
@@ -285,14 +293,15 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
                   );
                 })()
               ) : (
-                <MarkdownRenderer content={message.content} />
+                <MarkdownRenderer content={message.content} isStreaming={isStreaming} />
               )}
               {isStreaming && !isCodeMode && (
                 <span
-                  className="inline-block w-[2px] h-[1em] bg-text-muted/50 ml-0.5 align-text-bottom animate-pulse"
+                  className="streaming-cursor"
                   aria-hidden="true"
                 />
               )}
+              </div>
             </div>
           )}
 
@@ -378,7 +387,7 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
 
           { }
           {!isStreaming && hasContent && (
-            <div className="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <div className="flex items-center gap-2 mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
               <button
                 onClick={handleCopy}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors"

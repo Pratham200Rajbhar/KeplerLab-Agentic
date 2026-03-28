@@ -19,34 +19,36 @@ export default function MessageList({ messages, isStreaming, error, onRetry, onE
   ]);
 
   return (
-    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
-      <div className="pt-4 pb-24">
-        {messages.map((msg, index) => {
-          const isLastAssistant =
-            index === messages.length - 1 && msg.role === 'assistant';
+    <div className="workspace-chat-feed-wrap relative flex-1 min-h-0">
+      <div ref={containerRef} className="workspace-chat-feed h-full overflow-y-auto scroll-smooth custom-scrollbar">
+        <div className="pt-5 pb-28">
+          {messages.map((msg, index) => {
+            const isLastAssistant =
+              index === messages.length - 1 && msg.role === 'assistant';
 
-          return (
-            <MessageItem
-              key={msg.id}
-              message={msg}
-              isStreaming={isLastAssistant && isStreaming}
-              onRetry={!isStreaming && msg.role === 'assistant' ? onRetry : undefined}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              notebookId={notebookId}
-              sessionId={sessionId}
-            />
-          );
-        })}
+            return (
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isStreaming={isLastAssistant && isStreaming}
+                onRetry={!isStreaming && msg.role === 'assistant' ? onRetry : undefined}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                notebookId={notebookId}
+                sessionId={sessionId}
+              />
+            );
+          })}
 
-        {showTyping && <TypingIndicator />}
+          {showTyping && <TypingIndicator />}
+        </div>
       </div>
 
       { }
       {!isAtBottom && (
         <button
           onClick={() => scrollToBottom()}
-          className="fixed bottom-28 right-8 z-20 w-8 h-8 rounded-full bg-surface-raised border border-white/10 shadow-lg flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
+          className="absolute bottom-5 right-5 z-20 w-9 h-9 rounded-full bg-surface-raised/95 border border-border/60 shadow-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:border-accent/40 transition-colors"
           aria-label="Scroll to bottom"
         >
           <svg

@@ -128,7 +128,7 @@ export function sanitizeStreamingMarkdown(text) {
   return result;
 }
 
-export default function MarkdownRenderer({ content }) {
+export default function MarkdownRenderer({ content, isStreaming = false }) {
   const safeContent = typeof content === 'string' ? content : String(content || '');
   const isInsidePre = useRef(false);
 
@@ -179,10 +179,11 @@ export default function MarkdownRenderer({ content }) {
   }, []);
 
   return (
-    <ReactMarkdown
-      remarkPlugins={REMARK_PLUGINS}
-      rehypePlugins={REHYPE_PLUGINS}
-      components={{
+    <div className={`md-rich-content ${isStreaming ? 'md-streaming-content' : ''}`}>
+      <ReactMarkdown
+        remarkPlugins={REMARK_PLUGINS}
+        rehypePlugins={REHYPE_PLUGINS}
+        components={{
         h1: ({ children }) => <h1 className="md-heading md-h1">{children}</h1>,
         h2: ({ children }) => <h2 className="md-heading md-h2">{children}</h2>,
         h3: ({ children }) => <h3 className="md-heading md-h3">{children}</h3>,
@@ -256,9 +257,10 @@ export default function MarkdownRenderer({ content }) {
         summary: ({ children }) => <summary className="md-summary">{children}</summary>,
         sup: ({ children }) => <sup className="md-sup">{children}</sup>,
         sub: ({ children }) => <sub className="md-sub">{children}</sub>,
-      }}
-    >
-      {safeContent}
-    </ReactMarkdown>
+        }}
+      >
+        {safeContent}
+      </ReactMarkdown>
+    </div>
   );
 }

@@ -20,7 +20,7 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
     <button
       onClick={loading ? undefined : onClick}
       disabled={disabled && !loading}
-      className={`workspace-studio-feature-card group relative w-full text-left p-3.5 rounded-xl transition-all duration-200 overflow-hidden border ${
+      className={`workspace-studio-feature-card group relative w-full text-left p-3 rounded-xl transition-all duration-200 overflow-hidden border ${
         loading
           ? 'border-[var(--accent)] bg-[var(--accent-subtle)] cursor-default'
           : disabled
@@ -35,9 +35,9 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
         </div>
       )}
 
-      <div className="flex items-center gap-3 relative z-10">
+      <div className="flex items-center gap-2.5 relative z-10">
         {}
-        <div className={`workspace-studio-feature-icon shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
+        <div className={`workspace-studio-feature-icon shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
           loading
             ? 'bg-[var(--accent-subtle)]'
             : 'bg-[var(--surface-overlay)] group-hover:bg-[var(--accent-subtle)]'
@@ -45,14 +45,14 @@ export default memo(function FeatureCard({ icon, label, description, onClick, lo
           {loading ? (
             <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin" />
           ) : (
-            <span className="material-symbols-outlined text-[18px] text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-200">
+            <span className="material-symbols-outlined text-[17px] text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-200">
               {materialIcon}
             </span>
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight tracking-tight">
+          <p className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight tracking-tight">
             {label}
           </p>
           {description && (

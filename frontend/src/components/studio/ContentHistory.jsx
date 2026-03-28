@@ -79,7 +79,7 @@ const ContentHistory = memo(function ContentHistory({ items = [], activeId, onSe
           <div
             key={item.id}
             onClick={() => onSelect?.(item)}
-            className={`workspace-studio-history-item group relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
+            className={`workspace-studio-history-item group relative flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${
               isActive
                 ? 'bg-[var(--accent)] border border-[var(--accent)]'
                 : 'border border-transparent'

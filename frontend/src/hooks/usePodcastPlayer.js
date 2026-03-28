@@ -5,23 +5,20 @@ import usePodcastStore from '@/stores/usePodcastStore';
 
 
 export default function usePodcastPlayer() {
-  const {
-    session,
-    segments,
-    currentSegmentIndex,
-    isPlaying,
-    playbackSpeed,
-    playSegment,
-    prefetchSegment,
-    pause,
-    resume,
-    togglePlayPause,
-    nextSegment,
-    prevSegment,
-    changeSpeed,
-    setCurrentSegmentIndex,
-    setAudioRefs,
-  } = usePodcastStore();
+  const session = usePodcastStore((s) => s.session);
+  const segments = usePodcastStore((s) => s.segments);
+  const currentSegmentIndex = usePodcastStore((s) => s.currentSegmentIndex);
+  const isPlaying = usePodcastStore((s) => s.isPlaying);
+  const playbackSpeed = usePodcastStore((s) => s.playbackSpeed);
+  const playSegment = usePodcastStore((s) => s.playSegment);
+  const prefetchSegment = usePodcastStore((s) => s.prefetchSegment);
+  const pause = usePodcastStore((s) => s.pause);
+  const resume = usePodcastStore((s) => s.resume);
+  const togglePlayPause = usePodcastStore((s) => s.togglePlayPause);
+  const nextSegment = usePodcastStore((s) => s.nextSegment);
+  const prevSegment = usePodcastStore((s) => s.prevSegment);
+  const changeSpeed = usePodcastStore((s) => s.changeSpeed);
+  const setAudioRefs = usePodcastStore((s) => s.setAudioRefs);
 
   
   const audioElRef = useRef(typeof window !== 'undefined' ? new Audio() : null);

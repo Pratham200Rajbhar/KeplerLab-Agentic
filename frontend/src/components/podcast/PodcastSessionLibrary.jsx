@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { Mic, Plus, Trash2, Radio, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import usePodcastStore, { SESSION_STATUS } from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
@@ -20,18 +20,14 @@ const STATUS_CONFIG = {
 
 export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession }) {
   const sessions = usePodcastStore((s) => s.sessions);
-  const loadSessions = usePodcastStore((s) => s.loadSessions);
   const removeSession = usePodcastStore((s) => s.removeSession);
-  const currentNotebook = useAppStore((s) => s.currentNotebook);
   const selectedSources = useAppStore((s) => s.selectedSources);
-  const draftMode = useAppStore((s) => s.draftMode);
   const confirm = useConfirm();
 
-  useEffect(() => {
-    if (currentNotebook?.id && !draftMode) {
-      loadSessions(currentNotebook.id, draftMode);
-    }
-  }, [currentNotebook?.id, draftMode, loadSessions]);
+  const orderedSessions = useMemo(() => {
+    const getStamp = (s) => s.updated_at || s.updatedAt || s.created_at || s.createdAt || 0;
+    return [...(sessions || [])].sort((a, b) => new Date(getStamp(b)) - new Date(getStamp(a)));
+  }, [sessions]);
 
   const handleDelete = async (session) => {
     const confirmed = await confirm({
@@ -49,11 +45,10 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Podcasts</h3>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">AI-generated audio discussions</p>
+          <h3 className="text-[14px] font-semibold text-[var(--text-primary)]">Podcast Sessions</h3>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Open any ready session to continue listening</p>
         </div>
         <button
           onClick={onNewPodcast}
@@ -70,16 +65,15 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
         </p>
       )}
 
-      {}
-      {sessions.length === 0 ? (
-        <div className="flex flex-col items-center py-8 text-center">
+      {orderedSessions.length === 0 ? (
+        <div className="podcast-studio-empty flex flex-col items-center py-8 text-center">
           <Mic className="w-8 h-8 text-[var(--text-muted)] mb-3 opacity-40" />
           <p className="text-xs text-[var(--text-muted)]">No podcasts yet</p>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1">Generate your first AI podcast</p>
+          <p className="text-[10px] text-[var(--text-muted)] mt-1">Generate your first AI podcast from selected sources</p>
         </div>
       ) : (
-        <div className="space-y-1">
-          {sessions.map((s) => {
+        <div className="space-y-1.5">
+          {orderedSessions.map((s) => {
             const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG[SESSION_STATUS.CREATED];
             const StatusIcon = statusInfo.icon;
             const isClickable = [SESSION_STATUS.READY, SESSION_STATUS.PLAYING, SESSION_STATUS.PAUSED, SESSION_STATUS.COMPLETED].includes(s.status);
@@ -88,9 +82,9 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
               <div
                 key={s.id}
                 onClick={() => isClickable && onSelectSession?.(s.id)}
-                className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl border border-transparent transition-all ${
+                className={`podcast-session-item group relative flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all ${
                   isClickable
-                    ? 'cursor-pointer hover:bg-[var(--surface-overlay)] hover:border-[var(--border)]'
+                    ? 'cursor-pointer hover:bg-[var(--surface-overlay)] hover:border-[var(--accent-border)]'
                     : 'opacity-70'
                 }`}
               >
@@ -100,19 +94,22 @@ export default function PodcastSessionLibrary({ onNewPodcast, onSelectSession })
                   }`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[var(--text-primary)] truncate">
+                  <p className="text-[12px] font-semibold text-[var(--text-primary)] truncate">
                     {s.title || `Podcast ${s.id?.slice(0, 6)}`}
                   </p>
-                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                    {statusInfo.label} · {formatRelativeDate(s.created_at)}
-                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="podcast-session-status text-[10px]">{statusInfo.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">{formatRelativeDate(s.created_at || s.createdAt)}</span>
+                  </div>
                 </div>
+                {isClickable && <span className="text-[10px] text-[var(--text-muted)] hidden sm:block">Open</span>}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(s);
                   }}
                   className="p-1 rounded hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label="Delete session"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-[var(--text-muted)] hover:text-red-400" />
                 </button>

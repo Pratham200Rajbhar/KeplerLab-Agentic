@@ -75,8 +75,16 @@ function getStatusStyle(status) {
   return styles[status] || styles.pending;
 }
 
+function getSourceMetaLabel(type, filename) {
+  const ext = filename?.split('.').pop()?.toLowerCase();
+  if (type === 'youtube') return 'YouTube';
+  if (type === 'url') return 'Web';
+  if (ext) return ext.toUpperCase();
+  return 'File';
+}
+
 export default memo(function SourceItem({
-  source, checked, active, anySelected, onClick, onToggle, onSeeText, onRename, onRemove,
+  source, checked, active, anySelected, index = 0, onClick, onToggle, onSeeText, onRename, onRemove,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -130,12 +138,25 @@ export default memo(function SourceItem({
   const isFailed = source.status === 'failed';
   const statusLabel = getStatusLabel(source.status);
   const statusStyle = getStatusStyle(source.status);
+  const sourceMeta = getSourceMetaLabel(sourceType, source.filename);
 
   return (
     <div
+      onClick={() => onClick?.(source)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.(source);
+        }
+      }}
+      role="button"
+      tabIndex={0}
       className={`workspace-source-item source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all
         ${checked ? 'bg-accent/5 ring-0 shadow-sm workspace-source-item-selected' : 'hover:bg-surface-100'}
+        ${active ? 'workspace-source-item-active' : ''}
         ${isProcessing ? 'bg-surface-overlay/50' : ''}`}
+      style={{ animationDelay: `${Math.min(index, 8) * 32}ms` }}
+      aria-label={`${displayName}${checked ? ', selected' : ''}`}
     >
       {}
       <div className={`workspace-source-icon shrink-0 w-8 h-8 flex items-center justify-center rounded-lg backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
@@ -149,6 +170,11 @@ export default memo(function SourceItem({
         <p className={`text-[13px] truncate leading-tight ${active ? 'text-text-primary font-medium' : isFailed ? 'text-danger line-through' : 'text-text-secondary font-medium'}`}>
           {displayName}
         </p>
+        {!isProcessing && !isFailed && (
+          <div className="mt-1.5">
+            <span className="workspace-source-meta-chip">{sourceMeta}</span>
+          </div>
+        )}
         {(isProcessing || isFailed) && (
           <div className="mt-2 mb-1 flex items-center gap-2">
             <div className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${statusStyle.bg} ${isProcessing ? 'animate-pulse' : ''}`} title={statusLabel} role="status">
@@ -170,11 +196,13 @@ export default memo(function SourceItem({
       </div>
 
       {}
-      <div className="relative flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
+      <div className={`relative flex items-center justify-center transition-opacity ${active || checked || !anySelected ? 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}`} ref={menuRef}>
         <button
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
           className="workspace-source-menu-btn p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-100 transition-colors"
           title="More actions"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
         >
           <MoreVertical className="w-4 h-4" />
         </button>
@@ -209,6 +237,7 @@ export default memo(function SourceItem({
             }`}
           disabled={isFailed}
           title={checked ? 'Deselect' : 'Select'}
+          aria-label={checked ? 'Deselect source' : 'Select source'}
         >
           {checked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
         </button>

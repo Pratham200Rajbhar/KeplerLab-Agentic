@@ -283,7 +283,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         <div
           className="workspace-chat-input-shell flex items-end gap-2 rounded-2xl border px-4 py-2.5 transition-all duration-150"
           style={{
-            borderColor: activeCommand ? 'var(--accent-border)' : 'color-mix(in srgb, var(--border-strong) 70%, transparent)',
+            borderColor: activeCommand ? 'var(--accent-border)' : 'color-mix(in srgb, var(--border-strong) 78%, transparent)',
           }}
         >
           <textarea
@@ -298,14 +298,14 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             }
             disabled={disabled}
             rows={1}
-            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted resize-none outline-none max-h-40 py-1"
+            className="flex-1 bg-transparent text-[15px] text-text-primary placeholder:text-text-muted/90 resize-none outline-none max-h-40 py-1"
             style={{ lineHeight: '1.6' }}
           />
 
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="workspace-stop-btn shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              className="workspace-stop-btn shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
               title="Stop generating"
               aria-label="Stop generating"
             >
@@ -315,7 +315,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             <button
               onClick={handleSend}
               disabled={!syncedValue.trim() || disabled}
-              className="workspace-send-btn shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="workspace-send-btn shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title="Send message"
               aria-label="Send message"
             >

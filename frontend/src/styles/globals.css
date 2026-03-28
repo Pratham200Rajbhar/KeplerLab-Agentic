@@ -309,6 +309,115 @@ select,
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 85%);
 }
 
+.podcast-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.podcast-studio-panel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 12px;
+}
+
+.podcast-studio-quick {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.podcast-studio-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.podcast-studio-step span {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--accent-border) 76%, transparent);
+  background: color-mix(in srgb, var(--accent-subtle) 82%, transparent);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.podcast-studio-empty {
+  border: 1px dashed color-mix(in srgb, var(--border-strong) 76%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-overlay) 58%, transparent);
+}
+
+.podcast-session-item {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 52%, transparent);
+}
+
+.podcast-session-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 66%, transparent);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
+.podcast-gen-shell {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  padding: 12px;
+}
+
+.podcast-gen-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 64%, transparent);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 8px;
+}
+
+.podcast-gen-step.active {
+  border-color: color-mix(in srgb, var(--accent-border) 76%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 78%, transparent);
+}
+
+.podcast-gen-step.done {
+  border-color: rgba(34, 197, 94, 0.32);
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.podcast-player-shell .podcast-player-controls {
+  border-radius: 12px;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding-top: 8px;
+  padding-bottom: 2px;
+  background: color-mix(in srgb, var(--surface-overlay) 54%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
 .podcast-hero {
   position: relative;
   margin: 10px 10px 0;
@@ -664,6 +773,14 @@ select,
 }
 
 @media (max-width: 640px) {
+  .podcast-studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .podcast-studio-panel {
+    padding: 10px;
+  }
+
   .podcast-title {
     font-size: 16px;
   }
@@ -879,16 +996,18 @@ select,
 /* ── Typing indicator ── */
 .typing-indicator {
   display: flex;
-  gap: 4px;
-  padding: 4px 0;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
 }
 
 .typing-indicator span {
   width: 6px;
   height: 6px;
-  background: var(--text-muted);
+  background: color-mix(in srgb, var(--accent) 60%, var(--text-muted));
   border-radius: 50%;
-  animation: typing-bounce 1.4s infinite ease-in-out;
+  opacity: 0.6;
+  animation: typing-bounce 1.1s infinite ease-in-out;
 }
 
 .typing-indicator span:nth-child(1) {
@@ -896,11 +1015,11 @@ select,
 }
 
 .typing-indicator span:nth-child(2) {
-  animation-delay: 0.2s;
+  animation-delay: 0.14s;
 }
 
 .typing-indicator span:nth-child(3) {
-  animation-delay: 0.4s;
+  animation-delay: 0.28s;
 }
 
 @keyframes typing-bounce {
@@ -1075,13 +1194,17 @@ select,
 
 .workspace-sidebar-shell {
   background:
-    radial-gradient(120% 90% at -10% -20%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%),
-    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 88%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+    radial-gradient(115% 86% at -14% -26%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 54%),
+    radial-gradient(82% 70% at 115% 5%, rgba(34, 211, 238, 0.1), transparent 72%),
+    linear-gradient(172deg, color-mix(in srgb, var(--surface-raised) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 66%, transparent));
 }
 
 .workspace-sidebar-header {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 56%, transparent));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .workspace-sidebar-count {
@@ -1091,12 +1214,17 @@ select,
 
 .workspace-action-button {
   border: 1px solid color-mix(in srgb, var(--accent-border) 95%, transparent);
-  box-shadow: 0 14px 24px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    0 14px 24px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent);
 }
 
 .workspace-search-shell {
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
-  background: linear-gradient(165deg, color-mix(in srgb, var(--surface-raised) 82%, transparent), color-mix(in srgb, var(--surface-overlay) 68%, transparent));
+  background:
+    radial-gradient(80% 100% at 106% -12%, color-mix(in srgb, var(--accent-subtle) 34%, transparent), transparent 58%),
+    linear-gradient(164deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 66%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
 }
 
 .workspace-search-input {
@@ -1104,10 +1232,16 @@ select,
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 }
 
+.workspace-search-input:focus-within {
+  border-color: color-mix(in srgb, var(--accent-border) 88%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-subtle) 48%, transparent);
+}
+
 .workspace-filetype-select {
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  min-height: 34px;
 }
 
 .workspace-filetype-select:hover {
@@ -1115,10 +1249,31 @@ select,
   border-color: color-mix(in srgb, var(--accent-border) 80%, transparent);
 }
 
+.workspace-filetype-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.workspace-filetype-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.workspace-filetype-dropdown {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 88%, transparent);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.38);
+}
+
 .workspace-web-btn {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent-subtle) 90%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent-border) 85%, transparent);
+  white-space: nowrap;
 }
 
 .workspace-web-btn:hover {
@@ -1127,6 +1282,23 @@ select,
 
 .workspace-sources-meta {
   border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 62%, transparent);
+}
+
+.workspace-sources-master-toggle {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 88%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 8%, transparent);
+}
+
+.workspace-sources-master-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.workspace-source-selection-hint {
+  color: color-mix(in srgb, var(--text-secondary) 94%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--accent-border) 72%, transparent);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--accent-subtle) 52%, transparent), color-mix(in srgb, var(--surface-overlay) 50%, transparent));
 }
 
 .workspace-source-list {
@@ -1144,13 +1316,16 @@ select,
 }
 
 .workspace-source-item {
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--border) 36%, transparent);
   border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-overlay) 38%, transparent);
+  animation: source-item-in 320ms ease both;
 }
 
 .workspace-source-item:hover {
   border-color: color-mix(in srgb, var(--border-strong) 82%, transparent);
-  background: color-mix(in srgb, var(--surface-overlay) 65%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 74%, transparent);
+  transform: translateX(2px);
 }
 
 .workspace-source-item-selected {
@@ -1158,8 +1333,27 @@ select,
   background: linear-gradient(160deg, color-mix(in srgb, var(--accent-subtle) 70%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent));
 }
 
+.workspace-source-item-active {
+  border-color: color-mix(in srgb, var(--accent-border) 92%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-border) 62%, transparent);
+}
+
 .workspace-source-icon {
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.workspace-source-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-secondary) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
 }
 
 .workspace-source-menu-btn {
@@ -1178,6 +1372,18 @@ select,
   border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
 }
 
+@keyframes source-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .workspace-chat-shell {
   background:
     radial-gradient(130% 120% at 10% -25%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
@@ -1189,15 +1395,24 @@ select,
   border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
 }
 
+.workspace-chat-feed {
+  background:
+    radial-gradient(100% 48% at 100% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--surface-sunken) 12%, transparent) 100%);
+}
+
 .workspace-chat-header {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   background:
     linear-gradient(130deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .workspace-session-chip {
   border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
   background: color-mix(in srgb, var(--surface-overlay) 72%, transparent);
+  letter-spacing: 0.01em;
 }
 
 .workspace-pill-btn {
@@ -1232,7 +1447,7 @@ select,
 }
 
 .workspace-chat-input-dock {
-  background: linear-gradient(to top, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface) 72%, transparent) 55%, transparent);
+  background: linear-gradient(to top, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface) 74%, transparent) 58%, transparent);
 }
 
 .workspace-optimize-btn {
@@ -1250,6 +1465,7 @@ select,
 .workspace-chat-input-shell {
   background: linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 90%, transparent), color-mix(in srgb, var(--surface-overlay) 64%, transparent));
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+  border-color: color-mix(in srgb, var(--border-strong) 78%, transparent);
 }
 
 .workspace-send-btn {
@@ -1267,6 +1483,54 @@ select,
 
 .workspace-stop-btn:hover {
   background: color-mix(in srgb, var(--danger-subtle) 95%, transparent);
+}
+
+.chat-assistant-text-shell {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  transition: none;
+}
+
+.chat-assistant-text-shell-streaming {
+  border: none;
+  background: transparent;
+}
+
+.streaming-status-chip {
+  border: 1px solid color-mix(in srgb, var(--accent-border) 72%, transparent);
+  background: color-mix(in srgb, var(--accent-subtle) 84%, transparent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.streaming-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: streaming-dot-ping 1.5s ease-out infinite;
+}
+
+@keyframes streaming-dot-ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
 }
 
 .workspace-studio-shell {
@@ -1300,7 +1564,7 @@ select,
 }
 
 .workspace-studio-actions {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .workspace-studio-feature-card {
@@ -1323,7 +1587,53 @@ select,
 
 .workspace-studio-history {
   border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  padding-top: 6px;
+  padding-top: 4px;
+}
+
+.workspace-studio-empty-layout {
+  gap: 4px;
+}
+
+.workspace-studio-empty-card {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(20, 33, 49, 0.08);
+}
+
+.workspace-studio-empty-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 55%);
+  pointer-events: none;
+}
+
+.workspace-studio-empty-icon {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.workspace-studio-empty-title {
+  letter-spacing: 0.01em;
+}
+
+.workspace-studio-empty-subtitle {
+  line-height: 1.65;
+}
+
+.workspace-studio-empty-pill {
+  font-size: 10px;
+  letter-spacing: 0.01em;
+}
+
+.workspace-studio-history-docked {
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-overlay) 40%, transparent);
+  padding: 2px 8px 8px;
+}
+
+.workspace-studio-history-head {
+  align-items: center;
 }
 
 .workspace-studio-history-item {
@@ -1394,16 +1704,49 @@ select,
 
 :root:not(.dark) .workspace-sidebar-shell {
   background:
-    radial-gradient(120% 90% at -10% -20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
-    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 96%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
+    radial-gradient(120% 90% at -10% -20%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 58%),
+    radial-gradient(82% 70% at 115% 5%, rgba(56, 189, 248, 0.12), transparent 72%),
+    linear-gradient(175deg, color-mix(in srgb, var(--surface-raised) 97%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
 }
 
 :root:not(.dark) .workspace-search-shell {
   background: linear-gradient(165deg, color-mix(in srgb, var(--surface-raised) 98%, transparent), color-mix(in srgb, var(--surface-overlay) 86%, transparent));
 }
 
+:root:not(.dark) .workspace-filetype-dropdown {
+  box-shadow: 0 14px 28px rgba(36, 56, 80, 0.15);
+}
+
+:root:not(.dark) .workspace-source-selection-hint {
+  background: linear-gradient(165deg, color-mix(in srgb, #dff4f8 65%, transparent), color-mix(in srgb, var(--surface-raised) 88%, transparent));
+}
+
+:root:not(.dark) .workspace-sources-master-toggle {
+  border-color: color-mix(in srgb, #94a3b8 76%, transparent);
+  box-shadow: 0 1px 2px rgba(37, 57, 82, 0.18);
+}
+
 :root:not(.dark) .workspace-source-item:hover {
   background: color-mix(in srgb, var(--surface-overlay) 84%, transparent);
+}
+
+@media (max-width: 768px) {
+  .workspace-search-shell {
+    padding: 10px;
+  }
+
+  .workspace-sources-meta {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .workspace-source-item {
+    transform: none;
+  }
+
+  .workspace-source-item:hover {
+    transform: none;
+  }
 }
 
 :root:not(.dark) .workspace-chat-shell {
@@ -1442,6 +1785,14 @@ select,
 
 :root:not(.dark) .workspace-studio-feature-card:hover {
   background: color-mix(in srgb, var(--surface-overlay) 70%, transparent);
+}
+
+:root:not(.dark) .workspace-studio-empty-card {
+  box-shadow: 0 16px 30px rgba(36, 56, 80, 0.11);
+}
+
+:root:not(.dark) .workspace-studio-history-docked {
+  background: color-mix(in srgb, var(--surface-overlay) 56%, transparent);
 }
 
 .workspace-dialog-section {
@@ -3170,11 +3521,25 @@ select,
 .streaming-cursor {
   display: inline-block;
   width: 2px;
-  height: 1.1em;
+  height: 1.15em;
   background: var(--accent);
-  margin-left: 2px;
+  margin-left: 3px;
   vertical-align: text-bottom;
-  animation: cursor-blink 1s step-end infinite;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 36%, transparent);
+  animation: stream-caret 1s ease-in-out infinite;
+}
+
+@keyframes stream-caret {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-0.5px);
+  }
 }
 
 .chat-input-container {
@@ -3257,6 +3622,41 @@ select,
 /* ═══════════════════════════════════════════════════════
    MARKDOWN RENDERER (md-* classes)
    ═══════════════════════════════════════════════════════ */
+
+.md-rich-content {
+  font-family: var(--font-body), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.001em;
+}
+
+.md-streaming-content {
+  position: relative;
+}
+
+.md-streaming-content::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 10px;
+  background: linear-gradient(110deg,
+      transparent 0%,
+      color-mix(in srgb, var(--accent-subtle) 14%, transparent) 45%,
+      color-mix(in srgb, var(--accent-subtle) 22%, transparent) 52%,
+      transparent 64%);
+  background-size: 220% 100%;
+  opacity: 0.3;
+  animation: stream-sheen 2.4s linear infinite;
+}
+
+@keyframes stream-sheen {
+  0% {
+    background-position: 180% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
+  }
+}
 
 /* Code blocks */
 .md-code-block-wrapper {
@@ -3347,21 +3747,23 @@ select,
 .md-heading {
   font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.3;
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
+  line-height: 1.24;
+  letter-spacing: -0.012em;
+  margin-top: 1.2em;
+  margin-bottom: 0.52em;
+  font-family: var(--font-headline), "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 .md-h1 {
-  font-size: 1.5rem;
+  font-size: clamp(1.7rem, 1.4rem + 0.55vw, 2rem);
 }
 
 .md-h2 {
-  font-size: 1.25rem;
+  font-size: clamp(1.35rem, 1.18rem + 0.34vw, 1.6rem);
 }
 
 .md-h3 {
-  font-size: 1.125rem;
+  font-size: 1.16rem;
 }
 
 .md-h4 {
@@ -3379,9 +3781,25 @@ select,
 
 /* Paragraph */
 .md-paragraph {
-  margin-bottom: 0.625em;
-  line-height: 1.75;
+  margin-bottom: 0.72em;
+  line-height: 1.76;
   color: var(--text-primary);
+}
+
+.md-streaming-content .md-paragraph:last-child {
+  animation: stream-text-rise 240ms ease-out;
+}
+
+@keyframes stream-text-rise {
+  from {
+    opacity: 0.7;
+    transform: translateY(1px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Lists */
@@ -3399,8 +3817,8 @@ select,
 }
 
 .md-list-item {
-  margin-bottom: 0.25em;
-  line-height: 1.7;
+  margin-bottom: 0.28em;
+  line-height: 1.72;
   color: var(--text-primary);
 }
 
@@ -3464,7 +3882,7 @@ select,
 .md-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.85rem;
 }
 
 .md-thead {
@@ -3484,16 +3902,16 @@ select,
 }
 
 .md-th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.58rem 0.78rem;
   text-align: left;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   white-space: nowrap;
 }
 
 .md-td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.78rem;
   color: var(--text-primary);
 }
 

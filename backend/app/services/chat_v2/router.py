@@ -16,6 +16,7 @@ from app.services.chat_v2.schemas import (
     SuggestionRequest,
     EmptyStateSuggestionRequest,
     CreateSessionRequest,
+    SourceSelectionRequest,
     OptimizePromptsRequest,
 )
 from app.services.chat_v2.service import (
@@ -35,6 +36,25 @@ from app.routes.utils import require_material
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+
+async def _require_notebook_access(notebook_id: str, user_id: str) -> None:
+    notebook = await prisma.notebook.find_first(
+        where={"id": notebook_id, "userId": user_id}
+    )
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+
+
+def _dedupe_ids(ids: List[str]) -> List[str]:
+    seen = set()
+    ordered: List[str] = []
+    for mid in ids:
+        if mid in seen:
+            continue
+        seen.add(mid)
+        ordered.append(mid)
+    return ordered
 
 @router.post("")
 async def chat_endpoint(
@@ -195,6 +215,80 @@ async def empty_suggestions_endpoint(
         request.material_ids, str(current_user.id)
     )
     return JSONResponse(content=result)
+
+
+@router.get("/source-selection/{notebook_id}")
+async def get_source_selection_endpoint(
+    notebook_id: str,
+    current_user=Depends(get_current_user),
+):
+    user_id = str(current_user.id)
+    await _require_notebook_access(notebook_id, user_id)
+
+    pref = await prisma.notebooksourceselection.find_first(
+        where={"notebookId": notebook_id, "userId": user_id}
+    )
+    material_ids = list(pref.materialIds or []) if pref else []
+
+    if material_ids:
+        valid_materials = await prisma.material.find_many(
+            where={
+                "id": {"in": material_ids},
+                "userId": user_id,
+                "notebookId": notebook_id,
+            }
+        )
+        valid_set = {str(m.id) for m in valid_materials}
+        material_ids = [mid for mid in material_ids if mid in valid_set]
+
+    return JSONResponse(
+        content={"notebook_id": notebook_id, "material_ids": material_ids}
+    )
+
+
+@router.put("/source-selection")
+async def save_source_selection_endpoint(
+    request: SourceSelectionRequest,
+    current_user=Depends(get_current_user),
+):
+    user_id = str(current_user.id)
+    notebook_id = request.notebook_id
+    await _require_notebook_access(notebook_id, user_id)
+
+    requested_ids = _dedupe_ids([str(mid) for mid in (request.material_ids or []) if mid])
+    sanitized_ids: List[str] = []
+
+    if requested_ids:
+        valid_materials = await prisma.material.find_many(
+            where={
+                "id": {"in": requested_ids},
+                "userId": user_id,
+                "notebookId": notebook_id,
+            }
+        )
+        valid_set = {str(m.id) for m in valid_materials}
+        sanitized_ids = [mid for mid in requested_ids if mid in valid_set]
+
+    existing = await prisma.notebooksourceselection.find_first(
+        where={"notebookId": notebook_id, "userId": user_id}
+    )
+    if existing:
+        await prisma.notebooksourceselection.update(
+            where={"id": str(existing.id)},
+            data={"materialIds": sanitized_ids},
+        )
+    else:
+        await prisma.notebooksourceselection.create(
+            data={
+                "notebookId": notebook_id,
+                "userId": user_id,
+                "materialIds": sanitized_ids,
+            }
+        )
+
+    return JSONResponse(
+        content={"notebook_id": notebook_id, "material_ids": sanitized_ids}
+    )
 
 @router.get("/history/{notebook_id}")
 async def get_notebook_chat_history(

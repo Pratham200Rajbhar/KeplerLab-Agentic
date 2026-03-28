@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward,
   MessageCircle, BookOpen, HelpCircle, Bookmark, ChevronLeft, List, Waves
@@ -31,15 +31,15 @@ function buildTabs(doubtsCount) {
 }
 
 export default function PodcastPlayer({ onClose }) {
-  const session      = usePodcastStore((s) => s.session);
-  const segments     = usePodcastStore((s) => s.segments);
-  const chapters     = usePodcastStore((s) => s.chapters);
-  const doubts       = usePodcastStore((s) => s.doubts);
-  const bookmarks    = usePodcastStore((s) => s.bookmarks);
-  const audioElRef   = usePodcastStore((s) => s._audioElRef);
-  const interruptOpen   = usePodcastStore((s) => s.interruptOpen);
+  const session = usePodcastStore((s) => s.session);
+  const segments = usePodcastStore((s) => s.segments);
+  const chapters = usePodcastStore((s) => s.chapters);
+  const doubts = usePodcastStore((s) => s.doubts);
+  const bookmarks = usePodcastStore((s) => s.bookmarks);
+  const audioElRef = usePodcastStore((s) => s._audioElRef);
+  const interruptOpen = usePodcastStore((s) => s.interruptOpen);
   const setInterruptOpen = usePodcastStore((s) => s.setInterruptOpen);
-  const addBookmark  = usePodcastStore((s) => s.addBookmark);
+  const addBookmark = usePodcastStore((s) => s.addBookmark);
 
   const {
     isPlaying,
@@ -55,36 +55,41 @@ export default function PodcastPlayer({ onClose }) {
 
   const [activeTab, setActiveTab]       = useState('transcript');
   const [currentTime, setCurrentTime]   = useState(0);
-  const [duration, setDuration]         = useState(0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const lastUiTimeRef = useRef(0);
 
   useEffect(() => {
     const audio = audioElRef?.current;
     if (!audio) return;
 
-    const onTimeUpdate    = () => setCurrentTime(audio.currentTime || 0);
-    const onDurationChange = () => setDuration(audio.duration && isFinite(audio.duration) ? audio.duration : 0);
-    const onLoadedMeta    = () => setDuration(audio.duration && isFinite(audio.duration) ? audio.duration : 0);
-
-    audio.addEventListener('timeupdate',     onTimeUpdate);
-    audio.addEventListener('durationchange', onDurationChange);
-    audio.addEventListener('loadedmetadata', onLoadedMeta);
-
-    return () => {
-      audio.removeEventListener('timeupdate',     onTimeUpdate);
-      audio.removeEventListener('durationchange', onDurationChange);
-      audio.removeEventListener('loadedmetadata', onLoadedMeta);
+    const throttledTimeUpdate = () => {
+      const next = audio.currentTime || 0;
+      if (Math.abs(next - lastUiTimeRef.current) >= 0.2 || audio.paused || next === 0) {
+        lastUiTimeRef.current = next;
+        setCurrentTime(next);
+      }
     };
 
-  }, [audioElRef, currentSegmentIndex]);
+    audio.addEventListener('timeupdate',     throttledTimeUpdate);
 
-  
-  const completedBeforeCurrentSec = segments
-    .slice(0, currentSegmentIndex)
-    .reduce((sum, seg) => sum + ((seg.durationMs || 0) / 1000), 0);
-  const totalDurationSec = segments.reduce((sum, seg) => sum + ((seg.durationMs || 0) / 1000), 0);
-  const overallCurrentSec = completedBeforeCurrentSec + Math.max(0, currentTime || 0);
-  const overallPct = totalDurationSec > 0 ? Math.min((overallCurrentSec / totalDurationSec) * 100, 100) : 0;
+    return () => {
+      audio.removeEventListener('timeupdate',     throttledTimeUpdate);
+    };
+
+  }, [audioElRef]);
+
+  const { totalDurationSec, overallCurrentSec, overallPct } = useMemo(() => {
+    const completedBeforeCurrentSec = segments
+      .slice(0, currentSegmentIndex)
+      .reduce((sum, seg) => sum + ((seg.durationMs || 0) / 1000), 0);
+    const total = segments.reduce((sum, seg) => sum + ((seg.durationMs || 0) / 1000), 0);
+    const current = completedBeforeCurrentSec + Math.max(0, currentTime || 0);
+    return {
+      totalDurationSec: total,
+      overallCurrentSec: current,
+      overallPct: total > 0 ? Math.min((current / total) * 100, 100) : 0,
+    };
+  }, [segments, currentSegmentIndex, currentTime]);
 
   const seekbarRef = useRef(null);
   const handleSeekbarClick = useCallback((e) => {
@@ -96,17 +101,25 @@ export default function PodcastPlayer({ onClose }) {
   }, [totalDurationSec, seekToOverall]);
 
   const currentSeg = segments[currentSegmentIndex];
-  const isBookmarked = bookmarks.some((b) => b.segmentIndex === currentSegmentIndex);
+  const isBookmarked = useMemo(
+    () => bookmarks.some((b) => b.segmentIndex === currentSegmentIndex),
+    [bookmarks, currentSegmentIndex],
+  );
+  const tabs = useMemo(() => buildTabs(doubts.length), [doubts.length]);
 
-  const handleBookmark = async () => {
+  const handleBookmark = useCallback(async () => {
     if (!isBookmarked) {
       try { await addBookmark(currentSegmentIndex, `Bookmark at segment ${currentSegmentIndex + 1}`); }
       catch (err) { console.error('Failed to bookmark:', err); }
     }
-  };
+  }, [isBookmarked, addBookmark, currentSegmentIndex]);
+
+  if (!session) {
+    return null;
+  }
 
   return (
-    <div className="podcast-shell flex flex-col h-full animate-fade-in">
+    <div className="podcast-shell podcast-player-shell flex flex-col h-full animate-fade-in">
       <div className="podcast-hero shrink-0">
         <div className="flex items-start gap-2.5">
           <button
@@ -136,6 +149,13 @@ export default function PodcastPlayer({ onClose }) {
         </div>
       </div>
 
+      {!segments.length && (
+        <div className="mx-3 mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] px-4 py-5 text-center">
+          <p className="text-sm font-medium text-[var(--text-primary)]">Preparing audio segments...</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">The player will unlock as soon as generation completes.</p>
+        </div>
+      )}
+
       {currentSeg && (
         <div className="podcast-now-card mx-3 mt-2 shrink-0">
           <div className="flex items-center gap-2 mb-1.5">
@@ -157,7 +177,7 @@ export default function PodcastPlayer({ onClose }) {
         </div>
       )}
 
-      <div className="px-3 mt-2.5 shrink-0">
+      <div className="podcast-player-controls px-3 mt-2.5 shrink-0">
         <div
           ref={seekbarRef}
           onClick={handleSeekbarClick}
@@ -263,7 +283,7 @@ export default function PodcastPlayer({ onClose }) {
       </div>
 
       <div className="podcast-tab-rail shrink-0">
-        {buildTabs(doubts.length).map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}

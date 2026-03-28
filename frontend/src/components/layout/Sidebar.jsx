@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import {
-  Settings, Search, FileText, ChevronDown, Globe,
+  Settings, Search, FileText, Globe,
   Check, Minus, AlertTriangle, Upload, X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ import UploadDialog from '@/components/notebook/UploadDialog';
 import WebSearchDialog from '@/components/notebook/WebSearchDialog';
 import DocumentPreview from '@/components/chat/DocumentPreview';
 import { PANEL } from '@/lib/utils/constants';
+import { getSourceSelection, saveSourceSelection } from '@/lib/api/chat';
 import Portal from '@/components/ui/Portal';
 
 const ALL_FILE_TYPES = [
@@ -82,9 +83,9 @@ export default function Sidebar({ onNavigate }) {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [isFileTypeDropdownOpen, setIsFileTypeDropdownOpen] = useState(false);
+  const [selectionHydrated, setSelectionHydrated] = useState(false);
 
-  const loadMaterials = useCallback(async (autoSelect = false) => {
+  const loadMaterials = useCallback(async () => {
     if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
       try {
         setLoadError(null);
@@ -94,19 +95,15 @@ export default function Sidebar({ onNavigate }) {
           status: m.status, chunkCount: m.chunk_count, source_type: m.source_type,
         }));
         setMaterials(formatted);
+        setSelectedSources((prev) => {
+          const validIds = new Set(formatted.map((m) => m.id));
+          const filtered = prev.filter((id) => validIds.has(id));
+          return filtered.length === prev.length ? prev : filtered;
+        });
         
         const store = useAppStore.getState();
         if (formatted.length > 0 && !store.currentMaterial) {
           setCurrentMaterial(formatted[0]);
-        }
-        if (autoSelect) {
-          const completedIds = formatted.filter((m) => m.status === 'completed').map((m) => m.id);
-          if (completedIds.length > 0) {
-            setSelectedSources((prev) => {
-              const merged = [...new Set([...prev, ...completedIds])];
-              return merged;
-            });
-          }
         }
       } catch {
         setLoadError('Failed to load sources. Click to retry.');
@@ -114,9 +111,45 @@ export default function Sidebar({ onNavigate }) {
     }
   }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, setMaterials, setCurrentMaterial, setSelectedSources]);
 
+  const loadSourceSelection = useCallback(async () => {
+    if (!currentNotebook?.id || currentNotebook.isDraft || draftMode) {
+      setSelectionHydrated(false);
+      return;
+    }
+    setSelectionHydrated(false);
+    try {
+      const data = await getSourceSelection(currentNotebook.id);
+      const ids = Array.isArray(data?.material_ids) ? data.material_ids : [];
+      setSelectedSources(ids);
+    } catch {
+      setSelectedSources([]);
+    } finally {
+      setSelectionHydrated(true);
+    }
+  }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, setSelectedSources]);
+
   useEffect(() => {
-    loadMaterials(true);
+    loadMaterials();
   }, [currentNotebook?.id, loadMaterials]);
+
+  useEffect(() => {
+    loadSourceSelection();
+  }, [currentNotebook?.id, loadSourceSelection]);
+
+  useEffect(() => {
+    if (!selectionHydrated || !currentNotebook?.id || currentNotebook.isDraft || draftMode) return;
+    const persistedIds = [...new Set(selectedSources)];
+    const timer = setTimeout(() => {
+      saveSourceSelection(currentNotebook.id, persistedIds).catch(() => {});
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [
+    selectedSources,
+    selectionHydrated,
+    currentNotebook?.id,
+    currentNotebook?.isDraft,
+    draftMode,
+  ]);
 
   
   const handleWsMessage = useCallback((msg) => {
@@ -153,15 +186,9 @@ export default function Sidebar({ onNavigate }) {
       );
       if (msg.status === 'completed' || msg.status === 'failed') {
         loadMaterials();
-        if (msg.status === 'completed') {
-          setSelectedSources((prev) => {
-            if (prev.includes(msg.material_id)) return prev;
-            return [...prev, msg.material_id];
-          });
-        }
       }
     }
-  }, [setMaterials, loadMaterials, setSelectedSources, handlePodcastWsEvent, currentNotebook, setCurrentNotebook]);
+  }, [setMaterials, loadMaterials, handlePodcastWsEvent, currentNotebook, setCurrentNotebook]);
 
   useMaterialUpdates(user?.id || null, handleWsMessage);
 
@@ -169,7 +196,7 @@ export default function Sidebar({ onNavigate }) {
   useEffect(() => {
     const hasProcessing = materials.some((m) => m.status && !['completed', 'failed'].includes(m.status));
     if (!hasProcessing) return;
-    const interval = setInterval(() => loadMaterials(true), 8000);
+    const interval = setInterval(() => loadMaterials(), 8000);
     return () => clearInterval(interval);
   }, [materials, loadMaterials]);
 
@@ -299,6 +326,7 @@ export default function Sidebar({ onNavigate }) {
       await deleteMaterial(source.id);
       const next = materials.filter((m) => m.id !== source.id);
       setMaterials(next);
+      setSelectedSources((prev) => prev.filter((id) => id !== source.id));
       if (currentMaterial?.id === source.id) setCurrentMaterial(next.length > 0 ? next[0] : null);
     } catch (error) {
       toast.error('Failed to remove source: ' + error.message);
@@ -317,6 +345,11 @@ export default function Sidebar({ onNavigate }) {
       toast.error('Failed to rename source: ' + error.message);
     }
   };
+
+  const selectedCount = selectedSources.length;
+  const totalCount = materials.length;
+  const allSelected = totalCount > 0 && selectedCount === totalCount;
+  const partiallySelected = selectedCount > 0 && !allSelected;
 
   return (
     <>
@@ -340,9 +373,9 @@ export default function Sidebar({ onNavigate }) {
         </div>
 
         {}
-        <div className="p-4 space-y-5 relative z-10">
+        <div className="p-3 space-y-3 relative z-10">
           <button
-            className="workspace-action-button group relative w-full py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
+            className="workspace-action-button group relative w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden text-white shadow-lg"
             onClick={() => setShowUploadDialog(true)}
             disabled={loading.upload}
           >
@@ -361,10 +394,8 @@ export default function Sidebar({ onNavigate }) {
           </button>
 
           {}
-          <div className="workspace-search-shell p-3.5 rounded-2xl space-y-3.5 relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-[40px] pointer-events-none transform translate-x-12 -translate-y-12" />
-            
-            <div className="workspace-search-input flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all relative z-10">
+          <div className="workspace-search-shell p-2.5 rounded-xl space-y-2.5 relative">
+            <div className="workspace-search-input flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all relative z-10">
               <Search className="w-4 h-4 text-text-muted" />
               <input
                 type="text"
@@ -375,42 +406,24 @@ export default function Sidebar({ onNavigate }) {
                 onKeyDown={handleSearchSubmit}
               />
             </div>
-            <div className="flex items-center justify-between relative z-10">
-              <div className="relative" style={{ width: '60%' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsFileTypeDropdownOpen(!isFileTypeDropdownOpen)}
-                  className="workspace-filetype-select w-full flex items-center justify-between px-3.5 py-2.5 text-[12.5px] font-semibold rounded-xl transition-all"
+            <div className="flex items-center gap-2 relative z-10">
+              <div className="workspace-filetype-wrap">
+                <FileText className="workspace-filetype-icon w-3.5 h-3.5" />
+                <select
+                  aria-label="Select source file type"
+                  value={selectedFileType || ''}
+                  onChange={(e) => setSelectedFileType(e.target.value || null)}
+                  className="workspace-filetype-select w-full px-8 py-2 text-[12.5px] font-semibold rounded-lg transition-all"
                 >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <FileText className="w-3.5 h-3.5 text-accent" />
-                    <span className="truncate">{selectedFileType ? ALL_FILE_TYPES.find(f => f.id === selectedFileType)?.label : 'Any file type'}</span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform ${isFileTypeDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {isFileTypeDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsFileTypeDropdownOpen(false)} />
-                    <div className="absolute top-full left-0 mt-2 w-[240px] max-h-[280px] overflow-y-auto bg-[#1C1C1E] border-none rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] z-50 py-2 custom-scrollbar animate-in fade-in slide-in-from-top-2">
-                       {ALL_FILE_TYPES.map((ft) => (
-                         <button
-                           key={ft.id}
-                           onClick={() => { setSelectedFileType(ft.id); setIsFileTypeDropdownOpen(false); }}
-                           className={`w-full text-left px-4 py-2.5 text-[13px] font-semibold hover:bg-accent/10 transition-colors flex items-center gap-2.5 ${selectedFileType === ft.id ? 'text-accent bg-accent/5' : 'text-text-secondary hover:text-text-primary'}`}
-                         >
-                           {selectedFileType === ft.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
-                           <span className={selectedFileType === ft.id ? '' : 'ml-6'}>{ft.label}</span>
-                         </button>
-                       ))}
-                    </div>
-                  </>
-                )}
+                  {ALL_FILE_TYPES.map((ft) => (
+                    <option key={ft.id} value={ft.id}>{ft.label}</option>
+                  ))}
+                </select>
               </div>
               <button
                 onClick={() => handleSearchSubmit({ key: 'Enter' })}
                 disabled={!searchQuery.trim()}
-                className="workspace-web-btn flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-[13px] disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="workspace-web-btn flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all font-bold text-[12px] disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <Globe className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /> <span className="tracking-wide">Web</span>
               </button>
@@ -419,20 +432,22 @@ export default function Sidebar({ onNavigate }) {
         </div>
 
         {}
-        <div className="workspace-sources-meta px-5 pt-3 pb-2 flex justify-between items-center relative z-10">
-          <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em]">All Sources</span>
+        <div className="workspace-sources-meta px-4 py-2 flex justify-end items-center relative z-10">
           <button
-            onClick={() => selectedSources.length === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
-            className={`flex items-center justify-center w-4 h-4 rounded-[4px] transition-colors ${selectedSources.length === materials.length && materials.length > 0
+            onClick={() => (allSelected ? deselectAllSources() : selectAllSources())}
+            className={`workspace-sources-master-toggle flex items-center justify-center w-5 h-5 rounded-[6px] transition-colors ${allSelected
               ? 'bg-accent text-white shadow-sm'
-              : selectedSources.length > 0 ? 'bg-text-muted/20 text-text-muted' : 'bg-surface-raised/50 hover:bg-surface-raised'
+              : selectedCount > 0
+                ? 'bg-surface-overlay text-text-secondary'
+                : 'bg-surface-raised text-text-secondary hover:bg-surface-overlay'
               }`}
-            title={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all' : 'Select all'}
-            aria-label={selectedSources.length === materials.length && materials.length > 0 ? 'Deselect all sources' : 'Select all sources'}
+            title={allSelected ? 'Select none' : 'Select all'}
+            aria-label={allSelected ? 'Select no sources' : 'Select all sources'}
+            disabled={totalCount === 0}
           >
-            {selectedSources.length === materials.length && materials.length > 0 ? (
+            {allSelected ? (
               <Check className="w-3 h-3" strokeWidth={2.5} />
-            ) : selectedSources.length > 0 ? (
+            ) : partiallySelected ? (
               <Minus className="w-3 h-3" strokeWidth={2.5} />
             ) : null}
           </button>
@@ -450,14 +465,15 @@ export default function Sidebar({ onNavigate }) {
           )}
           {materials.length > 0 ? (
             <div className="p-2">
-              <div className="space-y-0.5">
-                {materials.map((source) => (
+              <div className="space-y-1.5">
+                {materials.map((source, index) => (
                   <SourceItem
                     key={source.id}
                     source={source}
+                    index={index}
                     checked={selectedSources.includes(source.id)}
                     active={currentMaterial?.id === source.id}
-                    anySelected={selectedSources.length > 0}
+                    anySelected={selectedCount > 0}
                     onClick={() => setCurrentMaterial(source)}
                     onToggle={() => toggleSourceSelection(source.id)}
                     onSeeText={handleSeeText}
@@ -471,8 +487,8 @@ export default function Sidebar({ onNavigate }) {
             <div className="h-full p-4 flex items-center justify-center">
               <div className={`workspace-dropzone dropzone w-full h-full flex flex-col items-center justify-center rounded-3xl transition-all ${dragActive ? 'bg-accent/5' : ''}`}>
                 <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mb-5 shadow-sm"><Upload className="w-7 h-7 text-text-muted" strokeWidth={1.5} /></div>
-                <p className="text-[16px] font-bold text-text-primary tracking-tight">Add sources</p>
-                <p className="text-[13.5px] text-text-muted mt-2 text-center max-w-[200px] leading-relaxed font-medium">Upload PDFs, docs, or text files to get started.</p>
+                <p className="text-[16px] font-bold text-text-primary tracking-tight">Build your source stack</p>
+                <p className="text-[13.5px] text-text-muted mt-2 text-center max-w-[220px] leading-relaxed font-medium">Drop files here or use Add sources to import web pages, notes, and docs.</p>
               </div>
             </div>
           )}

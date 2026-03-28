@@ -280,9 +280,9 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
         { }
         <div className="panel-header workspace-chat-header flex justify-between items-center px-4 py-2.5 shrink-0 gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-semibold text-text-primary text-sm">Chat</span>
+            <span className="font-semibold text-text-primary text-[15px] tracking-tight">Chat</span>
             {currentSessionTitle && (
-              <span className="workspace-session-chip text-xs text-text-muted px-2 py-0.5 rounded-full truncate max-w-[140px]">
+              <span className="workspace-session-chip text-[11px] text-text-muted px-2 py-0.5 rounded-full truncate max-w-[180px]">
                 {currentSessionTitle}
               </span>
             )}
