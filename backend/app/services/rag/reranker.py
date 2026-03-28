@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import re
 from contextlib import nullcontext
 from typing import List, Tuple, Optional
 import torch
@@ -17,6 +18,36 @@ _reranker_lock = threading.Lock()
 
 _RERANKER_BATCH_SIZE = 16
 _MAX_LENGTH = 512
+_MAX_RERANK_CHARS = 2200
+
+
+def _trim_chunk_for_rerank(query: str, chunk: str, max_chars: int = _MAX_RERANK_CHARS) -> str:
+    """Trim chunk around query-relevant spans so cross-encoder truncation keeps signal."""
+    if len(chunk) <= max_chars:
+        return chunk
+
+    query_terms = [t for t in re.findall(r"[a-zA-Z0-9_]{3,}", query.lower()) if t]
+    if not query_terms:
+        return chunk[:max_chars]
+
+    lower = chunk.lower()
+    positions = [lower.find(term) for term in query_terms if lower.find(term) >= 0]
+    if not positions:
+        return chunk[:max_chars]
+
+    center = int(sum(positions) / max(1, len(positions)))
+    half = max_chars // 2
+    start = max(0, center - half)
+    end = min(len(chunk), start + max_chars)
+    if end - start < max_chars:
+        start = max(0, end - max_chars)
+
+    trimmed = chunk[start:end].strip()
+    if start > 0:
+        trimmed = "... " + trimmed
+    if end < len(chunk):
+        trimmed = trimmed + " ..."
+    return trimmed
 
 def get_reranker():
     global _reranker
@@ -85,7 +116,8 @@ def rerank_chunks(
     
     try:
         start_time = time.time()
-        pairs = [[query, chunk] for chunk in chunks]
+        trimmed_chunks = [_trim_chunk_for_rerank(query, c) for c in chunks]
+        pairs = [[query, chunk] for chunk in trimmed_chunks]
         
         with torch.inference_mode():
             device_type = "cuda" if torch.cuda.is_available() else "cpu"
@@ -103,11 +135,20 @@ def rerank_chunks(
                     logger.warning("GPU OOM during reranking, falling back to CPU")
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
-                    scores = reranker.predict(
-                        pairs,
-                        batch_size=max(1, _RERANKER_BATCH_SIZE // 4),
-                        show_progress_bar=False,
-                    )
+                    try:
+                        if hasattr(reranker, "model"):
+                            reranker.model.to("cpu")
+                        scores = reranker.predict(
+                            pairs,
+                            batch_size=max(1, _RERANKER_BATCH_SIZE // 4),
+                            show_progress_bar=False,
+                        )
+                    finally:
+                        if torch.cuda.is_available() and hasattr(reranker, "model"):
+                            try:
+                                reranker.model.to("cuda")
+                            except Exception:
+                                pass
                 else:
                     raise
         
@@ -120,9 +161,19 @@ def rerank_chunks(
             chunk_scores = chunk_scores[:top_k]
         
         if elapsed > 0:
+            score_vals = [float(s) for _, s in chunk_scores]
+            min_score = min(score_vals) if score_vals else 0.0
+            max_score = max(score_vals) if score_vals else 0.0
+            mean_score = (sum(score_vals) / len(score_vals)) if score_vals else 0.0
             logger.debug(
-                "Reranked %d chunks in %.2fs (%.1f chunks/sec), returning top %d",
-                len(chunks), elapsed, len(chunks) / elapsed, len(chunk_scores),
+                "Reranked %d chunks in %.2fs (%.1f chunks/sec), score[min=%.3f mean=%.3f max=%.3f], returning top %d",
+                len(chunks),
+                elapsed,
+                len(chunks) / elapsed,
+                min_score,
+                mean_score,
+                max_score,
+                len(chunk_scores),
             )
         
         return chunk_scores

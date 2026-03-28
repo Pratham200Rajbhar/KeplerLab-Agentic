@@ -3,7 +3,7 @@
 import { memo, useState, useMemo } from 'react';
 import {
 Clock, FileText, Layers, BookOpen, Mic, Presentation, Network,
-MoreVertical, Pencil, Trash2, Brain
+MoreVertical, Pencil, Trash2
 } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils/helpers';
 
@@ -72,7 +72,7 @@ const ContentHistory = memo(function ContentHistory({ items = [], activeId, onSe
   }
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1.5">
       {filtered.map((item) => {
         const isActive = activeId === item.id;
         return (
@@ -81,19 +81,17 @@ const ContentHistory = memo(function ContentHistory({ items = [], activeId, onSe
             onClick={() => onSelect?.(item)}
             className={`workspace-studio-history-item group relative flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${
               isActive
-                ? 'bg-[var(--accent)] border border-[var(--accent)]'
+                ? 'workspace-studio-history-item-active'
                 : 'border border-transparent'
             }`}
           >
-            {/* Type Icon */}
-            <div className="shrink-0">{contentTypeIcon(item.content_type)}</div>
+            <div className="workspace-studio-history-icon-wrap shrink-0">{contentTypeIcon(item.content_type)}</div>
 
-            {/* Title & Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[var(--text-primary)] truncate">
+              <p className="workspace-studio-history-item-title truncate">
                 {item.title || `${item.content_type} ${item.id?.slice(0, 6)}`}
               </p>
-              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+              <p className="workspace-studio-history-item-subtitle mt-0.5">
                 {contentSubtitle(item)}
               </p>
             </div>
@@ -105,7 +103,7 @@ const ContentHistory = memo(function ContentHistory({ items = [], activeId, onSe
                   e.stopPropagation();
                   setMenuOpenId(menuOpenId === item.id ? null : item.id);
                 }}
-                className="p-1 rounded hover:bg-[var(--surface)] transition-colors opacity-0 group-hover:opacity-100"
+                className="p-1 rounded hover:bg-[var(--surface)] transition-colors opacity-60 md:opacity-0 md:group-hover:opacity-100"
                 aria-label="More options"
               >
                 <MoreVertical className="w-3.5 h-3.5 text-[var(--text-muted)]" />

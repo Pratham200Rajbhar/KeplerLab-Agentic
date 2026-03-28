@@ -97,6 +97,39 @@ def _classify_display_type(filename: str, mime: str) -> str:
     return "file_card"
 
 
+def _normalize_artifact_filename(filename: str) -> str:
+    normalized = os.path.normpath(str(filename or "")).replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized.lstrip("/")
+
+
+def _dedupe_output_files(files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Deduplicate output artifacts by normalized filename, keeping the larger file."""
+    by_name: Dict[str, Dict[str, Any]] = {}
+    order: List[str] = []
+
+    for art in files:
+        current = dict(art)
+        norm_name = _normalize_artifact_filename(current.get("filename", ""))
+        if not norm_name:
+            continue
+        current["filename"] = norm_name
+
+        prev = by_name.get(norm_name)
+        if not prev:
+            by_name[norm_name] = current
+            order.append(norm_name)
+            continue
+
+        prev_size = int(prev.get("size") or 0)
+        curr_size = int(current.get("size") or 0)
+        if curr_size >= prev_size:
+            by_name[norm_name] = current
+
+    return [by_name[name] for name in order if name in by_name]
+
+
 def _detect_output_files(
     work_dir: str,
     skip_filenames: Optional[set] = None,
@@ -119,6 +152,9 @@ def _detect_output_files(
         for fname in files:
             if fname in skip or fname.startswith("__") or fname.startswith("."):
                 continue
+            # Ignore matplotlib cache files that are not user-facing artifacts.
+            if _re.match(r"fontlist-v\d+\.json$", fname):
+                continue
             # Also skip the script files (.py, .js etc.) by prefix
             if fname.startswith("_kepler_exec"):
                 continue
@@ -130,7 +166,7 @@ def _detect_output_files(
                 continue
             mime = _guess_mime(fname)
             # Use a relative path as display name (e.g. "output/chart.png")
-            display_name = os.path.relpath(fpath, work_dir)
+            display_name = _normalize_artifact_filename(os.path.relpath(fpath, work_dir))
             results.append({
                 "filename": display_name,
                 "mime": mime,
@@ -286,18 +322,43 @@ async def execute_code_and_collect_artifacts(
     from app.services.code_execution.security import validate_code, sanitize_code
     from app.services.code_execution.sandbox import run_in_sandbox
 
-    validation = validate_code(code)
-    if not validation.is_safe:
-        logger.warning("Code validation failed: %s", validation.violations)
-        yield ToolResult(
-            tool_name="python",
-            success=False,
-            content=f"Code validation failed: {'; '.join(validation.violations)}",
-            metadata={"error": "validation_failed"},
-        )
-        return
+    current_code = code
 
-    code = sanitize_code(code, ensure_file_output=True)
+    # Pre-execution policy repair loop: allow the model to fix blocked imports
+    # or other validation issues before we fail the step.
+    for attempt in range(1 + MAX_CODE_REPAIR_ATTEMPTS):
+        validation = validate_code(current_code)
+        if validation.is_safe:
+            break
+
+        violations = "; ".join(validation.violations)
+        logger.warning("Code validation failed (attempt %d): %s", attempt + 1, violations)
+
+        if attempt >= MAX_CODE_REPAIR_ATTEMPTS:
+            yield ToolResult(
+                tool_name="python",
+                success=False,
+                content=f"Code validation failed: {violations}",
+                metadata={"error": "validation_failed", "violations": validation.violations},
+            )
+            return
+
+        yield sse("agent_status", {
+            "phase": "executing",
+            "message": f"Code policy issue detected, repairing (attempt {attempt + 2})...",
+            "step_index": step_index,
+        })
+
+        fixed = await _attempt_code_repair(
+            current_code,
+            f"Code validation failed. Violations: {violations}. Remove blocked imports/APIs and keep equivalent functionality.",
+            language,
+        )
+        if not fixed:
+            continue
+        current_code = fixed
+
+    code = sanitize_code(current_code, ensure_file_output=True)
     work_dir = tempfile.mkdtemp(prefix="kepler_agent_")
 
     try:
@@ -418,9 +479,9 @@ async def execute_code_and_collect_artifacts(
         if result.stdout:
             import re as _re
             saved_mentions = _re.findall(r"(?:SAVED|Saved):\s*(\S+)", result.stdout)
-            detected_names = {of["filename"] for of in output_files}
+            detected_names = {_normalize_artifact_filename(of["filename"]) for of in output_files}
             for mentioned in saved_mentions:
-                mentioned = mentioned.strip().strip("'\"")
+                mentioned = _normalize_artifact_filename(mentioned.strip().strip("'\""))
                 if mentioned not in detected_names:
                     fpath = os.path.join(work_dir, mentioned)
                     if os.path.isfile(fpath) and os.path.getsize(fpath) > 0:
@@ -433,6 +494,8 @@ async def execute_code_and_collect_artifacts(
                             "size": os.path.getsize(fpath),
                         })
                         logger.info("  → stdout cross-check found: %s", mentioned)
+
+        output_files = _dedupe_output_files(output_files)
 
         logger.info(
             "Artifact detection: found %d output file(s) in %s",

@@ -1026,13 +1026,10 @@ export default function StudioPanel() {
                 { }
                 {combinedHistory.length > 0 && (
                   <div className="workspace-studio-history mt-5 flex flex-col">
-                    { }
-                    <div className="flex items-center gap-2.5 py-1.5 shrink-0">
-                      <div className="flex-1 h-px bg-[var(--border)]" />
-                      <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                    <div className="workspace-studio-history-head py-1.5 shrink-0">
+                      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[0.14em] uppercase">
                         Created
                       </span>
-                      <div className="flex-1 h-px bg-[var(--border)]" />
                     </div>
                     <div className="pb-1">
                       <ContentHistory
@@ -1048,35 +1045,22 @@ export default function StudioPanel() {
               </>
             ) : (
               <div className="workspace-studio-empty-layout flex flex-col min-h-full">
-                <div className="flex flex-col items-center justify-center text-center px-6 py-7">
-                  <div className="workspace-studio-empty-card rounded-2xl px-7 py-7 max-w-[292px]" style={{
-                    background:
-                      'radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%), linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 86%, transparent), color-mix(in srgb, var(--surface-overlay) 62%, transparent))',
-                    border: '1px solid color-mix(in srgb, var(--border-strong) 85%, transparent)',
-                  }}>
-                    <div className="workspace-studio-empty-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-4 mx-auto relative" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-                      <div className="absolute inset-0 rounded-2xl" style={{ background: 'var(--gradient-glow, transparent)' }} />
-                      <span className="material-symbols-outlined text-[26px] text-accent relative z-10">labs</span>
-                    </div>
-                    <p className="workspace-studio-empty-title text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
-                    <p className="workspace-studio-empty-subtitle text-xs text-text-muted max-w-[194px] mx-auto leading-relaxed mb-4">
-                      Select a source from the panel to generate study materials
-                    </p>
-                    <div className="workspace-studio-empty-pill inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-medium"
-                      style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
-                      Studio will activate automatically
-                    </div>
+                <div className="workspace-studio-empty-simple flex flex-col items-center justify-center text-center px-6 py-7">
+                  <div className="workspace-studio-empty-icon w-11 h-11 rounded-xl flex items-center justify-center mb-3 mx-auto">
+                    <span className="material-symbols-outlined text-[22px] text-accent">labs</span>
                   </div>
+                  <p className="workspace-studio-empty-title text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
+                  <p className="workspace-studio-empty-subtitle text-xs text-text-muted max-w-[220px] mx-auto leading-relaxed">
+                    Select a source from the panel to generate study materials.
+                  </p>
                 </div>
 
                 {combinedHistory.length > 0 && (
-                  <div className="workspace-studio-history workspace-studio-history-docked mt-2 flex flex-col">
-                    <div className="workspace-studio-history-head flex items-center gap-2.5 py-1.5 shrink-0">
-                      <div className="flex-1 h-px bg-[var(--border)]" />
-                      <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase px-1">
+                  <div className="workspace-studio-history mt-2 flex flex-col">
+                    <div className="workspace-studio-history-head py-1.5 shrink-0">
+                      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[0.14em] uppercase">
                         Created
                       </span>
-                      <div className="flex-1 h-px bg-[var(--border)]" />
                     </div>
                     <div className="pb-1">
                       <ContentHistory

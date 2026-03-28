@@ -40,15 +40,10 @@ function SourceCard({ source }) {
       href={source.url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 flex items-start gap-2 px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] hover:border-white/[0.14] hover:bg-white/[0.06] transition-colors group w-48"
+      className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
     >
-      <Globe className="w-3 h-3 text-text-muted/50 mt-0.5 shrink-0" />
-      <div className="min-w-0">
-        <div className="text-[11px] font-medium text-text-secondary group-hover:text-text-primary truncate transition-colors leading-snug">
-          {title}
-        </div>
-        <div className="text-[10px] text-text-muted/50 truncate mt-0.5">{domain}</div>
-      </div>
+      <Globe className="w-3 h-3 shrink-0" />
+      <span className="truncate">{title}</span>
     </a>
   );
 }
@@ -56,60 +51,74 @@ function SourceCard({ source }) {
 
 /* ── Live research progress panel (shown while streaming, no content yet) ── */
 function ResearchProgressPanel({ researchState }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (!researchState) return null;
 
   const { phase = 'searching', label: phaseLabel = 'Starting deep research…', queries = [], sources = [] } = researchState;
 
-  // Show the last 5 sources; re-animate when a new batch of 5 arrives
+  const lowerPhase = String(phase).toLowerCase();
+  const isSearchPhase = lowerPhase.includes('search');
+  const isWritePhase = lowerPhase.includes('write') || lowerPhase.includes('synth');
+  const activeStep = isSearchPhase ? 'search' : isWritePhase ? 'write' : 'read';
+
   const latestSources = sources.slice(-5);
-  const batchKey = Math.floor(sources.length / 5);
+  const steps = [
+    { key: 'search', label: 'Search' },
+    { key: 'read', label: 'Read' },
+    { key: 'write', label: 'Write' },
+  ];
+
+  const activeIdx = steps.findIndex((step) => step.key === activeStep);
 
   return (
-    <div className="mb-3 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-      <div className="px-3.5 py-3 space-y-3">
+    <div className="mb-2.5">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="inline-flex items-center gap-1.5 text-[14px] text-text-primary"
+      >
+        <Loader2 className="w-3.5 h-3.5 text-text-muted animate-spin" />
+        <span className="truncate">{phaseLabel}</span>
+        {sources.length > 0 && <span className="text-[11px] text-text-muted">({sources.length} sites)</span>}
+        {expanded ? <ChevronDown className="w-3.5 h-3.5 text-text-muted rotate-180 transition-transform" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />}
+      </button>
 
-        {/* Status row */}
-        <div className="flex items-center gap-2.5">
-          <Loader2 className="w-4 h-4 text-accent/60 animate-spin shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium text-text-primary truncate">{phaseLabel}</div>
-          </div>
-          {sources.length > 0 && (
-            <span className="text-[10px] text-text-muted/60 tabular-nums shrink-0">{sources.length} sites</span>
+      {expanded && (
+        <div className="mt-2 pl-0.5 space-y-1.5">
+          <div className="text-[11px] uppercase tracking-wide text-text-muted/80">Functions</div>
+
+          {steps.map((step, idx) => {
+            const done = idx < activeIdx;
+            const active = step.key === activeStep;
+            const stateLabel = done ? 'done' : active ? 'running' : 'pending';
+            const stateClass = done ? 'text-success' : active ? 'text-accent' : 'text-text-muted';
+
+            return (
+              <div key={step.key} className="text-[12px] text-text-secondary">
+                {step.label} <span className={stateClass}>({stateLabel})</span>
+              </div>
+            );
+          })}
+
+          {queries.length > 0 && isSearchPhase && (
+            <div className="space-y-0.5 pt-0.5">
+              {queries.slice(0, 6).map((q, i) => (
+                <div key={i} className="text-[11px] text-text-muted truncate">- {q}</div>
+              ))}
+              {queries.length > 6 && <div className="text-[11px] text-text-muted">+{queries.length - 6} more queries</div>}
+            </div>
+          )}
+
+          {latestSources.length > 0 && (
+            <div className="space-y-0.5 pt-0.5">
+              {latestSources.map((src, i) => (
+                <SourceCard key={src.url || i} source={src} />
+              ))}
+              {sources.length > 5 && <div className="text-[11px] text-text-muted">+{sources.length - 5} more sources</div>}
+            </div>
           )}
         </div>
-
-        {/* Search queries — visible during searching phase */}
-        {queries.length > 0 && (phase === 'searching') && (
-          <div className="flex flex-wrap gap-1">
-            {queries.slice(0, 8).map((q, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-text-muted">
-                <Search className="w-2.5 h-2.5 text-text-muted/40" />
-                <span className="truncate max-w-[160px]">{q}</span>
-              </span>
-            ))}
-            {queries.length > 8 && (
-              <span className="text-[10px] text-text-muted/40 px-1">+{queries.length - 8}</span>
-            )}
-          </div>
-        )}
-
-        {/* Latest batch of 5 source cards — re-animates on each new batch */}
-        {latestSources.length > 0 && (
-          <div
-            key={batchKey}
-            className="grid gap-1.5"
-            style={{
-              gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-              animation: 'fade-in 0.35s ease-out',
-            }}
-          >
-            {latestSources.map((src, i) => (
-              <SourceCard key={src.url || i} source={src} />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -29,10 +29,6 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
   const [loadedImages, setLoadedImages] = useState(new Set());
 
   useEffect(() => {
-    setLoadedImages(new Set());
-  }, [message.images?.length]);
-
-  useEffect(() => {
     if (!fullscreenImage) return;
 
     const handleEscape = (event) => {
@@ -179,19 +175,19 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
   const showTypingFallback = !hasContent && !isCodeMode && !isResearchMode && !isAgentMode && !isStreaming;
 
   return (
-    <div className="group px-4 sm:px-6 py-3.5">
-      <div className="max-w-4xl mx-auto flex gap-3.5">
+    <div className="group px-4 sm:px-6 py-2.5">
+      <div className="max-w-3xl mx-auto flex gap-2.5">
         { }
         <div className="shrink-0 mt-0.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/5 text-accent border border-accent/10">
-            <Sparkles size={14} />
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-accent/10 text-accent border border-accent/20">
+            <Sparkles size={13} />
           </div>
         </div>
 
         { }
         <div className="flex-1 min-w-0 message-selection-container overflow-hidden">
           {isStreaming && (
-            <div className="streaming-status-chip mb-2.5 inline-flex items-center gap-1.5">
+            <div className="streaming-status-chip mb-2 inline-flex items-center gap-1.5">
               <span className="streaming-status-dot" aria-hidden="true" />
               Live response
             </div>
@@ -240,7 +236,7 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
 
           {hasContent && !isResearchMode && (
             <div className={`chat-assistant-text-shell ${isStreaming ? 'chat-assistant-text-shell-streaming' : ''}`}>
-              <div className="text-[15px] text-text-primary leading-[1.72] prose-chat">
+              <div className="text-[14px] text-text-primary leading-[1.68] prose-chat">
               {message.blocks?.length > 0 && !isStreaming ? (
                 (() => {
                   const parents = [];

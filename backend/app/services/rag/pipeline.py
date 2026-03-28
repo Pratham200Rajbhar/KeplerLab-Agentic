@@ -53,7 +53,7 @@ async def stream_rag(
                 return
 
             import re
-            chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", context))
+            chunks_used = len(re.findall(r"\[SOURCE\s+\d+(?:\s+-\s+Material:.*?)?\]", context))
 
         from app.services.chat_v2.message_store import get_history as get_chat_history
         from app.services.llm_service.llm import get_llm, extract_chunk_content

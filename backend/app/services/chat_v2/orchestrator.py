@@ -261,7 +261,7 @@ async def _resolve_image_grounding_context(
         if not raw_context or raw_context.strip() == "No relevant context found.":
             return {"context": "", "chunks_used": 0, "grounded": False}
 
-        chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", raw_context))
+        chunks_used = len(re.findall(r"\[SOURCE\s+\d+(?:\s+-\s+Material:.*?)?\]", raw_context))
         # Keep grounding concise so prompt stays within practical model limits.
         compact_context = raw_context[:3500].strip()
         return {

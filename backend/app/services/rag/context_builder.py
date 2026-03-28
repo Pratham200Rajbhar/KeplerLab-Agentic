@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import re
+import hashlib
 from typing import List, Tuple, Optional
 
 from app.core.config import settings
@@ -51,7 +52,7 @@ def build_context(
     if not chunks:
         return "No relevant context found."
     
-    max_tokens = max_tokens or settings.MAX_CONTEXT_TOKENS
+    max_tokens = max_tokens or settings.RAG_CONTEXT_MAX_TOKENS
     
     filtered = _filter_chunks(
         chunks,
@@ -66,29 +67,38 @@ def build_context(
     logger.info("Filtered %d chunks down to %d", len(chunks), len(filtered))
     
     formatted_chunks = []
+    seen = set()
     total_tokens = 0
     
     for idx, (chunk, score) in enumerate(filtered, start=1):
-        chunk_tokens = _count_tokens(chunk)
+        fingerprint = hashlib.sha1(chunk.encode("utf-8", errors="ignore")).hexdigest()
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+
+        compact = re.sub(r"\s+", " ", chunk).strip()
+        chunk_tokens = _count_tokens(compact)
         
         if total_tokens + chunk_tokens > max_tokens:
             if idx < len(filtered):
-                summarized = _summarize_chunk(chunk)
+                summarized = _summarize_chunk(compact)
                 chunk_tokens = _count_tokens(summarized)
                 
                 if total_tokens + chunk_tokens <= max_tokens:
-                    chunk = summarized
+                    compact = summarized
                 else:
                     logger.info(f"Context limit reached at chunk {idx}/{len(filtered)}")
                     break
             else:
                 if total_tokens < max_tokens * 0.5:
-                    chunk = _summarize_chunk(chunk)
+                    compact = _summarize_chunk(compact)
                 else:
                     break
         
         formatted_chunks.append(
-            f"---- SOURCE {idx} ----\n{chunk}\n"
+            f"- source: SOURCE {idx}\n"
+            f"  score: {score:.3f}\n"
+            f"  snippet: {compact}\n"
         )
         total_tokens += chunk_tokens
         

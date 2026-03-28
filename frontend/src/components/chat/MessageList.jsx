@@ -21,7 +21,7 @@ export default function MessageList({ messages, isStreaming, error, onRetry, onE
   return (
     <div className="workspace-chat-feed-wrap relative flex-1 min-h-0">
       <div ref={containerRef} className="workspace-chat-feed h-full overflow-y-auto scroll-smooth custom-scrollbar">
-        <div className="pt-5 pb-28">
+        <div className="pt-3 pb-20 md:pb-24">
           {messages.map((msg, index) => {
             const isLastAssistant =
               index === messages.length - 1 && msg.role === 'assistant';
@@ -48,7 +48,7 @@ export default function MessageList({ messages, isStreaming, error, onRetry, onE
       {!isAtBottom && (
         <button
           onClick={() => scrollToBottom()}
-          className="absolute bottom-5 right-5 z-20 w-9 h-9 rounded-full bg-surface-raised/95 border border-border/60 shadow-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:border-accent/40 transition-colors"
+          className="absolute bottom-4 right-4 z-20 w-8 h-8 rounded-full bg-surface-raised/95 border border-border/60 shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary hover:border-accent/40 transition-colors"
           aria-label="Scroll to bottom"
         >
           <svg

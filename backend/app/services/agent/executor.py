@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import AsyncIterator, Optional
 
 from app.services.chat_v2.schemas import ToolResult
@@ -10,6 +11,32 @@ from .state import AgentState, StepStatus
 from .tools_registry import get_available_tools
 
 logger = logging.getLogger(__name__)
+
+_FOLLOW_UP_CONTEXT_PATTERN = re.compile(
+    r"\b(this|that|it|above|previous|earlier|same|again|reuse|modify|update|change|continue)\b",
+    re.IGNORECASE,
+)
+
+
+def _should_inject_chat_history(tool_name: str, state: AgentState) -> bool:
+    """Inject prior chat context only for true follow-up edits.
+
+    Root-cause guard: avoid polluting artifact/code tasks with old transcripts.
+    """
+    if state.is_file_generation:
+        return False
+    if tool_name not in {"python_auto", "research"}:
+        return False
+
+    step_text = ""
+    if state.current_step and state.current_step.description:
+        step_text = state.current_step.description
+
+    goal_text = state.goal or ""
+    return bool(
+        _FOLLOW_UP_CONTEXT_PATTERN.search(step_text)
+        or _FOLLOW_UP_CONTEXT_PATTERN.search(goal_text)
+    )
 
 
 async def execute_tool(
@@ -37,7 +64,7 @@ async def execute_tool(
 
     # Enrich query with prior observations so later steps see earlier results
     # (e.g. step 2 python_auto sees step 1 web_search context)
-    if state.observations and state.current_step_index > 0:
+    if tool_name != "rag" and state.observations and state.current_step_index > 0:
         prev_context = state.summary_of_observations(max_chars=6000)
         query = (
             f"{query}\n\n"
@@ -45,12 +72,12 @@ async def execute_tool(
             f"{prev_context}"
         )
 
-    # Inject multi-turn conversation history for generative/code tools only.
-    # Do NOT inject into search tools (web_search, rag) — that would corrupt the search query.
-    _HISTORY_AWARE_TOOLS = {"python_auto", "research"}
-    if tool_name in _HISTORY_AWARE_TOOLS and memory.chat_history:
-        chat_ctx = memory.format_chat_history(max_turns=8, max_chars_per_msg=300)
-        query = f"{query}\n\n── Prior conversation ──\n{chat_ctx}"
+    # Only attach prior chat turns for explicit follow-up edits.
+    # This prevents stale session transcripts from leaking into generated artifacts.
+    if memory.chat_history and _should_inject_chat_history(tool_name, state):
+        chat_ctx = memory.format_chat_history(max_turns=4, max_chars_per_msg=200)
+        if chat_ctx and chat_ctx != "No prior conversation.":
+            query = f"{query}\n\n── Relevant follow-up context ──\n{chat_ctx}"
 
     kwargs = {
         "query": query,

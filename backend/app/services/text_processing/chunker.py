@@ -1,20 +1,14 @@
 import re
 import uuid
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-CHARS_PER_TOKEN = 4
-
-TARGET_CHUNK_TOKENS  = 500
-OVERLAP_TOKENS       = settings.CHUNK_OVERLAP_TOKENS
-
-TARGET_CHUNK_CHARS   = TARGET_CHUNK_TOKENS * CHARS_PER_TOKEN
-OVERLAP_CHARS        = OVERLAP_TOKENS * CHARS_PER_TOKEN
-MAX_PARAGRAPH_CHARS  = 800 * CHARS_PER_TOKEN
+TARGET_CHUNK_TOKENS = 360
+OVERLAP_TOKENS = 70
 
 MIN_CHUNK_CHARS      = settings.MIN_CHUNK_LENGTH
 MIN_ALPHA_RATIO      = 0.10
@@ -27,6 +21,36 @@ _HEADING_RE: List[tuple] = [
 ]
 
 _SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z"\'])')
+
+
+def _get_tokenizer():
+    try:
+        import tiktoken
+        return tiktoken.get_encoding("cl100k_base")
+    except Exception:
+        return None
+
+
+_TOKENIZER = _get_tokenizer()
+
+
+def _token_len(text: str) -> int:
+    if _TOKENIZER is None:
+        return max(1, int(len(text) / 4))
+    try:
+        return len(_TOKENIZER.encode(text))
+    except Exception:
+        return max(1, int(len(text) / 4))
+
+
+def _offset_in_parent(parent: str, part: str, start_hint: int) -> int:
+    if not part:
+        return start_hint
+    pos = parent.find(part, start_hint)
+    if pos >= 0:
+        return pos
+    pos = parent.find(part)
+    return pos if pos >= 0 else start_hint
 
 def chunk_text(
     text: str,
@@ -55,6 +79,7 @@ def chunk_text(
                 section["content"],
                 section["title"],
                 use_semantic_chunking=use_semantic_chunking,
+                full_text=text,
             )
         )
 
@@ -66,8 +91,8 @@ def chunk_text(
         chunk["total_chunks"] = total
 
     logger.info(
-        "Created %d chunks from %d sections (filtered %d low-quality)",
-        total, len(sections), len(raw_chunks) - total,
+        "Created %d chunks from %d sections (target=%d tokens, overlap=%d, filtered=%d)",
+        total, len(sections), TARGET_CHUNK_TOKENS, OVERLAP_TOKENS, len(raw_chunks) - total,
     )
     return filtered
 
@@ -82,6 +107,7 @@ def _chunk_structured(text: str) -> List[Dict]:
             break
 
     chunks: List[Dict] = []
+    cursor = 0
     for sec in sections:
         sec = sec.strip()
         if not sec or len(sec) < 30:
@@ -91,12 +117,17 @@ def _chunk_structured(text: str) -> List[Dict]:
             if schema_header and schema_header not in sec
             else sec
         )
+        start = _offset_in_parent(text, sec, cursor)
+        end = start + len(sec)
+        cursor = end
         chunks.append(
             {
                 "id": str(uuid.uuid4()),
                 "text": body,
                 "section_title": sec.split("\n")[0].strip()[:80],
                 "chunk_type": "structured",
+                "char_start": start,
+                "char_end": end,
             }
         )
 
@@ -107,6 +138,8 @@ def _chunk_structured(text: str) -> List[Dict]:
                 "text": text,
                 "section_title": "Structured Data",
                 "chunk_type": "structured",
+                "char_start": 0,
+                "char_end": len(text),
             }
         )
 
@@ -160,40 +193,115 @@ def _process_section(
     content: str,
     section_title: Optional[str],
     use_semantic_chunking: bool = False,
+    full_text: Optional[str] = None,
 ) -> List[Dict]:
     if not content.strip():
         return []
 
-    paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
-    chunks: List[Dict] = []
+    blocks: List[str] = [p.strip() for p in content.split("\n\n") if p.strip()]
+    if not blocks:
+        return []
 
-    for para in paragraphs:
-        para_chars = len(para)
+    source_text = full_text if full_text is not None else content
+    content_anchor = source_text.find(content)
+    if content_anchor < 0:
+        content_anchor = 0
 
-        if para_chars <= TARGET_CHUNK_CHARS:
-            chunks.append(_make_chunk(para, section_title))
+    block_offsets: List[Tuple[str, int, int]] = []
+    cursor = content_anchor
+    for block in blocks:
+        bstart = _offset_in_parent(source_text, block, cursor)
+        bend = bstart + len(block)
+        cursor = bend
+        block_offsets.append((block, bstart, bend))
 
-        elif para_chars <= MAX_PARAGRAPH_CHARS:
-            if use_semantic_chunking:
-                for part in _split_semantic(para):
-                    chunks.append(_make_chunk(part, section_title))
-            else:
-                chunks.append(_make_chunk(para, section_title))
+    output: List[Dict] = []
+    current_parts: List[Tuple[str, int, int]] = []
+    current_tokens = 0
 
-        else:
-            for part in _split_sentences(para, TARGET_CHUNK_CHARS, OVERLAP_CHARS):
-                chunks.append(_make_chunk(part, section_title))
+    def _flush() -> None:
+        nonlocal current_parts, current_tokens
+        if not current_parts:
+            return
+        chunk_text_value = "\n\n".join(part for part, _, _ in current_parts).strip()
+        if not chunk_text_value:
+            current_parts = []
+            current_tokens = 0
+            return
+        start = current_parts[0][1]
+        end = current_parts[-1][2]
+        output.append(_make_chunk(chunk_text_value, section_title, start, end))
 
-    return chunks
+        overlap_parts: List[Tuple[str, int, int]] = []
+        overlap_tokens = 0
+        for part in reversed(current_parts):
+            ptok = _token_len(part[0])
+            if overlap_parts and overlap_tokens + ptok > OVERLAP_TOKENS:
+                break
+            overlap_parts.insert(0, part)
+            overlap_tokens += ptok
 
-def _make_chunk(text: str, section_title: Optional[str]) -> Dict:
+        current_parts = overlap_parts
+        current_tokens = overlap_tokens
+
+    for block, bstart, bend in block_offsets:
+        block_parts = _split_semantic(block) if use_semantic_chunking else [block]
+        for piece in block_parts:
+            piece = piece.strip()
+            if not piece:
+                continue
+            ptokens = _token_len(piece)
+
+            if ptokens > TARGET_CHUNK_TOKENS:
+                # Oversized piece: sentence-level fallback with token windows.
+                sentence_splits = _split_sentences(piece, TARGET_CHUNK_TOKENS, OVERLAP_TOKENS)
+                piece_cursor = _offset_in_parent(block, piece, 0)
+                for split_part in sentence_splits:
+                    split_part = split_part.strip()
+                    if not split_part:
+                        continue
+                    sstart_local = _offset_in_parent(piece, split_part, piece_cursor)
+                    send_local = sstart_local + len(split_part)
+                    piece_cursor = send_local
+                    sstart = bstart + max(0, sstart_local)
+                    send = bstart + min(len(block), send_local)
+                    split_tokens = _token_len(split_part)
+                    if current_tokens + split_tokens > TARGET_CHUNK_TOKENS and current_parts:
+                        _flush()
+                    current_parts.append((split_part, sstart, send))
+                    current_tokens += split_tokens
+                continue
+
+            if current_tokens + ptokens > TARGET_CHUNK_TOKENS and current_parts:
+                _flush()
+
+            pstart_local = _offset_in_parent(block, piece, 0)
+            pend_local = pstart_local + len(piece)
+            pstart = bstart + max(0, pstart_local)
+            pend = bstart + min(len(block), pend_local)
+            current_parts.append((piece, pstart, pend))
+            current_tokens += ptokens
+
+    _flush()
+    return output
+
+
+def _make_chunk(
+    text: str,
+    section_title: Optional[str],
+    char_start: Optional[int] = None,
+    char_end: Optional[int] = None,
+) -> Dict:
     return {
         "id": str(uuid.uuid4()),
         "text": text,
         "section_title": section_title,
+        "char_start": char_start,
+        "char_end": char_end,
     }
 
-def _split_sentences(text: str, chunk_size: int, overlap: int) -> List[str]:
+
+def _split_sentences(text: str, chunk_size_tokens: int, overlap_tokens: int) -> List[str]:
     sentences = _SENTENCE_SPLIT_RE.split(text)
     sentences = [s.strip() for s in sentences if s.strip()]
 
@@ -205,18 +313,19 @@ def _split_sentences(text: str, chunk_size: int, overlap: int) -> List[str]:
     current_size = 0
 
     for sent in sentences:
-        sent_size = len(sent)
+        sent_size = _token_len(sent)
 
-        if current_size + sent_size > chunk_size and current:
+        if current_size + sent_size > chunk_size_tokens and current:
             chunks.append(" ".join(current))
 
             carry: List[str] = []
             carry_size = 0
             for s in reversed(current):
-                if carry_size + len(s) > overlap:
+                stoks = _token_len(s)
+                if carry and carry_size + stoks > overlap_tokens:
                     break
                 carry.insert(0, s)
-                carry_size += len(s)
+                carry_size += stoks
 
             current = carry
             current_size = carry_size
@@ -237,12 +346,19 @@ def _split_semantic(text: str) -> List[str]:
         return [text]
 
     chunks: List[str] = []
-    window, step = 3, 2
-    for start in range(0, len(sentences), step):
-        group = sentences[start : start + window]
-        part = " ".join(group).strip()
-        if part:
-            chunks.append(part)
+    current: List[str] = []
+    current_tokens = 0
+    for sent in sentences:
+        stoks = _token_len(sent)
+        if current and current_tokens + stoks > max(120, TARGET_CHUNK_TOKENS // 2):
+            chunks.append(" ".join(current).strip())
+            current = []
+            current_tokens = 0
+        current.append(sent)
+        current_tokens += stoks
+
+    if current:
+        chunks.append(" ".join(current).strip())
 
     return chunks or [text]
 

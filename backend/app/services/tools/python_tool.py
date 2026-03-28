@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import AsyncIterator, List
+from typing import AsyncIterator, List, Optional
 
 from app.core.config import settings
 from app.services.chat_v2.schemas import ToolResult
@@ -55,6 +55,27 @@ def _detect_language(query: str) -> str:
 
 # Marker injected by executor.py when passing prior step results to python_auto
 _AGENT_CONTEXT_MARKER = "── Context from previous steps ──"
+_TRANSCRIPT_PREFIX_RE = re.compile(r"^\s*(user|assistant|system)\s*:\s*", re.IGNORECASE)
+
+
+def _sanitize_prior_context(text: str) -> str:
+    """Remove transcript-like noise before sending context to codegen."""
+    if not text:
+        return ""
+
+    cleaned: List[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        lower = line.lower()
+        if "prior conversation" in lower:
+            continue
+        if _TRANSCRIPT_PREFIX_RE.match(line):
+            continue
+        cleaned.append(line)
+
+    return "\n".join(cleaned)
 
 async def execute(
     query: str,
@@ -72,6 +93,8 @@ async def execute(
 
         rag_context = ""
         files_section = ""
+        has_structured_files = False
+        file_map = {}
 
         # ── Agent multi-step path: query contains prior-step research context ──
         is_agent_codegen = _AGENT_CONTEXT_MARKER in query
@@ -80,6 +103,7 @@ async def execute(
             parts = query.split(_AGENT_CONTEXT_MARKER, 1)
             step_goal = parts[0].strip()
             prior_context = parts[1].strip() if len(parts) > 1 else ""
+            prior_context = _sanitize_prior_context(prior_context)
             # Truncate research context so the LLM focuses on code quality,
             # not on cramming 100K chars of research into a PDF.
             _MAX_CONTEXT = 12_000
@@ -104,34 +128,42 @@ async def execute(
         else:
             language = _detect_language(query)
             if material_ids and language == "python":
-                try:
-                    import asyncio
-                    from app.services.rag.secure_retriever import secure_similarity_search_enhanced
-                    from app.services.rag.context_builder import build_context
-
-                    chunks = await asyncio.to_thread(
-                        secure_similarity_search_enhanced,
-                        user_id=user_id,
-                        query=query,
-                        material_ids=material_ids,
-                        notebook_id=notebook_id,
-                        use_mmr=True,
-                        use_reranker=False,
-                        return_formatted=True,
-                    )
-                    if chunks:
-                        rag_context = chunks if isinstance(chunks, str) else build_context(chunks, max_tokens=settings.MAX_CONTEXT_TOKENS)
-                except Exception:
-                    pass
-
-                # Resolve real uploaded filenames so the LLM uses the exact names
+                # Resolve real uploaded filenames first.
                 try:
                     from app.services.agent.material_files import get_material_file_map, build_files_prompt_section
                     file_map = await get_material_file_map(material_ids, user_id)
                     if file_map:
                         files_section = build_files_prompt_section(file_map)
+                        structured_exts = {".csv", ".xlsx", ".xls", ".tsv", ".ods", ".parquet"}
+                        has_structured_files = any(
+                            any(str(name).lower().endswith(ext) for ext in structured_exts)
+                            for name in file_map.keys()
+                        )
                 except Exception as exc:
                     logger.warning("Could not resolve material filenames: %s", exc)
+
+                # For structured datasets, avoid retrieval text injection and rely
+                # on direct file schema/context to prevent data drift or hallucinated rows.
+                if not has_structured_files:
+                    try:
+                        import asyncio
+                        from app.services.rag.secure_retriever import secure_similarity_search_enhanced
+                        from app.services.rag.context_builder import build_context
+
+                        chunks = await asyncio.to_thread(
+                            secure_similarity_search_enhanced,
+                            user_id=user_id,
+                            query=query,
+                            material_ids=material_ids,
+                            notebook_id=notebook_id,
+                            use_mmr=True,
+                            use_reranker=False,
+                            return_formatted=True,
+                        )
+                        if chunks:
+                            rag_context = chunks if isinstance(chunks, str) else build_context(chunks, max_tokens=settings.MAX_CONTEXT_TOKENS)
+                    except Exception:
+                        pass
 
             base_prompt = get_code_generation_prompt(query, language=language)
 
@@ -140,6 +172,21 @@ async def execute(
             f"\n\nIMPORTANT: Generate the code in {language.upper()}. "
             f"Return only the raw {language} code — no markdown fences, no explanation."
         )
+        if language == "python":
+            lang_instruction += (
+                "\nSecurity policy: DO NOT import os, sys, subprocess, shutil, pathlib, socket, requests, urllib, httpx. "
+                "Use relative filenames directly when saving outputs."
+            )
+            lang_instruction += (
+                "\nArtifact content policy: NEVER include raw chat transcript blocks, "
+                "and never emit lines starting with 'User:' or 'Assistant:' in output files."
+            )
+            if has_structured_files:
+                lang_instruction += (
+                    "\nData integrity policy: You MUST load data from the uploaded file(s) listed below using pandas. "
+                    "Do NOT create synthetic/hardcoded replacement datasets. "
+                    "Use exact column names from schema."
+                )
         language_hint = _LANG_EXEC_HINTS.get(language, "")
         prompt = base_prompt + lang_instruction
         if language_hint:

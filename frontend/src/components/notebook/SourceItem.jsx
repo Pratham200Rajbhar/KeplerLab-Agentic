@@ -92,6 +92,8 @@ export default memo(function SourceItem({
 
   const sourceType = source.source_type || source.sourceType || inferSourceType(source.filename);
   const displayName = source.title || source.filename;
+  const actualFilename = source.filename;
+  const aiGeneratedTitle = source.title;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -167,8 +169,11 @@ export default memo(function SourceItem({
 
       {}
       <div className="flex-1 min-w-0 flex flex-col justify-center pt-0.5 max-w-full">
-        <p className={`text-[13px] truncate leading-tight ${active ? 'text-text-primary font-medium' : isFailed ? 'text-danger line-through' : 'text-text-secondary font-medium'}`}>
-          {displayName}
+        <p className={`text-[13px] truncate leading-tight cursor-default group transition-opacity duration-200 ${active ? 'text-text-primary font-medium' : isFailed ? 'text-danger line-through' : 'text-text-secondary font-medium'}`}>
+          <span className="group-hover:hidden">{actualFilename}</span>
+          {aiGeneratedTitle && aiGeneratedTitle !== actualFilename && (
+            <span className="hidden group-hover:inline">{aiGeneratedTitle}</span>
+          )}
         </p>
         {!isProcessing && !isFailed && (
           <div className="mt-1.5">

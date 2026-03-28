@@ -11,45 +11,17 @@ import numpy as np
 from app.db.chroma import get_collection
 from app.services.rag.reranker import rerank_chunks
 from app.services.rag.context_formatter import format_context_with_citations
+from app.services.rag.hybrid_retrieval import (
+    adaptive_retrieval_k,
+    bm25_like_scores,
+    reciprocal_rank_fusion,
+    rewrite_query_variants,
+)
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger("security.retrieval")
 
-def _expand_structured_chunks(
-    documents: List[str],
-    metadatas: List[dict],
-) -> List[str]:
-    from app.services.storage_service import load_material_text
-
-    _MAX_EXPANDED_CHARS = 50_000
-    expanded = list(documents)
-    for i, meta in enumerate(metadatas):
-        if str(meta.get("is_structured", "")).lower() != "true":
-            continue
-        material_id = meta.get("material_id")
-        if not material_id:
-            continue
-        try:
-            full_text = load_material_text(material_id)
-            if full_text:
-                if len(full_text) > _MAX_EXPANDED_CHARS:
-                    full_text = full_text[:_MAX_EXPANDED_CHARS] + "\n\n... [truncated — full dataset too large for context]"
-                    logger.warning(
-                        "Structured chunk truncated to %d chars for material=%s (original: %d)",
-                        _MAX_EXPANDED_CHARS, material_id, len(full_text),
-                    )
-                expanded[i] = full_text
-                logger.info(
-                    "Expanded structured chunk for material=%s (%d chars)",
-                    material_id, len(full_text),
-                )
-        except Exception as exc:
-            logger.warning(
-                "Could not load full structured text for material=%s: %s",
-                material_id, exc,
-            )
-    return expanded
 
 DEFAULT_PER_MATERIAL_K = 10
 CROSS_DOC_PER_MATERIAL_K = 15
@@ -96,8 +68,21 @@ def _build_where(
 
 def _is_cross_document_query(query: str) -> bool:
     query_lower = query.lower()
-    
-    if any(keyword in query_lower for keyword in CROSS_DOC_KEYWORDS):
+
+    keyword_patterns = [
+        r"\bcompare\b",
+        r"\bcomparison\b",
+        r"\bdifferences?\b",
+        r"\bcontrast\b",
+        r"\bvs\.?\b",
+        r"\bversus\b",
+        r"\bsimilarities\b",
+        r"\bdistinguish(?:\s+between)?\b",
+        r"\bcompare\s+and\s+contrast\b",
+        r"\bwhat\s+is\s+the\s+difference\b",
+    ]
+
+    if any(re.search(pat, query_lower) for pat in keyword_patterns):
         logger.info(f"Cross-document query detected: {query[:60]}...")
         return True
     
@@ -259,6 +244,110 @@ def _apply_mmr(
     
     return selected_indices
 
+
+def _hybrid_candidates(
+    collection,
+    *,
+    query: str,
+    where: dict,
+    vector_k: int,
+    lexical_k: int,
+    lexical_pool: int,
+) -> List[Dict]:
+    """Build hybrid candidates with reciprocal-rank fusion over dense + lexical retrieval."""
+    ranks: Dict[str, List[int]] = {}
+    item_by_id: Dict[str, Dict] = {}
+
+    vector_docs = 0
+    lexical_docs = 0
+
+    query_variants = rewrite_query_variants(query, max_variants=2)
+    for variant_idx, q in enumerate(query_variants):
+        dense_results = collection.query(
+            query_texts=[q],
+            n_results=vector_k,
+            where=where,
+            include=["documents", "metadatas", "embeddings", "distances"],
+        )
+        d_docs = dense_results.get("documents", [[]])[0]
+        d_metas = dense_results.get("metadatas", [[]])[0]
+        d_ids = dense_results.get("ids", [[]])[0]
+        d_embs = dense_results.get("embeddings", [[]])[0]
+
+        for i, doc in enumerate(d_docs):
+            if i >= len(d_ids) or i >= len(d_metas):
+                continue
+            item_id = d_ids[i]
+            vector_docs += 1
+            rank = i + 1 + (variant_idx * vector_k)
+            ranks.setdefault(item_id, []).append(rank)
+            item_by_id[item_id] = {
+                "id": item_id,
+                "text": doc,
+                "metadata": d_metas[i],
+                "embedding": d_embs[i] if i < len(d_embs) else None,
+                "dense_rank": rank,
+            }
+
+    try:
+        lexical_results = collection.get(
+            where=where,
+            include=["documents", "metadatas"],
+            limit=max(lexical_k, lexical_pool),
+        )
+        l_docs = lexical_results.get("documents", [])
+        l_metas = lexical_results.get("metadatas", [])
+        l_ids = lexical_results.get("ids", [])
+
+        lexical_scores = bm25_like_scores(query, l_docs)
+        ranked_lexical = sorted(
+            [(i, s) for i, s in enumerate(lexical_scores)],
+            key=lambda x: x[1],
+            reverse=True,
+        )[:lexical_k]
+
+        for rank, (idx, score) in enumerate(ranked_lexical, start=1):
+            if idx >= len(l_ids) or idx >= len(l_metas) or idx >= len(l_docs):
+                continue
+            item_id = l_ids[idx]
+            if not item_id:
+                continue
+            lexical_docs += 1
+            ranks.setdefault(item_id, []).append(rank)
+            if item_id not in item_by_id:
+                item_by_id[item_id] = {
+                    "id": item_id,
+                    "text": l_docs[idx],
+                    "metadata": l_metas[idx],
+                    "embedding": None,
+                }
+            item_by_id[item_id]["lexical_rank"] = rank
+            item_by_id[item_id]["lexical_score"] = float(score)
+    except Exception as exc:
+        logger.warning("Lexical retrieval fallback skipped: %s", exc)
+
+    fused_scores = reciprocal_rank_fusion(ranks)
+    for iid, score in fused_scores.items():
+        if iid in item_by_id:
+            item_by_id[iid]["fused_score"] = float(score)
+
+    candidates = sorted(
+        item_by_id.values(),
+        key=lambda it: it.get("fused_score", 0.0),
+        reverse=True,
+    )
+    logger.info(
+        "Hybrid retrieval candidates: dense=%d lexical=%d fused=%d",
+        vector_docs,
+        lexical_docs,
+        len(candidates),
+    )
+    return candidates
+
+
+def _normalize_rank_score(score: float) -> float:
+    return 1.0 / (1.0 + np.exp(-float(score)))
+
 def secure_similarity_search_enhanced(
     user_id: str,
     query: str,
@@ -280,9 +369,9 @@ def secure_similarity_search_enhanced(
         )
     
     is_cross_doc = _is_cross_document_query(query)
-    
+
     mat_ids = material_ids if material_ids else ([material_id] if material_id else [])
-    
+
     if len(mat_ids) > 1:
         return _retrieve_multi_source(
             user_id=user_id,
@@ -318,49 +407,81 @@ def secure_similarity_search_enhanced(
     if total_in_collection == 0:
         logger.warning("ChromaDB collection is empty — returning no context")
         return "No relevant context found." if return_formatted else []
-    safe_initial_k = max(1, min(initial_k, total_in_collection))
+    safe_initial_k = adaptive_retrieval_k(query, total_in_collection, initial_k)
+    safe_lexical_k = max(1, min(settings.LEXICAL_K, total_in_collection))
 
-    logger.info(f"Single-source retrieval: top {safe_initial_k} chunks for query: {query[:60]}...")
-    
-    results = collection.query(
-        query_texts=[query],
-        n_results=safe_initial_k,
+    candidates = _hybrid_candidates(
+        collection,
+        query=query,
         where=where,
-        include=['documents', 'metadatas', 'embeddings', 'distances']
+        vector_k=safe_initial_k,
+        lexical_k=safe_lexical_k,
+        lexical_pool=settings.LEXICAL_CANDIDATE_POOL,
     )
-    
-    documents = results.get("documents", [[]])[0]
-    metadatas = results.get("metadatas", [[]])[0]
-    embeddings = results.get("embeddings", [[]])[0]
-    ids = results.get("ids", [[]])[0]
-    
-    _validate_result_ownership(user_id, documents, metadatas, query, ids=ids, embeddings=embeddings)
-    
-    if not documents:
-        logger.warning("No valid documents after security filtering")
+
+    if not candidates:
+        logger.warning("No valid documents after hybrid retrieval")
         return "No relevant context found." if return_formatted else []
-    
-    logger.info(f"Retrieved {len(documents)} valid chunks")
 
-    documents = _expand_structured_chunks(documents, metadatas)
+    candidate_docs = [c["text"] for c in candidates]
+    candidate_metas = [c.get("metadata", {}) for c in candidates]
+    candidate_ids = [c["id"] for c in candidates]
+    candidate_embs = [c.get("embedding") for c in candidates]
 
-    if use_mmr and len(documents) > settings.MMR_K and len(embeddings) > 0:
+    _validate_result_ownership(
+        user_id,
+        candidate_docs,
+        candidate_metas,
+        query,
+        ids=candidate_ids,
+        embeddings=candidate_embs,
+    )
+
+    validated_map: Dict[str, Dict] = {}
+    for i, cid in enumerate(candidate_ids):
+        validated_map[cid] = {
+            "text": candidate_docs[i] if i < len(candidate_docs) else "",
+            "metadata": candidate_metas[i] if i < len(candidate_metas) else {},
+            "embedding": candidate_embs[i] if i < len(candidate_embs) else None,
+        }
+
+    candidates = [
+        {
+            **c,
+            "id": c["id"],
+            "text": validated_map[c["id"]]["text"],
+            "metadata": validated_map[c["id"]]["metadata"],
+            "embedding": validated_map[c["id"]]["embedding"],
+        }
+        for c in candidates
+        if c.get("id") in validated_map
+    ]
+
+    if not candidates:
+        return "No relevant context found." if return_formatted else []
+
+    if use_mmr and len(candidates) > settings.MMR_K:
         try:
             from app.db.chroma import _get_ef
             ef = _get_ef()
             query_embedding = [float(x) for x in ef([query])[0]]
 
             if query_embedding:
+                mmr_docs = [c["text"] for c in candidates]
+                mmr_embs: List[List[float]] = []
+                for c in candidates:
+                    emb = c.get("embedding")
+                    if emb is None:
+                        emb = [float(x) for x in ef([c["text"]])[0]]
+                    mmr_embs.append(emb)
                 mmr_indices = _apply_mmr(
                     query_embedding=query_embedding,
-                    documents=documents,
-                    embeddings=embeddings,
+                    documents=mmr_docs,
+                    embeddings=mmr_embs,
                     lambda_param=settings.MMR_LAMBDA,
-                    k=settings.MMR_K,
+                    k=min(settings.MMR_K, len(candidates)),
                 )
-                documents = [documents[i] for i in mmr_indices]
-                metadatas = [metadatas[i] for i in mmr_indices] if metadatas else []
-                ids = [ids[i] for i in mmr_indices] if ids else []
+                candidates = [candidates[i] for i in mmr_indices]
                 logger.info(f"Applied MMR: {len(mmr_indices)} diverse chunks selected")
         except Exception as e:
             logger.warning(f"MMR failed, continuing without diversity: {e}")
@@ -373,41 +494,38 @@ def secure_similarity_search_enhanced(
     except Exception:
         pass
     
-    logger.debug(f"Retrieval (vector + MMR) completed in {retrieval_time:.3f}s")
+    logger.debug(f"Retrieval (hybrid + MMR) completed in {retrieval_time:.3f}s")
     
     reranking_start = time.time()
     chunk_scores = None
+    ranked_candidates = candidates
     if use_reranker and settings.USE_RERANKER:
         try:
+            rerank_pool = ranked_candidates[: settings.RERANK_CANDIDATES_K]
             chunk_scores = rerank_chunks(
                 query=query,
-                chunks=documents,
+                chunks=[c["text"] for c in rerank_pool],
                 top_k=settings.FINAL_K,
             )
             pos_map: Dict[str, deque] = {}
-            for i, doc in enumerate(documents):
+            for i, doc in enumerate([c["text"] for c in rerank_pool]):
                 pos_map.setdefault(doc, deque()).append(i)
 
-            reranked_indices = []
-            reranked_docs = []
+            reranked_items = []
             for chunk, score in chunk_scores:
                 if chunk in pos_map and pos_map[chunk]:
-                    reranked_indices.append(pos_map[chunk].popleft())
-                    reranked_docs.append(chunk)
+                    idx = pos_map[chunk].popleft()
+                    item = dict(rerank_pool[idx])
+                    item["score"] = float(score)
+                    reranked_items.append(item)
 
-            metadatas = [metadatas[i] for i in reranked_indices] if metadatas else []
-            ids = [ids[i] for i in reranked_indices] if ids else []
-            documents = reranked_docs
-            logger.info("Reranked to top %d chunks", len(documents))
+            ranked_candidates = reranked_items
+            logger.info("Reranked to top %d chunks", len(ranked_candidates))
         except Exception as e:
             logger.error("Reranking failed: %s", e)
-            documents = documents[:settings.FINAL_K]
-            metadatas = metadatas[:settings.FINAL_K] if metadatas else []
-            ids = ids[:settings.FINAL_K] if ids else []
+            ranked_candidates = ranked_candidates[:settings.FINAL_K]
     else:
-        documents = documents[:settings.FINAL_K]
-        metadatas = metadatas[:settings.FINAL_K] if metadatas else []
-        ids = ids[:settings.FINAL_K] if ids else []
+        ranked_candidates = ranked_candidates[:settings.FINAL_K]
     
     reranking_time = time.time() - reranking_start
     
@@ -418,33 +536,74 @@ def secure_similarity_search_enhanced(
         pass
     
     logger.debug(f"Reranking completed in {reranking_time:.3f}s")
+
+    filtered_candidates = []
+    for item in ranked_candidates:
+        raw_score = float(item.get("score", item.get("fused_score", 0.0)))
+        norm_score = _normalize_rank_score(raw_score)
+        if norm_score >= settings.MIN_SIMILARITY_SCORE:
+            item["score"] = norm_score
+            filtered_candidates.append(item)
+
+    if not filtered_candidates and ranked_candidates:
+        top_item = dict(ranked_candidates[0])
+        top_item["score"] = max(
+            settings.MIN_SIMILARITY_SCORE,
+            _normalize_rank_score(float(top_item.get("score", top_item.get("fused_score", 0.0)))),
+        )
+        filtered_candidates = [top_item]
+
+    logger.info(
+        "retrieval_trace query=%r dense_k=%d lexical_k=%d candidates=%d reranked=%d final=%d",
+        query[:140],
+        safe_initial_k,
+        safe_lexical_k,
+        len(candidates),
+        len(ranked_candidates),
+        len(filtered_candidates),
+    )
+    try:
+        from app.services.performance_logger import record_retrieval_trace
+        record_retrieval_trace({
+            "query": query[:140],
+            "dense_k": safe_initial_k,
+            "lexical_k": safe_lexical_k,
+            "candidates": len(candidates),
+            "reranked": len(ranked_candidates),
+            "final": len(filtered_candidates),
+            "agent_used": "false",
+        })
+    except Exception:
+        pass
+
+    if not filtered_candidates:
+        return "No relevant context found." if return_formatted else []
     
     if return_formatted:
         chunks_with_metadata = []
-        for i, doc in enumerate(documents):
+        for i, item in enumerate(filtered_candidates[: settings.FINAL_K]):
+            meta = item.get("metadata", {})
             chunk_dict = {
-                "text": doc,
-                "id": ids[i] if i < len(ids) else f"chunk_{i}",
+                "text": item.get("text", ""),
+                "id": item.get("id", f"chunk_{i}"),
+                "score": float(item.get("score", 0.0)),
             }
-            if i < len(metadatas):
-                meta = metadatas[i]
-                if "section_title" in meta:
-                    chunk_dict["section_title"] = meta["section_title"]
-                if "material_id" in meta:
-                    chunk_dict["material_id"] = meta["material_id"]
-                if "filename" in meta:
-                    chunk_dict["filename"] = meta["filename"]
-            if chunk_scores and i < len(chunk_scores):
-                chunk_dict["score"] = chunk_scores[i][1]
+            if "section_title" in meta:
+                chunk_dict["section_title"] = meta["section_title"]
+            if "material_id" in meta:
+                chunk_dict["material_id"] = meta["material_id"]
+            if "filename" in meta:
+                chunk_dict["filename"] = meta["filename"]
             
             chunks_with_metadata.append(chunk_dict)
         
         return format_context_with_citations(
             chunks_with_metadata,
             max_sources=settings.FINAL_K,
+            max_tokens=settings.RAG_CONTEXT_MAX_TOKENS,
         )
     
-    return documents
+    return [c.get("text", "") for c in filtered_candidates[: settings.FINAL_K]]
 
 def _retrieve_multi_source(
     user_id: str,
@@ -487,43 +646,49 @@ def _retrieve_multi_source(
     if total_in_collection == 0:
         logger.warning("ChromaDB collection is empty — returning no context")
         return "No relevant context found." if return_formatted else []
-    batch_k = max(1, min(per_material_k * len(material_ids), total_in_collection))
-
-    all_documents: List[str] = []
-    all_metadatas: List[Dict] = []
-    all_ids: List[str] = []
+    batch_k = adaptive_retrieval_k(
+        query,
+        total_in_collection,
+        per_material_k * len(material_ids),
+    )
 
     try:
-        results = collection.query(
-            query_texts=[query],
-            n_results=batch_k,
+        candidates = _hybrid_candidates(
+            collection,
+            query=query,
             where=where,
-            include=["documents", "metadatas", "distances"],
-        )
-
-        docs = results.get("documents", [[]])[0]
-        metas = results.get("metadatas", [[]])[0]
-        ids = results.get("ids", [[]])[0]
-
-        _validate_result_ownership(user_id, docs, metas, query, ids=ids)
-
-        for i, doc in enumerate(docs):
-            if doc and i < len(metas) and i < len(ids):
-                all_documents.append(doc)
-                all_metadatas.append(metas[i])
-                all_ids.append(ids[i])
-
-        logger.info(
-            "Batched retrieval: %d chunks from %d materials in one query",
-            len(all_documents), len(material_ids),
+            vector_k=batch_k,
+            lexical_k=min(settings.LEXICAL_K, total_in_collection),
+            lexical_pool=settings.LEXICAL_CANDIDATE_POOL,
         )
     except Exception as e:
         logger.error("Batched multi-source retrieval failed: %s", e)
         return "No relevant context found." if return_formatted else []
-    
-    if not all_documents:
+
+    if not candidates:
         logger.warning("No documents retrieved from any material")
         return "No relevant context found." if return_formatted else []
+
+    c_docs = [c.get("text", "") for c in candidates]
+    c_metas = [c.get("metadata", {}) for c in candidates]
+    c_ids = [c.get("id", "") for c in candidates]
+    _validate_result_ownership(user_id, c_docs, c_metas, query, ids=c_ids)
+    validated_map: Dict[str, Dict] = {}
+    for i, cid in enumerate(c_ids):
+        validated_map[cid] = {
+            "text": c_docs[i] if i < len(c_docs) else "",
+            "metadata": c_metas[i] if i < len(c_metas) else {},
+        }
+    candidates = [
+        {
+            **c,
+            "id": c.get("id", ""),
+            "text": validated_map[c.get("id", "")]["text"],
+            "metadata": validated_map[c.get("id", "")]["metadata"],
+        }
+        for c in candidates
+        if c.get("id", "") in validated_map
+    ]
     
     retrieval_time = time.time() - retrieval_start
     
@@ -533,45 +698,45 @@ def _retrieve_multi_source(
     except Exception:
         pass
     
-    logger.info(f"Total retrieved: {len(all_documents)} chunks from {len(material_ids)} materials in {retrieval_time:.3f}s")
-
-    all_documents = _expand_structured_chunks(all_documents, all_metadatas)
+    logger.info(
+        "Total retrieved: %d chunks from %d materials in %.3fs",
+        len(candidates),
+        len(material_ids),
+        retrieval_time,
+    )
 
     reranking_start = time.time()
     chunk_scores = None
+    ranked_candidates = candidates
     if use_reranker and settings.USE_RERANKER:
         try:
+            rerank_pool = ranked_candidates[: max(final_k * 3, settings.RERANK_CANDIDATES_K)]
             chunk_scores = rerank_chunks(
                 query=query,
-                chunks=all_documents,
+                chunks=[c.get("text", "") for c in rerank_pool],
                 top_k=final_k * 2,
             )
 
             pos_map: Dict[str, deque] = {}
-            for i, doc in enumerate(all_documents):
+            for i, doc in enumerate([c.get("text", "") for c in rerank_pool]):
                 pos_map.setdefault(doc, deque()).append(i)
 
-            reranked_docs = []
-            reranked_indices = []
+            reranked_items = []
             for chunk, score in chunk_scores:
                 if chunk in pos_map and pos_map[chunk]:
-                    reranked_indices.append(pos_map[chunk].popleft())
-                    reranked_docs.append(chunk)
+                    idx = pos_map[chunk].popleft()
+                    item = dict(rerank_pool[idx])
+                    item["score"] = float(score)
+                    reranked_items.append(item)
 
-            all_metadatas = [all_metadatas[i] for i in reranked_indices]
-            all_ids = [all_ids[i] for i in reranked_indices]
-            all_documents = reranked_docs
+            ranked_candidates = reranked_items
             logger.info("Global reranking: top %d chunks", len(chunk_scores))
             
         except Exception as e:
             logger.error("Global reranking failed: %s", e)
-            all_documents = all_documents[:final_k * 2]
-            all_metadatas = all_metadatas[:final_k * 2]
-            all_ids = all_ids[:final_k * 2]
+            ranked_candidates = ranked_candidates[:final_k * 2]
     else:
-        all_documents = all_documents[:final_k * 2]
-        all_metadatas = all_metadatas[:final_k * 2]
-        all_ids = all_ids[:final_k * 2]
+        ranked_candidates = ranked_candidates[:final_k * 2]
     
     reranking_time = time.time() - reranking_start
     
@@ -584,37 +749,63 @@ def _retrieve_multi_source(
     logger.debug(f"Reranking completed in {reranking_time:.3f}s")
     
     chunks_with_metadata = []
-    for i, doc in enumerate(all_documents):
+    for i, item in enumerate(ranked_candidates):
+        meta = item.get("metadata", {})
+        score_raw = float(item.get("score", item.get("fused_score", 0.0)))
+        score_norm = _normalize_rank_score(score_raw)
+        if score_norm < settings.MIN_SIMILARITY_SCORE:
+            continue
         chunk_dict = {
-            "text": doc,
-            "id": all_ids[i] if i < len(all_ids) else f"chunk_{i}",
-            "material_id": all_metadatas[i].get("material_id", "unknown") if i < len(all_metadatas) else "unknown",
+            "text": item.get("text", ""),
+            "id": item.get("id", f"chunk_{i}"),
+            "material_id": meta.get("material_id", "unknown"),
+            "score": score_norm,
         }
-        
-        if i < len(all_metadatas):
-            meta = all_metadatas[i]
-            if "section_title" in meta:
-                chunk_dict["section_title"] = meta["section_title"]
-            if "filename" in meta:
-                chunk_dict["filename"] = meta["filename"]
-        
-        if chunk_scores and i < len(chunk_scores):
-            chunk_dict["score"] = chunk_scores[i][1]
-        else:
-            chunk_dict["score"] = 1.0
+        if "section_title" in meta:
+            chunk_dict["section_title"] = meta["section_title"]
+        if "filename" in meta:
+            chunk_dict["filename"] = meta["filename"]
         
         chunks_with_metadata.append(chunk_dict)
+
+    if not chunks_with_metadata and ranked_candidates:
+        item = ranked_candidates[0]
+        meta = item.get("metadata", {})
+        chunks_with_metadata = [{
+            "text": item.get("text", ""),
+            "id": item.get("id", "chunk_0"),
+            "material_id": meta.get("material_id", "unknown"),
+            "section_title": meta.get("section_title"),
+            "filename": meta.get("filename"),
+            "score": settings.MIN_SIMILARITY_SCORE,
+        }]
     
     chunks_with_metadata = _ensure_source_diversity(
         chunks_with_metadata,
         min_per_material=MIN_CHUNKS_PER_MATERIAL,
         max_per_material=MAX_CHUNKS_PER_MATERIAL,
     )
+
+    try:
+        from app.services.performance_logger import record_retrieval_trace
+        record_retrieval_trace({
+            "query": query[:140],
+            "dense_k": batch_k,
+            "lexical_k": min(settings.LEXICAL_K, total_in_collection),
+            "candidates": len(candidates),
+            "reranked": len(ranked_candidates),
+            "final": len(chunks_with_metadata),
+            "agent_used": "false",
+            "multi_source": "true",
+        })
+    except Exception:
+        pass
     
     if return_formatted:
         return format_context_with_citations(
             chunks_with_metadata,
             max_sources=final_k,
+            max_tokens=settings.RAG_CONTEXT_MAX_TOKENS,
         )
     
     return [chunk["text"] for chunk in chunks_with_metadata]

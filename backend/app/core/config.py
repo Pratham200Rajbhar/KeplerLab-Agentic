@@ -27,6 +27,11 @@ class Settings(BaseSettings):
 
     MAX_CODE_REPAIR_ATTEMPTS: int = 3
     CODE_EXECUTION_TIMEOUT: int = 15
+    SANDBOX_MEMORY_MB: int = 512
+    SANDBOX_CPU_SECONDS: int = 10
+    SANDBOX_CPU_LIMIT: float = 1.0
+    SANDBOX_MAX_FILE_MB: int = 20
+    SANDBOX_PREFER_DOCKER: bool = True
 
     ARTIFACTS_DIR: str = "data/artifacts"
 
@@ -96,14 +101,18 @@ class Settings(BaseSettings):
     RERANKER_MODEL: str = "BAAI/bge-reranker-large"
     USE_RERANKER: bool = True
     
-    INITIAL_VECTOR_K: int = 10
-    MMR_K: int = 8
+    INITIAL_VECTOR_K: int = 80
+    LEXICAL_K: int = 80
+    LEXICAL_CANDIDATE_POOL: int = 2000
+    RERANK_CANDIDATES_K: int = 30
+    MMR_K: int = 30
     FINAL_K: int = 10
     MMR_LAMBDA: float = 0.5
     MAX_CONTEXT_TOKENS: int = 6000
+    RAG_CONTEXT_MAX_TOKENS: int = 2000
     MIN_CHUNK_LENGTH: int = 100
     MIN_CONTEXT_CHUNK_LENGTH: int = 150
-    MIN_SIMILARITY_SCORE: float = 0.3
+    MIN_SIMILARITY_SCORE: float = 0.5
     CHUNK_OVERLAP_TOKENS: int = 150
 
     OCR_TIMEOUT_SECONDS: int = 300

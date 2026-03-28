@@ -13,6 +13,7 @@ _request_start_time: ContextVar[float] = ContextVar("request_start_time")
 _retrieval_time: ContextVar[float] = ContextVar("retrieval_time", default=0.0)
 _reranking_time: ContextVar[float] = ContextVar("reranking_time", default=0.0)
 _llm_time: ContextVar[float] = ContextVar("llm_time", default=0.0)
+_retrieval_trace: ContextVar[Dict[str, float | int | str]] = ContextVar("retrieval_trace", default={})
 
 def set_request_start_time() -> None:
     _request_start_time.set(time.time())
@@ -36,12 +37,18 @@ def record_llm_time(seconds: float) -> None:
     _llm_time.set(seconds)
     logger.debug(f"LLM generation completed in {seconds:.3f}s")
 
+
+def record_retrieval_trace(trace: Dict[str, float | int | str]) -> None:
+    _retrieval_trace.set(trace)
+    logger.debug("Retrieval trace recorded: %s", trace)
+
 def get_performance_metrics() -> Dict[str, float]:
     try:
         total_time = get_request_elapsed_time()
         retrieval = _retrieval_time.get()
         reranking = _reranking_time.get()
         llm = _llm_time.get()
+        trace = _retrieval_trace.get()
     except LookupError:
         return {
             "retrieval_time": 0.0,
@@ -49,13 +56,17 @@ def get_performance_metrics() -> Dict[str, float]:
             "llm_time": 0.0,
             "total_time": 0.0,
         }
-    
-    return {
+
+    base = {
         "retrieval_time": retrieval,
         "reranking_time": reranking,
         "llm_time": llm,
         "total_time": total_time,
     }
+    if trace:
+        for key, value in trace.items():
+            base[f"retrieval_{key}"] = value
+    return base
 
 def log_performance_metrics(
     endpoint: str,

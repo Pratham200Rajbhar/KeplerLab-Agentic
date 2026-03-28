@@ -37,15 +37,50 @@ _DATA_ANALYSIS_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+_GENERATIVE_KEYWORDS = re.compile(
+    r"\b(write|draft|compose|create a report|generate a presentation|workflow|multi-step|plan and execute)\b",
+    re.IGNORECASE,
+)
+
+
+def _classify_request_type(message: str) -> str:
+    """Classify request into factual, analytical, computational, generative, or external."""
+    if _WEB_SEARCH_KEYWORDS.search(message):
+        return "external"
+    if _CODE_KEYWORDS.search(message) or _DATA_ANALYSIS_KEYWORDS.search(message):
+        return "computational"
+    if _GENERATIVE_KEYWORDS.search(message):
+        return "generative"
+
+    lowered = message.lower()
+    analytical_markers = (
+        "why ", "how ", "compare", "contrast", "tradeoff", "pros and cons", "analysis"
+    )
+    if any(m in lowered for m in analytical_markers):
+        return "analytical"
+    return "factual"
+
 def route_capability(
     message: str,
     material_ids: List[str],
     intent_override: Optional[str] = None,
 ) -> Capability:
+    has_materials = bool(material_ids)
+    request_type = _classify_request_type(message)
+
     if intent_override:
         override_upper = intent_override.upper()
         try:
             cap = Capability(override_upper)
+            if has_materials and cap == Capability.AGENT:
+                logger.info("Capability routed by intent_override: AGENT (materials preserved)")
+                return Capability.AGENT
+            if has_materials and cap in {Capability.CODE_EXECUTION, Capability.WEB_SEARCH, Capability.WEB_RESEARCH}:
+                logger.info(
+                    "Intent override '%s' adjusted to RAG due to selected materials",
+                    cap.value,
+                )
+                return Capability.RAG
             logger.info("Capability routed by intent_override: %s", cap.value)
             return cap
         except ValueError:
@@ -56,18 +91,34 @@ def route_capability(
         return Capability.IMAGE_GENERATION
 
     if message.lstrip().startswith("/agent"):
+        # Explicit /agent command must stay in AGENT mode even with selected sources.
+        # The agent enforces retrieval-first policy internally when materials exist.
         logger.info("Capability routed to AGENT (/agent prefix)")
         return Capability.AGENT
 
     # When materials are selected AND the task needs code execution
     # (charts, ML, file generation), route to AGENT — not RAG.
     # RAG is only for text-based Q&A over documents.
-    if material_ids:
-        if _DATA_ANALYSIS_KEYWORDS.search(message) or _CODE_KEYWORDS.search(message):
-            logger.info("Capability routed to AGENT (materials + data analysis task)")
+    if has_materials:
+        if _DATA_ANALYSIS_KEYWORDS.search(message) or request_type in {"computational", "generative"}:
+            logger.info(
+                "Capability routed to AGENT with selected materials (request_type=%s)",
+                request_type,
+            )
             return Capability.AGENT
-        logger.info("Capability routed to RAG (materials selected: %d)", len(material_ids))
+        logger.info("Capability routed to RAG-first (materials selected: %d)", len(material_ids))
         return Capability.RAG
+
+    logger.info("Request classified as: %s", request_type)
+
+    if request_type in {"factual", "analytical"}:
+        return Capability.NORMAL_CHAT
+    if request_type == "computational":
+        return Capability.CODE_EXECUTION
+    if request_type == "generative":
+        return Capability.AGENT
+    if request_type == "external":
+        return Capability.WEB_SEARCH
 
     if _CODE_KEYWORDS.search(message):
         logger.info("Capability routed to CODE_EXECUTION (keyword match)")

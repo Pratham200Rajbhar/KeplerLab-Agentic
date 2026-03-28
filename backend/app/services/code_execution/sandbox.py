@@ -10,6 +10,9 @@ import time
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
+from app.core.config import settings
+from app.services.code_execution.sandbox_runner import execute_python_sandboxed
+
 logger = logging.getLogger(__name__)
 
 _CHART_MARKER = "__CHART__:"
@@ -63,6 +66,24 @@ async def run_in_sandbox(
     stdin: Optional[str] = None,
 ) -> ExecutionResult:
     t0 = time.perf_counter()
+
+    if _normalise_language(language) == "python":
+        result = await execute_python_sandboxed(
+            code,
+            timeout=timeout,
+            prefer_docker=bool(settings.SANDBOX_PREFER_DOCKER),
+            work_dir=work_dir,
+        )
+        return ExecutionResult(
+            stdout=result.stdout,
+            stderr=result.stderr,
+            exit_code=result.exit_code,
+            timed_out=result.timed_out,
+            elapsed_seconds=result.elapsed_seconds,
+            chart_base64=None,
+            error=result.error,
+            output_files=result.files,
+        )
 
     _owns_work_dir = work_dir is None
     if _owns_work_dir:

@@ -56,7 +56,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
   }, [syncedValue]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         if (textareaRef.current) {
           textareaRef.current.focus();
           textareaRef.current.style.height = 'auto';
-          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 144)}px`;
         }
       }, 50);
     }
@@ -108,13 +108,8 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     );
   }, [syncedValue]);
 
-  useEffect(() => {
-    setDropdownIndex((current) => {
-      if (filteredCommands.length === 0) return 0;
-      if (current >= filteredCommands.length) return 0;
-      return current;
-    });
-  }, [filteredCommands]);
+  const safeDropdownIndex =
+    filteredCommands.length === 0 ? 0 : Math.min(dropdownIndex, filteredCommands.length - 1);
 
   const selectCommand = useCallback((cmd) => {
     handleValueChange(`/${cmd} `);
@@ -149,7 +144,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         }
         if (e.key === 'Tab' || e.key === 'Enter') {
           e.preventDefault();
-          const selected = filteredCommands[dropdownIndex] ?? filteredCommands[0];
+          const selected = filteredCommands[safeDropdownIndex] ?? filteredCommands[0];
           if (selected) selectCommand(selected.command);
           return;
         }
@@ -169,7 +164,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
         handleValueChange(parsed.query || '');
       }
     },
-    [handleSend, activeCommand, syncedValue, showDropdown, filteredCommands, dropdownIndex, selectCommand, handleValueChange],
+    [handleSend, activeCommand, syncedValue, showDropdown, filteredCommands, safeDropdownIndex, selectCommand, handleValueChange],
   );
  
   const dismissCommand = useCallback(() => {
@@ -179,7 +174,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   }, [syncedValue, handleValueChange]);
 
   return (
-    <div className="workspace-chat-input-dock px-4 sm:px-6 pb-5 pt-2 flex justify-center w-full shrink-0 relative z-10">
+    <div className="workspace-chat-input-dock px-4 sm:px-6 pb-3 pt-1 flex justify-center w-full shrink-0 relative z-10">
       <div className="max-w-3xl w-full relative">
 
         {/* Optimize Prompt button — above the input panel, left-aligned, visible only when there's text */}
@@ -188,17 +183,17 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           const queryToOptimize = parsed.command ? parsed.query : syncedValue.trim();
           const slashPrefix = parsed.command ? `/${parsed.command} ` : '';
           return (
-            <div className="flex justify-start mb-2 px-1">
+            <div className="flex justify-start mb-1.5 px-0.5">
               <button
                 onClick={() => setShowOptimizer(true)}
                 disabled={disabled || queryToOptimize.length <= 10}
-                className="workspace-optimize-btn inline-flex items-center gap-2 h-8 px-4 rounded-lg border transition-all duration-150
+                className="workspace-optimize-btn inline-flex items-center gap-1.5 h-7 px-3 rounded-md border transition-all duration-150
                   disabled:opacity-40 disabled:cursor-not-allowed"
                 title={queryToOptimize.length <= 10 ? 'Type more than 10 characters to optimize' : 'Optimize your prompt with AI'}
                 aria-label="Optimize Prompt"
               >
-                <Sparkles size={13} />
-                <span className="text-[13px] font-medium">Optimize Prompt</span>
+                <Sparkles size={12} />
+                <span className="text-[12px] font-medium">Optimize Prompt</span>
               </button>
 
               {showOptimizer && (
@@ -223,7 +218,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             <div className="slash-cmd-list p-2">
             {filteredCommands.map((item, idx) => {
               const Icon = item.icon;
-              const isActive = idx === dropdownIndex;
+              const isActive = idx === safeDropdownIndex;
               return (
                 <button
                   key={item.command}
@@ -281,7 +276,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
 
         {}
         <div
-          className="workspace-chat-input-shell flex items-end gap-2 rounded-2xl border px-4 py-2.5 transition-all duration-150"
+          className="workspace-chat-input-shell flex items-end gap-2 rounded-xl border px-3 py-2 transition-all duration-150"
           style={{
             borderColor: activeCommand ? 'var(--accent-border)' : 'color-mix(in srgb, var(--border-strong) 78%, transparent)',
           }}
@@ -298,28 +293,28 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
             }
             disabled={disabled}
             rows={1}
-            className="flex-1 bg-transparent text-[15px] text-text-primary placeholder:text-text-muted/90 resize-none outline-none max-h-40 py-1"
+            className="flex-1 bg-transparent text-[14px] text-text-primary placeholder:text-text-muted/90 resize-none outline-none max-h-36 py-0.5"
             style={{ lineHeight: '1.6' }}
           />
 
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="workspace-stop-btn shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+              className="workspace-stop-btn shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors"
               title="Stop generating"
               aria-label="Stop generating"
             >
-              <Square size={14} fill="currentColor" />
+              <Square size={13} fill="currentColor" />
             </button>
           ) : (
             <button
               onClick={handleSend}
               disabled={!syncedValue.trim() || disabled}
-              className="workspace-send-btn shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="workspace-send-btn shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title="Send message"
               aria-label="Send message"
             >
-              <Send size={14} />
+              <Send size={13} />
             </button>
           )}
         </div>

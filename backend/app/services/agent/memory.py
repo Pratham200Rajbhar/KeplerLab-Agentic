@@ -87,6 +87,10 @@ class AgentMemory:
     def chat_history(self) -> List[Dict[str, str]]:
         return self._chat_history
 
+    @property
+    def has_rag_context(self) -> bool:
+        return bool(self._rag_context and self._rag_context.strip())
+
     def format_chat_history(self, max_turns: int = 10, max_chars_per_msg: int = 400) -> str:
         """Return chat history as a formatted string for inclusion in prompts."""
         if not self._chat_history:

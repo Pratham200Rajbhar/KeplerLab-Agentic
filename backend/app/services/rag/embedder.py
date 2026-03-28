@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import threading
+import hashlib
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from app.core.config import settings
 from app.db.chroma import get_collection, reset_singletons
@@ -12,6 +13,22 @@ logger = logging.getLogger(__name__)
 
 _BATCH_SIZE  = 200
 _MAX_RETRIES = 3
+
+
+def _stable_chunk_id(
+    chunk: Dict[str, Any],
+    material_id: Optional[str],
+    fallback_index: int,
+) -> str:
+    """Build deterministic chunk IDs so reindexing doesn't create stale duplicates."""
+    base_material = material_id or "material_unknown"
+    text = str(chunk.get("text", ""))
+    section = str(chunk.get("section_title", ""))
+    cidx = chunk.get("chunk_index", fallback_index)
+    cstart = chunk.get("char_start", "")
+    cend = chunk.get("char_end", "")
+    digest = hashlib.sha1(text.encode("utf-8", errors="ignore")).hexdigest()[:20]
+    return f"{base_material}:{cidx}:{cstart}:{cend}:{digest}"
 
 def warm_up_embeddings() -> None:
     try:
@@ -38,16 +55,46 @@ def embed_and_store(
     user_id: str = "",
     notebook_id: Optional[str] = None,
     filename: Optional[str] = None,
-) -> None:
+    *,
+    clear_existing: bool = False,
+) -> Dict[str, int]:
     if not chunks:
-        return
+        return {
+            "expected_chunks": 0,
+            "stored_chunks": 0,
+            "failed_batches": 0,
+            "deleted_existing": 0,
+        }
 
     if not user_id:
         logger.error(
             "embed_and_store called without user_id — skipping to prevent "
             "tenant isolation breach  material=%s", material_id,
         )
-        return
+        return {
+            "expected_chunks": len(chunks),
+            "stored_chunks": 0,
+            "failed_batches": 1,
+            "deleted_existing": 0,
+        }
+
+    deleted_existing = 0
+    if clear_existing and material_id:
+        try:
+            deleted_existing = delete_material_embeddings(material_id, user_id)
+            logger.info(
+                "Cleared %d existing embeddings before reindex  material=%s user=%s",
+                deleted_existing,
+                material_id,
+                user_id,
+            )
+        except Exception as exc:
+            logger.error(
+                "Failed to clear old embeddings before reindex  material=%s: %s",
+                material_id,
+                exc,
+            )
+            raise
 
     collection = get_collection()
 
@@ -68,7 +115,7 @@ def embed_and_store(
 
     for start in range(0, len(chunks), _BATCH_SIZE):
         batch  = chunks[start : start + _BATCH_SIZE]
-        ids    = [c["id"]   for c in batch]
+        ids    = [_stable_chunk_id(c, material_id, start + idx) for idx, c in enumerate(batch)]
         docs   = [c["text"] for c in batch]
         metas  = [base_meta.copy() for _ in batch]
 
@@ -77,6 +124,10 @@ def embed_and_store(
                 metas[i]["section_title"] = str(chunk["section_title"])[:200]
             if "chunk_index" in chunk:
                 metas[i]["chunk_index"] = str(chunk["chunk_index"])
+            if "char_start" in chunk and chunk.get("char_start") is not None:
+                metas[i]["char_start"] = str(chunk["char_start"])
+            if "char_end" in chunk and chunk.get("char_end") is not None:
+                metas[i]["char_end"] = str(chunk["char_end"])
             if chunk.get("chunk_type") == "structured_summary":
                 metas[i]["is_structured"] = "true"
             if chunk.get("_raw_file_path"):
@@ -118,8 +169,11 @@ def embed_and_store(
 
     if failed_batches:
         logger.error(
-            "embed_and_store: %d batch(es) failed — %d/%d chunks stored  material=%s",
-            failed_batches, stored, len(chunks), material_id,
+            "embed_and_store: %d batch(es) failed — %d/%d chunks stored material=%s",
+            failed_batches,
+            stored,
+            len(chunks),
+            material_id,
         )
         if stored == 0:
             raise RuntimeError(
@@ -130,6 +184,13 @@ def embed_and_store(
             "Stored %d/%d chunks  material=%s  user=%s",
             stored, len(chunks), material_id, user_id,
         )
+
+    return {
+        "expected_chunks": len(chunks),
+        "stored_chunks": stored,
+        "failed_batches": failed_batches,
+        "deleted_existing": deleted_existing,
+    }
 
 def delete_material_embeddings(material_id: str, user_id: str) -> int:
     try:

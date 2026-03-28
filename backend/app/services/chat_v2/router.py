@@ -62,6 +62,16 @@ async def chat_endpoint(
     current_user=Depends(get_current_user),
 ):
     ids = request.material_ids or ([request.material_id] if request.material_id else [])
+    used_saved_selection = False
+
+    # If client omits material_ids, fall back to persisted notebook source selection.
+    if not ids:
+        pref = await prisma.notebooksourceselection.find_first(
+            where={"notebookId": request.notebook_id, "userId": str(current_user.id)}
+        )
+        if pref and pref.materialIds:
+            ids = _dedupe_ids([str(mid) for mid in pref.materialIds if mid])
+            used_saved_selection = True
 
     if ids:
         for mid in ids:
@@ -80,6 +90,14 @@ async def chat_endpoint(
                     "Please wait for their status to reach 'completed' before chatting."
                 ),
             )
+
+    logger.info(
+        "chat_endpoint sources resolved: notebook=%s user=%s count=%d via_saved_selection=%s",
+        request.notebook_id,
+        str(current_user.id),
+        len(ids),
+        used_saved_selection,
+    )
 
     session_id = request.session_id
     if not session_id:

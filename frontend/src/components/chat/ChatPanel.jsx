@@ -278,19 +278,19 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
       <div className="workspace-chat-column flex-1 flex flex-col min-w-0 min-h-0">
 
         { }
-        <div className="panel-header workspace-chat-header flex justify-between items-center px-4 py-2.5 shrink-0 gap-3">
+        <div className="panel-header workspace-chat-header flex justify-between items-center px-4 py-2 shrink-0 gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-semibold text-text-primary text-[15px] tracking-tight">Chat</span>
+            <span className="font-semibold text-text-primary text-[14px] tracking-tight">Chat</span>
             {currentSessionTitle && (
-              <span className="workspace-session-chip text-[11px] text-text-muted px-2 py-0.5 rounded-full truncate max-w-[180px]">
+              <span className="workspace-session-chip text-[10px] text-text-muted px-2 py-0.5 rounded-full truncate max-w-[180px]">
                 {currentSessionTitle}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setIsHistoryModalOpen(true)}
-              className="workspace-pill-btn py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
+              className="workspace-pill-btn py-1 px-2 flex items-center gap-1.5 text-xs"
               title="Chat history"
               aria-label="Open chat history"
             >
@@ -299,7 +299,7 @@ function ChatPanel({ currentSessionId, setCurrentSessionId }) {
             </button>
             <button
               onClick={handleCreateChatClick}
-              className="workspace-icon-btn p-1.5 rounded-lg text-text-muted transition-all"
+              className="workspace-icon-btn p-1.5 rounded-md text-text-muted transition-all"
               title="New Chat"
               aria-label="Start new chat"
             >

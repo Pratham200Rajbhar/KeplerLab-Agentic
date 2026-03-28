@@ -19,6 +19,7 @@ def _today() -> str:
     return date.today().strftime("%B %d, %Y")
 
 logger = logging.getLogger(__name__)
+_VAR_RE = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 
 # Valid task types the classifier can return
 VALID_TASK_TYPES = {
@@ -36,21 +37,46 @@ VALID_TASK_TYPES = {
     "general_chat",
 }
 
+_FILE_OUTPUT_STEP_PATTERN = re.compile(
+    r"\b(generate|create|export|save|produce|write|build|deliver)\b.*"
+    r"\b(pdf|csv|xlsx|excel|docx|pptx|html|report|document|file|chart|image|graph)\b"
+    r"|\b(pdf|csv|xlsx|docx|pptx|report|document|file)\b",
+    re.IGNORECASE,
+)
+
+
+def _render_prompt(template: str, variables: dict) -> str:
+    """Render only known placeholders and leave all other braces intact.
+
+    This prevents str.format KeyError when prompt templates include JSON
+    examples such as {"description": "..."}.
+    """
+
+    def _repl(match: re.Match) -> str:
+        key = match.group(1)
+        return str(variables.get(key, ""))
+
+    return _VAR_RE.sub(_repl, template)
+
 
 async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
     """Classify the user's request into a task type.
 
     Priority order:
-    1. Explicit web/live-data keywords → web_research  (even if file output requested)
-    2. Uploaded datasets → dataset_analysis
-    3. Uploaded documents → document_analysis
-    4. File-generation intent (no web needed) → file_generation
+    1. File-generation intent → file_generation (deterministic artifact path)
+    2. Explicit deep-research request → deep_research
+    3. Uploaded datasets/documents classification
+    4. Explicit web/live-data keywords → web_research
     5. LLM fallback
     """
     goal_lower = state.goal.lower()
     rp = state.resource_profile
 
-    # ── 0. Deep research detection (before general web check) ──────
+    # ── 0. File generation must stay on artifact-capable pipeline ──
+    if state.is_file_generation:
+        return "file_generation"
+
+    # ── 1. Deep research detection (before general web check) ──────
     _DEEP_RESEARCH_PATTERN = re.compile(
         r"\b(deep\s+research|comprehensive\s+research|in.?depth\s+research|"
         r"thorough\s+research|detailed\s+research|conduct\s+research|"
@@ -60,7 +86,7 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
     if _DEEP_RESEARCH_PATTERN.search(goal_lower):
         return "deep_research"
 
-    # ── 1. Web / live-data detection (highest priority) ───────────
+    # ── 2. Web / live-data detection ───────────────────────────────
     _WEB_PATTERN = re.compile(
         r"\b(current|latest|today|live|real.?time|news|recent|updated?|"
         r"search\s+the\s+web|search\s+online|web\s+search|look\s*up|"
@@ -72,7 +98,7 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
     )
     needs_web = bool(_WEB_PATTERN.search(goal_lower))
 
-    # ── 2. Resource-based classification ──────────────────────────
+    # ── 3. Resource-based classification ──────────────────────────
     if rp and rp.has_datasets:
         if needs_web:
             return "web_research"
@@ -83,15 +109,11 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
             return "web_research"
         return "document_analysis"
 
-    # ── 3. Web takes precedence over pure file-gen ────────────────
+    # ── 4. Web classification ──────────────────────────────────────
     if needs_web:
         return "web_research"
 
-    # ── 4. Pure file-generation (no web needed) ───────────────────
-    if state.is_file_generation:
-        return "file_generation"
-
-    # ── 5. Keyword-based pre-classification ────────────────────────
+    # ── 5. Keyword-based pre-classification ───────────────────────
 
     _CODE_PATTERN = re.compile(
         r"\bwrite\s+(?:a\s+)?(?:python\s+)?(?:function|class|script|module|program|code)\b|"
@@ -121,7 +143,7 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
     if _VIZ_PATTERN.search(goal_lower):
         return "visualization"
 
-    # ── 6. Follow-up modification detection ──────────────────────
+    # ── 6. Follow-up modification detection ───────────────────────
     if memory.chat_history:
         _MODIFY_PATTERN = re.compile(
             r"\b(change|modify|update|make it|now (make|add|show|render|create|generate|give)|"
@@ -156,12 +178,15 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
     resource_info = memory.get_resource_info_for_prompt()
     history = memory.format_chat_history()
     n_turns = min(len(memory.chat_history), 10)
-    prompt = INTENT_CLASSIFIER_PROMPT.format(
-        goal=state.goal,
-        resource_info=resource_info,
-        chat_history=history,
-        today=_today(),
-        n=n_turns,
+    prompt = _render_prompt(
+        INTENT_CLASSIFIER_PROMPT,
+        {
+            "goal": state.goal,
+            "resource_info": resource_info,
+            "chat_history": history,
+            "today": _today(),
+            "n": n_turns,
+        },
     )
 
     try:
@@ -175,6 +200,29 @@ async def classify_intent(state: AgentState, memory: AgentMemory) -> str:
         logger.warning("Intent classification failed: %s; defaulting to coding_task", exc)
 
     return "coding_task"
+
+
+def _enforce_file_generation_steps(steps: List[PlanStep]) -> List[PlanStep]:
+    """Guarantee that output-producing steps run via python_auto."""
+    if not steps:
+        return steps
+
+    enforced: List[PlanStep] = []
+    for idx, step in enumerate(steps):
+        description = (step.description or "").strip() or f"Step {idx + 1}"
+        tool_hint = step.tool_hint
+        is_last = idx == (len(steps) - 1)
+        looks_like_output = bool(_FILE_OUTPUT_STEP_PATTERN.search(description))
+
+        if is_last or looks_like_output:
+            tool_hint = "python_auto"
+
+        enforced.append(PlanStep(description=description, tool_hint=tool_hint))
+
+    if all((s.tool_hint or "") != "python_auto" for s in enforced):
+        enforced[-1].tool_hint = "python_auto"
+
+    return enforced
 
 
 async def create_plan(state: AgentState, memory: AgentMemory) -> List[PlanStep]:
@@ -228,14 +276,17 @@ async def create_plan(state: AgentState, memory: AgentMemory) -> List[PlanStep]:
     resource_info = memory.get_resource_info_for_prompt()
     chat_history = memory.format_chat_history()
 
-    prompt = PLANNER_PROMPT.format(
-        goal=state.goal,
-        task_type=task_type,
-        context=context,
-        resource_info=resource_info,
-        tools_description=tools_desc,
-        chat_history=chat_history,
-        today=_today(),
+    prompt = _render_prompt(
+        PLANNER_PROMPT,
+        {
+            "goal": state.goal,
+            "task_type": task_type,
+            "context": context,
+            "resource_info": resource_info,
+            "tools_description": tools_desc,
+            "chat_history": chat_history,
+            "today": _today(),
+        },
     )
 
     try:
@@ -256,6 +307,10 @@ async def create_plan(state: AgentState, memory: AgentMemory) -> List[PlanStep]:
     # Enforce maximum 8 steps
     if len(steps) > 8:
         steps = steps[:8]
+
+    # File-generation tasks must end with artifact-capable execution.
+    if state.is_file_generation:
+        steps = _enforce_file_generation_steps(steps)
 
     state.plan = steps
     state.current_step_index = 0

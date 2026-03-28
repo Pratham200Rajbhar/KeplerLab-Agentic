@@ -14,6 +14,13 @@ from .tools_registry import get_available_tools, get_tools_description
 
 logger = logging.getLogger(__name__)
 
+_FILE_OUTPUT_STEP_PATTERN = re.compile(
+    r"\b(generate|create|export|save|produce|write|build|deliver)\b.*"
+    r"\b(pdf|csv|xlsx|excel|docx|pptx|html|report|document|file|chart|image|graph)\b"
+    r"|\b(pdf|csv|xlsx|docx|pptx|report|document|file)\b",
+    re.IGNORECASE,
+)
+
 
 async def select_tool(state: AgentState, memory: AgentMemory) -> str:
     """Pick the best tool for the current step.
@@ -29,6 +36,23 @@ async def select_tool(state: AgentState, memory: AgentMemory) -> str:
 
     has_materials = bool(state.material_ids)
     available = get_available_tools(has_materials)
+    step_lower = step.description.lower()
+    last_step_index = max(len(state.plan) - 1, 0)
+    is_output_step = bool(_FILE_OUTPUT_STEP_PATTERN.search(step.description))
+
+    # Hard policy: file-generation output steps must run on python_auto.
+    # This prevents incorrect routing to retrieval/search tools for "PDF/report" wording.
+    if (
+        state.is_file_generation
+        and "python_auto" in available
+        and (is_output_step or state.current_step_index >= last_step_index)
+    ):
+        log_stage(logger, "Tool Selected", {
+            "tool": "python_auto",
+            "method": "file_generation_policy",
+            "step": step.description[:56],
+        })
+        return "python_auto"
 
     # ── Priority 1: trust the planner's tool_hint ──────────────────
     if step.tool_hint and step.tool_hint in available:
@@ -41,7 +65,22 @@ async def select_tool(state: AgentState, memory: AgentMemory) -> str:
 
     # ── Priority 2: minimal resource-aware shortcuts ───────────────
     rp = state.resource_profile
-    step_lower = step.description.lower()
+    # Hard policy: retrieval-first only for document-only materials.
+    # Dataset workflows must execute python first to produce artifacts.
+    if (
+        has_materials
+        and "rag" in available
+        and not memory.has_rag_context
+        and rp
+        and rp.has_documents
+        and not rp.has_datasets
+    ):
+        log_stage(logger, "Tool Selected", {
+            "tool": "rag",
+            "method": "rag_first_policy_doc_only",
+            "step": step.description[:56],
+        })
+        return "rag"
 
     # Datasets present and no web needed → python_auto
     if "python_auto" in available and rp and rp.has_datasets:
@@ -52,7 +91,7 @@ async def select_tool(state: AgentState, memory: AgentMemory) -> str:
 
     # Documents present + doc-related step → rag
     if "rag" in available and rp and rp.has_documents:
-        _needs_docs = any(kw in step_lower for kw in ("document", "pdf", "extract", "retrieve", "passage", "study material"))
+        _needs_docs = any(kw in step_lower for kw in ("document", "extract", "retrieve", "passage", "study material"))
         if _needs_docs:
             log_stage(logger, "Tool Selected", {
                 "tool": "rag", "method": "resource_shortcut", "step": step.description[:56],

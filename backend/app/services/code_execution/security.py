@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from typing import List
 
 _BLOCKED_MODULES: set[str] = {
+    "os",
+    "sys",
+    "shutil",
     "subprocess",
     "socket",
     "requests",
@@ -74,6 +77,8 @@ _SOFT_BLOCKED_CALLS: List[str] = [
     r"\bopen\s*\(.*['\"]a['\"]",
     r"\bopen\s*\(.*['\"]wb['\"]",
     r"\bopen\s*\(.*['\"]ab['\"]",
+    r"\bopen\s*\(.*\.\./",
+    r"\bpathlib\.Path\s*\(.*\.\./",
 ]
 
 _HARD_BLOCKED_CALL_RES = [re.compile(p) for p in _HARD_BLOCKED_CALLS]
@@ -104,6 +109,24 @@ def _capture_show():
 _plt_module.show = _capture_show
 """
 
+_CHART_CAPTURE_SNIPPET_NOFILE = """
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as _plt_module
+_original_show = _plt_module.show
+
+def _capture_show():
+    import io, base64
+    buf = io.BytesIO()
+    _plt_module.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    buf.seek(0)
+    encoded = base64.b64encode(buf.read()).decode('utf-8')
+    print(f"__CHART__:{encoded}")
+    _plt_module.close('all')
+
+_plt_module.show = _capture_show
+"""
+
 @dataclass
 class ValidationResult:
 
@@ -119,6 +142,16 @@ def validate_code(code: str) -> ValidationResult:
     except SyntaxError as exc:
         result.warnings.append(f"Syntax warning: {exc}")
         return result
+
+    max_nodes = 2000
+    node_count = sum(1 for _ in ast.walk(tree))
+    if node_count > max_nodes:
+        result.violations.append(
+            f"Code too complex for sandbox policy: AST nodes={node_count} > {max_nodes}"
+        )
+        result.is_safe = False
+
+    max_function_body_stmts = 300
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
@@ -138,6 +171,20 @@ def validate_code(code: str) -> ValidationResult:
                         f"Blocked import: 'from {node.module} import ...'"
                     )
                     result.is_safe = False
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id == "open" and node.args:
+                first = node.args[0]
+                if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                    if first.value.startswith("/") or ".." in first.value.replace("\\", "/"):
+                        result.violations.append(
+                            f"Blocked file path access: {first.value!r}"
+                        )
+                        result.is_safe = False
+        elif isinstance(node, ast.FunctionDef):
+            if len(node.body) > max_function_body_stmts:
+                result.warnings.append(
+                    f"Large function '{node.name}' may timeout in sandbox ({len(node.body)} statements)"
+                )
 
     for pattern in _HARD_BLOCKED_CALL_RES:
         for match in pattern.finditer(code):
@@ -170,7 +217,9 @@ def sanitize_code(code: str, ensure_file_output: bool = False) -> str:
         or "pyplot" in code
     )
     if needs_capture:
-        code = _CHART_CAPTURE_SNIPPET.strip() + "\n\n" + code
+        has_explicit_save = "savefig(" in code
+        capture_snippet = _CHART_CAPTURE_SNIPPET_NOFILE if has_explicit_save else _CHART_CAPTURE_SNIPPET
+        code = capture_snippet.strip() + "\n\n" + code
 
     # In agent mode, replace any remaining bare plt.show() calls (where the
     # programmer forgot to savefig) with explicit file saves.  The chart capture

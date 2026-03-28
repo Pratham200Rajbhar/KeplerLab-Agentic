@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import time
 import traceback
 from functools import partial
 from typing import List, Optional
+
+from prisma import Json
 
 from app.core.config import settings
 from app.db.prisma_client import prisma
@@ -23,6 +26,22 @@ from app.services.storage_service import (
 _STRUCTURED_SOURCE_TYPES = frozenset({"csv", "excel", "xlsx", "xls", "tsv", "ods"})
 
 logger = logging.getLogger(__name__)
+
+
+class MaterialAlreadyFailedError(RuntimeError):
+    """Raised when downstream processing already marked material as failed."""
+
+
+def _to_json_compatible(value):
+    """Convert arbitrary metadata payloads into Prisma-safe JSON values."""
+    try:
+        converted = json.loads(json.dumps(value, default=str))
+    except Exception:
+        return {"value": str(value)}
+
+    if isinstance(converted, (dict, list, str, int, float, bool)) or converted is None:
+        return converted
+    return {"value": str(converted)}
 
 async def _emit_material_ws(user_id: str, material_id: str, status: str, **extra) -> None:
     try:
@@ -199,8 +218,8 @@ async def _process_material(
 
         _t0 = time.perf_counter()
 
-        async def _embed():
-            await loop.run_in_executor(
+        async def _embed() -> dict:
+            return await loop.run_in_executor(
                 None,
                 partial(
                     embed_and_store,
@@ -209,16 +228,34 @@ async def _process_material(
                     user_id=user_id,
                     notebook_id=notebook_id,
                     filename=filename,
+                    clear_existing=True,
                 ),
             )
 
-        await _embed()
+        embed_stats = await _embed()
 
         embed_ms = (time.perf_counter() - _t0) * 1000
         logger.info(
-            "PERF embedding: %.1fms  chunks=%d  material=%s",
-            embed_ms, len(chunks), material_id,
+            "PERF embedding: %.1fms chunks=%d stored=%d failed_batches=%d material=%s",
+            embed_ms,
+            len(chunks),
+            int(embed_stats.get("stored_chunks", 0)),
+            int(embed_stats.get("failed_batches", 0)),
+            material_id,
         )
+
+        expected_chunks = int(embed_stats.get("expected_chunks", len(chunks)))
+        stored_chunks = int(embed_stats.get("stored_chunks", 0))
+        failed_batches = int(embed_stats.get("failed_batches", 0))
+
+        if stored_chunks != expected_chunks or failed_batches > 0:
+            reason = (
+                "Embedding integrity check failed: "
+                f"stored_chunks={stored_chunks}, expected_chunks={expected_chunks}, failed_batches={failed_batches}"
+            )
+            logger.error("Material %s failed integrity check: %s", material_id, reason)
+            await _fail_material(material_id, reason, user_id=user_id)
+            return None
 
         fast_title: str
         if title:
@@ -230,16 +267,15 @@ async def _process_material(
 
         update_data: dict = {
             "originalText": sanitize_null_bytes(summary),
-            "chunkCount": len(chunks),
+            "chunkCount": stored_chunks,
             "status": "completed",
             "error": None,
             "title": sanitize_null_bytes(fast_title),
         }
 
         if extraction_metadata:
-            import json
             sanitized_meta = sanitize_null_bytes(extraction_metadata)
-            update_data["metadata"] = json.dumps(sanitized_meta)
+            update_data["metadata"] = Json(_to_json_compatible(sanitized_meta))
 
         result = await prisma.material.update(
             where={"id": material_id},
@@ -405,12 +441,11 @@ async def process_material_by_id(
 
         if result["status"] != "success":
             error_msg = result.get("error", "unknown extraction error")
-            await _fail_material(material_id, f"Extraction failed: {error_msg}", user_id=uid)
-            return
+            raise RuntimeError(f"Extraction failed: {error_msg}")
 
         extraction_metadata = result.get("metadata", {})
         extraction_metadata["upload_path"] = file_path
-        await _process_material(
+        processed = await _process_material(
             material_id,
             result["text"],
             uid,
@@ -419,14 +454,19 @@ async def process_material_by_id(
             extraction_metadata=extraction_metadata,
             source_type=result.get("source_type") or extraction_metadata.get("source_type", "prose"),
         )
+        if processed is None:
+            raise MaterialAlreadyFailedError(f"Material {material_id} processing failed")
         logger.info(
             "PERF process_material_by_id total: %.1fms  material=%s",
             (time.perf_counter() - _t_total) * 1000, material_id,
         )
 
     except Exception as exc:
+        if isinstance(exc, MaterialAlreadyFailedError):
+            raise
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
+        raise
 
 async def filter_completed_material_ids(
     material_ids: List[str],
@@ -462,8 +502,7 @@ async def process_url_material_by_id(
 
         if result["status"] != "success":
             error_msg = result.get("error", "unknown extraction error")
-            await _fail_material(material_id, f"URL extraction failed: {error_msg}", user_id=uid)
-            return
+            raise RuntimeError(f"URL extraction failed: {error_msg}")
 
         title = result.get("title", url)
         extraction_metadata = result.get("metadata", {})
@@ -471,7 +510,7 @@ async def process_url_material_by_id(
         _parsed = _urlparse(url)
         url_filename = title or _parsed.netloc or url
 
-        await _process_material(
+        processed = await _process_material(
             material_id,
             result["text"],
             uid,
@@ -481,10 +520,15 @@ async def process_url_material_by_id(
             extraction_metadata=extraction_metadata,
             source_type=extraction_metadata.get("source_type", "prose"),
         )
+        if processed is None:
+            raise MaterialAlreadyFailedError(f"Material {material_id} processing failed")
 
     except Exception as exc:
+        if isinstance(exc, MaterialAlreadyFailedError):
+            raise
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
+        raise
 
 async def process_text_material_by_id(
     material_id: str,
@@ -497,10 +541,15 @@ async def process_text_material_by_id(
 
     try:
         await _set_status(material_id, "processing", user_id=uid)
-        await _process_material(material_id, text_content, uid, nid, title=title, filename=title)
+        processed = await _process_material(material_id, text_content, uid, nid, title=title, filename=title)
+        if processed is None:
+            raise MaterialAlreadyFailedError(f"Material {material_id} processing failed")
     except Exception as exc:
+        if isinstance(exc, MaterialAlreadyFailedError):
+            raise
         tb = traceback.format_exc()
         await _fail_material(material_id, f"{exc}\n{tb}", user_id=uid)
+        raise
 
 async def get_material(material_id: str):
     return await prisma.material.find_unique(where={"id": material_id})

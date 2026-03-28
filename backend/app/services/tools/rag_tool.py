@@ -39,7 +39,7 @@ async def execute(
 
         if raw_context and raw_context.strip() != "No relevant context found.":
             context = raw_context
-            chunks_used = len(re.findall(r"\[SOURCE\s+\d+\]", context))
+            chunks_used = len(re.findall(r"\[SOURCE\s+\d+(?:\s+-\s+Material:.*?)?\]", context))
 
     except Exception as exc:
         logger.error("RAG retrieval failed: %s", exc)
