@@ -3,26 +3,34 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Save, CheckCircle2, XCircle, Loader2, Eye, Code2,
-  AlertTriangle, Wand2, FileText, Tag, ChevronRight,
+  AlertTriangle, Wand2, Tag, Sparkles,
 } from 'lucide-react';
 import useSkillStore from '@/stores/useSkillStore';
 import { useToast } from '@/stores/useToastStore';
+import SkillAIDraftDialog from './SkillAIDraftDialog';
 
 export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
   const toast = useToast();
   const editorContent = useSkillStore((s) => s.editorContent);
   const editorValid = useSkillStore((s) => s.editorValid);
   const isLoading = useSkillStore((s) => s.isLoading);
+  const isSuggestingTags = useSkillStore((s) => s.isSuggestingTags);
+  const isGeneratingDraft = useSkillStore((s) => s.isGeneratingDraft);
   const setEditorContent = useSkillStore((s) => s.setEditorContent);
   const validateEditor = useSkillStore((s) => s.validateEditor);
+  const suggestTags = useSkillStore((s) => s.suggestTags);
+  const generateDraft = useSkillStore((s) => s.generateDraft);
   const createSkillAction = useSkillStore((s) => s.createSkill);
   const updateSkillAction = useSkillStore((s) => s.updateSkill);
 
   const [isGlobal, setIsGlobal] = useState(skill?.is_global ?? false);
   const [tags, setTags] = useState(skill?.tags?.join(', ') || '');
+  const [suggestedTags, setSuggestedTags] = useState(skill?.tags || []);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAIDraftDialog, setShowAIDraftDialog] = useState(false);
   const textareaRef = useRef(null);
   const debounceRef = useRef(null);
+  const tagDebounceRef = useRef(null);
 
   // Auto-validate on content change
   useEffect(() => {
@@ -34,6 +42,45 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
     return () => clearTimeout(debounceRef.current);
   }, [editorContent, validateEditor]);
 
+  useEffect(() => {
+    clearTimeout(tagDebounceRef.current);
+    if (!editorContent.trim() || tags.trim()) return;
+    if (editorContent.trim().length < 80) return;
+
+    tagDebounceRef.current = setTimeout(async () => {
+      try {
+        const autoTags = await suggestTags(editorContent, 6);
+        if (autoTags?.length > 0) {
+          setSuggestedTags(autoTags);
+          setTags(autoTags.join(', '));
+        }
+      } catch {
+        // Silently fallback; manual regenerate button remains available.
+      }
+    }, 1200);
+
+    return () => clearTimeout(tagDebounceRef.current);
+  }, [editorContent, tags, suggestTags]);
+
+  const handleSuggestTags = useCallback(async () => {
+    if (!editorContent.trim()) {
+      toast.info('Add skill content first to generate tags');
+      return;
+    }
+    try {
+      const aiTags = await suggestTags(editorContent, 6);
+      if (aiTags?.length > 0) {
+        setSuggestedTags(aiTags);
+        setTags(aiTags.join(', '));
+        toast.success('Tags generated with AI');
+      } else {
+        toast.info('No tags generated yet, try again after refining your skill');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to generate tags');
+    }
+  }, [editorContent, suggestTags, toast]);
+
   const handleSave = useCallback(async () => {
     const valid = await validateEditor();
     if (!valid) {
@@ -41,7 +88,19 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
       return;
     }
 
-    const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean);
+    let tagList = tags.split(',').map((t) => t.trim()).filter(Boolean);
+    if (tagList.length === 0) {
+      try {
+        const aiTags = await suggestTags(editorContent, 6);
+        if (aiTags?.length > 0) {
+          tagList = aiTags;
+          setSuggestedTags(aiTags);
+          setTags(aiTags.join(', '));
+        }
+      } catch {
+        // Non-blocking. Save can proceed without tags.
+      }
+    }
 
     try {
       if (skill?.id) {
@@ -60,7 +119,33 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
     } catch (err) {
       toast.error(err.message || 'Failed to save skill');
     }
-  }, [editorContent, tags, isGlobal, skill, notebookId, validateEditor, createSkillAction, updateSkillAction, onSaved, toast]);
+  }, [editorContent, tags, isGlobal, skill, notebookId, validateEditor, suggestTags, createSkillAction, updateSkillAction, onSaved, toast]);
+
+  const handleGenerateDraft = useCallback(async (prompt) => {
+    try {
+      const draft = await generateDraft(prompt);
+      if (!draft?.markdown?.trim()) {
+        toast.error('AI could not generate a valid skill draft');
+        return;
+      }
+
+      setEditorContent(draft.markdown);
+
+      const aiTags = Array.isArray(draft.tags)
+        ? draft.tags.map((t) => String(t || '').trim()).filter(Boolean)
+        : [];
+
+      if (aiTags.length > 0) {
+        setSuggestedTags(aiTags);
+        setTags(aiTags.join(', '));
+      }
+
+      setShowAIDraftDialog(false);
+      toast.success('AI draft ready. Review and save your skill.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to generate AI skill draft');
+    }
+  }, [generateDraft, setEditorContent, toast]);
 
   const handleInsertTemplate = useCallback((section) => {
     const templates = {
@@ -92,6 +177,16 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
         </div>
 
         <div className="flex-1" />
+
+        <button
+          onClick={() => setShowAIDraftDialog(true)}
+          disabled={isLoading || isGeneratingDraft}
+          className="skills-btn-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all disabled:opacity-50"
+          title="Describe your goal and let AI build a complete skill draft"
+        >
+          {isGeneratingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+          Build with AI
+        </button>
 
         <button
           onClick={() => setShowPreview(!showPreview)}
@@ -211,10 +306,25 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
         <input
           type="text"
           value={tags}
-          onChange={(e) => setTags(e.target.value)}
+          onChange={(e) => {
+            setTags(e.target.value);
+            setSuggestedTags(
+              e.target.value.split(',').map((t) => t.trim()).filter(Boolean)
+            );
+          }}
           placeholder="Tags (comma separated)"
           className="skills-tags-input flex-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-transparent outline-none"
         />
+
+        <button
+          onClick={handleSuggestTags}
+          disabled={isSuggestingTags || isLoading}
+          className="skills-btn-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+          title="Generate tags from your skill content"
+        >
+          {isSuggestingTags ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          Auto tags
+        </button>
 
         <div className="flex items-center gap-2">
           <button
@@ -237,6 +347,23 @@ export default function SkillEditor({ skill, notebookId, onSaved, onCancel }) {
           </button>
         </div>
       </div>
+
+      {suggestedTags.length > 0 && (
+        <div className="px-4 pb-3 -mt-1 flex items-center gap-1.5 flex-wrap">
+          {suggestedTags.map((tag) => (
+            <span key={tag} className="skills-var-badge text-[10px] font-medium px-2 py-0.5 rounded-full">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <SkillAIDraftDialog
+        isOpen={showAIDraftDialog}
+        isLoading={isGeneratingDraft}
+        onClose={() => setShowAIDraftDialog(false)}
+        onGenerate={handleGenerateDraft}
+      />
     </div>
   );
 }

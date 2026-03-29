@@ -221,6 +221,23 @@ export default function SkillsPanel({ onClose }) {
       <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         {activeTab === 'skills' && (
           <div className="space-y-2">
+            <div className="skills-overview-card rounded-xl p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] text-text-muted uppercase tracking-wide">Workspace Skills</p>
+                  <p className="text-[14px] font-semibold text-text-primary mt-1">
+                    {skills.length} skill{skills.length === 1 ? '' : 's'} ready
+                  </p>
+                </div>
+                {isRunning && currentRun ? (
+                  <span className="skills-live-badge text-[10px] font-bold px-2 py-1 rounded-full">Live Run</span>
+                ) : null}
+              </div>
+              <p className="text-[11px] text-text-secondary mt-2 leading-relaxed">
+                Build reusable automations, run them with live step streaming, and mirror execution in chat.
+              </p>
+            </div>
+
             {/* Create Button */}
             <button
               onClick={handleCreateNew}

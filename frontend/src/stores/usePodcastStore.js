@@ -396,7 +396,10 @@ const usePodcastStore = create((set, get) => ({
   
   setPhase: (phase) => set({ phase }),
   setSession: (session) => set({ session }),
-  setInterruptOpen: (open) => set({ interruptOpen: open }),
+  setInterruptOpen: (open) => {
+    if (open) get().pause();
+    set({ interruptOpen: open });
+  },
   setError: (error) => set({ error }),
   setGenerationProgress: (progress) => set({ generationProgress: progress }),
   setCurrentSegmentIndex: (idx) => set({ currentSegmentIndex: idx }),

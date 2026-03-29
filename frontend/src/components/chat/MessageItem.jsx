@@ -8,6 +8,7 @@ import ArtifactViewer from './ArtifactViewer';
 import WebSearchProgressPanel from './WebSearchProgressPanel';
 import ResearchReport from './ResearchReport';
 import AgentProgressPanel from './AgentProgressPanel';
+import SkillProgressPanel from './SkillProgressPanel';
 import CollapsibleActionBlock from './CollapsibleActionBlock';
 import AnnotatedText from './AnnotatedText';
 import { Copy, Check, RotateCcw, Sparkles, Pencil, Trash2, X, SendHorizonal } from 'lucide-react';
@@ -164,16 +165,24 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
     message.intentOverride === 'AGENT' ||
     !!(message.agentState && message.agentState.status);
 
-  const isCodeMode = !isResearchMode && !isAgentMode && message.codeBlocks?.length > 0;
+  const isSkillMode =
+    message.intentOverride === 'SKILL_EXECUTION' ||
+    !!(message.skillState && message.skillState.status);
+
+  const skillStreaming =
+    isSkillMode &&
+    !['completed', 'completed_with_errors', 'failed'].includes(message.skillState?.status || '');
+
+  const isCodeMode = !isResearchMode && !isAgentMode && !isSkillMode && message.codeBlocks?.length > 0;
   const hasContent = !!message.content;
-  const hasArtifactsOnly = message.artifacts?.length > 0 && !isCodeMode && !isResearchMode && !isAgentMode;
+  const hasArtifactsOnly = message.artifacts?.length > 0 && !isCodeMode && !isResearchMode && !isAgentMode && !isSkillMode;
   const hasAgentArtifacts = isAgentMode && message.artifacts?.length > 0;
   const hasGeneratedImages = message.images?.length > 0;
   const imageCount = message.images?.length || 0;
   const isImageGenerationMessage = message.intentOverride === 'IMAGE_GENERATION' || hasGeneratedImages;
 
 
-  const showTypingFallback = !hasContent && !isCodeMode && !isResearchMode && !isAgentMode && !isStreaming;
+  const showTypingFallback = !hasContent && !isCodeMode && !isResearchMode && !isAgentMode && !isSkillMode && !isStreaming;
 
   return (
     <div className="group px-4 sm:px-6 py-2.5">
@@ -187,7 +196,7 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
 
         { }
         <div className="flex-1 min-w-0 message-selection-container overflow-hidden">
-          {isStreaming && (
+          {(isStreaming || skillStreaming) && (
             <div className="streaming-status-chip mb-2 inline-flex items-center gap-1.5">
               <span className="streaming-status-dot" aria-hidden="true" />
               Live response
@@ -225,6 +234,13 @@ const MessageItem = memo(function MessageItem({ message, isStreaming, onRetry, o
               isStreaming={isStreaming}
               codeBlocks={message.codeBlocks}
               artifacts={message.artifacts}
+            />
+          )}
+
+          {isSkillMode && message.skillState && (
+            <SkillProgressPanel
+              skillState={message.skillState}
+              isStreaming={skillStreaming}
             />
           )}
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { FolderOpen, Mic, Radio, Sparkles } from 'lucide-react';
 import usePodcastStore from '@/stores/usePodcastStore';
 import useAppStore from '@/stores/useAppStore';
 import PodcastSessionLibrary from './PodcastSessionLibrary';
@@ -28,14 +27,6 @@ export default function PodcastStudio({ onClose, onRequestNew }) {
       loadSessions(currentNotebook.id, draftMode);
     }
   }, [currentNotebook?.id, draftMode, loadSessions]);
-
-  const playableSessions = useMemo(
-    () =>
-      (sessions || []).filter((s) =>
-        ['ready', 'playing', 'paused', 'completed'].includes((s.status || '').toLowerCase())
-      ),
-    [sessions],
-  );
 
   const handleSelectSession = useCallback(
     async (sessionId) => {
@@ -79,70 +70,40 @@ export default function PodcastStudio({ onClose, onRequestNew }) {
       <div className="podcast-hero">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="podcast-eyebrow">AI Podcast Studio</p>
-            <h3 className="podcast-title">Clean Audio Learning Workspace</h3>
-            <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Create, manage, and replay two-host podcasts from your selected sources.</p>
+            <p className="podcast-eyebrow">AI Podcast</p>
+            <h3 className="podcast-title">Podcast Sessions</h3>
+            <p className="text-[11px] text-[var(--text-muted)] mt-1.5">Open an existing session or create a new one.</p>
           </div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--border)] bg-[var(--surface-overlay)] text-[10px] font-semibold text-[var(--text-secondary)] whitespace-nowrap">
-            <FolderOpen className="w-3.5 h-3.5" />
             {selectedSources.length} source{selectedSources.length === 1 ? '' : 's'}
           </div>
         </div>
+        {error && (
+          <div className="text-[11px] text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-2 mt-3">
+            {error}
+          </div>
+        )}
       </div>
 
-      <div className="podcast-studio-grid flex-1 min-h-0 px-3 pb-3">
-        <section className="podcast-studio-panel min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 px-3 pb-3 mt-2">
+        <section className="podcast-studio-panel h-full min-h-0 overflow-y-auto custom-scrollbar">
           <PodcastSessionLibrary
             onNewPodcast={onRequestNew}
             onSelectSession={handleSelectSession}
           />
         </section>
-
-        <section className="podcast-studio-panel podcast-studio-quick">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-              Quick Start
-            </div>
-            <h4 className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight">
-              Build a better podcast in three steps
-            </h4>
-            <div className="space-y-2.5 text-[12px] text-[var(--text-secondary)]">
-              <p className="podcast-studio-step"><span>1</span>Select your best sources in the sidebar.</p>
-              <p className="podcast-studio-step"><span>2</span>Choose mode, language, and voices.</p>
-              <p className="podcast-studio-step"><span>3</span>Generate and jump into playback instantly.</p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={onRequestNew}
-              disabled={selectedSources.length === 0}
-              className="podcast-play-btn w-full h-11 rounded-xl inline-flex items-center justify-center gap-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Mic className="w-4 h-4" />
-              Create New Podcast
-            </button>
-            <div className="text-[11px] text-[var(--text-muted)] inline-flex items-center gap-1.5">
-              <Radio className="w-3.5 h-3.5" />
-              {playableSessions.length} playable session{playableSessions.length === 1 ? '' : 's'}
-            </div>
-            {error && (
-              <div className="text-[11px] text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-2">
-                {error}
-              </div>
-            )}
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="podcast-pill-btn w-full justify-center text-[var(--text-secondary)]"
-              >
-                Back to Studio
-              </button>
-            )}
-          </div>
-        </section>
       </div>
+
+      {onClose && (
+        <div className="px-3 pb-3">
+          <button
+            onClick={onClose}
+            className="podcast-pill-btn w-full justify-center text-[var(--text-secondary)]"
+          >
+            Back to Studio
+          </button>
+        </div>
+      )}
     </div>
   );
 }

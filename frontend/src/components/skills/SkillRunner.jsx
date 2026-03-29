@@ -103,6 +103,7 @@ export default function SkillRunner({ skill, notebookId, materialIds = [], onBac
     });
     return vars;
   });
+  const [streamToChat, setStreamToChat] = useState(true);
   const [expandedSteps, setExpandedSteps] = useState({});
 
   const handleRun = useCallback(async () => {
@@ -123,11 +124,12 @@ export default function SkillRunner({ skill, notebookId, materialIds = [], onBac
         variables,
         notebookId,
         materialIds,
+        streamToChat,
       });
     } catch (err) {
       toast.error(err.message || 'Execution failed');
     }
-  }, [skill, variables, notebookId, materialIds, executeSkill, toast]);
+  }, [skill, variables, notebookId, materialIds, streamToChat, executeSkill, toast]);
 
   const toggleStep = useCallback((index) => {
     setExpandedSteps((prev) => ({ ...prev, [index]: !prev[index] }));
@@ -166,6 +168,15 @@ export default function SkillRunner({ skill, notebookId, materialIds = [], onBac
       {/* Run Button */}
       {!hasStarted && (
         <div className="px-4 py-3 shrink-0">
+          <label className="flex items-center justify-between gap-2 mb-2.5 text-[11px] text-text-secondary">
+            <span>Mirror live progress in chat panel</span>
+            <input
+              type="checkbox"
+              checked={streamToChat}
+              onChange={(e) => setStreamToChat(e.target.checked)}
+              className="skills-checkbox w-3.5 h-3.5 rounded"
+            />
+          </label>
           <button
             onClick={handleRun}
             disabled={isRunning}

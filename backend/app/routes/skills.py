@@ -52,6 +52,15 @@ class ValidateSkillRequest(BaseModel):
     markdown: str = Field(..., min_length=1, max_length=50000)
 
 
+class SuggestSkillTagsRequest(BaseModel):
+    markdown: str = Field(..., min_length=1, max_length=50000)
+    max_tags: int = Field(6, ge=3, le=10)
+
+
+class GenerateSkillDraftRequest(BaseModel):
+    prompt: str = Field(..., min_length=6, max_length=4000)
+
+
 # ── CRUD Endpoints ─────────────────────────────────────────
 
 @router.post("")
@@ -134,6 +143,40 @@ async def validate_skill_endpoint(
             "parsed": skill_to_json(definition),
         })
     return JSONResponse(content={"valid": False, "error": error})
+
+
+@router.post("/suggest-tags")
+async def suggest_skill_tags_endpoint(
+    request: SuggestSkillTagsRequest,
+    current_user=Depends(get_current_user),
+):
+    """Suggest AI-generated tags for skill markdown."""
+    from app.services.skills.skill_service import suggest_skill_tags
+
+    try:
+        tags = await suggest_skill_tags(request.markdown, request.max_tags)
+        return JSONResponse(content={"tags": tags})
+    except Exception as e:
+        logger.error("Failed to suggest skill tags: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/generate-draft")
+async def generate_skill_draft_endpoint(
+    request: GenerateSkillDraftRequest,
+    current_user=Depends(get_current_user),
+):
+    """Generate a full skill markdown draft from a natural-language prompt."""
+    from app.services.skills.skill_service import generate_skill_draft
+
+    try:
+        draft = await generate_skill_draft(
+            user_prompt=request.prompt,
+        )
+        return JSONResponse(content=draft)
+    except Exception as e:
+        logger.error("Failed to generate skill draft: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/runs")

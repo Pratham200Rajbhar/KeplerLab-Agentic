@@ -1457,9 +1457,56 @@ select,
 }
 
 .workspace-chat-input-shell {
-  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  background:
+    radial-gradient(120% 130% at 5% -20%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 56%),
+    color-mix(in srgb, var(--surface-raised) 97%, transparent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
   border-color: color-mix(in srgb, var(--border-strong) 78%, transparent);
+}
+
+.workspace-chat-input-shell-upgraded:focus-within {
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.workspace-chat-input-meta {
+  letter-spacing: 0.01em;
+}
+
+.workspace-voice-btn,
+.workspace-clear-btn {
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-overlay) 76%, transparent);
+  color: var(--text-secondary);
+}
+
+.workspace-voice-btn:hover,
+.workspace-clear-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.workspace-voice-btn-live {
+  color: #f97316;
+  border-color: color-mix(in srgb, #f97316 55%, transparent);
+  background: color-mix(in srgb, #f97316 20%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, #f97316 45%, transparent);
+  animation: voice-pulse 1.45s ease-out infinite;
+}
+
+@keyframes voice-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, #f97316 45%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, #f97316 0%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, #f97316 0%, transparent);
+  }
 }
 
 .workspace-send-btn {
@@ -1468,6 +1515,11 @@ select,
 
 .workspace-send-btn:hover {
   filter: brightness(1.06);
+}
+
+.workspace-send-btn-upgraded,
+.workspace-stop-btn-upgraded {
+  min-width: 78px;
 }
 
 .workspace-stop-btn {
@@ -5389,13 +5441,29 @@ MINDMAP ANIMATIONS
    ═══════════════════════════════════════════════════════ */
 
 .skills-panel {
-  background: var(--surface);
+  background:
+    radial-gradient(135% 110% at 100% -24%, color-mix(in srgb, #f59e0b 12%, transparent), transparent 56%),
+    var(--surface);
 }
 
 .skills-header-icon {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.08));
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.22), rgba(20, 184, 166, 0.08));
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.skills-overview-card {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, transparent);
+  background:
+    radial-gradient(110% 120% at 0% 0%, color-mix(in srgb, #f59e0b 18%, transparent), transparent 48%),
+    color-mix(in srgb, var(--surface-raised) 92%, transparent);
+}
+
+.skills-live-badge {
+  color: #fcd34d;
+  border: 1px solid rgba(252, 211, 77, 0.32);
+  background: rgba(252, 211, 77, 0.14);
 }
 
 .skills-tabs {
@@ -5409,36 +5477,38 @@ MINDMAP ANIMATIONS
 }
 
 .skills-tab-active {
-  background: var(--accent-subtle);
-  color: var(--accent);
-  border-color: var(--accent-border);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-subtle) 90%, transparent), rgba(20, 184, 166, 0.1));
+  color: color-mix(in srgb, var(--accent) 82%, #fcd34d);
+  border-color: color-mix(in srgb, var(--accent-border) 82%, rgba(252, 211, 77, 0.35));
 }
 
 .skills-create-btn {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
-  border: 1px dashed rgba(251, 191, 36, 0.3);
-  color: #fbbf24;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(34, 197, 94, 0.09));
+  border: 1px dashed rgba(251, 191, 36, 0.4);
+  color: #fcd34d;
   font-size: 0.8125rem;
 }
 
 .skills-create-btn:hover {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1));
-  border-color: rgba(251, 191, 36, 0.5);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.1);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(34, 197, 94, 0.12));
+  border-color: rgba(251, 191, 36, 0.6);
+  transform: translateY(-1px) scale(1.003);
+  box-shadow: 0 8px 18px rgba(251, 191, 36, 0.18);
 }
 
 .skills-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
+  background:
+    radial-gradient(110% 120% at 100% -26%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%),
+    var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   transition: all 0.2s ease;
 }
 
 .skills-card:hover {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--accent-border) 70%, var(--border-strong));
   background: var(--surface-overlay);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.18);
 }
 
 .skills-global-badge {
@@ -5448,9 +5518,9 @@ MINDMAP ANIMATIONS
 }
 
 .skills-tag {
-  background: var(--surface-overlay);
+  background: color-mix(in srgb, var(--surface-overlay) 75%, rgba(251, 191, 36, 0.08));
   color: var(--text-secondary);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 82%, rgba(251, 191, 36, 0.28));
 }
 
 .skills-action-btn {
@@ -5484,7 +5554,8 @@ MINDMAP ANIMATIONS
 /* ─── Skills Editor ───────────────────────────────────── */
 
 .skills-editor-toolbar {
-  background: var(--surface-raised);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 95%, transparent), color-mix(in srgb, var(--surface-overlay) 78%, transparent));
 }
 
 .skills-editor-section-btn {
@@ -5514,7 +5585,9 @@ MINDMAP ANIMATIONS
 
 .skills-editor-textarea {
   font-family: var(--font-jetbrains, 'JetBrains Mono', monospace);
-  background: var(--surface);
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 50%),
+    var(--surface);
   letter-spacing: -0.01em;
 }
 
@@ -5524,7 +5597,7 @@ MINDMAP ANIMATIONS
 }
 
 .skills-editor-preview {
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
   border-left: 1px solid var(--border);
 }
 
@@ -5539,9 +5612,9 @@ MINDMAP ANIMATIONS
 }
 
 .skills-var-badge {
-  background: rgba(251, 191, 36, 0.08);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.15);
+  background: rgba(251, 191, 36, 0.14);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.26);
 }
 
 .skills-editor-footer {
@@ -5604,17 +5677,17 @@ MINDMAP ANIMATIONS
 }
 
 .skills-run-btn {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 48%, #22d3ee 100%);
   color: #fff;
   font-size: 0.8125rem;
   border: none;
-  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.2);
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.25);
   transition: all 0.2s ease;
 }
 
 .skills-run-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(52, 211, 153, 0.3);
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.34);
 }
 
 .skills-run-header {
@@ -5631,8 +5704,8 @@ MINDMAP ANIMATIONS
 }
 
 .skills-step-item {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
 }
 
 .skills-step-ok {
@@ -5646,8 +5719,8 @@ MINDMAP ANIMATIONS
 }
 
 .skills-step-running {
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 90%, rgba(251, 191, 36, 0.14));
+  color: color-mix(in srgb, var(--accent) 82%, #fcd34d);
   animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
@@ -5692,7 +5765,7 @@ MINDMAP ANIMATIONS
 }
 
 .skills-run-card:hover {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--accent-border) 65%, var(--border-strong));
   background: var(--surface-overlay);
 }
 
@@ -5726,15 +5799,17 @@ MINDMAP ANIMATIONS
 /* ─── Skills Templates ────────────────────────────────── */
 
 .skills-template-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 120% at 100% -25%, color-mix(in srgb, #f59e0b 12%, transparent), transparent 58%),
+    var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   transition: all 0.2s ease;
 }
 
 .skills-template-card:hover {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--accent-border) 60%, var(--border-strong));
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
 }
 
 .skills-template-import-btn {

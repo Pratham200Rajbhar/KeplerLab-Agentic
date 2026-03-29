@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
-import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles, CornerDownLeft } from 'lucide-react';
+import { Send, Square, X, Globe, Code2, Search, Bot, Sparkles, CornerDownLeft, Mic, Wand2, Image as ImageIcon } from 'lucide-react';
 import { parseSlashCommand } from '@/lib/utils/parseSlashCommand';
 import { SLASH_COMMANDS } from '@/lib/config/slashCommands';
 import useAppStore from '@/stores/useAppStore';
+import { transcribeAudio } from '@/lib/api/chat';
+import { useToast } from '@/stores/useToastStore';
 import PromptOptimizerDialog from './PromptOptimizerDialog';
 
 const ICON_BY_KEY = {
@@ -12,6 +14,8 @@ const ICON_BY_KEY = {
   search: Search,
   code: Code2,
   bot: Bot,
+  wand: Wand2,
+  image: ImageIcon,
 };
 
 const COLOR_TOKEN_CLASSES = {
@@ -37,13 +41,22 @@ const BADGE_COLORS = {
   CODE_EXECUTION: 'bg-green-500/15 text-green-300 border-green-500/30',
   WEB_SEARCH:     'bg-orange-500/15 text-orange-300 border-orange-500/30',
   AGENT:          'bg-purple-500/15 text-purple-300 border-purple-500/30',
+  SKILL_EXECUTION:'bg-amber-500/15 text-amber-300 border-amber-500/30',
 };
 
 const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disabled, materialIds = [] }) {
+  const toast = useToast();
   const [value, setValue] = useState('');
   const [dropdownIndex, setDropdownIndex] = useState(0);
   const [showOptimizer, setShowOptimizer] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceDots, setVoiceDots] = useState(0);
   const textareaRef = useRef(null);
+  const valueRef = useRef('');
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const chunksRef = useRef([]);
 
   
   // Sync with global chat input value from store
@@ -51,6 +64,32 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
   const setChatInputValue = useAppStore(s => s.setChatInputValue);
 
   const syncedValue = chatInputValue && chatInputValue.trim() !== '' ? chatInputValue : value;
+  const voiceSupported = useMemo(
+    () => (
+      typeof window !== 'undefined'
+      && typeof navigator !== 'undefined'
+      && !!navigator.mediaDevices?.getUserMedia
+      && typeof window.MediaRecorder !== 'undefined'
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    valueRef.current = syncedValue;
+  }, [syncedValue]);
+
+  useEffect(() => {
+    if (!isListening && !isTranscribing) {
+      setVoiceDots(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setVoiceDots((prev) => (prev + 1) % 4);
+    }, 350);
+
+    return () => clearInterval(timer);
+  }, [isListening, isTranscribing]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -95,6 +134,120 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     setDropdownIndex(0);
   }, [chatInputValue, setChatInputValue]);
 
+  const applyVoiceTranscript = useCallback((spokenText) => {
+    const spoken = String(spokenText || '').trim();
+    if (!spoken) return;
+    const base = valueRef.current.trim();
+    handleValueChange(base ? `${base} ${spoken}` : spoken);
+    textareaRef.current?.focus();
+  }, [handleValueChange]);
+
+  const stopMediaTracks = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+  }, []);
+
+  const transcribeRecordedAudio = useCallback(async (audioBlob) => {
+    if (!audioBlob || audioBlob.size === 0) {
+      toast.info('No voice detected. Please try again.');
+      return;
+    }
+
+    setIsTranscribing(true);
+    try {
+      // Empty language means auto-detect on backend. Model is fixed to base.
+      const response = await transcribeAudio(audioBlob, '', 'base');
+      const text = String(response?.text || '').trim();
+      if (!text) {
+        toast.info('No clear speech detected. Try speaking a bit louder.');
+        return;
+      }
+      applyVoiceTranscript(text);
+    } catch (err) {
+      toast.error(err?.message || 'Voice transcription failed');
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [applyVoiceTranscript, toast]);
+
+  const stopVoiceRecording = useCallback((shouldTranscribe = true) => {
+    const recorder = mediaRecorderRef.current;
+
+    if (!recorder || recorder.state === 'inactive') {
+      setIsListening(false);
+      stopMediaTracks();
+      return;
+    }
+
+    recorder.onstop = async () => {
+      setIsListening(false);
+      stopMediaTracks();
+
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+      chunksRef.current = [];
+      mediaRecorderRef.current = null;
+
+      if (shouldTranscribe) {
+        await transcribeRecordedAudio(blob);
+      }
+    };
+
+    try {
+      recorder.stop();
+    } catch {
+      setIsListening(false);
+      stopMediaTracks();
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
+    }
+  }, [stopMediaTracks, transcribeRecordedAudio]);
+
+  const toggleVoiceInput = useCallback(async () => {
+    if (!voiceSupported || disabled || isStreaming || isTranscribing) return;
+
+    if (isListening) {
+      stopVoiceRecording(true);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const preferredMime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find((mime) => window.MediaRecorder.isTypeSupported?.(mime));
+
+      const recorder = preferredMime
+        ? new MediaRecorder(stream, { mimeType: preferredMime })
+        : new MediaRecorder(stream);
+
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) chunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current = recorder;
+      setIsListening(true);
+      recorder.start(250);
+    } catch (err) {
+      setIsListening(false);
+      stopMediaTracks();
+      toast.error(err?.message || 'Unable to access microphone');
+    }
+  }, [disabled, isListening, isStreaming, isTranscribing, stopMediaTracks, stopVoiceRecording, toast, voiceSupported]);
+
+  useEffect(() => () => {
+    try {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+    } catch {
+      // noop
+    }
+    stopMediaTracks();
+  }, [stopMediaTracks]);
+
   
   const filteredCommands = useMemo(() => {
     if (!syncedValue.startsWith('/')) return [];
@@ -118,7 +271,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
  
   const handleSend = useCallback(() => {
     const trimmed = syncedValue.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreaming || isTranscribing || isListening) return;
     const parsed = parseSlashCommand(trimmed);
     const query = trimmed; // Keep full text including slash command
     const intentOverride = parsed.intent || null;
@@ -126,7 +279,7 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     onSend(query, intentOverride);
     handleValueChange('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  }, [syncedValue, isStreaming, onSend, handleValueChange]);
+  }, [syncedValue, isStreaming, isTranscribing, isListening, onSend, handleValueChange]);
  
   const handleKeyDown = useCallback(
     (e) => {
@@ -172,6 +325,13 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
     handleValueChange(parsed.query || '');
     textareaRef.current?.focus();
   }, [syncedValue, handleValueChange]);
+
+  const voiceStatusText = useMemo(() => {
+    const dots = '.'.repeat(Math.max(1, voiceDots));
+    if (isListening) return `Speaking${dots}`;
+    if (isTranscribing) return `Processing with Whisper${dots}`;
+    return null;
+  }, [isListening, isTranscribing, voiceDots]);
 
   return (
     <div className="workspace-chat-input-dock px-4 sm:px-6 pb-3 pt-1 flex justify-center w-full shrink-0 relative z-10">
@@ -276,22 +436,38 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
 
         {}
         <div
-          className="workspace-chat-input-shell flex items-end gap-2 rounded-xl border px-3 py-2 transition-all duration-150"
+          className="workspace-chat-input-shell workspace-chat-input-shell-upgraded flex items-end gap-2.5 rounded-2xl border px-3 py-2.5 transition-all duration-150"
           style={{
             borderColor: activeCommand ? 'var(--accent-border)' : 'color-mix(in srgb, var(--border-strong) 78%, transparent)',
           }}
         >
+          <div className="flex items-center gap-1.5 pb-0.5">
+            <button
+              onClick={toggleVoiceInput}
+              disabled={!voiceSupported || disabled || isStreaming || isTranscribing}
+              className={`workspace-voice-btn shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isListening ? 'workspace-voice-btn-live' : ''}`}
+              title={voiceSupported ? (isListening ? 'Stop recording' : (isTranscribing ? 'Transcribing...' : 'Start recording')) : 'Voice input not supported'}
+              aria-label={isListening ? 'Stop recording' : 'Start recording'}
+            >
+              <Mic size={14} />
+            </button>
+
+          </div>
+
           <textarea
             ref={textareaRef}
-            value={syncedValue}
-            onChange={(e) => handleValueChange(e.target.value)}
+            value={voiceStatusText || syncedValue}
+            onChange={(e) => {
+              if (voiceStatusText) return;
+              handleValueChange(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder={
               activeCommand
                 ? `${activeCommand.label} — type your query…`
                 : 'Message or type / for commands…'
             }
-            disabled={disabled}
+            disabled={disabled || !!voiceStatusText}
             rows={1}
             className="flex-1 bg-transparent text-[14px] text-text-primary placeholder:text-text-muted/90 resize-none outline-none max-h-36 py-0.5"
             style={{ lineHeight: '1.6' }}
@@ -300,23 +476,30 @@ const ChatInput = memo(function ChatInput({ onSend, onStop, isStreaming, disable
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="workspace-stop-btn shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+              className="workspace-stop-btn workspace-stop-btn-upgraded shrink-0 h-9 rounded-lg px-3 flex items-center justify-center gap-1.5 transition-colors"
               title="Stop generating"
               aria-label="Stop generating"
             >
               <Square size={13} fill="currentColor" />
+              <span className="text-[11px] font-semibold">Stop</span>
             </button>
           ) : (
             <button
               onClick={handleSend}
-              disabled={!syncedValue.trim() || disabled}
-              className="workspace-send-btn shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              disabled={!syncedValue.trim() || disabled || isListening || isTranscribing}
+              className="workspace-send-btn workspace-send-btn-upgraded shrink-0 h-9 rounded-lg px-3.5 flex items-center justify-center gap-1.5 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title="Send message"
               aria-label="Send message"
             >
               <Send size={13} />
+              <span className="text-[11px] font-semibold">Send</span>
             </button>
           )}
+        </div>
+
+        <div className="workspace-chat-input-meta px-1.5 pt-1.5 flex items-center justify-between text-[10px] text-text-muted">
+          <span>{isTranscribing ? 'Transcribing with Whisper...' : (isListening ? 'Listening... click mic again to stop' : 'Enter to send, Shift+Enter for newline')}</span>
+          <span>{syncedValue.length}/4000</span>
         </div>
 
       </div>

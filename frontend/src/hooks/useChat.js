@@ -6,6 +6,18 @@ import { streamChat, getChatHistory, getChatSessions, createChatSession, deleteC
 import { streamSSE } from '@/lib/stream/streamClient';
 import { generateId } from '@/lib/utils/helpers';
 
+function mergeSkillStep(steps = [], stepIndex, patch = {}) {
+  if (typeof stepIndex !== 'number') return steps;
+  let found = false;
+  const next = steps.map((step) => {
+    if (step.index !== stepIndex) return step;
+    found = true;
+    return { ...step, ...patch };
+  });
+  if (!found) next.push({ index: stepIndex, ...patch });
+  return [...next].sort((a, b) => (a.index || 0) - (b.index || 0));
+}
+
 
 export default function useChat({ notebookId, materialIds = [] }) {
   const {
@@ -42,6 +54,7 @@ export default function useChat({ notebookId, materialIds = [] }) {
               if (trimmedContent.startsWith('/web')) return 'WEB_SEARCH';
               if (trimmedContent.startsWith('/research')) return 'WEB_RESEARCH';
               if (trimmedContent.startsWith('/code')) return 'CODE_EXECUTION';
+              if (trimmedContent.startsWith('/skills')) return 'SKILL_EXECUTION';
               return null;
             })();
 
@@ -287,6 +300,109 @@ export default function useChat({ notebookId, materialIds = [] }) {
                   currentStep: 0,
                 },
               }));
+            },
+            skill_status: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  status: data.status || prev.skillState?.status || 'running',
+                  runId: data.run_id || prev.skillState?.runId || null,
+                  message: data.message || prev.skillState?.message || '',
+                  plan: Array.isArray(data.plan) ? data.plan : (prev.skillState?.plan || []),
+                  progress: data.progress ?? prev.skillState?.progress ?? 0,
+                },
+              }));
+
+              if (data.status === 'failed') {
+                setStreaming(false);
+              }
+            },
+            skill_step_start: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  progress: data.progress ?? prev.skillState?.progress ?? 0,
+                  steps: mergeSkillStep(prev.skillState?.steps, data.step_index, {
+                    instruction: data.instruction,
+                    tool: data.tool,
+                    status: 'running',
+                  }),
+                },
+              }));
+            },
+            skill_step_result: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  progress: data.progress ?? prev.skillState?.progress ?? 0,
+                  steps: mergeSkillStep(prev.skillState?.steps, data.step_index, {
+                    status: 'completed',
+                    content: data.content,
+                    elapsed: data.elapsed,
+                  }),
+                },
+              }));
+            },
+            skill_step_error: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  progress: data.progress ?? prev.skillState?.progress ?? 0,
+                  steps: mergeSkillStep(prev.skillState?.steps, data.step_index, {
+                    status: 'failed',
+                    error: data.error,
+                  }),
+                },
+              }));
+            },
+            skill_step_skipped: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  progress: data.progress ?? prev.skillState?.progress ?? 0,
+                  steps: mergeSkillStep(prev.skillState?.steps, data.step_index, {
+                    instruction: data.instruction,
+                    tool: data.tool,
+                    status: 'skipped',
+                    reason: data.reason,
+                  }),
+                },
+              }));
+            },
+            skill_artifact: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  artifacts: [...(prev.skillState?.artifacts || []), data],
+                },
+              }));
+            },
+            skill_done: (data) => {
+              useChatStore.getState().updateLastMessage((prev) => ({
+                ...prev,
+                intentOverride: 'SKILL_EXECUTION',
+                content: data.final_output || prev.content || '',
+                skillState: {
+                  ...(prev.skillState || {}),
+                  status: data.status || 'completed',
+                  progress: 100,
+                  elapsed: data.elapsed_seconds,
+                  finalOutput: data.final_output,
+                },
+              }));
+              setStreaming(false);
             },
             agent_step: (data) => {
               useChatStore.getState().updateLastMessage((prev) => ({

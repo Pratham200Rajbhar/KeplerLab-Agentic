@@ -18,7 +18,7 @@ export default function PodcastInterruptDrawer() {
   const answerAudioRef = useRef(typeof window !== 'undefined' ? new Audio() : null);
   const inputRef = useRef(null);
 
-  const { isRecording, start: startMic, stop: stopMic, cancel: cancelMic } = useMicInput({
+  const { isRecording, isTranscribing, start: startMic, stop: stopMic, cancel: cancelMic } = useMicInput({
     onTranscript: (text) => {
       setQuestion((prev) => (prev ? `${prev} ${text}` : text));
     },
@@ -114,7 +114,15 @@ export default function PodcastInterruptDrawer() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={isRecording ? stopMic : startMic}
+            onClick={() => {
+              if (isTranscribing) return;
+              if (isRecording) {
+                stopMic();
+              } else {
+                startMic();
+              }
+            }}
+            disabled={submitting || isTranscribing}
             className={`p-2.5 rounded-xl shrink-0 transition-colors ${
               isRecording
                 ? 'bg-red-500/20 text-red-400 animate-pulse'
@@ -127,16 +135,20 @@ export default function PodcastInterruptDrawer() {
           <input
             ref={inputRef}
             type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            value={isRecording ? 'Speaking...' : (isTranscribing ? 'Processing with Whisper...' : question)}
+            onChange={(e) => {
+              if (isRecording || isTranscribing) return;
+              setQuestion(e.target.value);
+            }}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             placeholder="Type your question..."
+            disabled={isRecording || isTranscribing}
             className="podcast-drawer-field flex-1 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
 
           <button
             onClick={handleSubmit}
-            disabled={!question.trim() || submitting}
+            disabled={!question.trim() || submitting || isRecording || isTranscribing}
             className="podcast-play-btn h-10 w-10 rounded-xl disabled:opacity-40 shrink-0"
           >
             {submitting ? (

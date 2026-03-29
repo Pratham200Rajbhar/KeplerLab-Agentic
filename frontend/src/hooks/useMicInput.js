@@ -2,14 +2,15 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useToast } from '@/stores/useToastStore';
+import { transcribeAudio } from '@/lib/api/chat';
 
 
 export default function useMicInput({ onTranscript } = {}) {
   const toast = useToast();
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
-  const recognitionRef = useRef(null);
 
   const start = useCallback(async () => {
     try {
@@ -28,37 +29,35 @@ export default function useMicInput({ onTranscript } = {}) {
       mediaRecorderRef.current = recorder;
       recorder.start(250);
       setIsRecording(true);
-
-      
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        recognition.onresult = (event) => {
-          const last = event.results[event.results.length - 1];
-          if (last.isFinal && onTranscript) {
-            onTranscript(last[0].transcript);
-          }
-        };
-        recognition.onerror = () => {};
-        recognition.start();
-        recognitionRef.current = recognition;
-      }
     } catch (err) {
       toast.error('Microphone access denied');
       console.error('Mic error:', err);
     }
-  }, [onTranscript, toast]);
+  }, [toast]);
 
   const stop = useCallback(() => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== 'inactive') {
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
           recorder.stream?.getTracks().forEach((t) => t.stop());
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          if (blob.size > 0 && onTranscript) {
+            setIsTranscribing(true);
+            try {
+              const res = await transcribeAudio(blob, '', 'base');
+              const text = String(res?.text || '').trim();
+              if (text) {
+                onTranscript(text);
+              } else {
+                toast.info('No clear speech detected. Please try again.');
+              }
+            } catch (err) {
+              toast.error(err?.message || 'Voice transcription failed');
+            } finally {
+              setIsTranscribing(false);
+            }
+          }
           resolve(blob);
         };
         recorder.stop();
@@ -66,13 +65,8 @@ export default function useMicInput({ onTranscript } = {}) {
         resolve(null);
       }
       setIsRecording(false);
-
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
     });
-  }, []);
+  }, [onTranscript, toast]);
 
   const cancel = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -82,12 +76,7 @@ export default function useMicInput({ onTranscript } = {}) {
     }
     setIsRecording(false);
     chunksRef.current = [];
-
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
   }, []);
 
-  return { isRecording, start, stop, cancel };
+  return { isRecording, isTranscribing, start, stop, cancel };
 }

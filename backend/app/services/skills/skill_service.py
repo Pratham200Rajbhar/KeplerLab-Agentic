@@ -10,11 +10,13 @@ import logging
 import re
 import time
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, Set, Tuple
 
 from prisma import Json
 
 from app.db.prisma_client import prisma
+from app.services.llm_service.llm import extract_chunk_content, get_llm
+from app.services.llm_service.structured_invoker import parse_json_robust
 from app.services.skills.markdown_parser import (
     MarkdownParseError,
     parse_skill_markdown,
@@ -110,6 +112,211 @@ def _derive_persisted_status(executor_status: Optional[str], step_logs: List[Dic
             return "failed"
 
     return "completed"
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """Remove optional markdown fences if model wraps output in code blocks."""
+    cleaned = (text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
+
+
+def _normalize_tag(tag: str) -> Optional[str]:
+    """Normalize a free-form label into a compact, URL-safe tag."""
+    cleaned = re.sub(r"[^a-z0-9\s-]", "", (tag or "").lower()).strip()
+    cleaned = re.sub(r"\s+", "-", cleaned)
+    cleaned = re.sub(r"-{2,}", "-", cleaned).strip("-")
+    if len(cleaned) < 2:
+        return None
+    return cleaned[:24]
+
+
+def _fallback_skill_tags(definition: Optional[Any], max_tags: int = 6) -> List[str]:
+    """Derive stable fallback tags without relying on model output."""
+    stopwords: Set[str] = {
+        "about", "from", "with", "into", "that", "this", "your", "the",
+        "and", "for", "are", "using", "then", "step", "steps", "output",
+        "rules", "summary", "report", "generate", "create", "analyze",
+    }
+    tags: List[str] = []
+    seen: Set[str] = set()
+
+    def _push(candidate: str) -> None:
+        normalized = _normalize_tag(candidate)
+        if not normalized or normalized in seen:
+            return
+        seen.add(normalized)
+        tags.append(normalized)
+
+    if definition:
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9]{2,}", definition.title or ""):
+            if word.lower() not in stopwords:
+                _push(word)
+            if len(tags) >= max_tags:
+                return tags
+
+        for step in getattr(definition, "steps", []) or []:
+            if getattr(step, "tool_hint", None):
+                _push(step.tool_hint.replace("_", "-"))
+            if len(tags) >= max_tags:
+                return tags
+
+        text_pool = " ".join([
+            definition.description or "",
+            *getattr(definition, "outputs", []),
+            *getattr(definition, "rules", []),
+        ])
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9]{3,}", text_pool):
+            if word.lower() in stopwords:
+                continue
+            _push(word)
+            if len(tags) >= max_tags:
+                return tags
+
+    if not tags:
+        tags = ["workflow", "automation", "assistant"]
+    return tags[:max_tags]
+
+
+async def suggest_skill_tags(markdown: str, max_tags: int = 6) -> List[str]:
+    """Suggest concise skill tags from markdown using LLM + deterministic fallback."""
+    max_tags = max(3, min(max_tags, 10))
+
+    definition = None
+    try:
+        definition = parse_skill_markdown(markdown)
+    except Exception:
+        definition = None
+
+    fallback = _fallback_skill_tags(definition, max_tags=max_tags)
+
+    if definition:
+        summary_block = (
+            f"Title: {definition.title}\n"
+            f"Description: {definition.description or ''}\n"
+            f"Inputs: {', '.join(v.name for v in definition.inputs) or 'none'}\n"
+            f"Steps: {' | '.join(s.instruction for s in definition.steps[:6])}\n"
+            f"Outputs: {' | '.join(definition.outputs[:4]) or 'none'}\n"
+        )
+    else:
+        summary_block = f"Markdown:\n{markdown[:3000]}"
+
+    prompt = (
+        "Generate short tags for an AI workflow skill.\n"
+        "Requirements:\n"
+        "- Return strictly JSON.\n"
+        "- Output shape: {\"tags\": [\"tag1\", \"tag2\"]}.\n"
+        f"- Return {max_tags} tags maximum.\n"
+        "- Tags should be lowercase, specific, and reusable.\n"
+        "- Avoid duplicates, generic filler, and long phrases.\n\n"
+        f"Skill details:\n{summary_block}"
+    )
+
+    try:
+        llm = get_llm(mode="structured", temperature=0.15, max_tokens=220)
+        response = await llm.ainvoke(prompt)
+        raw = extract_chunk_content(response)
+        parsed = parse_json_robust(raw)
+
+        candidates = []
+        if isinstance(parsed, dict):
+            tags_data = parsed.get("tags")
+            if isinstance(tags_data, list):
+                candidates = tags_data
+        elif isinstance(parsed, list):
+            candidates = parsed
+
+        normalized: List[str] = []
+        seen: Set[str] = set()
+        for item in candidates:
+            tag = _normalize_tag(str(item))
+            if not tag or tag in seen:
+                continue
+            seen.add(tag)
+            normalized.append(tag)
+            if len(normalized) >= max_tags:
+                break
+
+        if normalized:
+            return normalized
+    except Exception as exc:
+        logger.warning("Tag suggestion failed; using fallback tags: %s", exc)
+
+    return fallback[:max_tags]
+
+
+async def generate_skill_draft(
+    user_prompt: str,
+) -> Dict[str, Any]:
+    """Generate a valid skill markdown draft from a natural-language prompt."""
+    prompt = (user_prompt or "").strip()
+    if len(prompt) < 6:
+        raise ValueError("Please provide a clearer prompt to generate a skill")
+
+    generation_prompt = (
+        "You are an expert workflow designer for AI skills. "
+        "Generate a complete markdown skill definition.\n\n"
+        "Strict format:\n"
+        "# Skill: <concise title>\n"
+        "## Input\n"
+        "<name>: {user_input}\n"
+        "## Steps\n"
+        "1. ...\n"
+        "2. ...\n"
+        "## Output\n"
+        "- ...\n"
+        "## Rules\n"
+        "- ...\n\n"
+        "Constraints:\n"
+        "- Decide the most appropriate number of steps for the user's goal\n"
+        "- Keep the workflow concise and practical\n"
+        "- Prefer practical, execution-ready steps\n"
+        "- Include meaningful variable names in Input\n"
+        "- Ensure all {variables} used in steps are declared in Input\n"
+        "- Do not add explanations outside markdown\n\n"
+        f"User intent:\n{prompt}"
+    )
+
+    llm = get_llm(mode="creative", temperature=0.25, max_tokens=1200)
+    response = await llm.ainvoke(generation_prompt)
+    generated = _strip_markdown_fences(extract_chunk_content(response))
+
+    definition = None
+    try:
+        definition = parse_skill_markdown(generated)
+        _validate_variables_defined(definition)
+    except Exception:
+        # Deterministic fallback to guarantee usable output even when model drifts.
+        title = f"{prompt[:48].strip().rstrip('.')} Skill".strip()
+        safe_title = re.sub(r"\s+", " ", title)
+        generated = (
+            f"# Skill: {safe_title}\n\n"
+            "## Input\n"
+            "topic: {user_input}\n\n"
+            "## Steps\n"
+            "1. Search uploaded documents for information about {topic}\n"
+            "2. If needed, search the web for recent updates about {topic}\n"
+            "3. Synthesize findings into a structured response with actionable points\n"
+            "4. Generate a concise final summary\n\n"
+            "## Output\n"
+            "- Structured summary\n"
+            "- Key takeaways\n"
+            "- Source references\n\n"
+            "## Rules\n"
+            "- Be accurate and concise\n"
+            "- Highlight uncertainty when evidence is weak\n"
+        )
+        definition = parse_skill_markdown(generated)
+        _validate_variables_defined(definition)
+
+    tags = await suggest_skill_tags(generated, max_tags=6)
+    return {
+        "markdown": generated,
+        "parsed": skill_to_json(definition),
+        "tags": tags,
+    }
 
 
 # ── Built-in Skill Templates ──────────────────────────────
