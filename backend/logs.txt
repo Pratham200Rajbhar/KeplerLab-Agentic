@@ -1,85 +1,194 @@
-2026-03-29 07:18:48,377 app.db.prisma_client INFO Prisma client connected to database
-2026-03-29 07:18:48,378 main INFO Warming up embedding model (running in thread pool)…
-2026-03-29 07:18:48,479 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
-2026-03-29 07:18:48,479 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
-2026-03-29 07:18:51,246 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
-2026-03-29 07:18:51,901 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
-2026-03-29 07:18:52,861 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
-2026-03-29 07:18:52,871 app.db.chroma INFO ChromaDB collection 'chapters' ready (6415 existing chunks).
-2026-03-29 07:18:52,944 app.services.rag.embedder INFO Embedding model warm-up complete (6415 existing chunks).
-2026-03-29 07:18:52,944 main INFO Preloading reranker model (running in thread pool)…
-2026-03-29 07:18:53,107 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
-2026-03-29 07:18:56,348 app.services.rag.reranker INFO Reranker warm-up forward pass complete
-2026-03-29 07:18:56,348 app.services.rag.reranker INFO Reranker loaded successfully in 3.40s
-2026-03-29 07:18:56,351 main INFO Reranker preloaded.
-2026-03-29 07:18:56,353 main INFO Background job processor task created.
-2026-03-29 07:18:56,354 main INFO Ensuring sandbox packages are installed…
-2026-03-29 07:18:57,330 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-29 07:18:57,332 main INFO Output directories ensured.
-2026-03-29 07:18:57,333 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-29 07:19:02,495 app.routes.auth INFO Login attempt for email: kepler@gmail.com
-2026-03-29 07:19:02,767 app.routes.auth INFO User logged in successfully: e7213c6a-9e3b-47ff-9d03-4072d414f8a2
-2026-03-29 07:19:02,768 main INFO POST /auth/login 200 0.30s [b3e91775]
-2026-03-29 07:19:02,777 main INFO GET /auth/me 200 0.00s [f28175c1]
-2026-03-29 07:19:03,233 performance INFO request_performance
-2026-03-29 07:19:03,233 main INFO GET /notebooks 200 0.01s [9347804f]
-2026-03-29 07:19:03,241 performance INFO request_performance
-2026-03-29 07:19:03,241 main INFO GET /notebooks 200 0.01s [e03f2ed9]
-2026-03-29 07:19:05,050 main INFO GET /learning/paths 200 0.01s [b4b5b452]
-2026-03-29 07:19:05,060 main INFO GET /learning/paths 200 0.01s [d3a77af6]
-2026-03-29 07:19:05,098 main INFO GET /learning/paths/3ac7f106-5354-4be9-9fb1-e2d29931782f/days 200 0.04s [7090fd5e]
-2026-03-29 07:19:05,103 main INFO GET /learning/paths/3ac7f106-5354-4be9-9fb1-e2d29931782f/review 200 0.04s [fbbd99b8]
-2026-03-29 07:19:05,107 main INFO GET /learning/paths/3ac7f106-5354-4be9-9fb1-e2d29931782f/progress 200 0.04s [15b04df8]
-2026-03-29 07:20:44,446 app.services.llm_service.structured_invoker WARNING Async structured output failed (attempt 1): ValidationError: 4 validation errors for _AIDayContent
-lesson_sections
-  List should have at most 5 items after validation, not 6 [type=too_long, input_value=[{'heading': 'What Is Clo...ud in your own words.'}], input
-2026-03-29 07:20:44,447 app.services.llm_service.structured_invoker INFO Async retry attempt 1/2
-2026-03-29 07:22:05,468 app.services.llm_service.structured_invoker WARNING Async structured output failed (attempt 2): ValidationError: 6 validation errors for _AIDayContent
-interaction_questions
-  Field required [type=missing, input_value={'lesson_sections': [{'he...by a provider. Offer'}]}, input_type=dict]
-    For further informati
-2026-03-29 07:22:05,469 app.services.llm_service.structured_invoker INFO Async retry attempt 2/2
-2026-03-29 07:22:38,553 app.services.llm_service.structured_invoker WARNING Async structured output failed (attempt 3): ValidationError: 6 validation errors for _AIDayContent
-interaction_questions
-  List should have at least 2 items after validation, not 0 [type=too_short, input_value=[], input_type=list]
-    For further information vi
-2026-03-29 07:22:38,553 app.services.llm_service.structured_invoker ERROR Async failed after 3 attempts. Last error: 6 validation errors for _AIDayContent
-interaction_questions
-  List should have at least 2 items after validation, not 0 [type=too_short, input_value=[], input_type=list]
-    For further information visit https://errors.pydantic.dev/2.9/v/too_short
-task_instructions
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-task_completion_criteria
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-quiz_questions
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-game_rounds
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-reinforcement_focus
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-2026-03-29 07:22:38,553 app.services.learning.day_generator WARNING AI day generation failed for path 'Cloud Computing' day 1; using fallback. error=Async failed after 3 attempts. Last error: 6 validation errors for _AIDayContent
-interaction_questions
-  List should have at least 2 items after validation, not 0 [type=too_short, input_value=[], input_type=list]
-    For further information visit https://errors.pydantic.dev/2.9/v/too_short
-task_instructions
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-task_completion_criteria
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-quiz_questions
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-game_rounds
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-reinforcement_focus
-  Field required [type=missing, input_value={'lesson_sections': [{'he...eraction_questions': []}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.9/v/missing
-2026-03-29 07:22:38,576 main INFO POST /learning/days/143ba7ce-dee4-487b-bcad-63afb0e2d570/open 200 213.45s [f82c11a1]
-2026-03-29 07:32:02,876 main INFO POST /auth/refresh 200 0.09s [22c7a81b]
+2026-03-29 09:10:57,068 app.db.prisma_client INFO Prisma client connected to database
+2026-03-29 09:10:57,068 main INFO Warming up embedding model (running in thread pool)…
+2026-03-29 09:10:57,244 app.db.chroma INFO ChromaDB client initialised at /disk1/KeplerLab_Agentic/backend/./data/chroma
+2026-03-29 09:10:57,244 app.db.chroma INFO ChromaDB EF: loading BAAI/bge-m3 (source: local)
+2026-03-29 09:11:00,216 sentence_transformers.SentenceTransformer INFO Load pretrained SentenceTransformer: /disk1/KeplerLab_Agentic/backend/data/models/BAAI--bge-m3
+2026-03-29 09:11:00,970 app.db.chroma INFO ChromaDB collection 'chapters' obtained.
+2026-03-29 09:11:01,248 app.db.chroma INFO Version marker written: /disk1/KeplerLab_Agentic/backend/data/chroma/.embedding_version = 'bge_m3_v1'
+2026-03-29 09:11:01,250 app.db.chroma INFO ChromaDB collection 'chapters' ready (6415 existing chunks).
+2026-03-29 09:11:01,340 app.services.rag.embedder INFO Embedding model warm-up complete (6415 existing chunks).
+2026-03-29 09:11:01,340 main INFO Preloading reranker model (running in thread pool)…
+2026-03-29 09:11:01,497 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda (source: local)
+2026-03-29 09:11:03,443 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-03-29 09:11:03,444 app.services.rag.reranker INFO Reranker loaded successfully in 2.10s
+2026-03-29 09:11:03,444 main INFO Reranker preloaded.
+2026-03-29 09:11:03,445 main INFO Background job processor task created.
+2026-03-29 09:11:03,445 main INFO Ensuring sandbox packages are installed…
+2026-03-29 09:11:04,538 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-29 09:11:04,540 main INFO Output directories ensured.
+2026-03-29 09:11:04,541 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-29 09:11:08,333 main INFO POST /auth/refresh 200 0.01s [580371e6]
+2026-03-29 09:11:08,348 main INFO GET /auth/me 200 0.00s [bdbc9874]
+2026-03-29 09:11:08,371 performance INFO request_performance
+2026-03-29 09:11:08,372 main INFO GET /notebooks 200 0.01s [85f667f6]
+2026-03-29 09:11:08,379 performance INFO request_performance
+2026-03-29 09:11:08,379 main INFO GET /notebooks 200 0.01s [89f24a5a]
+2026-03-29 09:11:15,457 performance INFO request_performance
+2026-03-29 09:11:15,457 main INFO GET /notebooks/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [a364d141]
+2026-03-29 09:11:15,466 performance INFO request_performance
+2026-03-29 09:11:15,466 main INFO GET /notebooks/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [2a43e737]
+2026-03-29 09:11:15,808 performance INFO request_performance
+2026-03-29 09:11:15,809 main INFO POST /chat/empty-suggestions 200 0.01s [285d4b5d]
+2026-03-29 09:11:15,826 performance INFO request_performance
+2026-03-29 09:11:15,827 main INFO GET /materials 200 0.03s [b3b8095b]
+2026-03-29 09:11:15,827 main INFO GET /chat/source-selection/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.03s [c4d0782c]
+2026-03-29 09:11:15,871 main INFO GET /materials 200 0.01s [f99d0d84]
+2026-03-29 09:11:15,874 performance INFO request_performance
+2026-03-29 09:11:15,875 main INFO GET /chat/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.02s [0947eac2]
+2026-03-29 09:11:15,876 performance INFO request_performance
+2026-03-29 09:11:15,876 main INFO GET /chat/source-selection/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.02s [5acf57f6]
+2026-03-29 09:11:15,882 performance INFO request_performance
+2026-03-29 09:11:15,883 main INFO GET /chat/history/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.02s [e24af6c8]
+2026-03-29 09:11:15,884 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-29 09:11:15,893 performance INFO request_performance
+2026-03-29 09:11:15,894 performance INFO request_performance
+2026-03-29 09:11:15,894 main INFO GET /chat/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [e1e2e265]
+2026-03-29 09:11:15,895 main INFO GET /chat/history/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [40b19613]
+2026-03-29 09:11:15,933 performance INFO request_performance
+2026-03-29 09:11:15,934 main INFO GET /podcast/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.07s [14d9cb28]
+2026-03-29 09:11:15,934 main INFO GET /notebooks/09b2bc8b-3c87-42da-a911-b98d8736e3f5/content 200 0.07s [db13252b]
+2026-03-29 09:11:16,216 performance INFO request_performance
+2026-03-29 09:11:16,216 main INFO PUT /chat/source-selection 200 0.02s [6d79738f]
+2026-03-29 09:11:20,192 performance INFO request_performance
+2026-03-29 09:11:20,193 main INFO PUT /chat/source-selection 200 0.02s [4d6218a4]
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:11:21,377 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:11:21,378 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:11:21,380 main INFO GET /skills/templates 200 0.01s [503d62f6]
+2026-03-29 09:11:21,387 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:11:21,387 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:11:21,387 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:11:21,388 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:11:21,389 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:11:21,389 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:11:21,389 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:11:21,389 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:11:21,390 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:11:21,390 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:11:21,391 main INFO GET /skills/templates 200 0.01s [89053091]
+2026-03-29 09:11:21,391 main INFO GET /skills 200 0.03s [4aa9cf70]
+2026-03-29 09:11:21,400 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:11:21,400 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:11:21,401 main INFO GET /skills 200 0.01s [772dcd24]
+2026-03-29 09:11:30,386 performance INFO request_performance
+2026-03-29 09:11:30,387 main INFO POST /chat/empty-suggestions 200 10.46s [1e501b89]
+2026-03-29 09:12:03,352 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:12:03,352 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:12:03,353 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:12:03,354 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:12:03,354 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:12:03,354 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:12:03,354 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:12:03,354 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:12:03,355 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:03,356 main INFO GET /skills/templates 200 0.01s [a2761c97]
+2026-03-29 09:12:03,361 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:03,361 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:12:03,362 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:12:03,363 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:03,363 main INFO GET /skills 200 0.02s [8518e2b8]
+2026-03-29 09:12:03,364 main INFO GET /skills/templates 200 0.01s [9cde899d]
+2026-03-29 09:12:03,372 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:03,372 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:03,373 main INFO GET /skills 200 0.01s [fc75ef43]
+2026-03-29 09:12:11,591 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:11,592 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:11,592 main INFO POST /skills/validate 200 0.01s [caecf334]
+2026-03-29 09:12:17,323 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 disconnected
+2026-03-29 09:12:17,324 app.services.ws_manager INFO WS disconnect: user=e7213c6a-9e3b-47ff-9d03-4072d414f8a2  remaining=0
+2026-03-29 09:12:17,356 performance INFO request_performance
+2026-03-29 09:12:17,357 main INFO GET /notebooks 200 0.01s [3c293eb2]
+2026-03-29 09:12:17,363 performance INFO request_performance
+2026-03-29 09:12:17,364 main INFO GET /notebooks 200 0.01s [b5d36c88]
+2026-03-29 09:12:18,723 main INFO GET /materials 200 0.02s [8df642dc]
+2026-03-29 09:12:18,731 app.routes.websocket_router INFO WS /ws/jobs/e7213c6a-9e3b-47ff-9d03-4072d414f8a2 connected
+2026-03-29 09:12:18,736 performance INFO request_performance
+2026-03-29 09:12:18,737 main INFO GET /chat/source-selection/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.04s [f5bd2c67]
+2026-03-29 09:12:18,743 performance INFO request_performance
+2026-03-29 09:12:18,745 main INFO GET /podcast/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.03s [89faab3b]
+2026-03-29 09:12:18,746 main INFO GET /chat/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.03s [d333765c]
+2026-03-29 09:12:18,749 performance INFO request_performance
+2026-03-29 09:12:18,750 main INFO GET /chat/history/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.04s [5b817e30]
+2026-03-29 09:12:18,756 performance INFO request_performance
+2026-03-29 09:12:18,758 main INFO GET /notebooks/09b2bc8b-3c87-42da-a911-b98d8736e3f5/content 200 0.03s [b1f7110d]
+2026-03-29 09:12:18,761 main INFO GET /materials 200 0.02s [0985e97f]
+2026-03-29 09:12:18,765 performance INFO request_performance
+2026-03-29 09:12:18,766 main INFO GET /chat/sessions/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [de18dcd5]
+2026-03-29 09:12:18,768 performance INFO request_performance
+2026-03-29 09:12:18,769 main INFO GET /chat/history/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.01s [ffa8616b]
+2026-03-29 09:12:18,770 performance INFO request_performance
+2026-03-29 09:12:18,771 main INFO GET /chat/source-selection/09b2bc8b-3c87-42da-a911-b98d8736e3f5 200 0.02s [a842aede]
+2026-03-29 09:12:19,093 performance INFO request_performance
+2026-03-29 09:12:19,094 main INFO PUT /chat/source-selection 200 0.03s [0642f398]
+2026-03-29 09:12:21,317 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:12:21,317 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:12:21,317 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:12:21,318 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:12:21,319 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:12:21,319 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:12:21,319 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:12:21,319 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:12:21,319 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:21,320 main INFO GET /skills/templates 200 0.01s [6cecc7c2]
+2026-03-29 09:12:21,326 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:21,326 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Research Summary': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'topic']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Data Analysis Pipeline': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'objective']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Web Research Report': 1 inputs, 4 steps, 3 outputs, 4 rules, variables=['question', 'user_input']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Content Transformer': 2 inputs, 4 steps, 1 outputs, 3 rules, variables=['user_input', 'format', 'style']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Lecture Notes to Summary': 1 inputs, 4 steps, 2 outputs, 3 rules, variables=['user_input', 'course_topic']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Exam Revision Planner': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'days_left', 'exam_name']
+2026-03-29 09:12:21,327 app.services.skills.markdown_parser INFO Parsed skill 'Paper Reading Workflow': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['paper_topic', 'user_input']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Literature Review Drafter': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'research_question']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Assignment First Draft': 2 inputs, 4 steps, 3 outputs, 3 rules, variables=['word_limit', 'user_input', 'assignment_topic']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Citation and Fact Checker': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'document_topic']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Daily Learning Recap': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'today_focus']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Dataset EDA Report': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['dataset_goal', 'user_input']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Methodology Comparator': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'project_goal']
+2026-03-29 09:12:21,328 app.services.skills.markdown_parser INFO Parsed skill 'Presentation from Notes': 1 inputs, 4 steps, 3 outputs, 3 rules, variables=['user_input', 'presentation_topic']
+2026-03-29 09:12:21,329 main INFO GET /skills 200 0.02s [ea629941]
+2026-03-29 09:12:21,329 main INFO GET /skills/templates 200 0.01s [5ca91b79]
+2026-03-29 09:12:21,337 app.services.skills.markdown_parser INFO Parsed skill 'Study Pack Generator': 1 inputs, 8 steps, 4 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:21,337 app.services.skills.markdown_parser INFO Parsed skill 'Python Game Generator': 1 inputs, 7 steps, 1 outputs, 5 rules, variables=['user_input']
+2026-03-29 09:12:21,338 main INFO GET /skills 200 0.01s [b250b31d]
+2026-03-29 09:12:31,562 performance INFO request_performance
+2026-03-29 09:12:31,565 main INFO POST /chat/empty-suggestions 200 12.86s [3a7e54b9]

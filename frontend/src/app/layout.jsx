@@ -21,8 +21,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: 'KeplerLab — AI Learning Platform',
-  description: 'AI-powered learning platform with notebooks, chat, flashcards, quizzes, podcasts, and more.',
+  title: 'KeplerLab — AI Workspace',
+  description: 'AI-powered workspace for notebooks, chat, flashcards, quizzes, podcasts, and more.',
   icons: {
     icon: '/favicon.ico',
   },

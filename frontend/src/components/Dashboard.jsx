@@ -25,7 +25,6 @@ import {
   FolderOpen,
   ArrowUpRight,
   ImageIcon,
-  BrainCircuit,
 } from 'lucide-react';
 
 
@@ -362,13 +361,6 @@ export default function Dashboard() {
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
               )}
-              <button
-                onClick={() => router.push('/learning')}
-                className="btn-secondary inline-flex items-center gap-2 px-4 py-2.5"
-              >
-                AI Learning Studio
-                <BrainCircuit className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
