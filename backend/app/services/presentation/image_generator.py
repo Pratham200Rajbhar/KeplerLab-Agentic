@@ -29,6 +29,11 @@ _SLIDE_HEIGHT = 720
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def _get_access_token() -> str:
+    # 1. Prefer manually provided token
+    if settings.VERTEX_ACCESS_TOKEN:
+        return settings.VERTEX_ACCESS_TOKEN
+
+    # 2. Try google-auth library
     try:
         import google.auth
         from google.auth.transport.requests import Request
@@ -37,16 +42,21 @@ def _get_access_token() -> str:
         return credentials.token
     except Exception as e:
         logger.warning("Failed to get google-auth token, fallback to gcloud CLI: %s", e)
+        # 3. Fallback to gcloud CLI
         import subprocess
-        result = subprocess.run(
-            ["gcloud", "auth", "application-default", "print-access-token"],
-            capture_output=True, text=True, check=True,
-        )
-        return result.stdout.strip()
+        try:
+            result = subprocess.run(
+                ["gcloud", "auth", "application-default", "print-access-token"],
+                capture_output=True, text=True, check=True,
+            )
+            return result.stdout.strip()
+        except Exception as ge:
+            logger.error("Failed to get access token via gcloud: %s", ge)
+            return ""
 
 
 def _get_project_id() -> str:
-    return "project-2013f55b-2888-4590-9b5"
+    return settings.VERTEX_PROJECT_ID or "project-2013f55b-2888-4590-9b5"
 
 
 # ── 16:9 Enforcement ──────────────────────────────────────────────────────────
@@ -114,9 +124,10 @@ def _generate_image_sync(prompt: str) -> bytes:
     """Generate a single slide image via Gemini API (synchronous)."""
     project_id = _get_project_id()
     access_token = _get_access_token()
+    location = settings.VERTEX_LOCATION or "us-central1"
     url = (
-        f"https://us-central1-aiplatform.googleapis.com/v1/"
-        f"projects/{project_id}/locations/us-central1/"
+        f"https://{location}-aiplatform.googleapis.com/v1/"
+        f"projects/{project_id}/locations/{location}/"
         f"publishers/google/models/gemini-2.5-flash-image:generateContent"
     )
 

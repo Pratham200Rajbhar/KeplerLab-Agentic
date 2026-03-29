@@ -10,6 +10,11 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 def _get_access_token() -> str:
+    # 1. Prefer manually provided token from settings (for development/CI/specific envs)
+    if settings.VERTEX_ACCESS_TOKEN:
+        return settings.VERTEX_ACCESS_TOKEN
+
+    # 2. Try google-auth library
     try:
         import google.auth
         from google.auth.transport.requests import Request
@@ -18,11 +23,17 @@ def _get_access_token() -> str:
         return credentials.token
     except Exception as e:
         logger.warning(f"Failed to get google-auth token, fallback to gcloud CLI: {e}")
-        result = subprocess.run(["gcloud", "auth", "application-default", "print-access-token"], capture_output=True, text=True, check=True)
-        return result.stdout.strip()
+        # 3. Fallback to gcloud CLI
+        try:
+            result = subprocess.run(["gcloud", "auth", "application-default", "print-access-token"], capture_output=True, text=True, check=True)
+            return result.stdout.strip()
+        except Exception as ge:
+            logger.error(f"Failed to get access token via gcloud: {ge}")
+            return ""
 
 def _get_project_id() -> str:
-    return "project-2013f55b-2888-4590-9b5" # Hardcoding based on the user's gcloud stdout.
+    # Use setting if provided, otherwise you might want to auto-detect, but here we prioritize the config.
+    return settings.VERTEX_PROJECT_ID or "project-2013f55b-2888-4590-9b5"
 
 def generate_image(prompt: str) -> Tuple[bytes, str]:
     """
@@ -31,7 +42,8 @@ def generate_image(prompt: str) -> Tuple[bytes, str]:
     """
     project_id = _get_project_id()
     access_token = _get_access_token()
-    url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/publishers/google/models/gemini-2.5-flash-image:generateContent"
+    location = settings.VERTEX_LOCATION or "us-central1"
+    url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers/google/models/gemini-2.5-flash-image:generateContent"
     
     # Simple prompt enhancement: we just append some high-quality style instructions
     enhanced_prompt = f"{prompt.strip()}, high quality, highly detailed, masterpieces, vibrant colors, 4k"

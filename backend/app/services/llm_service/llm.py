@@ -349,7 +349,8 @@ class VertexGCPChat(BaseChatModel):
         import requests
         from app.services.image_generation.gemini_service import _get_access_token, _get_project_id
         
-        url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/us-central1/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
+        location = settings.VERTEX_LOCATION or "us-central1"
+        url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/{location}/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
         headers = {"Authorization": f"Bearer {_get_access_token()}", "Content-Type": "application/json"}
         payload = self._convert_messages(messages)
         
@@ -367,7 +368,8 @@ class VertexGCPChat(BaseChatModel):
         import httpx
         from app.services.image_generation.gemini_service import _get_access_token, _get_project_id
         
-        url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/us-central1/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
+        location = settings.VERTEX_LOCATION or "us-central1"
+        url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/{location}/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
         headers = {"Authorization": f"Bearer {_get_access_token()}", "Content-Type": "application/json"}
         payload = self._convert_messages(messages)
         

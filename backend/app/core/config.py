@@ -124,6 +124,11 @@ class Settings(BaseSettings):
     WEB_SCRAPE_ENDPOINT: Optional[str] = None
     WEB_IMAGE_SEARCH_ENDPOINT: Optional[str] = "http://16.16.144.216:8001/scrape"
 
+    # Vertex AI Configuration
+    VERTEX_PROJECT_ID: str = ""
+    VERTEX_LOCATION: str = "us-central1"
+    VERTEX_ACCESS_TOKEN: Optional[str] = None
+
     @field_validator("LLM_PROVIDER", mode="after")
     @classmethod
     def _uppercase_provider(cls, v: str) -> str:
