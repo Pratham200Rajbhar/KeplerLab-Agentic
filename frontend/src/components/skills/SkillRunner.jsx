@@ -137,30 +137,70 @@ export default function SkillRunner({ skill, notebookId, materialIds = [], onBac
 
   const hasStarted = currentRun && currentRun.status !== 'starting';
 
+  const formatLabel = (str) => {
+    return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Variable Inputs */}
       {!hasStarted && skill?.parsed?.inputs?.length > 0 && (
         <div className="skills-runner-inputs px-4 py-3 border-b border-border shrink-0">
           <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2.5">Input Variables</h4>
-          <div className="space-y-2">
-            {skill.parsed.inputs.map((inp) => (
-              <div key={inp.name}>
-                <label className="text-[11px] text-text-secondary font-medium mb-1 block">
-                  {inp.name}
-                  {inp.description && (
-                    <span className="text-text-muted font-normal ml-1">({inp.description})</span>
+          <div className="space-y-3">
+            {skill.parsed.inputs.map((inp) => {
+              const labelText = formatLabel(inp.name);
+              const isRedundantDesc = !inp.description ||
+                                     inp.description === `{${inp.name}}` ||
+                                     inp.description.trim() === inp.name;
+
+              return (
+              <div key={inp.name} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2 overflow-hidden">
+                  <label className="text-[11px] font-bold text-text-primary uppercase tracking-wider">
+                    {labelText}
+                  </label>
+                  {!isRedundantDesc && (
+                    <span className="text-text-muted text-[10px] italic truncate">
+                      {inp.description}
+                    </span>
                   )}
-                </label>
-                <input
-                  type="text"
-                  value={variables[inp.name] || ''}
-                  onChange={(e) => setVariables((v) => ({ ...v, [inp.name]: e.target.value }))}
-                  placeholder={`Enter ${inp.name}...`}
-                  className="skills-runner-input w-full px-3 py-2 rounded-lg text-[12px] outline-none transition-all"
-                />
+                </div>
+                {inp.options && inp.options.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      value={variables[inp.name] || ''}
+                      onChange={(e) => setVariables((v) => ({ ...v, [inp.name]: e.target.value }))}
+                      className="skills-runner-input w-full px-3 py-2.5 rounded-xl text-[13px] outline-none transition-all appearance-none cursor-pointer bg-surface-raised border border-border hover:border-accent/40 focus:ring-1 focus:ring-accent/20"
+                    >
+                      <option value="" disabled>Select {labelText}...</option>
+                      {inp.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
+                      <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+                    </div>
+                  </div>
+                ) : inp.input_type === 'textarea' ? (
+                  <textarea
+                    value={variables[inp.name] || ''}
+                    onChange={(e) => setVariables((v) => ({ ...v, [inp.name]: e.target.value }))}
+                    placeholder={`Enter ${labelText.toLowerCase()}...`}
+                    rows={3}
+                    className="skills-runner-input w-full px-3 py-2.5 rounded-xl text-[13px] outline-none transition-all resize-none bg-surface-raised border border-border hover:border-accent/40 focus:ring-1 focus:ring-accent/20 custom-scrollbar"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={variables[inp.name] || ''}
+                    onChange={(e) => setVariables((v) => ({ ...v, [inp.name]: e.target.value }))}
+                    placeholder={`Enter ${labelText.toLowerCase()}...`}
+                    className="skills-runner-input w-full px-3 py-2.5 rounded-xl text-[13px] outline-none transition-all bg-surface-raised border border-border hover:border-accent/40 focus:ring-1 focus:ring-accent/20"
+                  />
+                )}
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-29T01:13:51.492937",
+  "timestamp": "2026-03-30T01:38:46.805909",
   "total": 22,
   "passed": 22,
   "failed": 0,
@@ -8,7 +8,7 @@
       "name": "L1.1 \u2014 parse all 10 test-case skills",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.003,
+      "elapsed_seconds": 0.007,
       "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'inputs_count': 1, 'steps_count': 5, 'outputs_count': 4, 'rules_count': 2, 'variables': ['user_input', 'topic'], 'step_details': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, 'instruction'"
     },
     {
@@ -37,7 +37,7 @@
       "passed": true,
       "error": null,
       "elapsed_seconds": 0.0,
-      "output_preview": "{'title': 'Study Pack Generator', 'description': None, 'inputs': [{'name': 'topic', 'default_value': None, 'description': '{user_input}'}], 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, 'instruction': 'Generate flashcards i"
+      "output_preview": "{'title': 'Study Pack Generator', 'description': None, 'inputs': [{'name': 'topic', 'default_value': None, 'description': '{user_input}', 'options': [], 'input_type': 'text'}], 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, "
     },
     {
       "name": "L1.6 \u2014 conditional step parsing",
@@ -50,7 +50,7 @@
       "name": "L2.1 \u2014 tool mapping for all 10 skills (with materials)",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.002,
+      "elapsed_seconds": 0.003,
       "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'mapped_tools': ['rag', 'llm', 'llm', 'llm', 'python_auto'], 'expected_tools': ['rag', 'llm', 'llm', 'llm', 'python_auto'], 'match': True}, {'id': 2, 'title': 'Data Analysis Pipeline', 'mapped_tools': ['rag', 'python_auto', 'python_auto', 'llm'], 'expected_tools': ['rag', 'python_auto', 'python_auto', 'llm'], 'match': True}, {'id': 3, 'title': 'Video Summary Generator', 'mapped_tools': ['rag', 'llm', 'python_auto', 'python_auto'], 'expected_tools': ['r"
     },
     {
@@ -71,8 +71,8 @@
       "name": "L3.1 \u2014 variable substitution in compiler",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 16.345,
-      "output_preview": "{'plan_length': 5, 'steps': [{'index': 1, 'instruction': 'Query all uploaded documents to retrieve relevant content about Quantum Computing', 'tool_hint': 'rag', 'query': 'Quantum Computing', 'condition': None, 'tool': 'rag'}, {'index': 2, 'instruction': 'Using the retrieved content, synthesize and summarize the key concepts, principles, and fundamentals of Quantum Computing into a well-structured study guide', 'tool_hint': 'llm', 'query': 'Summarize the following content about Quantum Computing"
+      "elapsed_seconds": 0.0,
+      "output_preview": "{'plan_length': 5, 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about Quantum Computing', 'tool_hint': 'rag', 'condition': None, 'query': 'Search uploaded documents for material about Quantum Computing', 'tool': 'rag'}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'condition': None, 'query': 'Summarize the key concepts into a concise study guide', 'tool': 'llm'}, {'index': 3, 'instruction': 'Generate fla"
     },
     {
       "name": "L3.2 \u2014 compiler fallback (direct tool mapping)",
@@ -85,7 +85,7 @@
       "name": "L4.1 \u2014 SSE event format validation",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.006,
+      "elapsed_seconds": 0.01,
       "output_preview": "{'event_sample': 'event: skill_status\\ndata: {\"status\": \"running\", \"total_steps\": 3}\\n\\n'}"
     },
     {
@@ -106,56 +106,56 @@
       "name": "L5.1 \u2014 slugify helper",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.0,
+      "elapsed_seconds": 1.179,
       "output_preview": "[{'title': 'Research Summary', 'expected': 'research-summary', 'actual': 'research-summary', 'match': True}, {'title': 'Data Analysis Pipeline', 'expected': 'data-analysis-pipeline', 'actual': 'data-analysis-pipeline', 'match': True}, {'title': 'Hello World!!! @#$%', 'expected': 'hello-world', 'actual': 'hello-world', 'match': True}, {'title': '  spaces  and  tabs  ', 'expected': 'spaces-and-tabs', 'actual': 'spaces-and-tabs', 'match': True}, {'title': 'Already-Slugged', 'expected': 'already-slu"
     },
     {
       "name": "L5.2 \u2014 built-in templates loading",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.0,
-      "output_preview": "[{'slug': 'research-summary', 'title': 'Research Summary', 'steps': 4}, {'slug': 'data-analysis', 'title': 'Data Analysis Pipeline', 'steps': 4}, {'slug': 'web-research-report', 'title': 'Web Research Report', 'steps': 4}, {'slug': 'content-transformer', 'title': 'Content Transformer', 'steps': 4}]"
+      "elapsed_seconds": 0.001,
+      "output_preview": "[{'slug': 'research-summary', 'title': 'Research Summary', 'steps': 4}, {'slug': 'data-analysis', 'title': 'Data Analysis Pipeline', 'steps': 4}, {'slug': 'web-research-report', 'title': 'Web Research Report', 'steps': 4}, {'slug': 'content-transformer', 'title': 'Content Transformer', 'steps': 4}, {'slug': 'lecture-notes-to-summary', 'title': 'Lecture Notes to Summary', 'steps': 4}, {'slug': 'exam-revision-planner', 'title': 'Exam Revision Planner', 'steps': 4}, {'slug': 'paper-reading-workflow"
     },
     {
       "name": "L5.3 \u2014 CRUD: create, read, update, delete skill via Prisma",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.038,
-      "output_preview": "{'created_id': 'eb9d07ce-b41d-46a7-bea3-256752c19128', 'created_title': 'Study Pack Generator', 'updated_title': 'Enhanced Study Pack Generator', 'deleted': True}"
+      "elapsed_seconds": 0.033,
+      "output_preview": "{'created_id': 'f15a90c7-1683-43d6-863b-fa0af8f73394', 'created_title': 'Study Pack Generator', 'updated_title': 'Enhanced Study Pack Generator', 'deleted': True}"
     },
     {
       "name": "L6.1 \u2014 compile all 10 test-case skills",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 157.523,
+      "elapsed_seconds": 0.002,
       "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'steps_compiled': 5, 'tools': ['rag', 'llm', 'llm', 'llm', 'python_auto']}, {'id': 2, 'title': 'Data Analysis Pipeline', 'steps_compiled': 4, 'tools': ['rag', 'python_auto', 'python_auto', 'llm']}, {'id': 3, 'title': 'Video Summary Generator', 'steps_compiled': 4, 'tools': ['rag', 'llm', 'python_auto', 'python_auto']}, {'id': 4, 'title': 'Website Builder', 'steps_compiled': 4, 'tools': ['web_search', 'llm', 'llm', 'python_auto']}, {'id': 5, 'title': 'P"
     },
     {
       "name": "L7.1 \u2014 E2E: create skill, compile, execute one step via LLM",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 28.621,
-      "output_preview": "{'skill_id': '838b29b0-9862-4016-b1e7-76887fd7b081', 'events_count': 6, 'event_types': ['skill_status', 'skill_status', 'skill_status', 'skill_step_start', 'skill_step_result', 'skill_done'], 'has_status': True, 'has_done': True}"
+      "elapsed_seconds": 4.219,
+      "output_preview": "{'skill_id': '63e93358-3bde-4227-92b1-fe2fc9a707c4', 'events_count': 6, 'event_types': ['skill_status', 'skill_status', 'skill_status', 'skill_step_start', 'skill_step_result', 'skill_done'], 'has_status': True, 'has_done': True}"
     },
     {
       "name": "L7.2 \u2014 route handler import validation",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.277,
-      "output_preview": "{'registered_paths': {'/skills': ['GET', 'POST'], '/skills/templates': ['GET'], '/skills/validate': ['POST'], '/skills/runs': ['GET'], '/skills/runs/{run_id}': ['GET'], '/skills/{skill_id}': ['DELETE', 'GET', 'PUT'], '/skills/{skill_id}/run': ['POST']}, 'expected_found': 7}"
+      "elapsed_seconds": 0.315,
+      "output_preview": "{'registered_paths': {'/skills': ['GET', 'POST'], '/skills/templates': ['GET'], '/skills/validate': ['POST'], '/skills/suggest-tags': ['POST'], '/skills/generate-draft': ['POST'], '/skills/runs': ['GET'], '/skills/runs/{run_id}': ['GET'], '/skills/{skill_id}': ['DELETE', 'GET', 'PUT'], '/skills/{skill_id}/run': ['POST']}, 'expected_found': 7}"
     },
     {
       "name": "L7.3 \u2014 chat routing: /skills command detection",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.001,
+      "elapsed_seconds": 0.003,
       "output_preview": "{'skills_command': 'Capability.SKILL_EXECUTION', 'normal_message': 'Capability.CODE_EXECUTION'}"
     },
     {
       "name": "L7.4 \u2014 failed skill emits terminal event",
       "passed": true,
       "error": null,
-      "elapsed_seconds": 0.003,
+      "elapsed_seconds": 0.008,
       "output_preview": "{'event_types': ['skill_status', 'skill_done'], 'done': {'status': 'failed', 'total_steps': 0, 'successful_steps': 0, 'failed_steps': 0, 'artifacts_count': 0, 'elapsed_seconds': 0.0, 'final_output': '', 'step_logs': [], 'artifacts': [], 'error': 'Skill not found'}}"
     }
   ]

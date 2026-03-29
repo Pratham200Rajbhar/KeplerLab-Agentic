@@ -2,6 +2,6 @@
   "name": "L7.3 \u2014 chat routing: /skills command detection",
   "passed": true,
   "error": null,
-  "elapsed_seconds": 0.001,
+  "elapsed_seconds": 0.003,
   "output_preview": "{'skills_command': 'Capability.SKILL_EXECUTION', 'normal_message': 'Capability.CODE_EXECUTION'}"
 }

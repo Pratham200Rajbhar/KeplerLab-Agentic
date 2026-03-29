@@ -2,6 +2,6 @@
   "name": "L3.1 \u2014 variable substitution in compiler",
   "passed": true,
   "error": null,
-  "elapsed_seconds": 16.345,
-  "output_preview": "{'plan_length': 5, 'steps': [{'index': 1, 'instruction': 'Query all uploaded documents to retrieve relevant content about Quantum Computing', 'tool_hint': 'rag', 'query': 'Quantum Computing', 'condition': None, 'tool': 'rag'}, {'index': 2, 'instruction': 'Using the retrieved content, synthesize and summarize the key concepts, principles, and fundamentals of Quantum Computing into a well-structured study guide', 'tool_hint': 'llm', 'query': 'Summarize the following content about Quantum Computing"
+  "elapsed_seconds": 0.0,
+  "output_preview": "{'plan_length': 5, 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about Quantum Computing', 'tool_hint': 'rag', 'condition': None, 'query': 'Search uploaded documents for material about Quantum Computing', 'tool': 'rag'}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'condition': None, 'query': 'Summarize the key concepts into a concise study guide', 'tool': 'llm'}, {'index': 3, 'instruction': 'Generate fla"
 }

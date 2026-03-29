@@ -241,19 +241,33 @@ async def _execute_llm_step(
     query: str,
     context: str = "",
     rules: List[str] = None,
+    material_ids: List[str] = None,
 ) -> tuple[str, List[dict]]:
     """Execute a pure LLM reasoning/synthesis step."""
     from app.services.llm_service.llm import get_llm, extract_chunk_content
+    from app.services.notebooks.materials import get_material_metadata
 
     system = "You are a helpful assistant completing a step in a skill workflow."
     if rules:
         system += "\n\nRules to follow:\n" + "\n".join(f"- {r}" for r in rules)
 
+    # Add context about available materials if applicable
+    material_context = ""
+    if material_ids:
+        try:
+            metas = [get_material_metadata(mid) for mid in material_ids]
+            filenames = [m.get("filename") for m in metas if m.get("filename")]
+            if filenames:
+                material_context = f"\nNOTE: The user has uploaded the following materials to this notebook: {', '.join(filenames)}. "
+                material_context += "If you need specific data from them, you can ask for it or assume it was processed in previous steps."
+        except Exception:
+            pass
+
     prompt = query
     if context:
         prompt = f"Context from previous steps:\n{context}\n\nTask:\n{query}"
 
-    full_prompt = f"{system}\n\n{prompt}"
+    full_prompt = f"{system}{material_context}\n\n{prompt}"
     llm = get_llm(temperature=0.3, max_tokens=3000)
     result = await llm.ainvoke(full_prompt)
     response = extract_chunk_content(result)
@@ -396,13 +410,13 @@ async def execute_skill(
                     )
                 elif tool == "llm":
                     content, artifacts = await _execute_llm_step(
-                        query, accumulated_context, rules,
+                        query, accumulated_context, rules, material_ids,
                     )
                 else:
                     # Unknown tool, fall back to LLM
                     logger.warning("Unknown tool '%s' for step %d, falling back to llm", tool, step_index)
                     content, artifacts = await _execute_llm_step(
-                        query, accumulated_context, rules,
+                        query, accumulated_context, rules, material_ids,
                     )
                 break  # success
             except Exception as e:

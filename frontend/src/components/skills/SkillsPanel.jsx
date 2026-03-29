@@ -120,6 +120,11 @@ export default function SkillsPanel({ onClose }) {
     setView('list');
   }, [loadSkills, currentNotebook?.id]);
 
+  const handleRefresh = useCallback(() => {
+    loadSkills(currentNotebook?.id);
+    toast.info('Skills updated');
+  }, [loadSkills, currentNotebook?.id, toast]);
+
   // ── Render Views ────────────────────────────────────────
 
   if (view === 'editor') {
@@ -192,11 +197,23 @@ export default function SkillsPanel({ onClose }) {
           </div>
           <h3 className="text-[13px] font-bold text-text-primary tracking-wide">Agent Skills</h3>
         </div>
-        {onClose && (
-          <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {activeTab === 'skills' && (
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all disabled:opacity-50"
+              title="Refresh skills list"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

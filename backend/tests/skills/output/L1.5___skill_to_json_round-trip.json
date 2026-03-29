@@ -3,5 +3,5 @@
   "passed": true,
   "error": null,
   "elapsed_seconds": 0.0,
-  "output_preview": "{'title': 'Study Pack Generator', 'description': None, 'inputs': [{'name': 'topic', 'default_value': None, 'description': '{user_input}'}], 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, 'instruction': 'Generate flashcards i"
+  "output_preview": "{'title': 'Study Pack Generator', 'description': None, 'inputs': [{'name': 'topic', 'default_value': None, 'description': '{user_input}', 'options': [], 'input_type': 'text'}], 'steps': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, "
 }

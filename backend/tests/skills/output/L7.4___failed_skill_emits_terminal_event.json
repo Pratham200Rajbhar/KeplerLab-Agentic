@@ -2,6 +2,6 @@
   "name": "L7.4 \u2014 failed skill emits terminal event",
   "passed": true,
   "error": null,
-  "elapsed_seconds": 0.003,
+  "elapsed_seconds": 0.008,
   "output_preview": "{'event_types': ['skill_status', 'skill_done'], 'done': {'status': 'failed', 'total_steps': 0, 'successful_steps': 0, 'failed_steps': 0, 'artifacts_count': 0, 'elapsed_seconds': 0.0, 'final_output': '', 'step_logs': [], 'artifacts': [], 'error': 'Skill not found'}}"
 }

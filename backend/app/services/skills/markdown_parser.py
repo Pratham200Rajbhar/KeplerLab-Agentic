@@ -40,6 +40,8 @@ class SkillVariable:
     name: str
     default_value: Optional[str] = None
     description: Optional[str] = None
+    options: List[str] = field(default_factory=list)
+    input_type: str = "text"
 
 
 @dataclass
@@ -178,14 +180,27 @@ def parse_skill_markdown(markdown: str) -> SkillDefinition:
         var_match = _INPUT_VAR_RE.match(line)
         if var_match:
             var_name = var_match.group(1).strip()
-            default_or_desc = var_match.group(2).strip()
-            # Check if value is a variable reference like {user_input}
-            ref_match = _VARIABLE_RE.match(default_or_desc)
-            default = None if ref_match else default_or_desc
+            rest = var_match.group(2).strip()
+            
+            options_match = re.search(r"\[(.*?)\]", rest)
+            type_match = re.search(r"\((.*?)\)", rest)
+            
+            options = []
+            if options_match:
+                options = [o.strip() for o in options_match.group(1).split(",") if o.strip()]
+            
+            input_type = "text"
+            if type_match:
+                input_type = type_match.group(1).strip()
+
+            ref_match = _VARIABLE_RE.match(rest)
+            default = None if ref_match else rest
             inputs.append(SkillVariable(
                 name=var_name,
                 default_value=default,
-                description=default_or_desc,
+                description=rest,
+                options=options,
+                input_type=input_type,
             ))
 
     # Parse Steps section
@@ -255,7 +270,13 @@ def skill_to_json(definition: SkillDefinition) -> Dict[str, Any]:
         "title": definition.title,
         "description": definition.description,
         "inputs": [
-            {"name": v.name, "default_value": v.default_value, "description": v.description}
+            {
+                "name": v.name, 
+                "default_value": v.default_value, 
+                "description": v.description,
+                "options": v.options,
+                "input_type": v.input_type
+            }
             for v in definition.inputs
         ],
         "steps": [
