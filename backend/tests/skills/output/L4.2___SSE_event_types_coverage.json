@@ -1,0 +1,7 @@
+{
+  "name": "L4.2 \u2014 SSE event types coverage",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "[{'event': 'skill_status', 'parsed_ok': True}, {'event': 'skill_step_start', 'parsed_ok': True}, {'event': 'skill_step_result', 'parsed_ok': True}, {'event': 'skill_step_error', 'parsed_ok': True}, {'event': 'skill_artifact', 'parsed_ok': True}, {'event': 'skill_done', 'parsed_ok': True}]"
+}

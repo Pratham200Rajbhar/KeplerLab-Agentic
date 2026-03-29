@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { memo, useState, useCallback, useMemo, useEffect } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';

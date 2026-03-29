@@ -1,0 +1,7 @@
+{
+  "name": "L1.1 \u2014 parse all 10 test-case skills",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.003,
+  "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'inputs_count': 1, 'steps_count': 5, 'outputs_count': 4, 'rules_count': 2, 'variables': ['user_input', 'topic'], 'step_details': [{'index': 1, 'instruction': 'Search uploaded documents for material about {topic}', 'tool_hint': 'rag', 'variables_used': ['topic'], 'condition': None}, {'index': 2, 'instruction': 'Summarize the key concepts into a concise study guide', 'tool_hint': 'llm', 'variables_used': [], 'condition': None}, {'index': 3, 'instruction'"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "L1.4 \u2014 variable extraction depth",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "{'variables': ['user_input', 'name', 'output_format', 'depth_level'], 'inputs': ['name', 'depth', 'format']}"
+}

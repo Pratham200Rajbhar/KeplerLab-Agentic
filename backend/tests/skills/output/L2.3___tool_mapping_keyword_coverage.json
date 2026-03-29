@@ -1,0 +1,7 @@
+{
+  "name": "L2.3 \u2014 tool mapping keyword coverage",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "[{'instruction': 'Search uploaded documents for AI papers', 'expected': 'rag', 'actual': 'rag', 'match': True}, {'instruction': 'Search the web for latest news', 'expected': 'web_search', 'actual': 'web_search', 'match': True}, {'instruction': 'Find online resources about Python', 'expected': 'web_search', 'actual': 'web_search', 'match': True}, {'instruction': 'Generate Python code to create a bar chart', 'expected': 'python_auto', 'actual': 'python_auto', 'match': True}, {'instruction': 'Compu"
+}

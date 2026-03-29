@@ -42,6 +42,55 @@ enum GeneratedContentType {
   PRESENTATION
 }
 
+enum SkillRunStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+enum LearningLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum LearningGoalType {
+  exam_prep
+  career_switch
+  project_build
+  concept_mastery
+}
+
+enum LearningPathStatus {
+  active
+  paused
+  completed
+  archived
+}
+
+enum LearningDayStatus {
+  pending
+  in_progress
+  completed
+}
+
+enum LearningSessionStage {
+  LESSON
+  INTERACTION
+  TASK
+  QUIZ
+  GAME
+  COMPLETE
+}
+
+enum LearningAttemptType {
+  interaction
+  task
+  quiz
+  game
+}
+
 // ─── Users ───────────────────────────────────────────────
 
 model User {
@@ -71,6 +120,13 @@ model User {
   podcastSessions  PodcastSession[]
   artifacts        Artifact[]
   sourceSelections NotebookSourceSelection[]
+  skills           Skill[]
+  skillRuns        SkillRun[]
+  learningPaths    LearningPath[]
+  learningProgress LearningProgress[]
+  learningSessionStates LearningSessionState[]
+  learningAttempts LearningAttempt[]
+  learningWeakTopics LearningWeakTopic[]
 
   @@map("users")
 }
@@ -96,6 +152,8 @@ model Notebook {
   podcastSessions  PodcastSession[]
   artifacts        Artifact[]
   sourceSelections NotebookSourceSelection[]
+  skills           Skill[]
+  skillRuns        SkillRun[]
 
   @@index([userId])
   @@map("notebooks")
@@ -600,5 +658,193 @@ model Artifact {
   @@index([sessionId])
   @@index([downloadToken])
   @@map("artifacts")
+}
+
+// ─── Skills (Markdown-based AI Workflows) ────────────────
+
+model Skill {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  notebookId  String?  @map("notebook_id") @db.Uuid
+  slug        String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  markdown    String   @db.Text
+  version     Int      @default(1)
+  isGlobal    Boolean  @default(false) @map("is_global")
+  tags        String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  owner    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+  runs     SkillRun[]
+
+  @@unique([userId, notebookId, slug])
+  @@index([userId])
+  @@index([notebookId])
+  @@index([slug])
+  @@map("skills")
+}
+
+model SkillRun {
+  id          String         @id @default(uuid()) @db.Uuid
+  skillId     String         @map("skill_id") @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  notebookId  String?        @map("notebook_id") @db.Uuid
+  status      SkillRunStatus @default(pending)
+  variables   Json?
+  stepLogs    Json?          @map("step_logs")
+  result      Json?
+  artifacts   Json?
+  error       String?        @db.Text
+  startedAt   DateTime?      @map("started_at")
+  completedAt DateTime?      @map("completed_at")
+  elapsedTime Float          @default(0.0) @map("elapsed_time")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  skill    Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  owner    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+
+  @@index([skillId])
+  @@index([userId])
+  @@map("skill_runs")
+}
+
+// ─── Learning Paths (AI Learning Studio) ────────────────
+
+model LearningPath {
+  id            String             @id @default(uuid()) @db.Uuid
+  userId        String             @map("user_id") @db.Uuid
+  title         String             @db.VarChar(255)
+  topic         String             @db.VarChar(255)
+  durationDays  Int                @map("duration_days")
+  level         LearningLevel
+  goalType      LearningGoalType   @map("goal_type")
+  status        LearningPathStatus @default(active)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  owner         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days          LearningDay[]
+  progresses    LearningProgress[]
+  sessionStates LearningSessionState[]
+  attempts      LearningAttempt[]
+  weakTopics    LearningWeakTopic[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("learning_paths")
+}
+
+model LearningDay {
+  id               String            @id @default(uuid()) @db.Uuid
+  pathId           String            @map("path_id") @db.Uuid
+  dayNumber        Int               @map("day_number")
+  title            String            @db.VarChar(255)
+  description      String?           @db.Text
+  status           LearningDayStatus @default(pending)
+  isUnlocked       Boolean           @default(false) @map("is_unlocked")
+  generatedContent Json?             @map("generated_content")
+  generatedAt      DateTime?         @map("generated_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  path          LearningPath         @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  sessionStates LearningSessionState[]
+  attempts      LearningAttempt[]
+
+  @@unique([pathId, dayNumber])
+  @@index([pathId])
+  @@index([pathId, status])
+  @@index([pathId, isUnlocked])
+  @@map("learning_days")
+}
+
+model LearningProgress {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  pathId               String   @map("path_id") @db.Uuid
+  currentDay           Int      @default(1) @map("current_day")
+  completionPercentage Float    @default(0.0) @map("completion_percentage")
+  streak               Int      @default(0)
+  quizAccuracy         Float?   @map("quiz_accuracy")
+  lastActive           DateTime? @map("last_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  owner User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path  LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@index([pathId])
+  @@map("learning_progress")
+}
+
+model LearningSessionState {
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @map("user_id") @db.Uuid
+  pathId         String               @map("path_id") @db.Uuid
+  dayId          String               @map("day_id") @db.Uuid
+  stage          LearningSessionStage @default(LESSON)
+  stageIndex     Int                  @default(1) @map("stage_index")
+  canCompleteDay Boolean              @default(false) @map("can_complete_day")
+  stateData      Json?                @map("state_data")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  owner User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path  LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  day   LearningDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayId])
+  @@index([userId, pathId])
+  @@map("learning_session_states")
+}
+
+model LearningAttempt {
+  id          String             @id @default(uuid()) @db.Uuid
+  userId      String             @map("user_id") @db.Uuid
+  pathId      String             @map("path_id") @db.Uuid
+  dayId       String             @map("day_id") @db.Uuid
+  stage       LearningSessionStage
+  attemptType LearningAttemptType @map("attempt_type")
+  inputData   Json?              @map("input_data")
+  resultData  Json?              @map("result_data")
+  score       Float?
+  passed      Boolean            @default(false)
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  owner User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path  LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  day   LearningDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@index([userId, pathId])
+  @@index([dayId, stage])
+  @@index([createdAt])
+  @@map("learning_attempts")
+}
+
+model LearningWeakTopic {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  pathId         String    @map("path_id") @db.Uuid
+  topic          String    @db.VarChar(255)
+  confidence     Float     @default(0.5)
+  mistakeCount   Int       @default(0) @map("mistake_count")
+  lastObservedAt DateTime? @map("last_observed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  owner User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path  LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pathId, topic])
+  @@index([userId, pathId])
+  @@index([pathId, confidence])
+  @@map("learning_weak_topics")
 }
 

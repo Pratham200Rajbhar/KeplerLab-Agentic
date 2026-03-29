@@ -1,0 +1,7 @@
+{
+  "name": "L2.1 \u2014 tool mapping for all 10 skills (with materials)",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.002,
+  "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'mapped_tools': ['rag', 'llm', 'llm', 'llm', 'python_auto'], 'expected_tools': ['rag', 'llm', 'llm', 'llm', 'python_auto'], 'match': True}, {'id': 2, 'title': 'Data Analysis Pipeline', 'mapped_tools': ['rag', 'python_auto', 'python_auto', 'llm'], 'expected_tools': ['rag', 'python_auto', 'python_auto', 'llm'], 'match': True}, {'id': 3, 'title': 'Video Summary Generator', 'mapped_tools': ['rag', 'llm', 'python_auto', 'python_auto'], 'expected_tools': ['r"
+}

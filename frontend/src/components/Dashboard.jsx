@@ -25,6 +25,7 @@ import {
   FolderOpen,
   ArrowUpRight,
   ImageIcon,
+  BrainCircuit,
 } from 'lucide-react';
 
 
@@ -94,7 +95,6 @@ export default function Dashboard() {
       workers.map(async (batch) => {
         for (const notebook of batch) {
           // Run a small bounded queue to avoid request spikes.
-          // eslint-disable-next-line no-await-in-loop
           await runOne(notebook);
         }
       })
@@ -362,6 +362,13 @@ export default function Dashboard() {
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
               )}
+              <button
+                onClick={() => router.push('/learning')}
+                className="btn-secondary inline-flex items-center gap-2 px-4 py-2.5"
+              >
+                AI Learning Studio
+                <BrainCircuit className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -487,6 +494,7 @@ export default function Dashboard() {
                 >
                 <div className="relative h-[120px] w-full overflow-hidden">
                   {hasWorkingThumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={notebook.thumbnail_url}
                       alt=""

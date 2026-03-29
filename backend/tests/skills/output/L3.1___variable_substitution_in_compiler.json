@@ -1,0 +1,7 @@
+{
+  "name": "L3.1 \u2014 variable substitution in compiler",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 16.345,
+  "output_preview": "{'plan_length': 5, 'steps': [{'index': 1, 'instruction': 'Query all uploaded documents to retrieve relevant content about Quantum Computing', 'tool_hint': 'rag', 'query': 'Quantum Computing', 'condition': None, 'tool': 'rag'}, {'index': 2, 'instruction': 'Using the retrieved content, synthesize and summarize the key concepts, principles, and fundamentals of Quantum Computing into a well-structured study guide', 'tool_hint': 'llm', 'query': 'Summarize the following content about Quantum Computing"
+}

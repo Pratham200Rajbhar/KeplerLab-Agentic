@@ -5383,3 +5383,379 @@ MINDMAP ANIMATIONS
     transform: translate(20%, 20%) scale(1.2);
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   AGENT SKILLS SYSTEM
+   ═══════════════════════════════════════════════════════ */
+
+.skills-panel {
+  background: var(--surface);
+}
+
+.skills-header-icon {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.08));
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.skills-tabs {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.skills-tab {
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.skills-tab-active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.skills-create-btn {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
+  border: 1px dashed rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  font-size: 0.8125rem;
+}
+
+.skills-create-btn:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1));
+  border-color: rgba(251, 191, 36, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.1);
+}
+
+.skills-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.skills-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-overlay);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.skills-global-badge {
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.skills-tag {
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.skills-action-btn {
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.skills-action-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.skills-action-run {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+
+.skills-action-run:hover {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.skills-action-danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+/* ─── Skills Editor ───────────────────────────────────── */
+
+.skills-editor-toolbar {
+  background: var(--surface-raised);
+}
+
+.skills-editor-section-btn {
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition: all 0.15s ease;
+}
+
+.skills-editor-section-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-subtle);
+}
+
+.skills-editor-toggle {
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.skills-editor-toggle-active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.skills-editor-textarea {
+  font-family: var(--font-jetbrains, 'JetBrains Mono', monospace);
+  background: var(--surface);
+  letter-spacing: -0.01em;
+}
+
+.skills-editor-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.skills-editor-preview {
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border);
+}
+
+.skills-editor-error {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.skills-preview-item {
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+}
+
+.skills-var-badge {
+  background: rgba(251, 191, 36, 0.08);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.15);
+}
+
+.skills-editor-footer {
+  background: var(--surface-raised);
+}
+
+.skills-checkbox {
+  accent-color: var(--accent);
+}
+
+.skills-tags-input {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.skills-tags-input:focus {
+  border-color: var(--accent-border);
+}
+
+.skills-btn-secondary {
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.skills-btn-secondary:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.skills-btn-primary {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #000));
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.skills-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Skills Runner ───────────────────────────────────── */
+
+.skills-runner-input {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.skills-runner-input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.skills-runner-input::placeholder {
+  color: var(--text-muted);
+}
+
+.skills-run-btn {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #fff;
+  font-size: 0.8125rem;
+  border: none;
+  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.2);
+  transition: all 0.2s ease;
+}
+
+.skills-run-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(52, 211, 153, 0.3);
+}
+
+.skills-run-header {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.skills-progress-bar {
+  background: var(--surface-overlay);
+}
+
+.skills-progress-fill {
+  background: linear-gradient(90deg, var(--accent), #34d399);
+}
+
+.skills-step-item {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.skills-step-ok {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+}
+
+.skills-step-fail {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.skills-step-running {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.skills-step-pending {
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+}
+
+.skills-step-output {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: var(--font-jetbrains, 'JetBrains Mono', monospace);
+  font-size: 0.6875rem;
+}
+
+.skills-step-error {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.skills-step-content {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.skills-final-output {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.skills-artifact {
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+}
+
+/* ─── Skills Run Card / Status ────────────────────────── */
+
+.skills-run-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.skills-run-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-overlay);
+}
+
+.skills-run-status-ok {
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+}
+
+.skills-run-status-fail {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.skills-run-status-pending {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+/* ─── Skills Run Log ──────────────────────────────────── */
+
+.skills-runlog-header {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.skills-runlog-step {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+/* ─── Skills Templates ────────────────────────────────── */
+
+.skills-template-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.skills-template-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.skills-template-import-btn {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  transition: all 0.2s ease;
+}
+
+.skills-template-import-btn:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1));
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+/* ─── Skills Empty State ──────────────────────────────── */
+
+.skills-empty-state {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

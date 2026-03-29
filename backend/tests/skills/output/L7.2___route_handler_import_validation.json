@@ -1,0 +1,7 @@
+{
+  "name": "L7.2 \u2014 route handler import validation",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.277,
+  "output_preview": "{'registered_paths': {'/skills': ['GET', 'POST'], '/skills/templates': ['GET'], '/skills/validate': ['POST'], '/skills/runs': ['GET'], '/skills/runs/{run_id}': ['GET'], '/skills/{skill_id}': ['DELETE', 'GET', 'PUT'], '/skills/{skill_id}/run': ['POST']}, 'expected_found': 7}"
+}

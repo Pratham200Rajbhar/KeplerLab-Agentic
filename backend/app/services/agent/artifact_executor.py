@@ -273,6 +273,28 @@ Return ONLY the corrected {language} code — no markdown fences, no explanation
 """
 
 
+def _extract_missing_module_name(error_text: str) -> Optional[str]:
+    """Extract missing module name from ModuleNotFoundError text."""
+    if not error_text:
+        return None
+    match = _re.search(r"No module named ['\"]([a-zA-Z0-9_\.\-]+)['\"]", error_text)
+    if not match:
+        return None
+    module_name = match.group(1).strip()
+    return module_name.split(".")[0] if module_name else None
+
+
+def _resolve_approved_package(module_name: str) -> Optional[str]:
+    """Return approved package name for a missing module, if allowed."""
+    approved = settings.APPROVED_ON_DEMAND or {}
+    if module_name in approved:
+        return module_name
+    root = module_name.split(".")[0]
+    if root in approved:
+        return root
+    return None
+
+
 async def _attempt_code_repair(
     code: str,
     error: str,
@@ -411,6 +433,7 @@ async def execute_code_and_collect_artifacts(
         # Execute with auto-repair loop
         current_code = code
         result = None
+        installed_on_demand: set[str] = set()
         for attempt in range(1 + MAX_CODE_REPAIR_ATTEMPTS):
             result = await run_in_sandbox(
                 current_code, work_dir=work_dir, timeout=timeout, language=language,
@@ -436,6 +459,36 @@ async def execute_code_and_collect_artifacts(
 
             if not is_hard_fail and not is_silent_fail:
                 break  # genuine success
+
+            if is_hard_fail:
+                error_blob = result.stderr or result.error or ""
+                missing_module = _extract_missing_module_name(error_blob)
+                approved_pkg = _resolve_approved_package(missing_module) if missing_module else None
+                if approved_pkg and approved_pkg not in installed_on_demand:
+                    try:
+                        from app.services.code_execution.sandbox_env import install_package_if_missing_async
+
+                        yield sse("agent_status", {
+                            "phase": "executing",
+                            "message": f"Installing approved package '{approved_pkg}'...",
+                            "step_index": step_index,
+                        })
+                        installed_ok = await install_package_if_missing_async(approved_pkg)
+                        if installed_ok:
+                            installed_on_demand.add(approved_pkg)
+                            yield sse("agent_status", {
+                                "phase": "executing",
+                                "message": f"Installed '{approved_pkg}'. Retrying execution...",
+                                "step_index": step_index,
+                            })
+                            continue
+                        yield sse("agent_status", {
+                            "phase": "executing",
+                            "message": f"Approved package install failed for '{approved_pkg}'. Continuing with repair...",
+                            "step_index": step_index,
+                        })
+                    except Exception as install_exc:
+                        logger.warning("On-demand install failed for %s: %s", approved_pkg, install_exc)
 
             # Attempt repair if retries remain
             if attempt < MAX_CODE_REPAIR_ATTEMPTS:

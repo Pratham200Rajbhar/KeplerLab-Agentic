@@ -1,0 +1,7 @@
+{
+  "name": "L3.2 \u2014 compiler fallback (direct tool mapping)",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "{'fallback_steps': [{'index': 1, 'instruction': 'Search uploaded documents for existing research about AI Safety', 'tool_hint': 'rag', 'tool': 'rag'}, {'index': 2, 'instruction': 'Search the web for recent developments about AI Safety', 'tool_hint': 'web_search', 'tool': 'web_search'}, {'index': 3, 'instruction': 'Research the topic comprehensively across multiple sources', 'tool_hint': 'research', 'tool': 'research'}, {'index': 4, 'instruction': 'Synthesize all findings into a structured report"
+}

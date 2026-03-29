@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';

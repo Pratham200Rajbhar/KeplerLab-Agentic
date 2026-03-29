@@ -1,0 +1,7 @@
+{
+  "name": "L4.1 \u2014 SSE event format validation",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.006,
+  "output_preview": "{'event_sample': 'event: skill_status\\ndata: {\"status\": \"running\", \"total_steps\": 3}\\n\\n'}"
+}

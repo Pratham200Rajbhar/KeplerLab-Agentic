@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertTriangle,
   Brain,
+  Wand2,
 } from 'lucide-react';
 
 import useAppStore from '@/stores/useAppStore';
@@ -57,6 +58,10 @@ const PodcastStudio = dynamic(
 );
 const MindMapCanvas = dynamic(
   () => import('@/components/mindmap/MindMapCanvas'),
+  { ssr: false, loading: () => <LoadingSpinner /> }
+);
+const SkillsPanel = dynamic(
+  () => import('@/components/skills/SkillsPanel'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
 
@@ -750,6 +755,13 @@ export default function StudioPanel() {
       onClick: handleMindMapClick,
       onCancel: handleCancelMindMap,
     },
+    {
+      id: 'skills',
+      title: 'Agent Skills',
+      description: 'Create and run custom AI workflows',
+      icon: <Wand2 className="w-5 h-5" />,
+      onClick: () => setActiveView('skills'),
+    },
   ];
 
   const completedPodcastSessions = (podcastSessions || []).filter(
@@ -767,6 +779,7 @@ export default function StudioPanel() {
     explainer: 'Explainer Video',
     podcast: 'AI Podcast',
     mindmap: 'Mind Map',
+    skills: 'Agent Skills',
   };
 
 
@@ -840,7 +853,10 @@ export default function StudioPanel() {
             </div>
           );
         }
-        return null; // Fallback if mindmapData is null but activeView is 'mindmap'
+        return null;
+
+      case 'skills':
+        return <SkillsPanel onClose={() => setActiveView(null)} />;
 
       default:
         return null;

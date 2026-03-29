@@ -1,0 +1,7 @@
+{
+  "name": "L6.1 \u2014 compile all 10 test-case skills",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 157.523,
+  "output_preview": "[{'id': 1, 'title': 'Study Pack Generator', 'steps_compiled': 5, 'tools': ['rag', 'llm', 'llm', 'llm', 'python_auto']}, {'id': 2, 'title': 'Data Analysis Pipeline', 'steps_compiled': 4, 'tools': ['rag', 'python_auto', 'python_auto', 'llm']}, {'id': 3, 'title': 'Video Summary Generator', 'steps_compiled': 4, 'tools': ['rag', 'llm', 'python_auto', 'python_auto']}, {'id': 4, 'title': 'Website Builder', 'steps_compiled': 4, 'tools': ['web_search', 'llm', 'llm', 'python_auto']}, {'id': 5, 'title': 'P"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "L1.3 \u2014 validate_skill_markdown (invalid inputs)",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "[{'label': 'empty string', 'valid': False, 'error': 'Skill markdown is empty'}, {'label': 'no sections', 'valid': False, 'error': \"Skill must have at least one numbered step in the ## Steps section. Format: '1. Do something'\"}, {'label': 'no steps section', 'valid': False, 'error': \"Skill must have at least one numbered step in the ## Steps section. Format: '1. Do something'\"}, {'label': 'non-numbered steps', 'valid': False, 'error': \"Skill must have at least one numbered step in the ## Steps se"
+}

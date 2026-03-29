@@ -1,0 +1,7 @@
+{
+  "name": "L5.2 \u2014 built-in templates loading",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "[{'slug': 'research-summary', 'title': 'Research Summary', 'steps': 4}, {'slug': 'data-analysis', 'title': 'Data Analysis Pipeline', 'steps': 4}, {'slug': 'web-research-report', 'title': 'Web Research Report', 'steps': 4}, {'slug': 'content-transformer', 'title': 'Content Transformer', 'steps': 4}]"
+}

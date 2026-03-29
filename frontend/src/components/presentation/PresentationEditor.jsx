@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import SlideCanvas from './SlideCanvas';
 import SlideInputBox from './SlideInputBox';
 import SlideList from './SlideList';
@@ -17,14 +17,12 @@ export default function PresentationEditor({
   const slides = presentation?.data?.slides || [];
   const [downloadFormat, setDownloadFormat] = useState('pptx');
   const [htmlVersion, setHtmlVersion] = useState(0);
-  const prevUpdating = useRef(updating);
 
-  useEffect(() => {
-    if (prevUpdating.current && !updating) {
-      setHtmlVersion((v) => v + 1);
-    }
-    prevUpdating.current = updating;
-  }, [updating]);
+  const handleUpdate = async (instruction) => {
+    const result = await onUpdate?.(instruction);
+    setHtmlVersion((v) => v + 1);
+    return result;
+  };
 
   return (
     <div className="h-full grid grid-cols-12 gap-3">
@@ -63,7 +61,7 @@ export default function PresentationEditor({
         />
 
         <div className="rounded-xl border border-[var(--border)] p-3 bg-[var(--surface)]">
-          <SlideInputBox onSubmit={onUpdate} loading={updating} />
+          <SlideInputBox onSubmit={handleUpdate} loading={updating} />
         </div>
       </div>
     </div>

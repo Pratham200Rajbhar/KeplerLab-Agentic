@@ -1,0 +1,7 @@
+{
+  "name": "L2.2 \u2014 tool mapping (no materials \u2014 RAG fallback)",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "{'rag_fallback': 'web_search', 'explicit_rag_fallback': 'web_search', 'web_stable': 'web_search'}"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "L7.1 \u2014 E2E: create skill, compile, execute one step via LLM",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 28.621,
+  "output_preview": "{'skill_id': '838b29b0-9862-4016-b1e7-76887fd7b081', 'events_count': 6, 'event_types': ['skill_status', 'skill_status', 'skill_status', 'skill_step_start', 'skill_step_result', 'skill_done'], 'has_status': True, 'has_done': True}"
+}

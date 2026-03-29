@@ -1,0 +1,7 @@
+{
+  "name": "L1.6 \u2014 conditional step parsing",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "{'steps': [{'index': 1, 'instruction': 'Search uploaded documents to check for dataset availability about {topic}', 'condition': None}, {'index': 2, 'instruction': 'Generate Python code for data analysis with statistics', 'condition': 'dataset found'}, {'index': 3, 'instruction': 'Summarize all relevant documents about {topic}', 'condition': 'no dataset'}, {'index': 4, 'instruction': 'Generate a final report combining the analysis results', 'condition': None}], 'conditions_found': 2}"
+}

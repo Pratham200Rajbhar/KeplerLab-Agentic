@@ -61,6 +61,9 @@ async def chat_endpoint(
     request: ChatRequest,
     current_user=Depends(get_current_user),
 ):
+    if request.notebook_id and request.notebook_id != "draft":
+        await _require_notebook_access(request.notebook_id, str(current_user.id))
+
     ids = request.material_ids or ([request.material_id] if request.material_id else [])
     used_saved_selection = False
 

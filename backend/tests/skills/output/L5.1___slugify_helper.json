@@ -1,0 +1,7 @@
+{
+  "name": "L5.1 \u2014 slugify helper",
+  "passed": true,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "output_preview": "[{'title': 'Research Summary', 'expected': 'research-summary', 'actual': 'research-summary', 'match': True}, {'title': 'Data Analysis Pipeline', 'expected': 'data-analysis-pipeline', 'actual': 'data-analysis-pipeline', 'match': True}, {'title': 'Hello World!!! @#$%', 'expected': 'hello-world', 'actual': 'hello-world', 'match': True}, {'title': '  spaces  and  tabs  ', 'expected': 'spaces-and-tabs', 'actual': 'spaces-and-tabs', 'match': True}, {'title': 'Already-Slugged', 'expected': 'already-slu"
+}

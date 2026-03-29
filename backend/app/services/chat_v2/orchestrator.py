@@ -52,6 +52,13 @@ async def run(
             yield event
         return
 
+    if capability == Capability.SKILL_EXECUTION:
+        async for event in _handle_skill_execution(
+            message, notebook_id, user_id, session_id, material_ids, start_time,
+        ):
+            yield event
+        return
+
     if capability == Capability.WEB_RESEARCH:
         async for event in _handle_research(message, notebook_id, user_id, session_id, start_time):
             yield event
@@ -435,3 +442,71 @@ async def _persist(
     except Exception as exc:
         logger.error("Persistence failed: %s", exc)
         return [], None
+
+
+async def _handle_skill_execution(message, notebook_id, user_id, session_id, material_ids, start_time):
+    """Handle /skills <slug> [variable=value ...] commands from chat."""
+    import re as _re
+
+    # Parse: /skills <slug> [var=val ...]
+    clean = message.lstrip()
+    if clean.startswith("/skills"):
+        clean = clean[len("/skills"):].strip()
+
+    parts = clean.split(None, 1)
+    slug = parts[0] if parts else ""
+    args_str = parts[1] if len(parts) > 1 else ""
+
+    if not slug:
+        yield sse_error("Usage: /skills <skill-name> [variable=value ...]")
+        yield sse_done({"elapsed": round(time.time() - start_time, 2)})
+        return
+
+    # Parse variable=value pairs
+    variables = {}
+    if args_str:
+        # Support both key=value and key="multi word value"
+        for match in _re.finditer(r'(\w+)\s*=\s*(?:"([^"]+)"|(\S+))', args_str):
+            key = match.group(1)
+            value = match.group(2) or match.group(3)
+            variables[key] = value
+
+        # If no key=value found, use the whole args as user_input
+        if not variables:
+            variables["user_input"] = args_str
+            # Also set common variable aliases
+            variables["topic"] = args_str
+            variables["question"] = args_str
+            variables["objective"] = args_str
+
+    from app.services.skills.skill_service import run_skill_by_slug
+
+    final_output_parts = []
+
+    async for event in run_skill_by_slug(
+        slug=slug,
+        user_id=user_id,
+        notebook_id=notebook_id,
+        session_id=session_id,
+        material_ids=material_ids or [],
+        variables=variables,
+    ):
+        yield event
+
+        # Collect final output for persistence
+        try:
+            if "skill_step_result" in event:
+                import json as _json
+                data_line = event.split("data: ", 1)[1].split("\n")[0]
+                data = _json.loads(data_line)
+                if data.get("content"):
+                    final_output_parts.append(data["content"])
+        except (IndexError, ValueError):
+            pass
+
+    # Persist as a chat message
+    final_output = "\n\n".join(final_output_parts[-3:]) if final_output_parts else f"Skill '{slug}' executed."
+    meta = {"intent": "SKILL_EXECUTION", "skill_slug": slug, "elapsed": round(time.time() - start_time, 2)}
+
+    await _persist(notebook_id, user_id, session_id, message, final_output[:5000], meta)
+

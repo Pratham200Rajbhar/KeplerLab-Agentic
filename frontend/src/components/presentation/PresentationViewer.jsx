@@ -43,8 +43,12 @@ export default function PresentationViewer({ presentationId, slideIndex = 0, ver
   const frameWrapRef = useRef(null);
   const [scale, setScale] = useState(1);
   const [htmlText, setHtmlText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loadedKey, setLoadedKey] = useState('');
+  const [errorState, setErrorState] = useState({ key: '', message: '' });
+
+  const requestKey = `${presentationId || ''}:${version || 0}`;
+  const loading = Boolean(presentationId) && loadedKey !== requestKey;
+  const error = errorState.key === requestKey ? errorState.message : '';
 
   useEffect(() => {
     const el = frameWrapRef.current;
@@ -66,20 +70,22 @@ export default function PresentationViewer({ presentationId, slideIndex = 0, ver
   useEffect(() => {
     if (!presentationId) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError('');
 
     // Fetch new HTML whenever presentationId or version changes
     fetchPresentationHtml(presentationId, { signal: controller.signal, version })
-      .then((html) => setHtmlText(html || ''))
+      .then((html) => {
+        setHtmlText(html || '');
+        setErrorState({ key: requestKey, message: '' });
+        setLoadedKey(requestKey);
+      })
       .catch((err) => {
         if (err.name === 'AbortError') return;
-        setError(err.message || 'Failed to load presentation HTML');
-      })
-      .finally(() => setLoading(false));
+        setErrorState({ key: requestKey, message: err.message || 'Failed to load presentation HTML' });
+        setLoadedKey(requestKey);
+      });
 
     return () => controller.abort();
-  }, [presentationId, version]);
+  }, [presentationId, requestKey, version]);
 
   const srcDoc = useMemo(() => extractSlideHtml(htmlText, slideIndex), [htmlText, slideIndex]);
 
