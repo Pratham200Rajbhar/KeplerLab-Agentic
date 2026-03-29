@@ -90,14 +90,29 @@ PREVIEW_TEXTS: Dict[str, str] = {
     "pt": "Bem-vindos a este podcast onde exploramos temas fascinantes juntos.",
 }
 
+def normalize_language_code(language: str) -> str:
+    raw = str(language or "").strip().lower().replace("_", "-")
+    if not raw:
+        return "en"
+    if raw in VOICE_MAP:
+        return raw
+    root = raw.split("-", 1)[0]
+    if root in VOICE_MAP:
+        return root
+    return raw
+
+
 def get_voices_for_language(language: str) -> List[dict]:
-    return VOICE_MAP.get(language, VOICE_MAP["en"])
+    normalized = normalize_language_code(language)
+    return VOICE_MAP.get(normalized, [])
 
 def get_default_voices(language: str) -> dict:
-    return DEFAULT_VOICES.get(language, DEFAULT_VOICES["en"])
+    normalized = normalize_language_code(language)
+    return DEFAULT_VOICES.get(normalized, {})
 
 def get_preview_text(language: str) -> str:
-    return PREVIEW_TEXTS.get(language, PREVIEW_TEXTS["en"])
+    normalized = normalize_language_code(language)
+    return PREVIEW_TEXTS.get(normalized, PREVIEW_TEXTS["en"])
 
 def validate_voice(voice_id: str, language: str) -> bool:
     voices = get_voices_for_language(language)

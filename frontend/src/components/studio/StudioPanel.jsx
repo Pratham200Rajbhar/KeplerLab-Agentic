@@ -5,28 +5,24 @@ import dynamic from 'next/dynamic';
 import {
   Layers,
   ClipboardCheck,
-  Monitor,
-  Video,
   Mic,
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
   Brain,
   Wand2,
+  Presentation,
+  Clapperboard,
 } from 'lucide-react';
 
 import useAppStore from '@/stores/useAppStore';
 import { useToast } from '@/stores/useToastStore';
 import { useConfirm } from '@/stores/useConfirmStore';
 import usePodcastStore from '@/stores/usePodcastStore';
+import usePresentationStore from '@/stores/usePresentationStore';
 import { generateFlashcards, generateQuiz, downloadBlob } from '@/lib/api/generation';
+import { generatePresentation, generateVideo } from '@/lib/api/presentation';
 import { generateMindMap } from '@/lib/api/mindmap';
-import {
-  generatePresentation as generatePresentationApi,
-  getPresentation,
-  updatePresentation as updatePresentationApi,
-  downloadPresentation,
-} from '@/lib/api/presentation';
 import {
   saveGeneratedContent,
   getGeneratedContent,
@@ -37,17 +33,15 @@ import {
 import { PANEL } from '@/lib/utils/constants';
 
 import FeatureCard from './FeatureCard';
-import ExplainerDialog from './ExplainerDialog';
-import PresentationDialog from '@/components/presentation/PresentationDialog';
-import PresentationEditor from '@/components/presentation/PresentationEditor';
 import PodcastConfigDialog from '@/components/podcast/PodcastConfigDialog';
 
 import {
   InlineFlashcardsView,
   InlineQuizView,
-  InlineExplainerView,
   FlashcardConfigDialog,
   QuizConfigDialog,
+  PresentationConfigDialog,
+  ExplainerConfigDialog,
   HistoryRenameModal,
   ContentHistory,
 } from './index';
@@ -62,6 +56,14 @@ const MindMapCanvas = dynamic(
 );
 const SkillsPanel = dynamic(
   () => import('@/components/skills/SkillsPanel'),
+  { ssr: false, loading: () => <LoadingSpinner /> }
+);
+const PresentationGenerator = dynamic(
+  () => import('./PresentationGenerator'),
+  { ssr: false, loading: () => <LoadingSpinner /> }
+);
+const ExplainerGenerator = dynamic(
+  () => import('./ExplainerGenerator'),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
 
@@ -111,7 +113,6 @@ export default function StudioPanel() {
   const loading = useAppStore((s) => s.loading);
   const setFlashcards = useAppStore((s) => s.setFlashcards);
   const setQuiz = useAppStore((s) => s.setQuiz);
-  const setPresentation = useAppStore((s) => s.setPresentation);
   const setLoadingState = useAppStore((s) => s.setLoadingState);
 
   const podcastPhase = usePodcastStore((s) => s.phase);
@@ -125,6 +126,22 @@ export default function StudioPanel() {
   const startPodcastGeneration = usePodcastStore((s) => s.startGeneration);
   const setPodcastError = usePodcastStore((s) => s.setError);
 
+  const presentationId = usePresentationStore((s) => s.presentationId);
+  const presentationPhase = usePresentationStore((s) => s.phase);
+  const presentationProgress = usePresentationStore((s) => s.progress);
+  const presentationError = usePresentationStore((s) => s.error);
+  const videoPhase = usePresentationStore((s) => s.videoPhase);
+  const videoProgress = usePresentationStore((s) => s.videoProgress);
+  const videoError = usePresentationStore((s) => s.videoError);
+  const resetPresentation = usePresentationStore((s) => s.reset);
+  const setPresentationPhase = usePresentationStore((s) => s.setPhase);
+  const setVideoPhase = usePresentationStore((s) => s.setVideoPhase);
+  const setPresentationId = usePresentationStore((s) => s.setPresentationId);
+  const setPresentationError = usePresentationStore((s) => s.setError);
+  const setVideoError = usePresentationStore((s) => s.setVideoError);
+  const setPresentationData = usePresentationStore((s) => s.setPresentationData);
+  const setPresentationVideoData = usePresentationStore((s) => s.setVideoData);
+
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -132,6 +149,40 @@ export default function StudioPanel() {
     selectedSources.length > 0
       ? materials.find((m) => selectedSources.includes(m.id)) || null
       : null;
+
+  // ─ Generate contextual descriptions based on materials ─
+  const materialContext = useMemo(() => {
+    if (selectedSources.length === 0) return {};
+    const allMaterials = materials.filter((m) => selectedSources.includes(m.id));
+    const hasVideo = allMaterials.some((m) => m.material_type === 'video');
+    const hasAudio = allMaterials.some((m) => m.material_type === 'audio');
+    const hasDocument = allMaterials.some((m) => m.material_type === 'document');
+    const hasImage = allMaterials.some((m) => m.material_type === 'image');
+    
+    return {
+      sourceCount: selectedSources.length,
+      hasVideo,
+      hasAudio,
+      hasDocument,
+      hasImage,
+    };
+  }, [selectedSources, materials]);
+
+  // ─ Generate dynamic feature descriptions ─
+  const getFeatureDescription = useCallback((featureId) => {
+    const baseDesc = {
+      flashcards: 'Study with spaced repetition learning',
+      quiz: 'Assess your comprehension interactively',
+      podcast: 'Engaging dual-host audio exploration',
+      mindmap: 'Interactive concept visualization',
+      presentation: 'Professional AI-crafted slide narratives',
+      explainer: 'AI-narrated visual storytelling',
+      skills: 'Design and execute intelligent automation',
+    };
+
+    if (loading[featureId]) return 'Generating…';
+    return baseDesc[featureId] || '';
+  }, [loading]);
 
   const selectedMaterialIds = selectedSources;
 
@@ -141,21 +192,15 @@ export default function StudioPanel() {
 
   const [flashcardsData, setFlashcardsData] = useState(null);
   const [quizData, setQuizData] = useState(null);
-  const [presentationData, setPresentationData] = useState(null);
-  const [explainerData, setExplainerData] = useState(null);
   const [mindmapData, setMindmapData] = useState(null);
   const [mindmapFullscreen, setMindmapFullscreen] = useState(false);
   const [mindmapRating, setMindmapRating] = useState(null);
   const [mindmapContentId, setMindmapContentId] = useState(null);
-  const [activePresentationSlide, setActivePresentationSlide] = useState(0);
-  const [isPresentationUpdating, setIsPresentationUpdating] = useState(false);
-  const [isPresentationDownloading, setIsPresentationDownloading] = useState(false);
 
-
-  const [showPresentationConfig, setShowPresentationConfig] = useState(false);
   const [showQuizConfig, setShowQuizConfig] = useState(false);
   const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
-  const [showExplainerDialog, setShowExplainerDialog] = useState(false);
+  const [showPresentationConfig, setShowPresentationConfig] = useState(false);
+  const [showExplainerConfig, setShowExplainerConfig] = useState(false);
   const [showPodcastConfig, setShowPodcastConfig] = useState(false);
 
 
@@ -164,6 +209,7 @@ export default function StudioPanel() {
   const [showRenameHistoryModal, setShowRenameHistoryModal] = useState(false);
   const [renamingHistoryItem, setRenamingHistoryItem] = useState(null);
   const [newHistoryTitle, setNewHistoryTitle] = useState('');
+  const [selectedCreatedItem, setSelectedCreatedItem] = useState(null);
 
 
   const [width, setWidth] = useState(PANEL.STUDIO.DEFAULT_WIDTH);
@@ -177,6 +223,67 @@ export default function StudioPanel() {
 
 
   const prevNotebookId = useRef(null);
+  const prevPresentationPhaseRef = useRef(presentationPhase);
+  const prevVideoPhaseRef = useRef(videoPhase);
+
+  const refreshGeneratedContentHistory = useCallback(async () => {
+    if (!currentNotebook?.id || currentNotebook.isDraft || draftMode) {
+      return;
+    }
+
+    try {
+      const contents = await getGeneratedContent(currentNotebook.id);
+      const normalized = contents.map((c) => ({ ...c }));
+      setContentHistory(normalized);
+
+      const seen = new Set();
+      let latestPresentation = null;
+
+      for (const c of normalized) {
+        if (c.content_type === 'presentation' && !latestPresentation) {
+          latestPresentation = c;
+        }
+
+        if (seen.has(c.content_type)) continue;
+        seen.add(c.content_type);
+
+        switch (c.content_type) {
+          case 'flashcards':
+            setFlashcardsData(c.data);
+            setFlashcards(c.data);
+            break;
+          case 'quiz':
+            setQuizData(c.data);
+            setQuiz(c.data);
+            break;
+          case 'mindmap':
+            setMindmapData(c.data);
+            setMindmapContentId(c.id);
+            setMindmapRating(c.rating || null);
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (latestPresentation?.id) {
+        setPresentationData({ id: latestPresentation.id, data: latestPresentation.data });
+        if (latestPresentation.data?.video) {
+          setPresentationVideoData(latestPresentation.data.video);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load saved content:', error);
+    }
+  }, [
+    currentNotebook?.id,
+    currentNotebook?.isDraft,
+    draftMode,
+    setFlashcards,
+    setPresentationData,
+    setPresentationVideoData,
+    setQuiz,
+  ]);
 
   useEffect(() => {
     const notebookId = currentNotebook?.id;
@@ -185,20 +292,18 @@ export default function StudioPanel() {
 
     setFlashcardsData(null);
     setQuizData(null);
-    setPresentationData(null);
-    setActivePresentationSlide(0);
-    setMindmapData(null);
     setMindmapFullscreen(false);
     setMindmapContentId(null);
     setMindmapRating(null);
-    setShowPresentationConfig(false);
     setShowQuizConfig(false);
     setShowFlashcardConfig(false);
-    setShowExplainerDialog(false);
+    setShowPresentationConfig(false);
+    setShowExplainerConfig(false);
     setContentHistory([]);
+    setSelectedCreatedItem(null);
     setFlashcards(null);
     setQuiz(null);
-    setPresentation(null);
+    resetPresentation();
     setActiveView(null);
 
     // Use notebook ID and draft state to control loading
@@ -206,51 +311,53 @@ export default function StudioPanel() {
       loadPodcastSessions(currentNotebook.id, currentNotebook.isDraft || draftMode);
     }
 
-    const loadSavedContent = async () => {
-      if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
-        try {
-          const contents = await getGeneratedContent(currentNotebook.id);
-          setContentHistory(contents.map((c) => ({ ...c })));
-          const seen = new Set();
-          for (const c of contents) {
-            if (seen.has(c.content_type)) continue;
-            seen.add(c.content_type);
-            switch (c.content_type) {
-              case 'flashcards':
-                setFlashcardsData(c.data);
-                setFlashcards(c.data);
-                break;
-              case 'quiz':
-                setQuizData(c.data);
-                setQuiz(c.data);
-                break;
-              case 'presentation':
-                setPresentationData(c);
-                setPresentation(c.data);
-                break;
-              case 'mindmap':
-                setMindmapData(c.data);
-                setMindmapContentId(c.id);
-                setMindmapRating(c.rating || null);
-                break;
-            }
-          }
-        } catch (error) {
-          console.error('Failed to load saved content:', error);
-        }
-      }
-    };
-    loadSavedContent();
+    refreshGeneratedContentHistory();
   }, [
     currentNotebook?.id,
     currentNotebook?.isDraft,
     draftMode,
     loadPodcastSessions,
+    refreshGeneratedContentHistory,
+    resetPresentation,
     setFlashcards,
-    setQuiz,
-    setPresentation
+    setQuiz
   ]);
 
+  useEffect(() => {
+    const isActive = presentationPhase === 'planning' || presentationPhase === 'generating';
+    setLoadingState('presentation', isActive);
+
+    const previous = prevPresentationPhaseRef.current;
+    const wasActive = previous === 'planning' || previous === 'generating';
+    if (previous !== presentationPhase) {
+      if (presentationPhase === 'done' && wasActive) {
+        refreshGeneratedContentHistory();
+        toast.success('Presentation saved to Created');
+      } else if (presentationPhase === 'error' && presentationError && wasActive) {
+        toast.error(presentationError);
+      }
+    }
+
+    prevPresentationPhaseRef.current = presentationPhase;
+  }, [presentationPhase, presentationError, refreshGeneratedContentHistory, setLoadingState, toast]);
+
+  useEffect(() => {
+    const isActive = ['scripting', 'audio', 'rendering'].includes(videoPhase);
+    setLoadingState('explainer', isActive);
+
+    const previous = prevVideoPhaseRef.current;
+    const wasActive = ['scripting', 'audio', 'rendering'].includes(previous);
+    if (previous !== videoPhase) {
+      if (videoPhase === 'done' && wasActive) {
+        refreshGeneratedContentHistory();
+        toast.success('Explain video saved to Created');
+      } else if (videoPhase === 'error' && videoError && wasActive) {
+        toast.error(videoError);
+      }
+    }
+
+    prevVideoPhaseRef.current = videoPhase;
+  }, [videoPhase, videoError, refreshGeneratedContentHistory, setLoadingState, toast]);
 
   const handleMouseMove = useCallback(
     (e) => {
@@ -337,6 +444,138 @@ export default function StudioPanel() {
     setShowQuizConfig(true);
   };
 
+  const buildPresentationPayload = useCallback((options = {}) => {
+    const topic = String(options.topic || '').trim();
+    const themePrompt = String(options.theme || '').trim();
+    const argumentationNotes = String(options.additionalNotes || '').trim();
+    const numericSlideCount = Number(options.slideCount);
+
+    return {
+      topic: topic || null,
+      themePrompt: themePrompt || undefined,
+      slideCount: Number.isFinite(numericSlideCount) ? numericSlideCount : undefined,
+      argumentationNotes: argumentationNotes || undefined,
+    };
+  }, []);
+
+  const handlePresentationClick = useCallback(() => {
+    setShowPresentationConfig(true);
+  }, []);
+
+  const handleGeneratePresentation = useCallback(async (options = {}) => {
+    if (!currentNotebook?.id || selectedMaterialIds.length === 0) {
+      toast.error('Select at least one source to generate a presentation');
+      return;
+    }
+
+    setShowPresentationConfig(false);
+    resetPresentation();
+    setPresentationError(null);
+    setPresentationPhase('planning');
+    setLoadingState('presentation', true);
+
+    try {
+      const presentationPayload = buildPresentationPayload(options);
+      const started = await generatePresentation(
+        currentNotebook.id,
+        selectedMaterialIds,
+        presentationPayload,
+      );
+
+      if (started?.id) {
+        setPresentationId(started.id);
+      }
+
+      toast.success('Presentation generation started');
+    } catch (error) {
+      setPresentationError(error.message || 'Failed to start presentation generation');
+      setLoadingState('presentation', false);
+      toast.error(error.message || 'Failed to start presentation generation');
+    }
+  }, [
+    buildPresentationPayload,
+    currentNotebook?.id,
+    resetPresentation,
+    selectedMaterialIds,
+    setLoadingState,
+    setPresentationError,
+    setPresentationId,
+    setPresentationPhase,
+    toast,
+  ]);
+
+  const handleExplainerClick = useCallback(() => {
+    setShowExplainerConfig(true);
+  }, []);
+
+  const handleGenerateExplainer = useCallback(async (options = {}) => {
+    if (!options.presentationId) {
+      toast.error('Choose a presentation first');
+      return;
+    }
+
+    setShowExplainerConfig(false);
+    setLoadingState('explainer', true);
+    setPresentationId(options.presentationId);
+    setVideoError(null);
+
+    try {
+      await generateVideo(options.presentationId, {
+        voiceId: options.voiceId,
+        narrationLanguage: options.narrationLanguage,
+        presentationLanguage: options.presentationLanguage,
+        narrationStyle: options.narrationStyle?.trim() || undefined,
+        narrationNotes: options.additionalNotes?.trim() || undefined,
+        autoGenerateSlides: true,
+        notebookId: currentNotebook?.id || undefined,
+        materialIds: selectedMaterialIds,
+      });
+
+      toast.success('Explain video generation started');
+    } catch (error) {
+      setLoadingState('explainer', false);
+      toast.error(error.message || 'Failed to start explain video generation');
+    }
+  }, [
+    currentNotebook?.id,
+    selectedMaterialIds,
+    setLoadingState,
+    setPresentationId,
+    setVideoError,
+    toast,
+  ]);
+
+  const handleExplainUpload = useCallback(async (options = {}) => {
+    if (!options.file) {
+      toast.error('Please provide a file to upload');
+      return;
+    }
+
+    setShowExplainerConfig(false);
+    setLoadingState('explainer', true);
+    setVideoError(null);
+
+    try {
+      const { explainPptxUpload } = await import('@/lib/api/presentation');
+      const result = await explainPptxUpload({
+        file: options.file,
+        voiceId: options.voiceId,
+        narrationLanguage: options.narrationLanguage,
+        narrationStyle: options.narrationStyle?.trim() || undefined,
+        narrationNotes: options.additionalNotes?.trim() || undefined,
+        notebookId: currentNotebook?.id,
+      });
+      
+      setPresentationId(result.videoId);
+      setVideoPhase('scripting');
+      toast.success('Explain video generation started from uploaded file');
+    } catch (error) {
+      setLoadingState('explainer', false);
+      toast.error(error.message || 'Failed to upload and start explain video');
+    }
+  }, [setLoadingState, setPresentationId, setVideoError, toast]);
+
+
   const handleGenerateQuiz = async (options = {}) => {
     if (!effectiveMaterial) return;
     setShowQuizConfig(false);
@@ -365,80 +604,6 @@ export default function StudioPanel() {
       toast.error(error.message || 'Failed to generate quiz. Please try again.');
     } finally {
       setLoadingState('quiz', false);
-    }
-  };
-
-  const handlePresentationClick = () => {
-    setShowPresentationConfig(true);
-  };
-
-  const handleGeneratePresentation = async (options = {}) => {
-    if (!effectiveMaterial) return;
-    setShowPresentationConfig(false);
-    setLoadingState('presentation', true);
-    const ac = new AbortController();
-    abortControllerRef.current.presentation = ac;
-    try {
-      const data = await generatePresentationApi(
-        {
-          notebookId: currentNotebook?.id,
-          materialIds: selectedMaterialIds,
-          title: options.title,
-          instruction: options.instruction,
-        },
-        { signal: ac.signal }
-      );
-      setPresentationData(data);
-      setPresentation(data?.data || null);
-      setActivePresentationSlide(0);
-      setContentHistory((prev) => [data, ...prev.filter((item) => item.id !== data.id)]);
-      setActiveView('presentation');
-      toast.success('Presentation generated');
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      toast.error(error.message || 'Failed to generate presentation. Please try again.');
-    } finally {
-      setLoadingState('presentation', false);
-    }
-  };
-
-  const handleUpdatePresentation = async (instruction) => {
-    if (!presentationData?.id) return;
-    setIsPresentationUpdating(true);
-    try {
-      const updated = await updatePresentationApi({
-        presentationId: presentationData.id,
-        instruction,
-        active_slide_index: activePresentationSlide,
-      });
-      setPresentationData(updated);
-      setPresentation(updated?.data || null);
-      setContentHistory((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      toast.success('Presentation updated');
-    } catch (error) {
-      toast.error(error.message || 'Failed to update presentation');
-    } finally {
-      setIsPresentationUpdating(false);
-      useAppStore.getState().setPresentationUpdateProgress('');
-    }
-  };
-
-  const handleDownloadPresentation = async (format = 'pptx') => {
-    if (!presentationData?.id) return;
-    const normalizedFormat = String(format || 'pptx').toLowerCase();
-    const extension = normalizedFormat === 'pdf' || normalizedFormat === 'html' ? normalizedFormat : 'pptx';
-    const safeBase = String(presentationData?.title || 'presentation')
-      .replace(/[\\/:*?"<>|]+/g, '_')
-      .trim() || 'presentation';
-    setIsPresentationDownloading(true);
-    try {
-      const { blob, filename } = await downloadPresentation(presentationData.id, { format: normalizedFormat });
-      const finalName = filename || `${safeBase}.${extension}`;
-      downloadBlob(blob, finalName);
-    } catch (error) {
-      toast.error(error.message || 'Failed to download presentation');
-    } finally {
-      setIsPresentationDownloading(false);
     }
   };
 
@@ -495,6 +660,8 @@ export default function StudioPanel() {
 
 
   const handleViewHistoryItem = async (item) => {
+    setSelectedCreatedItem(item);
+
     switch (item.content_type) {
       case 'flashcards':
         setFlashcardsData(item.data);
@@ -507,19 +674,27 @@ export default function StudioPanel() {
         setActiveView('quiz');
         break;
       case 'presentation':
-        try {
-          const data = await getPresentation(item.id);
-          setPresentationData(data);
-          setPresentation(data?.data || null);
-          setActivePresentationSlide(0);
-        } catch (error) {
-          toast.error(error.message || 'Failed to load presentation');
-          return;
+        if (item.processing) {
+          setActiveView(null);
+          break;
+        }
+        setPresentationData({ id: item.id, data: item.data });
+        if (item.data?.video) {
+          setPresentationVideoData(item.data.video);
         }
         setActiveView('presentation');
         break;
       case 'explainer':
-        setExplainerData(item.data);
+        if (item.processing) {
+          setActiveView(null);
+          break;
+        }
+        if (item.parentId) {
+          setPresentationId(item.parentId);
+        }
+        if (item.data?.videoUrl) {
+          setPresentationVideoData(item.data);
+        }
         setActiveView('explainer');
         break;
       case 'podcast':
@@ -551,7 +726,11 @@ export default function StudioPanel() {
           newTitle.trim()
         );
         setContentHistory((prev) =>
-          prev.map((item) => (item.id === renamingHistoryItem.id ? updated : item))
+          prev.map((item) => (
+            item.id === renamingHistoryItem.id
+              ? { ...item, ...updated, data: item.data, rating: item.rating, content_type: item.content_type }
+              : item
+          ))
         );
       }
       setShowRenameHistoryModal(false);
@@ -564,6 +743,7 @@ export default function StudioPanel() {
 
   const handleHistoryDelete = async (item, e) => {
     e?.stopPropagation();
+    if (item.readOnly || item.processing || item.content_type === 'explainer') return;
     setActiveHistoryMenu(null);
     const ok = await confirm({
       title: 'Delete content?',
@@ -579,6 +759,12 @@ export default function StudioPanel() {
       } else {
         await deleteGeneratedContent(currentNotebook.id, item.id);
         setContentHistory((prev) => prev.filter((c) => c.id !== item.id));
+        setSelectedCreatedItem((prev) => {
+          if (!prev) return prev;
+          if (prev.id === item.id) return null;
+          if (prev.parentId && prev.parentId === item.id) return null;
+          return prev;
+        });
       }
 
       if (activeView === item.content_type) {
@@ -597,19 +783,18 @@ export default function StudioPanel() {
               setActiveView(null);
             }
             break;
-          case 'presentation':
-            if (presentationData?.id === item.id) {
-              setPresentationData(null);
-              setPresentation(null);
-              setActiveView(null);
-            }
-            break;
           case 'mindmap':
             if (mindmapContentId === item.id) {
               setMindmapData(null);
               setMindmapContentId(null);
               setMindmapRating(null);
               setMindmapFullscreen(false);
+            }
+            break;
+          case 'presentation':
+            if (presentationId === item.id) {
+              resetPresentation();
+              setActiveView(null);
             }
             break;
         }
@@ -658,6 +843,27 @@ export default function StudioPanel() {
   };
 
   const combinedHistory = useMemo(() => {
+    const derivedExplainers = (contentHistory || [])
+      .filter((item) => item.content_type === 'presentation' && item.data?.video)
+      .map((item) => ({
+        id: `explainer:${item.id}`,
+        parentId: item.id,
+        readOnly: true,
+        content_type: 'explainer',
+        title:
+          item.data?.video?.title ||
+          item.data?.video?.aiTitle ||
+          item.title ||
+          'Untitled',
+        created_at: item.data?.video?.createdAt || item.updated_at || item.created_at,
+        data: {
+          ...(item.data?.video || {}),
+          presentationId: item.id,
+          presentationTitle: item.title || 'Untitled',
+          slideCount: item.data?.slideCount || item.data?.slides?.length || 0,
+        },
+      }));
+
     const podcastItems = (podcastSessions || []).map((s) => ({
       id: s.id,
       content_type: 'podcast',
@@ -665,10 +871,54 @@ export default function StudioPanel() {
       created_at: s.createdAt,
       data: s,
     }));
-    return [...contentHistory, ...podcastItems].sort(
+
+    const pendingItems = [];
+    if (presentationId && ['planning', 'generating'].includes(presentationPhase)) {
+      pendingItems.push({
+        id: `pending:presentation:${presentationId}`,
+        content_type: 'presentation',
+        title: 'Presentation (in progress)',
+        processing: true,
+        created_at: new Date().toISOString(),
+        data: {
+          status: presentationPhase,
+          message: presentationProgress?.message || 'Generating presentation',
+        },
+      });
+    }
+
+    if (presentationId && ['scripting', 'audio', 'rendering'].includes(videoPhase)) {
+      pendingItems.push({
+        id: `pending:explainer:${presentationId}`,
+        parentId: presentationId,
+        content_type: 'explainer',
+        title: 'Explain Video (in progress)',
+        processing: true,
+        created_at: new Date().toISOString(),
+        data: {
+          status: videoPhase,
+          message: videoProgress?.message || 'Generating explain video',
+        },
+      });
+    }
+
+    return [...pendingItems, ...contentHistory, ...derivedExplainers, ...podcastItems].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
-  }, [contentHistory, podcastSessions]);
+  }, [
+    contentHistory,
+    podcastSessions,
+    presentationId,
+    presentationPhase,
+    presentationProgress?.message,
+    videoPhase,
+    videoProgress?.message,
+  ]);
+
+  const presentationHistoryItems = useMemo(
+    () => contentHistory.filter((item) => item.content_type === 'presentation'),
+    [contentHistory]
+  );
 
 
   const podcastGeneratingRef = useRef(false);
@@ -707,33 +957,20 @@ export default function StudioPanel() {
     {
       id: 'flashcards',
       title: 'Flashcards',
-      description: 'Study with spaced repetition',
+      description: getFeatureDescription('flashcards'),
       icon: <Layers className="w-5 h-5" />,
       onClick: handleFlashcardsClick,
       onCancel: () => handleCancelGeneration('flashcards'),
+      accent: '59 130 246',
     },
     {
       id: 'quiz',
       title: 'Practice Quiz',
-      description: 'Test your understanding',
+      description: getFeatureDescription('quiz'),
       icon: <ClipboardCheck className="w-5 h-5" />,
       onClick: handleQuizClick,
       onCancel: () => handleCancelGeneration('quiz'),
-    },
-    {
-      id: 'presentation',
-      title: 'Presentation',
-      description: 'Generate a slide deck from content',
-      icon: <Monitor className="w-5 h-5" />,
-      onClick: handlePresentationClick,
-      onCancel: () => handleCancelGeneration('presentation'),
-    },
-    {
-      id: 'explainer',
-      title: 'Explainer Video',
-      description: 'Create a narrated video from slides',
-      icon: <Video className="w-5 h-5" />,
-      onClick: () => setShowExplainerDialog(true),
+      accent: '34 197 94',
     },
     {
       id: 'podcast',
@@ -741,26 +978,55 @@ export default function StudioPanel() {
       description:
         podcastPhase === 'generating'
           ? podcastProgress?.message || 'Generating…'
-          : 'Two-host AI podcast from your sources',
+          : getFeatureDescription('podcast'),
       icon: <Mic className="w-5 h-5" />,
       onClick: () => {
         if (podcastPhase !== 'generating') setShowPodcastConfig(true);
       },
+      onSettings: () => setShowPodcastConfig(true),
+      accent: '236 72 153',
     },
     {
       id: 'mindmap',
       title: 'Mind Map',
-      description: 'Visualize concepts as a connected diagram',
+      description: getFeatureDescription('mindmap'),
       icon: <Brain className="w-5 h-5" />,
       onClick: handleMindMapClick,
       onCancel: handleCancelMindMap,
+      accent: '14 165 233',
+    },
+    {
+      id: 'presentation',
+      title: 'Presentation',
+      description:
+        loading['presentation']
+          ? presentationProgress?.message || 'Generating slides…'
+          : getFeatureDescription('presentation'),
+      icon: <Presentation className="w-5 h-5" />,
+      onClick: handlePresentationClick,
+      onSettings: handlePresentationClick,
+      accent: '255 159 28',
+    },
+    {
+      id: 'explainer',
+      title: 'Explain Video',
+      description:
+        loading['explainer']
+          ? videoProgress?.message || 'Generating…'
+          : getFeatureDescription('explainer'),
+      icon: <Clapperboard className="w-5 h-5" />,
+      onClick: handleExplainerClick,
+      onSettings: handleExplainerClick,
+      accent: '34 197 94',
     },
     {
       id: 'skills',
       title: 'Agent Skills',
-      description: 'Create and run custom AI workflows',
+      description: getFeatureDescription('skills'),
       icon: <Wand2 className="w-5 h-5" />,
       onClick: () => setActiveView('skills'),
+      onSettings: () => setActiveView('skills'),
+      accent: '59 130 246',
     },
   ];
 
@@ -776,7 +1042,7 @@ export default function StudioPanel() {
     flashcards: 'Flashcards',
     quiz: 'Quiz',
     presentation: 'Presentation',
-    explainer: 'Explainer Video',
+    explainer: 'Explain Video',
     podcast: 'AI Podcast',
     mindmap: 'Mind Map',
     skills: 'Agent Skills',
@@ -789,32 +1055,6 @@ export default function StudioPanel() {
         return <InlineFlashcardsView flashcards={flashcardsData} onClose={() => setActiveView(null)} />;
       case 'quiz':
         return <InlineQuizView quiz={quizData} onClose={() => setActiveView(null)} />;
-      case 'presentation':
-        return loading['presentation'] ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3" role="status">
-            <div className="loading-spinner w-8 h-8" />
-            <p className="text-sm text-[var(--text-muted)]">Generating presentation...</p>
-            <p className="text-xs text-[var(--text-muted)]">This may take a minute</p>
-            <button
-              onClick={() => handleCancelGeneration('presentation')}
-              className="mt-2 btn-secondary text-[var(--danger)] text-sm flex items-center gap-2"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <PresentationEditor
-            presentation={presentationData}
-            activeSlide={activePresentationSlide}
-            onSelectSlide={setActivePresentationSlide}
-            onUpdate={handleUpdatePresentation}
-            onDownload={handleDownloadPresentation}
-            updating={isPresentationUpdating}
-            downloading={isPresentationDownloading}
-          />
-        );
-      case 'explainer':
-        return <InlineExplainerView explainer={explainerData} onClose={() => setActiveView(null)} />;
       case 'podcast':
         return <PodcastStudio onClose={() => setActiveView(null)} onRequestNew={() => setShowPodcastConfig(true)} />;
 
@@ -855,6 +1095,35 @@ export default function StudioPanel() {
         }
         return null;
 
+      case 'presentation':
+        return (
+          <PresentationGenerator
+            onClose={() => setActiveView(null)}
+            onSaved={refreshGeneratedContentHistory}
+          />
+        );
+
+      case 'explainer':
+        return (
+          <ExplainerGenerator
+            onOpenPresentation={() => setActiveView('presentation')}
+            onSaved={refreshGeneratedContentHistory}
+            historyItems={combinedHistory}
+            onStartVideo={(opts) => {
+              // Route through the existing handleGenerateExplainer flow
+              // so we get proper job management, WS streaming and history updates
+              handleGenerateExplainer({
+                presentationId: opts.presentationId || presentationId,
+                voiceId: opts.voiceId,
+                narrationLanguage: opts.narrationLanguage || 'en',
+                narrationStyle: opts.narrationStyle,
+                additionalNotes: opts.narrationNotes,
+                presentationLanguage: opts.narrationLanguage || 'en',
+              });
+            }}
+          />
+        );
+
       case 'skills':
         return <SkillsPanel onClose={() => setActiveView(null)} />;
 
@@ -880,15 +1149,6 @@ export default function StudioPanel() {
       )}
 
       {/* Configuration Dialogs */}
-      {showPresentationConfig && (
-        <PresentationDialog
-          onGenerate={handleGeneratePresentation}
-          onClose={() => setShowPresentationConfig(false)}
-          loading={loading['presentation']}
-          materialIds={selectedMaterialIds}
-        />
-      )}
-
       {showQuizConfig && (
         <QuizConfigDialog
           onGenerate={handleGenerateQuiz}
@@ -907,11 +1167,23 @@ export default function StudioPanel() {
         />
       )}
 
-      {showExplainerDialog && (
-        <ExplainerDialog
-          onClose={() => setShowExplainerDialog(false)}
-          materialIds={selectedMaterialIds}
-          notebookId={currentNotebook?.id}
+      {showPresentationConfig && (
+        <PresentationConfigDialog
+          onGenerate={handleGeneratePresentation}
+          onCancel={() => setShowPresentationConfig(false)}
+          loading={loading['presentation']}
+          sourceCount={selectedMaterialIds.length}
+        />
+      )}
+
+      {showExplainerConfig && (
+        <ExplainerConfigDialog
+          onGenerate={handleGenerateExplainer}
+          onUpload={handleExplainUpload}
+          onCancel={() => setShowExplainerConfig(false)}
+          onOpenPresentation={() => setShowPresentationConfig(true)}
+          presentations={presentationHistoryItems}
+          loading={loading['explainer']}
         />
       )}
 
@@ -976,31 +1248,13 @@ export default function StudioPanel() {
               renderInlineContent()
             ) : effectiveMaterial ? (
               <>
-                <p className="workspace-studio-lead text-[11.5px] text-text-muted mb-3 leading-relaxed">
-                  {selectedSources.length > 1 ? (
-                    <>
-                      Generating from{' '}
-                      <span className="text-text-primary font-semibold px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-subtle)' }}>
-                        {selectedSources.length} sources
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Create from{' '}
-                      <span className="text-text-primary font-semibold">
-                        {effectiveMaterial.title || effectiveMaterial.filename}
-                      </span>
-                    </>
-                  )}
-                </p>
-
-                <div className="workspace-studio-actions space-y-1.5">
+                <div className="workspace-studio-actions space-y-2">
                   {outputs.map((output, i) => (
                     <div
                       key={output.id}
                       className="animate-fade-up"
                       style={{
-                        animationDelay: `${i * 50}ms`,
+                        animationDelay: `${i * 40}ms`,
                         animationFillMode: 'backwards',
                       }}
                     >
@@ -1012,6 +1266,8 @@ export default function StudioPanel() {
                         loading={loading[output.id]}
                         disabled={!effectiveMaterial}
                         onCancel={output.onCancel}
+                        onSettings={output.onSettings}
+                        accent={output.accent}
                       />
                     </div>
                   ))}
@@ -1050,6 +1306,7 @@ export default function StudioPanel() {
                     <div className="pb-1">
                       <ContentHistory
                         items={combinedHistory}
+                        activeId={selectedCreatedItem?.id}
                         onSelect={handleViewHistoryItem}
                         onRename={openHistoryRenameModal}
                         onDelete={handleHistoryDelete}
@@ -1061,14 +1318,17 @@ export default function StudioPanel() {
               </>
             ) : (
               <div className="workspace-studio-empty-layout flex flex-col min-h-full">
-                <div className="workspace-studio-empty-simple flex flex-col items-center justify-center text-center px-6 py-7">
-                  <div className="workspace-studio-empty-icon w-11 h-11 rounded-xl flex items-center justify-center mb-3 mx-auto">
-                    <span className="material-symbols-outlined text-[22px] text-accent">labs</span>
+                <div className="workspace-studio-empty-simple flex flex-col items-center justify-center text-center px-6 py-12">
+                  <div className="workspace-studio-empty-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-4 mx-auto bg-[var(--accent-subtle)]">
+                    <span className="material-symbols-outlined text-[28px] text-[var(--accent)]">lightbulb</span>
                   </div>
-                  <p className="workspace-studio-empty-title text-sm font-semibold text-text-primary mb-1.5">No source selected</p>
-                  <p className="workspace-studio-empty-subtitle text-xs text-text-muted max-w-[220px] mx-auto leading-relaxed">
-                    Select a source from the panel to generate study materials.
+                  <p className="workspace-studio-empty-title text-base font-bold text-[var(--text-primary)] mb-2">Ready to create?</p>
+                  <p className="workspace-studio-empty-subtitle text-xs text-[var(--text-muted)] max-w-[240px] mx-auto leading-relaxed mb-4">
+                    Select a source material to unlock powerful AI-driven content generation across flashcards, quizzes, presentations, and more.
                   </p>
+                  <div className="text-[10px] text-[var(--text-muted)] font-medium bg-[var(--surface-overlay)] px-3 py-1.5 rounded-full">
+                    💡 Tip: Select multiple sources for richer content
+                  </div>
                 </div>
 
                 {combinedHistory.length > 0 && (
@@ -1081,6 +1341,7 @@ export default function StudioPanel() {
                     <div className="pb-1">
                       <ContentHistory
                         items={combinedHistory}
+                        activeId={selectedCreatedItem?.id}
                         onSelect={handleViewHistoryItem}
                         onRename={openHistoryRenameModal}
                         onDelete={handleHistoryDelete}

@@ -19,6 +19,8 @@ from app.services.podcast.voice_map import (
     get_voices_for_language,
     get_default_voices,
     get_preview_text,
+    normalize_language_code,
+    validate_voice,
     VOICE_MAP,
     LANGUAGE_NAMES,
 )
@@ -62,6 +64,10 @@ class UpdateSessionRequest(BaseModel):
 
 @router.post("/session")
 async def create_session(req: CreateSessionRequest, user=Depends(get_current_user)):
+    normalized_language = normalize_language_code(req.language)
+    if normalized_language not in VOICE_MAP:
+        raise HTTPException(400, f"Unsupported podcast language: {req.language}")
+
     if req.mode in ("topic", "deep-dive") and not req.topic:
         raise HTTPException(400, "Topic is required for topic/deep-dive mode")
     if not req.material_ids:
@@ -73,7 +79,7 @@ async def create_session(req: CreateSessionRequest, user=Depends(get_current_use
             notebook_id=req.notebook_id,
             mode=req.mode,
             topic=req.topic,
-            language=req.language,
+            language=normalized_language,
             host_voice=req.host_voice,
             guest_voice=req.guest_voice,
             material_ids=req.material_ids,
@@ -302,11 +308,15 @@ async def generate_summary(session_id: str, user=Depends(get_current_user)):
 
 @router.get("/voices")
 async def get_voices(language: str = Query(default="en")):
-    voices = get_voices_for_language(language)
-    defaults = get_default_voices(language)
+    normalized_language = normalize_language_code(language)
+    voices = get_voices_for_language(normalized_language)
+    if not voices:
+        raise HTTPException(400, f"Unsupported podcast language: {language}")
+
+    defaults = get_default_voices(normalized_language)
     return {
-        "language": language,
-        "language_name": LANGUAGE_NAMES.get(language, language),
+        "language": normalized_language,
+        "language_name": LANGUAGE_NAMES.get(normalized_language, normalized_language),
         "voices": voices,
         "defaults": defaults,
     }
@@ -325,9 +335,8 @@ async def get_all_voices():
 @router.get("/languages")
 async def get_languages():
     return [
-        {"code": code, "name": name}
-        for code, name in LANGUAGE_NAMES.items()
-        if code in VOICE_MAP
+        {"code": code, "name": LANGUAGE_NAMES.get(code, code)}
+        for code in VOICE_MAP.keys()
     ]
 
 @router.post("/voice/preview")
@@ -335,7 +344,13 @@ async def preview_voice(
     voice_id: str = Query(...),
     language: str = Query(default="en"),
 ):
-    text = get_preview_text(language)
+    normalized_language = normalize_language_code(language)
+    if normalized_language not in VOICE_MAP:
+        raise HTTPException(400, f"Unsupported podcast language: {language}")
+    if not validate_voice(voice_id, normalized_language):
+        raise HTTPException(400, f"Voice '{voice_id}' is not valid for language '{normalized_language}'")
+
+    text = get_preview_text(normalized_language)
     audio_bytes = await generate_voice_preview(voice_id, text)
     return Response(
         content=audio_bytes,

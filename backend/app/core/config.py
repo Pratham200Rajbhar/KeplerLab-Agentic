@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./data/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10240
 
-    PRESENTATIONS_OUTPUT_DIR: str = "output/presentations"
     GENERATED_OUTPUT_DIR: str = "output/generated"
     TEMPLATES_DIR: str = "./templates"
 
@@ -156,7 +155,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _resolve_paths_and_cross_validate(self):
         for attr in ("CHROMA_DIR", "UPLOAD_DIR", "MODELS_DIR", "TEMPLATES_DIR",
-                     "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR",
+                     "GENERATED_OUTPUT_DIR",
                      "WORKSPACE_BASE_DIR"):
             val = getattr(self, attr)
             if val and not os.path.isabs(val):

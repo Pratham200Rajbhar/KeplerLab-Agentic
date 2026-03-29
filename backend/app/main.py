@@ -42,18 +42,16 @@ from app.routes.mindmap import router as mindmap_router
 from app.routes.chat import router as chat_router
 from app.routes.models import router as models_router
 from app.routes.jobs import router as jobs_router
-from app.routes.ppt import router as ppt_router
 from app.routes.health import router as health_router
 from app.routes.websocket_router import router as ws_router
 from app.routes.search import router as search_router
 from app.routes.proxy import router as proxy_router
-from app.routes.explainer import router as explainer_router
 from app.routes.podcast_live import router as podcast_live_router
 from app.routes.code_execution import router as code_execution_router
 from app.routes.artifacts import router as artifacts_router
 from app.routes.ai_resource import router as ai_resource_router
 from app.routes.skills import router as skills_router
-from app.services.presentation.router import router as presentation_router
+from app.routes.presentation import router as presentation_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -106,7 +104,7 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Sandbox temp cleanup failed (non-fatal): %s", exc)
 
-    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers"), os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "podcast")]:
+    for _dir in [settings.GENERATED_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers"), os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "podcast"), os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "presentations")]:
         os.makedirs(_dir, exist_ok=True)
     os.makedirs(settings.ARTIFACTS_DIR, exist_ok=True)
     logger.info("Output directories ensured.")
@@ -215,15 +213,13 @@ app.include_router(quiz_router)
 app.include_router(mindmap_router)
 app.include_router(chat_router)
 app.include_router(jobs_router)
-app.include_router(ppt_router)
-app.include_router(presentation_router)
 app.include_router(search_router)
 app.include_router(proxy_router)
-app.include_router(explainer_router)
 app.include_router(podcast_live_router)
 app.include_router(code_execution_router)
 app.include_router(artifacts_router)
 app.include_router(ai_resource_router)
 app.include_router(skills_router)
+app.include_router(presentation_router)
 
 app.include_router(ws_router)

@@ -74,16 +74,13 @@ def _build_google(
     **extra_kwargs
 ):
     temp = temperature if temperature is not None else settings.LLM_TEMPERATURE_CHAT
-    kw = _common_kwargs(temp, top_p, max_tokens, **extra_kwargs)
-    kw.update(
-        model=settings.GOOGLE_MODEL,
-        google_api_key=settings.GOOGLE_API_KEY,
+    tokens = max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS_CHAT
+    
+    return VertexGCPChat(
+        model_name=settings.GOOGLE_MODEL,
+        temperature=temp,
+        max_tokens=tokens,
     )
-    
-    if "top_k" in extra_kwargs:
-        kw["top_k"] = extra_kwargs["top_k"]
-    
-    return ChatGoogleGenerativeAI(**kw)
 
 def _build_nvidia(
     temperature: float = None,
@@ -299,3 +296,86 @@ class MyOpenLM(LLM):
                 raise
 
         raise last_exc or Exception("LLM call failed after all retries")
+
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
+from langchain_core.outputs import ChatResult, ChatGeneration
+
+class VertexGCPChat(BaseChatModel):
+    model_name: str = "gemini-2.5-flash"
+    temperature: float = 0.2
+    max_tokens: int = 1000
+
+    @property
+    def _llm_type(self) -> str:
+        return "vertex_chat"
+
+    def _convert_messages(self, messages: List[BaseMessage]) -> dict:
+        contents = []
+        for m in messages:
+            if isinstance(m, HumanMessage):
+                role = "user"
+                parts = []
+                if isinstance(m.content, str):
+                    parts.append({"text": m.content})
+                elif isinstance(m.content, list):
+                    for p in m.content:
+                        if p.get("type") == "text":
+                            parts.append({"text": p["text"]})
+                        elif p.get("type") == "image_url":
+                            img_str = p.get("image_url", "")
+                            if isinstance(img_str, dict):
+                                img_str = img_str.get("url", "")
+                            if img_str.startswith("data:"):
+                                header, b64 = img_str.split(",", 1)
+                                mime = header.split(":", 1)[1].split(";")[0]
+                                parts.append({"inlineData": {"mimeType": mime, "data": b64}})
+                contents.append({"role": role, "parts": parts})
+            elif isinstance(m, AIMessage):
+                contents.append({"role": "model", "parts": [{"text": str(m.content)}]})
+            else:
+                contents.append({"role": "user", "parts": [{"text": str(m.content)}]})
+        return {
+            "contents": contents,
+            "generationConfig": {
+                "temperature": self.temperature,
+                "maxOutputTokens": self.max_tokens,
+            }
+        }
+
+    def _generate(
+        self, messages: List[BaseMessage], stop: Optional[List[str]] = None, **kwargs: Any
+    ) -> ChatResult:
+        import requests
+        from app.services.image_generation.gemini_service import _get_access_token, _get_project_id
+        
+        url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/us-central1/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
+        headers = {"Authorization": f"Bearer {_get_access_token()}", "Content-Type": "application/json"}
+        payload = self._convert_messages(messages)
+        
+        resp = requests.post(url, json=payload, headers=headers, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        text = "".join(p.get("text", "") for p in parts)
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text))])
+        
+    async def _agenerate(
+        self, messages: List[BaseMessage], stop: Optional[List[str]] = None, **kwargs: Any
+    ) -> ChatResult:
+        import httpx
+        from app.services.image_generation.gemini_service import _get_access_token, _get_project_id
+        
+        url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{_get_project_id()}/locations/us-central1/publishers/google/models/{self.model_name.split('/')[-1]}:generateContent"
+        headers = {"Authorization": f"Bearer {_get_access_token()}", "Content-Type": "application/json"}
+        payload = self._convert_messages(messages)
+        
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            
+            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            text = "".join(p.get("text", "") for p in parts)
+            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text))])

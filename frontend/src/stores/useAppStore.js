@@ -28,8 +28,6 @@ const useAppStore = create((set, get) => ({
 
   flashcards: null,
   quiz: null,
-  presentation: null,
-  presentationUpdateProgress: '',
   notes: [],
 
 
@@ -119,8 +117,6 @@ const useAppStore = create((set, get) => ({
 
   setFlashcards: (flashcards) => set({ flashcards }),
   setQuiz: (quiz) => set({ quiz }),
-  setPresentation: (presentation) => set({ presentation }),
-  setPresentationUpdateProgress: (msg) => set({ presentationUpdateProgress: msg }),
   setNotes: (notes) => set({ notes }),
   addNote: (content, source = null) => {
     const note = {
@@ -156,7 +152,12 @@ const useAppStore = create((set, get) => ({
 
 
   setLoadingState: (key, value) =>
-    set((state) => ({ loading: { ...state.loading, [key]: value } })),
+    set((state) => {
+      if (state.loading?.[key] === value) {
+        return state;
+      }
+      return { loading: { ...state.loading, [key]: value } };
+    }),
   setError: (error) => set({ error }),
   setActivePanel: (panel) => set({ activePanel: panel }),
 
@@ -170,7 +171,6 @@ const useAppStore = create((set, get) => ({
       sessionId: null,
       flashcards: null,
       quiz: null,
-      presentation: null,
       notes: [],
       error: null,
       loading: {},
@@ -190,7 +190,6 @@ const useAppStore = create((set, get) => ({
       messages: [],
       flashcards: null,
       quiz: null,
-      presentation: null,
       notes: [],
       pendingChatMessage: null,
       loading: {},

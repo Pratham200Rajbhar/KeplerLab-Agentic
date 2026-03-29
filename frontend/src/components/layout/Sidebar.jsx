@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/materials';
 import useMaterialUpdates from '@/hooks/useMaterialUpdates';
 import usePodcastStore from '@/stores/usePodcastStore';
+import usePresentationStore from '@/stores/usePresentationStore';
 import SourceItem from '@/components/notebook/SourceItem';
 import UploadDialog from '@/components/notebook/UploadDialog';
 import WebSearchDialog from '@/components/notebook/WebSearchDialog';
@@ -62,6 +63,7 @@ export default function Sidebar({ onNavigate }) {
   const setDraftMode = useAppStore((s) => s.setDraftMode);
 
   const handlePodcastWsEvent = usePodcastStore((s) => s.handleWsEvent);
+  const handlePresentationWsEvent = usePresentationStore((s) => s.handleWsEvent);
 
   const { width, startDrag } = useResizablePanel('left', {
     defaultWidth: PANEL.SIDEBAR.DEFAULT_WIDTH,
@@ -157,11 +159,8 @@ export default function Sidebar({ onNavigate }) {
       handlePodcastWsEvent(msg);
       return;
     }
-    if (msg.type === 'presentation_update_progress') {
-      const store = useAppStore.getState();
-      if (store.setPresentationUpdateProgress) {
-        store.setPresentationUpdateProgress(msg.message);
-      }
+    if (msg.type?.startsWith('presentation_') || msg.type?.startsWith('video_')) {
+      handlePresentationWsEvent(msg);
       return;
     }
     if (msg.type === 'notebook_update' && msg.notebook_id) {
@@ -188,7 +187,7 @@ export default function Sidebar({ onNavigate }) {
         loadMaterials();
       }
     }
-  }, [setMaterials, loadMaterials, handlePodcastWsEvent, currentNotebook, setCurrentNotebook]);
+  }, [setMaterials, loadMaterials, handlePodcastWsEvent, handlePresentationWsEvent, currentNotebook, setCurrentNotebook]);
 
   useMaterialUpdates(user?.id || null, handleWsMessage);
 

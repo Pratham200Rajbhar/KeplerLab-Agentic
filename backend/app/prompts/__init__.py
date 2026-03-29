@@ -71,13 +71,6 @@ def get_quiz_suggestion_prompt(content_text: str) -> str:
     )
 
 
-def get_presentation_suggestion_prompt(content_text: str) -> str:
-    return compose_prompt(
-        ["generation/presentation_suggest.md"],
-        {"materials": content_text},
-    )
-
-
 def get_quiz_prompt(
     content_text: str,
     mcq_count: int | None = None,
@@ -170,93 +163,6 @@ def get_prompt_optimizer_prompt(user_prompt: str, count: int = 4, context: str =
         {
             "mode": "prompt_optimization",
             "question": question,
-        },
-    )
-
-
-def get_presentation_intent_prompt(
-    topic: str,
-    audience: str,
-    purpose: str,
-    theme_preference: str,
-    material_excerpt: str,
-) -> str:
-    request = (
-        "Analyze presentation intent and output strict JSON with fields: "
-        "core_message, presentation_type, tone, complexity_level, key_themes, suggested_structure, visual_emphasis.\n"
-        f"Topic: {topic}\nAudience: {audience}\nPurpose: {purpose}\n"
-        f"Theme preference: {theme_preference or 'auto'}\n"
-        f"Material excerpt:\n{material_excerpt[:3000]}"
-    )
-    return compose_prompt(
-        ["system/base_system.md", "shared/reasoning.md", "shared/formatting.md"],
-        {"mode": "presentation_intent", "question": request},
-    )
-
-
-def get_presentation_strategy_prompt(
-    intent_analysis: str,
-    knowledge_map: str,
-    material_context: str,
-    slide_count: int,
-) -> str:
-    request = (
-        "Create a slide-by-slide strategy as strict JSON: "
-        "{\"slides\":[{\"index\":1,\"title\":\"...\",\"objective\":\"...\",\"layout\":\"...\",\"content_points\":[\"...\"]}]}.\n"
-        f"Target slide count: {slide_count}\nIntent: {intent_analysis}\n"
-        f"Knowledge map: {knowledge_map}\nContext: {material_context[:4000]}"
-    )
-    return compose_prompt(
-        ["system/base_system.md", "shared/reasoning.md", "shared/formatting.md"],
-        {"mode": "presentation_strategy", "question": request},
-    )
-
-
-def get_slide_content_prompt(
-    slide_title: str,
-    slide_purpose: str,
-    layout_type: str,
-    primary_component: str,
-    supporting_components: str,
-    information_density: str,
-    narrative_position: str,
-    assigned_context: str,
-    theme_description: str,
-) -> str:
-    request = (
-        "Generate strict JSON for slide content using the given layout and purpose.\n"
-        f"Title: {slide_title}\nPurpose: {slide_purpose}\nLayout: {layout_type}\n"
-        f"Primary component: {primary_component}\nSupporting: {supporting_components}\n"
-        f"Density: {information_density}\nNarrative position: {narrative_position}\n"
-        f"Theme: {theme_description}\nContext: {assigned_context[:3000]}"
-    )
-    return compose_prompt(
-        ["system/base_system.md", "shared/style.md", "shared/formatting.md"],
-        {"mode": "slide_content", "question": request},
-    )
-
-
-
-
-def get_ppt_prompt(
-    material_text: str,
-    slide_count: int = 10,
-    theme: str | None = None,
-    additional_instructions: str | None = None,
-) -> str:
-    return compose_prompt(
-        [
-            "system/base_system.md",
-            "shared/reasoning.md",
-            "shared/style.md",
-            "generation/presentation.md",
-        ],
-        {
-            "mode": "presentation_generation",
-            "materials": material_text,
-            "slide_count": slide_count,
-            "theme": theme or "auto",
-            "instructions": additional_instructions or "",
         },
     )
 

@@ -33,7 +33,6 @@ router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 class ContentType(str):
     FLASHCARDS = "flashcards"
     QUIZ = "quiz"
-    PRESENTATION = "presentation"
     MINDMAP = "mindmap"
 
 class SaveContentRequest(BaseModel):
