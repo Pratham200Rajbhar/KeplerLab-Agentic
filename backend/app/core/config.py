@@ -30,7 +30,8 @@ class Settings(BaseSettings):
     SANDBOX_CPU_SECONDS: int = 10
     SANDBOX_CPU_LIMIT: float = 1.0
     SANDBOX_MAX_FILE_MB: int = 20
-    SANDBOX_PREFER_DOCKER: bool = True
+    SANDBOX_PREFER_DOCKER: bool = False
+    CODE_EXECUTION_FULL_ACCESS: bool = True
 
     ARTIFACTS_DIR: str = "data/artifacts"
 
@@ -40,7 +41,7 @@ class Settings(BaseSettings):
     WORKSPACE_MEMORY_MB: int = 512
     WORKSPACE_CPU: float = 1.0
     ARTIFACT_TOKEN_EXPIRY_HOURS: int = 24
-    INSTALL_TIMEOUT_SECONDS: int = 30
+    INSTALL_TIMEOUT_SECONDS: int = 120
     APPROVED_ON_DEMAND: dict = {
         "seaborn": "0.13.2",
         "wordcloud": "1.9.3",
@@ -86,8 +87,8 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE_CODE: float = 0.1
     LLM_TOP_P_STRUCTURED: float = 0.9
     LLM_TOP_P_CHAT: float = 0.95
-    LLM_MAX_TOKENS: int = 4000
-    LLM_MAX_TOKENS_CHAT: int = 3000
+    LLM_MAX_TOKENS: int = 8192
+    LLM_MAX_TOKENS_CHAT: int = 8192
     LLM_FREQUENCY_PENALTY: float = 0.0
     LLM_PRESENCE_PENALTY: float = 0.0
     LLM_TOP_K: int = 50

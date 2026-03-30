@@ -173,10 +173,11 @@ async def execute(
             f"Return only the raw {language} code — no markdown fences, no explanation."
         )
         if language == "python":
-            lang_instruction += (
-                "\nSecurity policy: DO NOT import os, sys, subprocess, shutil, pathlib, socket, requests, urllib, httpx. "
-                "Use relative filenames directly when saving outputs."
-            )
+            if not bool(getattr(settings, "CODE_EXECUTION_FULL_ACCESS", False)):
+                lang_instruction += (
+                    "\nSecurity policy: DO NOT import os, sys, subprocess, shutil, pathlib, socket, requests, urllib, httpx. "
+                    "Use relative filenames directly when saving outputs."
+                )
             lang_instruction += (
                 "\nArtifact content policy: NEVER include raw chat transcript blocks, "
                 "and never emit lines starting with 'User:' or 'Assistant:' in output files."

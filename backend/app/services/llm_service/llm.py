@@ -304,7 +304,7 @@ from langchain_core.outputs import ChatResult, ChatGeneration
 class VertexGCPChat(BaseChatModel):
     model_name: str = "gemini-2.5-flash"
     temperature: float = 0.2
-    max_tokens: int = 1000
+    max_tokens: int = 8192
 
     @property
     def _llm_type(self) -> str:

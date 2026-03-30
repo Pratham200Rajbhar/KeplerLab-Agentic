@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass, field
 from typing import List
 
+from app.core.config import settings
+
 _BLOCKED_MODULES: set[str] = {
     "os",
     "sys",
@@ -136,6 +138,9 @@ class ValidationResult:
 
 def validate_code(code: str) -> ValidationResult:
     result = ValidationResult()
+
+    if bool(getattr(settings, "CODE_EXECUTION_FULL_ACCESS", False)):
+        return result
 
     try:
         tree = ast.parse(code)

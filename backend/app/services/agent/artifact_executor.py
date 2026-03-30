@@ -286,6 +286,9 @@ def _extract_missing_module_name(error_text: str) -> Optional[str]:
 
 def _resolve_approved_package(module_name: str) -> Optional[str]:
     """Return approved package name for a missing module, if allowed."""
+    if bool(getattr(settings, "CODE_EXECUTION_FULL_ACCESS", False)):
+        return module_name.split(".")[0]
+
     approved = settings.APPROVED_ON_DEMAND or {}
     if module_name in approved:
         return module_name
@@ -535,6 +538,8 @@ async def execute_code_and_collect_artifacts(
             detected_names = {_normalize_artifact_filename(of["filename"]) for of in output_files}
             for mentioned in saved_mentions:
                 mentioned = _normalize_artifact_filename(mentioned.strip().strip("'\""))
+                if mentioned in input_filenames:
+                    continue
                 if mentioned not in detected_names:
                     fpath = os.path.join(work_dir, mentioned)
                     if os.path.isfile(fpath) and os.path.getsize(fpath) > 0:

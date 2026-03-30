@@ -56,6 +56,7 @@ def _write_wrapper_script(
     wrapper_path: str,
     output_dir: str,
     result_json_path: str,
+    full_access: bool = False,
 ) -> None:
     payload = {
         "code": code,
@@ -64,26 +65,7 @@ def _write_wrapper_script(
     }
     payload_json = json.dumps(payload)
 
-    wrapper = f"""
-import builtins
-import io
-import json
-import os
-import pathlib
-import socket
-import sys
-import traceback
-
-payload = json.loads({payload_json!r})
-code = payload["code"]
-output_dir = os.path.abspath(payload["output_dir"])
-result_json_path = os.path.abspath(payload["result_json_path"])
-
-os.makedirs(output_dir, exist_ok=True)
-os.chdir(output_dir)
-os.environ.setdefault("MPLCONFIGDIR", output_dir)
-os.environ.setdefault("XDG_CACHE_HOME", output_dir)
-
+    restriction_block = "" if full_access else """
 def _is_within(path, root):
     root = os.path.abspath(root)
     path = os.path.abspath(path)
@@ -124,7 +106,6 @@ def _resolve_user_path(path_like, mode="r"):
     raise PermissionError("Read access outside allowed sandbox paths is not allowed")
     return resolved
 
-_orig_open = builtins.open
 def _safe_open(file, mode="r", *args, **kwargs):
     resolved = _resolve_user_path(file, mode=mode)
     if resolved is None:
@@ -149,6 +130,30 @@ def _blocked_connect_ex(self, *args, **kwargs):
 
 socket.socket.connect = _blocked_connect
 socket.socket.connect_ex = _blocked_connect_ex
+"""
+
+    wrapper = f"""
+import builtins
+import io
+import json
+import os
+import pathlib
+import socket
+import sys
+import traceback
+
+payload = json.loads({payload_json!r})
+code = payload["code"]
+output_dir = os.path.abspath(payload["output_dir"])
+result_json_path = os.path.abspath(payload["result_json_path"])
+
+os.makedirs(output_dir, exist_ok=True)
+os.chdir(output_dir)
+os.environ.setdefault("MPLCONFIGDIR", output_dir)
+os.environ.setdefault("XDG_CACHE_HOME", output_dir)
+
+_orig_open = builtins.open
+{restriction_block}
 
 stdout_buf = io.StringIO()
 stderr_buf = io.StringIO()
@@ -204,6 +209,7 @@ async def _run_local_subprocess(
     memory_mb: int,
     cpu_seconds: int,
     max_file_mb: int,
+    full_access: bool,
     work_dir: Optional[str] = None,
 ) -> SandboxRunResult:
     t0 = time.perf_counter()
@@ -213,7 +219,7 @@ async def _run_local_subprocess(
     output_dir = work_dir
     wrapper_path = os.path.join(work_dir, "_sandbox_wrapper.py")
     result_json = os.path.join(output_dir, _OUTPUT_JSON_NAME)
-    _write_wrapper_script(code, wrapper_path, output_dir, result_json)
+    _write_wrapper_script(code, wrapper_path, output_dir, result_json, full_access=full_access)
 
     timed_out = False
     stdout = ""
@@ -240,7 +246,7 @@ async def _run_local_subprocess(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=work_dir,
-            preexec_fn=_preexec_limits(memory_mb, cpu_seconds, max_file_mb),
+            preexec_fn=None if full_access else _preexec_limits(memory_mb, cpu_seconds, max_file_mb),
             env=child_env,
         )
         try:
@@ -305,6 +311,7 @@ async def _run_in_docker(
     memory_mb: int,
     cpu_limit: float,
     max_file_mb: int,
+    full_access: bool,
     work_dir: Optional[str] = None,
 ) -> SandboxRunResult:
     t0 = time.perf_counter()
@@ -313,21 +320,24 @@ async def _run_in_docker(
     os.makedirs(host_workdir, exist_ok=True)
     wrapper_host = os.path.join(host_workdir, "_sandbox_wrapper.py")
     result_json = os.path.join(host_workdir, _OUTPUT_JSON_NAME)
-    _write_wrapper_script(code, wrapper_host, "/workspace_rw", "/workspace_rw/_sandbox_result.json")
+    _write_wrapper_script(code, wrapper_host, "/workspace_rw", "/workspace_rw/_sandbox_result.json", full_access=full_access)
 
-    cmd = [
-        "docker", "run", "--rm",
-        "--network", "none",
-        "--cpus", str(cpu_limit),
-        "--memory", f"{int(memory_mb)}m",
-        "--pids-limit", "64",
-        "--read-only",
-        "--tmpfs", "/tmp:rw,size=128m",
+    cmd = ["docker", "run", "--rm"]
+    if not full_access:
+        cmd.extend([
+            "--network", "none",
+            "--cpus", str(cpu_limit),
+            "--memory", f"{int(memory_mb)}m",
+            "--pids-limit", "64",
+            "--read-only",
+            "--tmpfs", "/tmp:rw,size=128m",
+        ])
+    cmd.extend([
         "-v", f"{host_workdir}:/workspace_rw:rw",
         settings.WORKSPACE_CONTAINER_IMAGE,
         "python",
         "/workspace_rw/_sandbox_wrapper.py",
-    ]
+    ])
 
     timed_out = False
     stdout = ""
@@ -398,6 +408,7 @@ async def execute_python_sandboxed(
     cpu_seconds = int(getattr(settings, "SANDBOX_CPU_SECONDS", min(timeout, 10)))
     max_file_mb = int(getattr(settings, "SANDBOX_MAX_FILE_MB", 20))
     cpu_limit = float(getattr(settings, "SANDBOX_CPU_LIMIT", 1.0))
+    full_access = bool(getattr(settings, "CODE_EXECUTION_FULL_ACCESS", False))
 
     if prefer_docker:
         try:
@@ -407,6 +418,7 @@ async def execute_python_sandboxed(
                 memory_mb=memory_mb,
                 cpu_limit=cpu_limit,
                 max_file_mb=max_file_mb,
+                full_access=full_access,
                 work_dir=work_dir,
             )
         except Exception as exc:
@@ -418,5 +430,6 @@ async def execute_python_sandboxed(
         memory_mb=memory_mb,
         cpu_seconds=cpu_seconds,
         max_file_mb=max_file_mb,
+        full_access=full_access,
         work_dir=work_dir,
     )

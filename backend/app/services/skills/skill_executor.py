@@ -245,7 +245,7 @@ async def _execute_llm_step(
 ) -> tuple[str, List[dict]]:
     """Execute a pure LLM reasoning/synthesis step."""
     from app.services.llm_service.llm import get_llm, extract_chunk_content
-    from app.services.notebooks.materials import get_material_metadata
+    from app.db.prisma_client import prisma
 
     system = "You are a helpful assistant completing a step in a skill workflow."
     if rules:
@@ -255,12 +255,16 @@ async def _execute_llm_step(
     material_context = ""
     if material_ids:
         try:
-            metas = [get_material_metadata(mid) for mid in material_ids]
-            filenames = [m.get("filename") for m in metas if m.get("filename")]
+            # Fetch material metadata directly via Prisma to avoid broken imports
+            materials = await prisma.material.find_many(
+                where={"id": {"in": material_ids}}
+            )
+            filenames = [m.filename for m in materials if m.filename]
             if filenames:
                 material_context = f"\nNOTE: The user has uploaded the following materials to this notebook: {', '.join(filenames)}. "
                 material_context += "If you need specific data from them, you can ask for it or assume it was processed in previous steps."
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to fetch material context for LLM step: %s", e)
             pass
 
     prompt = query
@@ -268,7 +272,7 @@ async def _execute_llm_step(
         prompt = f"Context from previous steps:\n{context}\n\nTask:\n{query}"
 
     full_prompt = f"{system}{material_context}\n\n{prompt}"
-    llm = get_llm(temperature=0.3, max_tokens=3000)
+    llm = get_llm(temperature=0.3, max_tokens=8192)
     result = await llm.ainvoke(full_prompt)
     response = extract_chunk_content(result)
 
@@ -434,9 +438,9 @@ async def execute_skill(
 
         step_elapsed = time.time() - step_start
 
-        # Accumulate context for subsequent LLM steps
+        # Accumulate context for subsequent LLM steps — effectively no limit (100k chars)
         if content:
-            accumulated_context += f"\n\n--- Step {step_index} ({tool}) ---\n{content[:2000]}"
+            accumulated_context += f"\n\n--- Step {step_index} ({tool}) ---\n{content[:100000]}"
 
         # Emit artifacts
         for artifact in artifacts:
@@ -451,7 +455,7 @@ async def execute_skill(
             "success": success,
             "skipped": False,
             "condition": condition,
-            "content": content[:2000] if content else "",
+            "content": content[:100000] if content else "",
             "artifacts_count": len(artifacts),
             "elapsed_seconds": round(step_elapsed, 2),
             "retries": retries,
@@ -463,7 +467,7 @@ async def execute_skill(
             yield _sse("skill_step_result", {
                 "step_index": step_index,
                 "tool": tool,
-                "content": content[:3000] if content else "",
+                "content": content[:100000] if content else "",
                 "artifacts_count": len(artifacts),
                 "elapsed": round(step_elapsed, 2),
                 "success": True,

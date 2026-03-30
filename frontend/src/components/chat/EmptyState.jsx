@@ -61,14 +61,14 @@ const EmptyState = memo(function EmptyState({ onSend }) {
   };
 
   return (
-    <div className="workspace-empty-shell flex flex-col items-center justify-center flex-1 px-6 py-12 select-none overflow-y-auto">
-      <div className="workspace-empty-card max-w-xl w-full rounded-2xl border p-5 md:p-6"
+    <div className="workspace-empty-shell flex flex-col items-center justify-start md:justify-center flex-1 min-h-0 px-4 sm:px-6 py-5 md:py-8 select-none overflow-y-auto">
+      <div className="workspace-empty-card workspace-empty-card-upgraded max-w-2xl w-full rounded-2xl border p-4 sm:p-5 md:p-6 overflow-hidden"
         style={{
           background:
             'radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 52%), linear-gradient(170deg, color-mix(in srgb, var(--surface-raised) 85%, transparent), color-mix(in srgb, var(--surface-overlay) 65%, transparent))',
           borderColor: 'color-mix(in srgb, var(--border-strong) 85%, transparent)',
         }}>
-        <div className="text-center mb-8">
+        <div className="text-center mb-5 md:mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-3" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
             <Sparkles className="w-3 h-3" />
             Smart assistant
@@ -139,7 +139,7 @@ const EmptyState = memo(function EmptyState({ onSend }) {
           </div>
         )}
 
-        <div>
+        <div className="min-h-0 flex flex-col flex-1">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
               Suggested Questions
@@ -162,7 +162,7 @@ const EmptyState = memo(function EmptyState({ onSend }) {
               <span>Generating suggestions…</span>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="workspace-empty-suggestions custom-scrollbar flex flex-col gap-2 overflow-y-auto pr-1 pb-1">
               {suggestions.map((s, i) => (
                 <button
                   key={i}

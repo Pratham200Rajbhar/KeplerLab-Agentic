@@ -8,6 +8,8 @@ import sys
 import threading
 from typing import Dict, List
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 SKIP_PACKAGES: set[str] = {
@@ -60,7 +62,7 @@ def install_package_if_missing(pkg: str) -> bool:
                 [sys.executable, "-m", "pip", "install", pkg, "-q", "--no-input"],
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=settings.INSTALL_TIMEOUT_SECONDS,
             )
             if result.returncode == 0:
                 _installed_cache.add(pkg)
@@ -95,6 +97,15 @@ PREINSTALLED_PACKAGES: List[str] = [
     "pillow",
     "tabulate",
     "jinja2",
+    "pypdf",
+    "pdfplumber",
+    "pymupdf",
+    "beautifulsoup4",
+    "lxml",
+    "markdown",
+    "xlsxwriter",
+    "requests",
+    "httpx",
 ]
 
 PACKAGE_IMPORT_MAP: Dict[str, str] = {
@@ -122,6 +133,10 @@ _PIP_TO_MODULE: Dict[str, str] = {
     "fpdf2": "fpdf",
     "scikit-learn": "sklearn",
     "pillow": "PIL",
+    "pymupdf": "fitz",
+    "beautifulsoup4": "bs4",
+    "pypdf": "pypdf",
+    "pdfplumber": "pdfplumber",
 }
 
 def _get_import_name(package: str) -> str:
@@ -152,7 +167,7 @@ async def ensure_packages() -> None:
                     [sys.executable, "-m", "pip", "install", p, "-q"],
                     capture_output=True,
                     text=True,
-                    timeout=120,
+                    timeout=max(300, settings.INSTALL_TIMEOUT_SECONDS),
                 ),
             )
             if result.returncode == 0:
