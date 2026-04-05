@@ -108,6 +108,8 @@ model Notebook {
   sourceSelections NotebookSourceSelection[]
   skills           Skill[]
   skillRuns        SkillRun[]
+  sources          Source[]
+  corpusState      NotebookCorpusState?
 
   @@index([userId])
   @@map("notebooks")
@@ -675,23 +677,32 @@ model SkillRun {
   @@map("skill_runs")
 }
 
-// ─── Source Ingestion ────────────────────────────────────
+// ─── Source Ingestion (NotebookLM-like Corpus) ───────────
 
 model Source {
   id                String    @id @default(uuid()) @db.Uuid
   userId            String    @map("user_id") @db.Uuid
   notebookId        String?   @map("notebook_id") @db.Uuid
   sourceType        String    @map("source_type") @db.VarChar(50)
-  status            String    @default("queued") // Initial status before job creation
+  status            String    @default("QUEUED") @db.VarChar(30)
   title             String?   @db.VarChar(510)
   originalName      String?   @map("original_name") @db.VarChar(255)
   mimeType          String?   @map("mime_type") @db.VarChar(128)
   sizeBytes         Int?      @map("size_bytes")
   checksum          String?   @db.VarChar(128)
+  fingerprint       String?   @db.VarChar(128)
   inputText         String?   @map("input_text") @db.Text
   inputUrl          String?   @map("input_url") @db.Text
   localFilePath     String?   @map("local_file_path") @db.Text
-  normalizedMetadata Json?     @map("normalized_metadata")
+  extractedText     String?   @map("extracted_text") @db.Text
+  extractedMetadata Json?     @map("extracted_metadata")
+  normalizedMetadata Json?    @map("normalized_metadata")
+  tokenCount        Int       @default(0) @map("token_count")
+  extractionStatus  String    @default("PENDING") @map("extraction_status") @db.VarChar(30)
+  indexingStatus    String    @default("PENDING") @map("indexing_status") @db.VarChar(30)
+  readinessStatus   String    @default("PENDING") @map("readiness_status") @db.VarChar(30)
+  warningCount      Int       @default(0) @map("warning_count")
+  warningMessages   Json?     @map("warning_messages")
   errorCode         String?   @map("error_code") @db.VarChar(100)
   errorMessage      String?   @map("error_message") @db.Text
   retryCount        Int       @default(0) @map("retry_count")
@@ -699,11 +710,98 @@ model Source {
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
   processedAt       DateTime? @map("processed_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
   material Material?
+  job      SourceJob?
+  chunks   SourceChunk[]
+  citations SourceCitationAnchor[]
 
   @@index([userId])
+  @@index([notebookId])
   @@index([checksum])
+  @@index([fingerprint])
+  @@index([status])
   @@map("sources")
+}
+
+model SourceJob {
+  id          String    @id @default(uuid()) @db.Uuid
+  sourceId    String    @unique @map("source_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  stage       String    @default("QUEUED") @db.VarChar(30)
+  status      String    @default("pending") @db.VarChar(30)
+  retryCount  Int       @default(0) @map("retry_count")
+  lastError   String?   @map("last_error") @db.Text
+  metadata    Json?
+  heartbeatAt DateTime? @map("heartbeat_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stage])
+  @@index([status])
+  @@map("source_jobs")
+}
+
+model SourceChunk {
+  id            String   @id @default(uuid()) @db.Uuid
+  sourceId      String   @map("source_id") @db.Uuid
+  chunkIndex    Int      @map("chunk_index")
+  text          String   @db.Text
+  tokenCount    Int      @default(0) @map("token_count")
+  sectionTitle  String?  @map("section_title") @db.VarChar(510)
+  pageNumber    Int?     @map("page_number")
+  metadata      Json?
+  chromaId      String?  @map("chroma_id") @db.VarChar(128)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, chunkIndex])
+  @@index([sourceId])
+  @@map("source_chunks")
+}
+
+model SourceCitationAnchor {
+  id            String   @id @default(uuid()) @db.Uuid
+  sourceId      String   @map("source_id") @db.Uuid
+  anchorType    String   @map("anchor_type") @db.VarChar(50) // 'section', 'page', 'timestamp', 'slide'
+  anchorLabel   String   @map("anchor_label") @db.VarChar(510)
+  pageNumber    Int?     @map("page_number")
+  sectionTitle  String?  @map("section_title") @db.VarChar(510)
+  timestamp     String?  @db.VarChar(50) // e.g. "00:05:23"
+  startOffset   Int?     @map("start_offset")
+  endOffset     Int?     @map("end_offset")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("source_citation_anchors")
+}
+
+model NotebookCorpusState {
+  id             String    @id @default(uuid()) @db.Uuid
+  notebookId     String    @unique @map("notebook_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  totalTokens    Int       @default(0) @map("total_tokens")
+  sourceCount    Int       @default(0) @map("source_count")
+  readyCount     Int       @default(0) @map("ready_count")
+  retrievalMode  String    @default("DIRECT_GROUNDING") @map("retrieval_mode") @db.VarChar(30)
+  corpusMetadata Json?     @map("corpus_metadata")
+  lastRebuiltAt  DateTime? @map("last_rebuilt_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId])
+  @@index([userId])
+  @@map("notebook_corpus_states")
 }
 

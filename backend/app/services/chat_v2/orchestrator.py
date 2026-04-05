@@ -151,9 +151,29 @@ async def run(
         yield sse_done({"elapsed": round(time.time() - start_time, 2)})
 
 async def _run_rag_tool(message, material_ids, user_id, notebook_id):
-    # RAG tool removed during pipeline decommissioning
-    if False:
-        yield None
+    # Corpus-backed RAG retrieval via new pipeline
+    try:
+        from app.services.notebook_corpus.retrieval.notebook_context_builder import get_notebook_context
+
+        context = await get_notebook_context(notebook_id, user_id, message)
+
+        if context.context_text.strip():
+            yield ToolResult(
+                content=context.context_text,
+                metadata={
+                    "retrieval_mode": context.retrieval_mode.value if context.retrieval_mode else "unknown",
+                    "chunks_used": context.chunks_used,
+                    "sources_used": context.sources_used,
+                    "total_tokens": context.total_tokens,
+                    "citations": [c.model_dump() for c in context.citations],
+                },
+            )
+        else:
+            yield ToolResult(content="", metadata={"empty": True})
+    except Exception as e:
+        logger.error("Corpus RAG retrieval failed: %s", e)
+        yield ToolResult(content="", metadata={"empty": True, "error": str(e)})
+
 
 async def _run_web_search_tool(message, user_id):
     from app.services.tools.web_search_tool import execute

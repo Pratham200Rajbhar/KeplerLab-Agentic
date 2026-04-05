@@ -50,6 +50,7 @@ from app.routes.ai_resource import router as ai_resource_router
 from app.routes.skills import router as skills_router
 from app.routes.presentation import router as presentation_router
 from app.routes.metrics import router as metrics_router
+from app.routes.sources import router as sources_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -86,7 +87,21 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Expired token cleanup failed (non-fatal): %s", exc)
 
+    # Start notebook corpus pipeline
+    try:
+        from app.services.notebook_corpus.lifecycle import startup as corpus_startup
+        await corpus_startup()
+    except Exception as exc:
+        logger.warning("Corpus pipeline startup failed (non-fatal): %s", exc)
+
     yield
+
+    # Shutdown corpus pipeline
+    try:
+        from app.services.notebook_corpus.lifecycle import shutdown as corpus_shutdown
+        await corpus_shutdown()
+    except Exception as exc:
+        logger.warning("Corpus pipeline shutdown failed (non-fatal): %s", exc)
 
     await disconnect_db()
 
@@ -178,5 +193,6 @@ app.include_router(ai_resource_router)
 app.include_router(skills_router)
 app.include_router(presentation_router)
 app.include_router(metrics_router)
+app.include_router(sources_router)
 
 app.include_router(ws_router)

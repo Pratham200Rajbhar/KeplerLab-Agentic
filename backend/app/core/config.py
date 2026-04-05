@@ -55,6 +55,25 @@ class Settings(BaseSettings):
         "pyvis": "0.3.2",
     }
 
+    # ── Notebook Corpus Pipeline ─────────────────────────────
+    JOB_WORKER_POLL_SECONDS: int = 3
+    JOB_MAX_CONCURRENT: int = 2
+    STUCK_JOB_TIMEOUT_MINUTES: int = 30
+    SOURCE_MAX_RETRIES: int = 3
+    SOURCE_RETRY_BACKOFF_BASE_SECONDS: float = 2.0
+    SOURCE_MAX_FILE_SIZE_MB: int = 50
+    ENABLE_SOURCE_DEDUPLICATION: bool = True
+    DIRECT_GROUNDING_TOKEN_THRESHOLD: int = 60_000
+    DIRECT_GROUNDING_SOURCE_LIMIT: int = 10
+    DENSE_K: int = 20
+    LEXICAL_POOL: int = 100
+    LEXICAL_K: int = 10
+    RERANK_POOL: int = 30
+    FINAL_K: int = 8
+    EMBED_BATCH_SIZE: int = 32
+    NOTE_SOURCE_AUTO_REINDEX: bool = True
+    AUDIO_OVERVIEW_ENABLED: bool = False
+
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
