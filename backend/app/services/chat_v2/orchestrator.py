@@ -134,14 +134,6 @@ async def run(
 
         if capability == Capability.RAG and tool_result:
             chunks_used = tool_result.metadata.get("chunks_used", 0)
-            if chunks_used > 0:
-                try:
-                    from app.services.rag.citation_validator import validate_citations
-                    validation = validate_citations(response=answer, num_sources=chunks_used, strict=True)
-                    if not validation["is_valid"]:
-                        logger.warning("Citation validation failed: %s", validation.get("error_message"))
-                except Exception:
-                    pass
 
         elapsed = round(time.time() - start_time, 2)
         meta = _build_meta(capability, tool_result, elapsed)
@@ -159,9 +151,9 @@ async def run(
         yield sse_done({"elapsed": round(time.time() - start_time, 2)})
 
 async def _run_rag_tool(message, material_ids, user_id, notebook_id):
-    from app.services.tools.rag_tool import execute
-    async for item in execute(message, material_ids, user_id, notebook_id):
-        yield item
+    # RAG tool removed during pipeline decommissioning
+    if False:
+        yield None
 
 async def _run_web_search_tool(message, user_id):
     from app.services.tools.web_search_tool import execute
@@ -247,38 +239,8 @@ async def _resolve_image_grounding_context(
     notebook_id: str,
 ) -> Dict[str, Any]:
     """Fetch compact RAG context so /image can reflect selected resources."""
-    if not material_ids:
-        return {"context": "", "chunks_used": 0, "grounded": False}
-
-    try:
-        from app.core.config import settings
-        from app.services.rag.secure_retriever import secure_similarity_search_enhanced
-
-        raw_context = await asyncio.to_thread(
-            secure_similarity_search_enhanced,
-            user_id=user_id,
-            query=prompt_raw,
-            material_ids=material_ids,
-            notebook_id=notebook_id,
-            use_mmr=True,
-            use_reranker=settings.USE_RERANKER,
-            return_formatted=True,
-        )
-
-        if not raw_context or raw_context.strip() == "No relevant context found.":
-            return {"context": "", "chunks_used": 0, "grounded": False}
-
-        chunks_used = len(re.findall(r"\[SOURCE\s+\d+(?:\s+-\s+Material:.*?)?\]", raw_context))
-        # Keep grounding concise so prompt stays within practical model limits.
-        compact_context = raw_context[:3500].strip()
-        return {
-            "context": compact_context,
-            "chunks_used": chunks_used,
-            "grounded": True,
-        }
-    except Exception as exc:
-        logger.warning("Image grounding context retrieval failed: %s", exc)
-        return {"context": "", "chunks_used": 0, "grounded": False}
+    # RAG grounding disabled during pipeline decommissioning
+    return {"context": "", "chunks_used": 0, "grounded": False}
 
 
 def _build_grounded_image_prompt(prompt_raw: str, rag_context: str) -> str:

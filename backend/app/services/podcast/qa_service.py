@@ -9,39 +9,45 @@ from typing import Dict, Optional
 from app.db.prisma_client import prisma
 from app.prompts import get_podcast_qa_prompt
 from app.services.llm_service.llm import get_llm
-from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 from app.services.podcast.tts_service import synthesize_single
 from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
 
-def _rag_for_question(
+async def _context_for_question(
     user_id: str,
     question: str,
     material_ids: list,
     notebook_id: Optional[str],
 ) -> str:
-    nb_filter = notebook_id if not material_ids else None
-    ctx = secure_similarity_search_enhanced(
-        user_id=user_id,
-        query=question,
-        material_ids=material_ids,
-        notebook_id=nb_filter,
-        use_mmr=True,
-        use_reranker=True,
-        return_formatted=True,
-    )
-    if not ctx or ctx == "No relevant context found.":
-        ctx = secure_similarity_search_enhanced(
-            user_id=user_id,
-            query=question,
-            material_ids=material_ids,
-            notebook_id=None,
-            use_mmr=False,
-            use_reranker=False,
-            return_formatted=True,
-        )
-    return ctx or "No relevant context available."
+    terms = {t for t in str(question).lower().split() if len(t) > 3}
+    where: Dict[str, object] = {"userId": str(user_id)}
+    ids = [str(mid) for mid in (material_ids or []) if str(mid).strip()]
+    if ids:
+        where["id"] = {"in": ids}
+    elif notebook_id:
+        where["notebookId"] = str(notebook_id)
+    else:
+        return "No relevant context available."
+
+    materials = await prisma.material.find_many(where=where, order={"updatedAt": "desc"})
+    scored: list[tuple[int, str]] = []
+    for material in materials:
+        text = str(getattr(material, "originalText", "") or "").strip()
+        if not text:
+            continue
+        snippet = text[:6000]
+        lower = snippet.lower()
+        score = sum(1 for term in terms if term in lower)
+        title = str(getattr(material, "title", None) or getattr(material, "filename", None) or material.id)
+        scored.append((score, f"[SOURCE - Material: {title}]\n{snippet}"))
+
+    if not scored:
+        return "No relevant context available."
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    top_blocks = [block for _, block in scored[:4]]
+    return "\n\n".join(top_blocks)
 
 async def handle_question(
     session_id: str,
@@ -62,8 +68,7 @@ async def handle_question(
         session_id, paused_at_segment, question_text[:80],
     )
 
-    context = await asyncio.to_thread(
-        _rag_for_question,
+    context = await _context_for_question(
         user_id, question_text, session.materialIds, session.notebookId,
     )
 

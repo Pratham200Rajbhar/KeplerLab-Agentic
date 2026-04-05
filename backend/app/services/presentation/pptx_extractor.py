@@ -267,7 +267,9 @@ async def extract_slides_from_pptx(
     Returns:
         List[ExtractedSlide] — one entry per slide in the deck.
     """
-    tmp_dir = tempfile.mkdtemp(prefix="keplerlab_pptx_")
+    from app.core.config import settings
+    os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+    tmp_dir = tempfile.mkdtemp(prefix="keplerlab_pptx_", dir=settings.DATA_TMP_DIR)
     try:
         return await _do_extract(file_bytes, filename, tmp_dir)
     finally:

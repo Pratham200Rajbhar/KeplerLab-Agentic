@@ -80,6 +80,7 @@ model User {
   sourceSelections NotebookSourceSelection[]
   skills           Skill[]
   skillRuns        SkillRun[]
+  sources          Source[]
 
   @@map("users")
 }
@@ -116,9 +117,11 @@ model Notebook {
 
 enum MaterialStatus {
   pending
+  validating
   processing
   ocr_running
   transcribing
+  chunking
   embedding
   completed
   failed
@@ -136,11 +139,13 @@ model Material {
   sourceType   String?        @default("file") @map("source_type") @db.VarChar(50) // 'file', 'url', 'youtube', 'text'
   metadata     Json? // Extraction metadata (migrated from String)
   error        String?        @db.Text // Error message if processing failed
+  sourceId     String?        @unique @map("source_id") @db.Uuid
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at")
 
   owner                    User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   notebook                 Notebook?                  @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+  source                   Source?                    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   generatedContent         GeneratedContent[]
   generatedContentJoins    GeneratedContentMaterial[]
   podcastSessionJoins      PodcastSessionMaterial[]
@@ -298,16 +303,21 @@ model RefreshToken {
 
 // ─── Background Jobs ─────────────────────────────────────
 
+// TO_REMOVE: This enum is only used by the legacy background worker.
 enum JobStatus {
   pending
+  validating
   processing
   ocr_running
   transcribing
+  chunking
   embedding
   completed
   failed
+  dead_letter
 }
 
+// TO_REMOVE: This model is only used by the legacy background worker.
 model BackgroundJob {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @map("user_id") @db.Uuid
@@ -663,5 +673,37 @@ model SkillRun {
   @@index([skillId])
   @@index([userId])
   @@map("skill_runs")
+}
+
+// ─── Source Ingestion ────────────────────────────────────
+
+model Source {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  notebookId        String?   @map("notebook_id") @db.Uuid
+  sourceType        String    @map("source_type") @db.VarChar(50)
+  status            String    @default("queued") // Initial status before job creation
+  title             String?   @db.VarChar(510)
+  originalName      String?   @map("original_name") @db.VarChar(255)
+  mimeType          String?   @map("mime_type") @db.VarChar(128)
+  sizeBytes         Int?      @map("size_bytes")
+  checksum          String?   @db.VarChar(128)
+  inputText         String?   @map("input_text") @db.Text
+  inputUrl          String?   @map("input_url") @db.Text
+  localFilePath     String?   @map("local_file_path") @db.Text
+  normalizedMetadata Json?     @map("normalized_metadata")
+  errorCode         String?   @map("error_code") @db.VarChar(100)
+  errorMessage      String?   @map("error_message") @db.Text
+  retryCount        Int       @default(0) @map("retry_count")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+  processedAt       DateTime? @map("processed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material?
+
+  @@index([userId])
+  @@index([checksum])
+  @@map("sources")
 }
 

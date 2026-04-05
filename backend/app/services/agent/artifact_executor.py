@@ -384,7 +384,8 @@ async def execute_code_and_collect_artifacts(
         current_code = fixed
 
     code = sanitize_code(current_code, ensure_file_output=True)
-    work_dir = tempfile.mkdtemp(prefix="kepler_agent_")
+    os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+    work_dir = tempfile.mkdtemp(prefix="kepler_agent_", dir=settings.DATA_TMP_DIR)
 
     try:
         # Copy uploaded material files into the sandbox work directory

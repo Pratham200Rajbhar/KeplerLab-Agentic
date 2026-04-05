@@ -16,8 +16,8 @@ import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
+from app.db.prisma_client import prisma
 from app.services.llm_service.llm import get_llm
-from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 
 logger = logging.getLogger(__name__)
 
@@ -108,21 +108,38 @@ _PRESET_THEMES: Dict[str, ThemeSpec] = {
 
 # ── RAG helpers ───────────────────────────────────────────────────────────────
 
-def _rag_search(
+async def _load_material_context(
     user_id: str,
-    query: str,
     material_ids: List[str],
     notebook_id: Optional[str],
 ) -> str:
-    return secure_similarity_search_enhanced(
-        user_id=user_id,
-        query=query,
-        material_ids=material_ids,
-        notebook_id=notebook_id,
-        use_mmr=True,
-        use_reranker=True,
-        return_formatted=True,
-    )
+    where: Dict[str, object] = {"userId": str(user_id)}
+    ids = [str(mid) for mid in (material_ids or []) if str(mid).strip()]
+    if ids:
+        where["id"] = {"in": ids}
+    elif notebook_id:
+        where["notebookId"] = str(notebook_id)
+    else:
+        return ""
+
+    materials = await prisma.material.find_many(where=where, order={"createdAt": "asc"})
+    blocks: List[str] = []
+    total = 0
+    for material in materials:
+        text = str(getattr(material, "originalText", "") or "").strip()
+        if not text:
+            continue
+        title = str(getattr(material, "title", None) or getattr(material, "filename", None) or material.id)
+        block = f"[SOURCE - Material: {title}]\n{text[:7000]}"
+        if total + len(block) > 30_000:
+            remaining = 30_000 - total
+            if remaining > 128:
+                blocks.append(block[:remaining])
+            break
+        blocks.append(block)
+        total += len(block)
+
+    return "\n\n".join(blocks)
 
 
 async def _gather_context(
@@ -131,44 +148,8 @@ async def _gather_context(
     notebook_id: Optional[str],
     topic: Optional[str] = None,
 ) -> str:
-    """Multi-angle RAG retrieval to build comprehensive context."""
-    if topic:
-        queries = [
-            f'Detailed information about: "{topic}"',
-            f'Background context and key points for: "{topic}"',
-        ]
-    else:
-        queries = [
-            "Comprehensive overview of all key topics, concepts, and findings",
-            "Important details, examples, and supporting evidence",
-            "Summary of main conclusions and takeaways",
-        ]
-
-    results = await asyncio.gather(
-        *[
-            asyncio.to_thread(
-                _rag_search, user_id, q, material_ids, notebook_id,
-            )
-            for q in queries
-        ],
-        return_exceptions=True,
-    )
-
-    seen: set[str] = set()
-    merged: List[str] = []
-    for res in results:
-        if isinstance(res, Exception):
-            logger.warning("RAG query failed during slide planning: %s", res)
-            continue
-        if not res or res == "No relevant context found.":
-            continue
-        for chunk in res.split("\n\n"):
-            chunk = chunk.strip()
-            if chunk and chunk not in seen:
-                seen.add(chunk)
-                merged.append(chunk)
-
-    return "\n\n".join(merged)
+    del topic
+    return await _load_material_context(user_id, material_ids, notebook_id)
 
 
 # ── JSON extraction ───────────────────────────────────────────────────────────

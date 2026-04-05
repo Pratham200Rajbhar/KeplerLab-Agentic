@@ -15,6 +15,37 @@ _reranking_time: ContextVar[float] = ContextVar("reranking_time", default=0.0)
 _llm_time: ContextVar[float] = ContextVar("llm_time", default=0.0)
 _retrieval_trace: ContextVar[Dict[str, float | int | str]] = ContextVar("retrieval_trace", default={})
 
+# --- Prometheus Metrics (Optional) ---
+from app.core.config import settings
+
+hist_request_duration = None
+hist_retrieval_duration = None
+hist_reranking_duration = None
+hist_llm_duration = None
+
+if settings.ENABLE_PROMETHEUS:
+    try:
+        from prometheus_client import Histogram
+        hist_request_duration = Histogram(
+            "request_duration_seconds",
+            "Total request duration in seconds",
+            ["method", "endpoint", "status"]
+        )
+        hist_retrieval_duration = Histogram(
+            "retrieval_duration_seconds",
+            "RAG retrieval duration in seconds"
+        )
+        hist_reranking_duration = Histogram(
+            "reranking_duration_seconds",
+            "RAG reranking duration in seconds"
+        )
+        hist_llm_duration = Histogram(
+            "llm_duration_seconds",
+            "LLM generation duration in seconds"
+        )
+    except ImportError:
+        logger.warning("prometheus_client not installed, skipping metrics")
+
 def set_request_start_time() -> None:
     _request_start_time.set(time.time())
 
@@ -27,14 +58,20 @@ def get_request_elapsed_time() -> float:
 
 def record_retrieval_time(seconds: float) -> None:
     _retrieval_time.set(seconds)
+    if hist_retrieval_duration:
+        hist_retrieval_duration.observe(seconds)
     logger.debug(f"Retrieval completed in {seconds:.3f}s")
 
 def record_reranking_time(seconds: float) -> None:
     _reranking_time.set(seconds)
+    if hist_reranking_duration:
+        hist_reranking_duration.observe(seconds)
     logger.debug(f"Reranking completed in {seconds:.3f}s")
 
 def record_llm_time(seconds: float) -> None:
     _llm_time.set(seconds)
+    if hist_llm_duration:
+        hist_llm_duration.observe(seconds)
     logger.debug(f"LLM generation completed in {seconds:.3f}s")
 
 
@@ -126,6 +163,13 @@ async def performance_monitoring_middleware(request: Request, call_next):
         if metrics["llm_time"] > 0:
             response.headers["X-LLM-Time"] = f"{metrics['llm_time']:.3f}s"
     
+    if hist_request_duration:
+        hist_request_duration.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code
+        ).observe(total_time)
+
     return response
 
 class PerformanceTimer:

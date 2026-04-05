@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.services.auth import get_current_user
-from app.services.material_service import filter_completed_material_ids
 from app.db.prisma_client import prisma
 from app.services.chat_v2.schemas import (
     ChatRequest,
@@ -45,11 +44,7 @@ _transcription_service = None
 
 
 def _get_transcription_service():
-    global _transcription_service
-    if _transcription_service is None:
-        from app.services.text_processing.transcription_service import AudioTranscriptionService
-        _transcription_service = AudioTranscriptionService()
-    return _transcription_service
+    return None
 
 
 async def _require_notebook_access(notebook_id: str, user_id: str) -> None:
@@ -81,51 +76,11 @@ async def transcribe_audio_endpoint(
     """Transcribe recorded chat audio with Whisper and return plain text."""
     del current_user  # endpoint is authenticated; user id not needed for transcription itself
 
-    if not audio:
-        raise HTTPException(status_code=400, detail="Audio file is required")
+    raise HTTPException(
+        status_code=501,
+        detail="Audio transcription service is currently disabled during pipeline maintenance."
+    )
 
-    suffix = os.path.splitext(audio.filename or "voice.webm")[1] or ".webm"
-    temp_path = None
-
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_path = temp_file.name
-            while chunk := await audio.read(1024 * 1024):
-                temp_file.write(chunk)
-
-        if not os.path.exists(temp_path) or os.path.getsize(temp_path) == 0:
-            raise HTTPException(status_code=400, detail="Uploaded audio is empty")
-
-        loop = asyncio.get_running_loop()
-        service = _get_transcription_service()
-        result = await loop.run_in_executor(
-            None,
-            lambda: service.transcribe_audio_file(
-                temp_path,
-                language=language or None,
-                model_size=model_size,
-            ),
-        )
-
-        if not isinstance(result, dict) or result.get("status") != "success":
-            raise HTTPException(
-                status_code=400,
-                detail=(result or {}).get("error", "Transcription failed"),
-            )
-
-        return JSONResponse(content={
-            "text": result.get("text", ""),
-            "language": result.get("language", "unknown"),
-            "confidence": result.get("confidence", 0),
-            "duration": result.get("duration", 0),
-            "model_used": result.get("model_used", model_size),
-        })
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
 
 @router.post("")
 async def chat_endpoint(
@@ -147,24 +102,9 @@ async def chat_endpoint(
             ids = _dedupe_ids([str(mid) for mid in pref.materialIds if mid])
             used_saved_selection = True
 
-    if ids:
-        for mid in ids:
-            material = await require_material(mid, current_user.id)
-            if material.notebookId and material.notebookId != request.notebook_id:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Material {mid} does not belong to the current notebook.",
-                )
-        ids = await filter_completed_material_ids(ids, str(current_user.id))
-        if not ids:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "None of the selected materials have finished processing yet. "
-                    "Please wait for their status to reach 'completed' before chatting."
-                ),
-            )
-
+    # Material processing requirement removed during pipeline decommissioning.
+    # We pass the ids through for the orchestrator to handle (e.g. as empty context).
+    
     logger.info(
         "chat_endpoint sources resolved: notebook=%s user=%s count=%d via_saved_selection=%s",
         request.notebook_id,

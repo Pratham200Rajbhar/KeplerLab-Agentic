@@ -214,7 +214,8 @@ async def _run_local_subprocess(
 ) -> SandboxRunResult:
     t0 = time.perf_counter()
     owns_work_dir = work_dir is None
-    work_dir = os.path.abspath(work_dir) if work_dir else tempfile.mkdtemp(prefix="kepler_sandbox_local_")
+    os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+    work_dir = os.path.abspath(work_dir) if work_dir else tempfile.mkdtemp(prefix="kepler_sandbox_local_", dir=settings.DATA_TMP_DIR)
     os.makedirs(work_dir, exist_ok=True)
     output_dir = work_dir
     wrapper_path = os.path.join(work_dir, "_sandbox_wrapper.py")
@@ -316,7 +317,8 @@ async def _run_in_docker(
 ) -> SandboxRunResult:
     t0 = time.perf_counter()
     owns_work_dir = work_dir is None
-    host_workdir = os.path.abspath(work_dir) if work_dir else tempfile.mkdtemp(prefix="kepler_sandbox_docker_")
+    os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+    host_workdir = os.path.abspath(work_dir) if work_dir else tempfile.mkdtemp(prefix="kepler_sandbox_docker_", dir=settings.DATA_TMP_DIR)
     os.makedirs(host_workdir, exist_ok=True)
     wrapper_host = os.path.join(host_workdir, "_sandbox_wrapper.py")
     result_json = os.path.join(host_workdir, _OUTPUT_JSON_NAME)

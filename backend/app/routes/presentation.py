@@ -12,7 +12,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services.auth import get_current_user
-from app.services.job_service import create_job, update_job_status
 from app.services.podcast.voice_map import (
     normalize_language_code,
     validate_voice,
@@ -97,24 +96,11 @@ async def generate_presentation_endpoint(
     from app.services.presentation.presentation_service import generate_presentation
 
     presentation_id = str(uuid.uuid4())
-    job_id = await create_job(
-        user_id=user_id,
-        job_type="presentation_generation",
-        payload={
-            "presentation_id": presentation_id,
-            "notebook_id": req.notebook_id,
-            "material_ids": req.material_ids,
-            "topic": req.topic,
-            "theme_prompt": req.theme_prompt,
-            "slide_count": req.slide_count,
-            "argumentation_notes": req.argumentation_notes,
-        },
-    )
+    job_id = "legacy-job-none"  # Return a placeholder for compatibility with Response models
 
     # Fire and forget — results come via WebSocket
     async def _run():
         try:
-            await update_job_status(job_id, "processing")
             await generate_presentation(
                 user_id=user_id,
                 notebook_id=req.notebook_id,
@@ -125,14 +111,8 @@ async def generate_presentation_endpoint(
                 argumentation_notes=req.argumentation_notes,
                 presentation_id=presentation_id,
             )
-            await update_job_status(
-                job_id,
-                "completed",
-                result={"presentation_id": presentation_id},
-            )
         except Exception as exc:
             logger.exception("Background presentation generation failed: %s", exc)
-            await update_job_status(job_id, "failed", error=str(exc))
 
     asyncio.create_task(_run())
 
@@ -170,29 +150,10 @@ async def generate_video_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    job_id = await create_job(
-        user_id=user_id,
-        job_type="video_generation",
-        payload={
-            "presentation_id": presentation_id,
-            "voice_id": resolved_voice_id,
-            "narration_language": normalized_narration_language,
-            "ppt_language": req.ppt_language,
-            "narration_style": req.narration_style,
-            "narration_notes": req.narration_notes,
-            "auto_generate_slides": req.auto_generate_slides,
-            "notebook_id": req.notebook_id,
-            "material_ids": req.material_ids or [],
-            "topic": req.topic,
-            "theme_prompt": req.theme_prompt,
-            "slide_count": req.slide_count,
-            "argumentation_notes": req.argumentation_notes,
-        },
-    )
+    job_id = "legacy-job-none"
 
     async def _run():
         try:
-            await update_job_status(job_id, "processing")
             result = await generate_video(
                 user_id=user_id,
                 presentation_id=presentation_id,
@@ -209,18 +170,8 @@ async def generate_video_endpoint(
                 fallback_target_slide_count=req.slide_count,
                 fallback_argumentation_notes=req.argumentation_notes,
             )
-            await update_job_status(
-                job_id,
-                "completed",
-                result={
-                    "presentation_id": presentation_id,
-                    "video_id": result.get("videoId"),
-                    "artifact_id": result.get("artifactId"),
-                },
-            )
         except Exception as exc:
             logger.exception("Background video generation failed: %s", exc)
-            await update_job_status(job_id, "failed", error=str(exc))
 
     asyncio.create_task(_run())
 
@@ -446,22 +397,10 @@ async def explain_pptx_upload(
             notebook_id = new_hub.id
 
     presentation_id = str(uuid.uuid4())
-    job_id = await create_job(
-        user_id=user_id,
-        job_type="explain_pptx",
-        payload={
-            "presentation_id": presentation_id,
-            "filename": filename,
-            "voice_id": resolved_voice,
-            "narration_language": normalized_language,
-            "narration_style": narration_style,
-            "narration_notes": narration_notes,
-        },
-    )
+    job_id = "legacy-job-none"
 
     async def _run():
         try:
-            await update_job_status(job_id, "processing")
             await _explain_pptx_pipeline(
                 user_id=user_id,
                 presentation_id=presentation_id,
@@ -473,10 +412,8 @@ async def explain_pptx_upload(
                 narration_notes=narration_notes,
                 notebook_id=notebook_id,
             )
-            await update_job_status(job_id, "completed", result={"presentation_id": presentation_id})
         except Exception as exc:
             logger.exception("PPTX explain pipeline failed: %s", exc)
-            await update_job_status(job_id, "failed", error=str(exc))
 
     asyncio.create_task(_run())
 

@@ -99,3 +99,6 @@ passlib[bcrypt]>=1.7.4
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 pydantic[email]
+prometheus_client==0.20.0  # Optional: for performance monitoring
+PyJWT==2.9.0               # For JWT decoding in rate limiter
+pandas==2.2.2              # For structured data processing

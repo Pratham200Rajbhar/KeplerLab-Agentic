@@ -5,6 +5,7 @@ import re
 from typing import AsyncIterator, List, Optional
 
 from app.core.config import settings
+from app.db.prisma_client import prisma
 from app.services.chat_v2.schemas import ToolResult
 from app.services.chat_v2.streaming import sse_tool_start, sse_tool_result, sse_code_block
 
@@ -77,6 +78,43 @@ def _sanitize_prior_context(text: str) -> str:
 
     return "\n".join(cleaned)
 
+
+async def _load_material_context(
+    *,
+    user_id: str,
+    material_ids: List[str],
+    notebook_id: str,
+    max_chars: int = 12_000,
+) -> str:
+    where: dict[str, object] = {"userId": str(user_id)}
+    ids = [str(mid) for mid in (material_ids or []) if str(mid).strip()]
+    if ids:
+        where["id"] = {"in": ids}
+    elif notebook_id and notebook_id != "draft":
+        where["notebookId"] = str(notebook_id)
+    else:
+        return ""
+
+    materials = await prisma.material.find_many(where=where, order={"updatedAt": "desc"})
+    blocks: List[str] = []
+    used = 0
+
+    for material in materials:
+        text = str(getattr(material, "originalText", "") or "").strip()
+        if not text:
+            continue
+        title = str(getattr(material, "title", None) or getattr(material, "filename", None) or material.id)
+        block = f"[SOURCE - Material: {title}]\n{text[:5000]}"
+        if used + len(block) > max_chars:
+            remaining = max_chars - used
+            if remaining > 128:
+                blocks.append(block[:remaining])
+            break
+        blocks.append(block)
+        used += len(block)
+
+    return "\n\n".join(blocks)
+
 async def execute(
     query: str,
     material_ids: List[str],
@@ -146,22 +184,11 @@ async def execute(
                 # on direct file schema/context to prevent data drift or hallucinated rows.
                 if not has_structured_files:
                     try:
-                        import asyncio
-                        from app.services.rag.secure_retriever import secure_similarity_search_enhanced
-                        from app.services.rag.context_builder import build_context
-
-                        chunks = await asyncio.to_thread(
-                            secure_similarity_search_enhanced,
+                        rag_context = await _load_material_context(
                             user_id=user_id,
-                            query=query,
                             material_ids=material_ids,
                             notebook_id=notebook_id,
-                            use_mmr=True,
-                            use_reranker=False,
-                            return_formatted=True,
                         )
-                        if chunks:
-                            rag_context = chunks if isinstance(chunks, str) else build_context(chunks, max_tokens=settings.MAX_CONTEXT_TOKENS)
                     except Exception:
                         pass
 

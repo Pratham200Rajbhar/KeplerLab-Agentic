@@ -7,8 +7,9 @@ from pydantic import BaseModel, Field
 from app.services.auth import get_current_user
 from app.services.mindmap.generator import generate_mindmap
 from app.services.notebook_service import save_notebook_content, get_notebook_by_id
-from app.services.material_service import filter_completed_material_ids
-from .utils import require_materials_text
+from app.services.mindmap.generator import generate_mindmap
+from app.services.notebook_service import save_notebook_content, get_notebook_by_id
+from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/mindmap", tags=["mindmap"])
@@ -32,22 +33,11 @@ async def create_mindmap(
     if not notebook:
         raise HTTPException(status_code=404, detail="Notebook not found")
 
-    # 2. Validate materials belong to user and are completed
-    valid_ids = await filter_completed_material_ids(request.material_ids, user_id)
-    if not valid_ids:
-        raise HTTPException(status_code=400, detail="No valid/completed materials selected")
-    
-    logger.info(
-        "Mind map generation started | user=%s | notebook=%s | material_count=%d | topic=%s",
-        user_id, notebook_id, len(valid_ids), request.focus_topic or "none"
+    # 2. Pipeline Decommissioned: Reject requests that require material processing
+    raise HTTPException(
+        status_code=400, 
+        detail="Mind map generation from materials is temporarily disabled during pipeline maintenance."
     )
-
-    # 3. Load material texts
-    try:
-        text = await require_materials_text(valid_ids, user_id)
-    except Exception as e:
-        logger.error("Failed to load material texts: %s", e)
-        raise HTTPException(status_code=404, detail="Material texts not found")
 
     # 4. Generate Mind Map
     try:

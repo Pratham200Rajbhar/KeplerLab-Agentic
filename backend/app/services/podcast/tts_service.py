@@ -171,8 +171,10 @@ def get_audio_file_path(session_id: str, filename: str) -> Optional[str]:
 
 async def generate_voice_preview(voice_id: str, text: str) -> bytes:
     import tempfile
+    from app.core.config import settings
 
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
+    os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=settings.DATA_TMP_DIR) as tmp:
         tmp_path = tmp.name
 
     try:

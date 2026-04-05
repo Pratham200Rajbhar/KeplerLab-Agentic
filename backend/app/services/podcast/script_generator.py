@@ -6,9 +6,9 @@ import logging
 import re
 from typing import Dict, List, Optional
 
+from app.db.prisma_client import prisma
 from app.prompts import get_podcast_script_prompt
 from app.services.llm_service.llm import get_llm
-from app.services.rag.secure_retriever import secure_similarity_search_enhanced
 from app.services.podcast.voice_map import LANGUAGE_NAMES
 
 logger = logging.getLogger(__name__)
@@ -125,23 +125,42 @@ def _extract_json(text: str) -> dict:
         f"({len(text)} chars). See logs for full output."
     )
 
-def _rag_search(
+async def _load_material_context(
     user_id: str,
-    query: str,
     material_ids: List[str],
     notebook_id: Optional[str],
-    use_mmr: bool = True,
-    use_reranker: bool = True,
+    *,
+    max_chars: int = 24_000,
 ) -> str:
-    return secure_similarity_search_enhanced(
-        user_id=user_id,
-        query=query,
-        material_ids=material_ids,
-        notebook_id=notebook_id,
-        use_mmr=use_mmr,
-        use_reranker=use_reranker,
-        return_formatted=True,
-    )
+    where: Dict[str, object] = {"userId": str(user_id)}
+    ids = [str(mid) for mid in (material_ids or []) if str(mid).strip()]
+    if ids:
+        where["id"] = {"in": ids}
+    elif notebook_id:
+        where["notebookId"] = str(notebook_id)
+    else:
+        return ""
+
+    materials = await prisma.material.find_many(where=where, order={"createdAt": "asc"})
+    blocks: List[str] = []
+    used = 0
+
+    for material in materials:
+        text = str(getattr(material, "originalText", "") or "").strip()
+        if not text:
+            continue
+        title = str(getattr(material, "title", None) or getattr(material, "filename", None) or material.id)
+        block = f"[SOURCE - Material: {title}]\n{text[:6000]}"
+        if used + len(block) > max_chars:
+            remaining = max_chars - used
+            if remaining > 128:
+                block = block[:remaining]
+                blocks.append(block)
+            break
+        blocks.append(block)
+        used += len(block)
+
+    return "\n\n".join(blocks)
 
 async def _gather_context(
     user_id: str,
@@ -149,36 +168,8 @@ async def _gather_context(
     material_ids: List[str],
     notebook_filter: Optional[str],
 ) -> str:
-    if not queries:
-        return ""
-
-    results = await asyncio.gather(
-        *[
-            asyncio.to_thread(
-                _rag_search,
-                user_id, q, material_ids, notebook_filter,
-                True, True,
-            )
-            for q in queries
-        ],
-        return_exceptions=True,
-    )
-
-    seen: set[str] = set()
-    merged: List[str] = []
-    for res in results:
-        if isinstance(res, Exception):
-            logger.warning("RAG query failed: %s", res)
-            continue
-        if not res or res == "No relevant context found.":
-            continue
-        for chunk in res.split("\n\n"):
-            chunk = chunk.strip()
-            if chunk and chunk not in seen:
-                seen.add(chunk)
-                merged.append(chunk)
-
-    return "\n\n".join(merged)
+    del queries
+    return await _load_material_context(user_id, material_ids, notebook_filter)
 
 async def generate_podcast_script(
     user_id: str,
@@ -206,18 +197,7 @@ async def generate_podcast_script(
     context = await _gather_context(user_id, queries, material_ids, notebook_filter)
 
     if not context:
-        logger.warning("Multi-angle RAG returned no context; falling back to basic search")
-        context = await asyncio.to_thread(
-            _rag_search,
-            user_id,
-            "All content and key information",
-            material_ids,
-            None,
-            False,
-            False,
-        )
-
-    if not context or context == "No relevant context found.":
+        logger.warning("No source text available for podcast context")
         raise ValueError("No relevant content found in the selected materials.")
 
     logger.info("Context gathered: %d chars from %d query angles", len(context), len(queries))

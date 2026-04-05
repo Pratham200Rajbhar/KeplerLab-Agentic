@@ -33,21 +33,7 @@ class ModelConfig(BaseModel):
         description="Smaller model to use when running on CPU only",
     )
 
-REQUIRED_MODELS: Dict[str, ModelConfig] = {
-    "embedding": ModelConfig(
-        name=settings.EMBEDDING_MODEL,
-        type="sentence_transformer",
-        required=True,
-        description="Dense vector embeddings for semantic search (BGE-M3, 1024-dim)",
-    ),
-    "reranker": ModelConfig(
-        name=settings.RERANKER_MODEL,
-        type="cross_encoder",
-        required=False,
-        description="Cross-encoder reranker for precision retrieval (BGE Reranker Large)",
-        fallback_name="BAAI/bge-reranker-base",
-    ),
-}
+REQUIRED_MODELS: Dict[str, ModelConfig] = {}
 
 class ModelStatus(BaseModel):
 

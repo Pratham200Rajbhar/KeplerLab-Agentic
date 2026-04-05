@@ -1,0 +1,8 @@
+backend/logs/
+backend/logs.txt
+backend/output/
+backend/*.log
+data/
+__pycache__/
+*.pyc
+.env

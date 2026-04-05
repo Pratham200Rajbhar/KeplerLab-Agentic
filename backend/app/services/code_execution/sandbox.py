@@ -87,7 +87,8 @@ async def run_in_sandbox(
 
     _owns_work_dir = work_dir is None
     if _owns_work_dir:
-        work_dir = tempfile.mkdtemp(prefix="kepler_sandbox_")
+        os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+        work_dir = tempfile.mkdtemp(prefix="kepler_sandbox_", dir=settings.DATA_TMP_DIR)
 
     lang = _normalise_language(language)
     cfg = _LANG_CONFIG[lang]

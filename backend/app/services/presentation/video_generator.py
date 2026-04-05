@@ -46,10 +46,8 @@ def _ensure_dir(path: str) -> str:
 def _get_transcription_service():
     global _transcription_service_instance
     if _transcription_service_instance is None:
-        from app.services.text_processing.transcription_service import AudioTranscriptionService
-
-        logger.info("Initializing Whisper transcription service for explainer videos")
-        _transcription_service_instance = AudioTranscriptionService()
+        logger.info("Whisper transcription service is disabled (legacy text_processing pipeline removed)")
+        _transcription_service_instance = False
     return _transcription_service_instance
 
 
@@ -131,6 +129,15 @@ async def transcribe_video_with_whisper(
             await on_progress("transcribing", {"message": "Transcribing video with Whisper..."})
 
         service = _get_transcription_service()
+        if not service:
+            return {
+                "status": "failed",
+                "text": "",
+                "language": language or "unknown",
+                "segments": [],
+                "subtitle_files": [],
+                "error": "Transcription service is disabled",
+            }
         raw_result = await asyncio.to_thread(
             service.transcribe_with_timestamps,
             file_path=video_path,

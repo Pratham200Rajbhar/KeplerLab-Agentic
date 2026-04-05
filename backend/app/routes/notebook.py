@@ -20,11 +20,6 @@ from app.services.notebook_service import (
     update_notebook,
     delete_notebook,
 )
-from app.services.notebook_thumbnail_service import (
-    ensure_notebook_thumbnail,
-    get_cached_notebook_thumbnail,
-    invalidate_notebook_thumbnail,
-)
 from app.db.prisma_client import prisma
 
 logger = logging.getLogger(__name__)
@@ -59,7 +54,6 @@ async def list_notebooks(current_user=Depends(get_current_user)):
     notebooks = await get_user_notebooks(str(current_user.id))
     out = []
     for n in notebooks:
-        thumb = await get_cached_notebook_thumbnail(str(n.id), str(current_user.id))
         out.append(
             {
                 "id": str(n.id),
@@ -67,8 +61,6 @@ async def list_notebooks(current_user=Depends(get_current_user)):
                 "description": n.description,
                 "created_at": n.createdAt.isoformat() if hasattr(n.createdAt, 'isoformat') else n.createdAt,
                 "updated_at": n.updatedAt.isoformat() if hasattr(n.updatedAt, 'isoformat') else n.updatedAt,
-                "thumbnail_url": thumb.get("thumbnail_url") if thumb else None,
-                "thumbnail_query": thumb.get("thumbnail_query") if thumb else None,
             }
         )
     return out
@@ -97,15 +89,12 @@ async def get_notebook_endpoint(
     notebook = await get_notebook_by_id(str(notebook_id), str(current_user.id))
     if not notebook:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    thumb = await get_cached_notebook_thumbnail(str(notebook.id), str(current_user.id))
     return {
         "id": str(notebook.id),
         "name": notebook.name,
         "description": notebook.description,
         "created_at": notebook.createdAt.isoformat() if hasattr(notebook.createdAt, 'isoformat') else notebook.createdAt,
         "updated_at": notebook.updatedAt.isoformat() if hasattr(notebook.updatedAt, 'isoformat') else notebook.updatedAt,
-        "thumbnail_url": thumb.get("thumbnail_url") if thumb else None,
-        "thumbnail_query": thumb.get("thumbnail_query") if thumb else None,
     }
 
 
@@ -121,15 +110,10 @@ async def update_notebook_endpoint(
     if not notebook:
         raise HTTPException(status_code=404, detail="Notebook not found")
 
-    if request.name is not None or request.description is not None:
-        await invalidate_notebook_thumbnail(str(notebook.id), str(current_user.id))
-
     return {
         "id": str(notebook.id),
         "name": notebook.name,
         "description": notebook.description,
-        "thumbnail_url": None,
-        "thumbnail_query": None,
     }
 
 
@@ -141,33 +125,10 @@ async def delete_notebook_endpoint(
     deleted = await delete_notebook(str(notebook_id), str(current_user.id))
     if not deleted:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    await invalidate_notebook_thumbnail(str(notebook_id), str(current_user.id))
     return {"deleted": True}
 
 
-@router.post("/{notebook_id}/thumbnail")
-async def ensure_notebook_thumbnail_endpoint(
-    notebook_id: UUID,
-    request: EnsureThumbnailRequest,
-    current_user=Depends(get_current_user),
-):
-    notebook = await get_notebook_by_id(str(notebook_id), str(current_user.id))
-    if not notebook:
-        raise HTTPException(status_code=404, detail="Notebook not found")
 
-    thumbnail = await ensure_notebook_thumbnail(
-        notebook_id=str(notebook.id),
-        user_id=str(current_user.id),
-        name=notebook.name,
-        description=notebook.description,
-        force=request.force,
-    )
-    return {
-        "id": str(notebook.id),
-        "thumbnail_url": thumbnail.get("thumbnail_url"),
-        "thumbnail_query": thumbnail.get("thumbnail_query"),
-        "thumbnail_updated_at": thumbnail.get("thumbnail_updated_at"),
-    }
 
 
 @router.post("/{notebook_id}/content")

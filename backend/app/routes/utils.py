@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+from typing import Iterable
 
 from fastapi import HTTPException
 
-from app.services.material_service import get_material_for_user
+from app.db.prisma_client import prisma
 
 def safe_path(base_dir: str, *parts: str) -> str:
     full = os.path.realpath(os.path.join(base_dir, *parts))
@@ -13,38 +14,58 @@ def safe_path(base_dir: str, *parts: str) -> str:
         raise HTTPException(status_code=400, detail="Invalid file path")
     return full
 
-async def require_material(material_id: str, user_id, *, require_text: bool = True):
-    material = await get_material_for_user(str(material_id), user_id)
-    if not material:
-        raise HTTPException(status_code=404, detail="Material not found")
-    if require_text and not material.originalText:
-        raise HTTPException(status_code=400, detail="Material has no text content")
-    return material
 
-async def require_material_text(material_id: str, user_id) -> str:
-    await require_material(material_id, user_id, require_text=False)
-    
-    from app.services.material_service import get_material_text
-    text = await get_material_text(str(material_id), str(user_id))
-    if not text:
-        raise HTTPException(status_code=404, detail="Material text not found in storage")
+def _normalize_material_text(value: object) -> str:
+    text = str(value or "").strip()
     return text
 
-async def require_materials_text(
-    material_ids: list[str], user_id, *, separator: str = "\n\n---\n\n"
-) -> str:
-    import asyncio
 
-    async def _try_fetch(mid: str) -> str:
-        try:
-            return await require_material_text(mid, user_id)
-        except HTTPException:
-            return ""
+async def require_material_text(material_id: str, user_id: str) -> str:
+    material = await require_material(material_id, user_id)
 
-    texts = await asyncio.gather(*[_try_fetch(mid) for mid in material_ids])
-    valid = [t for t in texts if t]
-    if not valid:
-        raise HTTPException(status_code=404, detail="No accessible material text found")
-    return separator.join(valid)
+    text = _normalize_material_text(getattr(material, "originalText", None))
+    if not text:
+        raise HTTPException(
+            status_code=400,
+            detail="Material text is not available. Reprocess the material before generating content.",
+        )
+    return text
+
+
+async def require_material(material_id: str, user_id: str):
+    material = await prisma.material.find_first(
+        where={"id": str(material_id), "userId": str(user_id)}
+    )
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return material
+
+
+async def require_materials_text(material_ids: Iterable[str], user_id: str) -> str:
+    ids = [str(mid) for mid in material_ids if str(mid).strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="No material selected")
+
+    materials = await prisma.material.find_many(
+        where={"id": {"in": ids}, "userId": str(user_id)}
+    )
+    found_ids = {str(m.id) for m in materials}
+    missing = [mid for mid in ids if mid not in found_ids]
+    if missing:
+        raise HTTPException(status_code=404, detail="One or more materials were not found")
+
+    texts = []
+    for material in materials:
+        text = _normalize_material_text(getattr(material, "originalText", None))
+        if text:
+            texts.append(text)
+
+    if not texts:
+        raise HTTPException(
+            status_code=400,
+            detail="No material text available in selected materials.",
+        )
+
+    return "\n\n".join(texts)
 
 

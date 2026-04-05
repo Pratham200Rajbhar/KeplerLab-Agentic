@@ -1,317 +1,122 @@
-You are a senior AI systems engineer working on an advanced AI platform (KeplerLab).
-
-Your task is to implement TWO production-grade features:
-
----
-
-## FEATURE 1: AI PRESENTATION GENERATOR (IMAGE-BASED)
-
-Goal:
-Generate high-quality presentation slides as 16:9 images using Gemini image generation.
-
-STRICT REQUIREMENTS:
-
-* DO NOT use HTML rendering or PPTX generation
-* Slides must be generated as images directly using Gemini
-* Each slide must look like a real presentation slide (clean, minimal, readable)
-* Maintain consistent style across all slides
-
----
-
-## FEATURE 2: AI EXPLAINER VIDEO
-
-Goal:
-Generate a teacher-style explanation video using:
-
-* slide images
-* AI-generated script
-* TTS audio
-* ffmpeg video stitching
-
----
-
-## SYSTEM CONTEXT (IMPORTANT)
-
-Backend:
-
-* FastAPI
-* BackgroundJob system already exists
-* SSE streaming system exists
-* Artifact storage system exists
-* RAG pipeline exists
-* Podcast/TTS system exists
-
-Frontend:
-
-* Next.js App Router
-* Zustand stores
-* StudioPanel (right sidebar) is the correct place for this feature
-* SSE stream parser already implemented
-
----
-
-## IMPLEMENTATION REQUIREMENTS
-
-### 1. BACKEND ARCHITECTURE
-
-Create new module:
-
-backend/app/services/presentation/
-
-Files:
-
-* slide_planner.py
-* prompt_builder.py
-* image_generator.py
-* video_generator.py
-* presentation_service.py
-
----
-
-### 2. SLIDE GENERATION PIPELINE
-
-Step 1: Slide Planning (MANDATORY)
-
-Use RAG to generate structured slide plan.
-
-Output format:
-[
-{
-"title": "string",
-"bullets": ["point1", "point2"],
-"visual_style": "diagram | minimal | modern",
-"tone": "educational"
-}
-]
-
-Rules:
-
-* 5–10 slides max
-* Each slide must have max 5 bullets
-* Content must be concise
-
----
-
-Step 2: Prompt Builder
-
-For each slide, generate Gemini image prompt:
-
-Template:
-
-"Generate a clean, modern educational presentation slide in 16:9 ratio.
-
-Title: {title}
-
-Content:
-
-* {bullet1}
-* {bullet2}
-
-Design rules:
-
-* minimal text
-* large readable fonts
-* high contrast
-* no watermark
-* include relevant diagram or visual
-* professional presentation style
-* balanced layout
-
-Style: {visual_style}
-Tone: {tone}
-
-Output: single slide image"
-
----
-
-Step 3: Image Generation
-
-* Use Gemini image API
-* Generate slides in parallel
-* Retry up to 2 times on failure
-* Ensure resolution is 16:9 (e.g., 1280x720 or higher)
-
----
-
-Step 4: Store Slides
-
-* Save each slide as artifact
-* Link to GeneratedContent
-* Maintain order index
-
----
-
-Step 5: Streaming Events (SSE)
-
-Emit:
-
-* slide_plan_ready
-* slide_generation_started
-* slide_generated (per slide)
-* presentation_done
-
----
-
-### 3. VIDEO GENERATION PIPELINE
-
-Step 1: Script Generation
-
-For each slide:
-
-Prompt:
-
-"Explain this slide like a friendly teacher.
-
-Slide title: {title}
-Points: {bullets}
-
-Rules:
-
-* simple explanation
-* 20–40 seconds
-* include example if possible
-* conversational tone"
-
----
-
-Step 2: Audio Generation
-
-* Use existing TTS system
-* Generate audio per slide
-
----
-
-Step 3: Video Creation
-
-For each slide:
-
-ffmpeg:
-
-* combine slide image + audio
-* duration = audio length
-
----
-
-Step 4: Merge Slides
-
-* concatenate all slide videos into final video
-
----
-
-Step 5: Store Output
-
-* Save final video as artifact
-* Link to presentation
-
----
-
-Step 6: Streaming Events
-
-Emit:
-
-* script_generated
-* audio_generated
-* video_rendering
-* video_done
-
----
-
-### 4. API DESIGN
-
-Create endpoints:
-
-POST /presentation/generate
-POST /presentation/{id}/generate-video
-GET /presentation/{id}
-GET /presentation/{id}/slides
-GET /presentation/{id}/video
-
----
-
-### 5. BACKGROUND JOBS
-
-Use existing BackgroundJob system:
-
-Job types:
-
-* presentation_generation
-* video_generation
-
----
-
-### 6. FRONTEND IMPLEMENTATION
-
-Location:
-
-* StudioPanel (right sidebar)
-
-Create component:
-
-* PresentationGenerator.jsx
-
-Features:
-
-* select materials
-* generate slides button
-* live streaming UI
-* show slides grid (2-column or horizontal scroll)
-* regenerate individual slide
-* button: "Generate Video"
-
----
-
-### 7. UI DESIGN REQUIREMENTS
-
-* clean modern UI (like Notion / Gamma / Canva)
-* rounded cards for slides
-* loading skeletons while generating
-* progress indicators
-* smooth transitions
-* hover actions (regenerate slide, download)
-
----
-
-### 8. PERFORMANCE REQUIREMENTS
-
-* parallel slide generation
-* async processing
-* caching for same inputs
-* retry failed slides
-* limit max slides to avoid cost explosion
-
----
-
-### 9. ERROR HANDLING
-
-* if slide fails → retry
-* if still fails → show placeholder + retry button
-* if video fails → allow regenerate
-
----
-
-### 10. OUTPUT EXPECTATION
-
-Your implementation must:
-
-* be modular
-* production-ready
-* follow existing project structure
-* reuse existing systems (RAG, artifacts, SSE, TTS)
-
-Do NOT:
-
-* create redundant systems
-* break existing architecture
-
----
-
-FINAL GOAL
-
-User clicks "Presentation Generator" in Studio →
-Slides are generated as images →
-User clicks "Generate Video" →
-AI explains slides like a teacher in a video.
-
----
-
-Now implement the full system step-by-step with clean, scalable code.
+You are a senior backend engineer working on the KeplerLab-Agentic FastAPI project.
+
+Your task is to SAFELY DELETE the entire current data processing pipeline end to end.
+Do not delete auth, config, database connections, or frontend routes.
+Only remove source ingestion, processing, chunking, embedding, retrieval, and job worker code.
+
+=== REPO STRUCTURE REFERENCE ===
+The project is at: backend/app/
+
+=== FILES TO DELETE COMPLETELY ===
+
+Delete these files entirely (remove file from disk and all imports):
+
+1.  backend/app/services/material_service.py
+2.  backend/app/services/worker.py
+3.  backend/app/services/storage_service.py
+4.  backend/app/services/file_validator.py
+5.  backend/app/services/job_service.py
+6.  backend/app/services/notebook_name_generator.py
+7.  backend/app/services/notebook_thumbnail_service.py
+8.  backend/app/services/rag/embedder.py
+9.  backend/app/services/rag/chunker.py
+10. backend/app/services/rag/secure_retriever.py
+11. backend/app/services/rag/hybrid_retrieval.py
+12. backend/app/services/rag/pipeline.py
+13. backend/app/services/rag/context_builder.py
+14. backend/app/services/rag/context_formatter.py
+15. backend/app/services/rag/citation_validator.py
+16. backend/app/services/rag/reranker.py
+17. backend/app/services/rag/__init__.py
+18. backend/app/services/text_processing/ (entire directory and all files inside)
+19. backend/app/routes/upload.py
+20. backend/app/routes/materials.py
+21. backend/app/routes/jobs.py
+
+=== DIRECTORIES TO DELETE ===
+
+Delete these directories entirely:
+- backend/app/services/rag/
+- backend/app/services/text_processing/
+- backend/output/ (contents only, keep folder)
+- backend/logs/ (contents only, keep folder)
+
+=== CLEAN UP IMPORTS IN THESE FILES ===
+
+After deleting files, remove ALL import lines referencing deleted modules from:
+
+1. backend/app/main.py
+   - Remove: all router imports for upload, materials, jobs
+   - Remove: app.include_router() lines for upload_router, materials_router, jobs_router
+   - Remove: lifespan references to warm_up_embeddings, get_reranker, job_processor, ensure_packages
+   - Remove: from app.services.worker import job_processor, graceful_shutdown, _SHUTDOWN_TIMEOUT
+   - Keep: all other routers (auth, chat, notebook, flashcard, quiz, mindmap, ppt, health, websocket, etc.)
+   - Keep: DB connect/disconnect, CORS, middleware, exception handlers
+
+2. backend/app/services/performance_logger.py
+   - Keep this file but remove any imports referencing deleted modules
+
+3. backend/app/core/config.py
+   - Remove settings that ONLY belong to the old pipeline:
+     INITIAL_VECTOR_K, LEXICAL_K, LEXICAL_CANDIDATE_POOL, RERANK_CANDIDATES_K, 
+     MMR_K, FINAL_K, MMR_LAMBDA, MAX_CONTEXT_TOKENS, RAG_CONTEXT_MAX_TOKENS, 
+     MIN_CHUNK_LENGTH, MIN_CONTEXT_CHUNK_LENGTH, MIN_SIMILARITY_SCORE, CHUNK_OVERLAP_TOKENS,
+     USE_RERANKER, RERANKER_MODEL, EMBEDDING_VERSION
+   - KEEP: EMBEDDING_MODEL, EMBEDDING_DIMENSION, CHROMA_DIR, MODELS_DIR, UPLOAD_DIR
+
+=== CLEAN UP PRISMA SCHEMA ===
+
+In backend/prisma/schema.prisma, check for models used ONLY by the deleted pipeline:
+- If BackgroundJob model exists and is only used by worker.py → mark it as TO_REMOVE with a comment
+  (Do not actually delete it yet — note it for migration)
+- Keep all other models: User, Notebook, etc.
+
+=== GIT CLEANUP ===
+
+After all deletions, provide these git commands:
+  git rm --cached backend/logs.txt
+  git rm -r --cached backend/output/
+  git rm -r --cached backend/app/services/rag/
+  git rm -r --cached backend/app/services/text_processing/
+  git add .
+  git commit -m "chore: remove old data processing pipeline for NotebookLM-style rebuild"
+
+=== VERIFICATION AFTER DELETION ===
+
+Run this and confirm zero import errors remain:
+  cd backend
+  python -c "from app.main import app; print('OK')"
+
+Fix any remaining broken import that causes that check to fail.
+
+=== DO NOT DELETE ===
+- backend/app/routes/auth.py
+- backend/app/routes/chat.py
+- backend/app/routes/notebook.py
+- backend/app/routes/flashcard.py
+- backend/app/routes/quiz.py
+- backend/app/routes/mindmap.py
+- backend/app/routes/ppt.py
+- backend/app/routes/health.py
+- backend/app/routes/websocket_router.py
+- backend/app/routes/models.py
+- backend/app/routes/search.py
+- backend/app/routes/proxy.py
+- backend/app/routes/explainer.py
+- backend/app/routes/podcast_live.py
+- backend/app/routes/code_execution.py
+- backend/app/routes/artifacts.py
+- backend/app/routes/ai_resource.py
+- backend/app/services/presentation/
+- backend/app/services/agent/
+- backend/app/services/auth/
+- backend/app/services/chat_v2/
+- backend/app/services/llm_service/
+- backend/app/services/model_manager.py
+- backend/app/services/ws_manager.py
+- backend/app/db/
+- backend/app/core/
+- backend/app/models/
+- backend/app/prompts/
+
+Output a final checklist of every file deleted and every import line removed.

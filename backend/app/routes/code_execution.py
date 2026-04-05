@@ -68,7 +68,8 @@ async def execute_code(
             code = sanitize_code(code)
 
             import tempfile
-            work_dir = tempfile.mkdtemp(prefix="kepler_code_")
+            os.makedirs(settings.DATA_TMP_DIR, exist_ok=True)
+            work_dir = tempfile.mkdtemp(prefix="kepler_code_", dir=settings.DATA_TMP_DIR)
 
             result = await run_in_sandbox(
                 code, work_dir=work_dir, timeout=request.timeout,

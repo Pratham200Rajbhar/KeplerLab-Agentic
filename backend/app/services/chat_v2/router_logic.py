@@ -75,12 +75,9 @@ def route_capability(
             if has_materials and cap == Capability.AGENT:
                 logger.info("Capability routed by intent_override: AGENT (materials preserved)")
                 return Capability.AGENT
-            if has_materials and cap in {Capability.CODE_EXECUTION, Capability.WEB_SEARCH, Capability.WEB_RESEARCH}:
-                logger.info(
-                    "Intent override '%s' adjusted to RAG due to selected materials",
-                    cap.value,
-                )
-                return Capability.RAG
+            if has_materials and cap == Capability.RAG:
+                logger.info("RAG intent override adjusted to NORMAL_CHAT (decommissioned)")
+                return Capability.NORMAL_CHAT
             logger.info("Capability routed by intent_override: %s", cap.value)
             return cap
         except ValueError:
@@ -102,7 +99,7 @@ def route_capability(
 
     # When materials are selected AND the task needs code execution
     # (charts, ML, file generation), route to AGENT — not RAG.
-    # RAG is only for text-based Q&A over documents.
+    # RAG is decommissioned, falling back to NORMAL_CHAT or AGENT.
     if has_materials:
         if _DATA_ANALYSIS_KEYWORDS.search(message) or request_type in {"computational", "generative"}:
             logger.info(
@@ -110,8 +107,8 @@ def route_capability(
                 request_type,
             )
             return Capability.AGENT
-        logger.info("Capability routed to RAG-first (materials selected: %d)", len(material_ids))
-        return Capability.RAG
+        logger.info("Capability routed to NORMAL_CHAT (RAG decommissioned)")
+        return Capability.NORMAL_CHAT
 
     logger.info("Request classified as: %s", request_type)
 

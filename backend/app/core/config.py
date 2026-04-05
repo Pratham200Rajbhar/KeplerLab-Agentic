@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""
 
     CHROMA_DIR: str = "./data/chroma"
+    MODELS_DIR: str = "./data/models"
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_DIMENSION: int = 384
 
     UPLOAD_DIR: str = "./data/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10240
@@ -41,6 +44,7 @@ class Settings(BaseSettings):
     WORKSPACE_MEMORY_MB: int = 512
     WORKSPACE_CPU: float = 1.0
     ARTIFACT_TOKEN_EXPIRY_HOURS: int = 24
+    DATA_TMP_DIR: str = "data/tmp"
     INSTALL_TIMEOUT_SECONDS: int = 120
     APPROVED_ON_DEMAND: dict = {
         "seaborn": "0.13.2",
@@ -93,37 +97,12 @@ class Settings(BaseSettings):
     LLM_PRESENCE_PENALTY: float = 0.0
     LLM_TOP_K: int = 50
 
-    MODELS_DIR: str = "./data/models"
-    EMBEDDING_MODEL: str = "BAAI/bge-m3"
-    EMBEDDING_VERSION: str = "bge_m3_v1"
-    EMBEDDING_DIMENSION: int = 1024
-    
-    RERANKER_MODEL: str = "BAAI/bge-reranker-large"
-    USE_RERANKER: bool = True
-    
-    INITIAL_VECTOR_K: int = 80
-    LEXICAL_K: int = 80
-    LEXICAL_CANDIDATE_POOL: int = 2000
-    RERANK_CANDIDATES_K: int = 30
-    MMR_K: int = 30
-    FINAL_K: int = 10
-    MMR_LAMBDA: float = 0.5
-    MAX_CONTEXT_TOKENS: int = 6000
-    RAG_CONTEXT_MAX_TOKENS: int = 2000
-    MIN_CHUNK_LENGTH: int = 100
-    MIN_CONTEXT_CHUNK_LENGTH: int = 150
-    MIN_SIMILARITY_SCORE: float = 0.5
-    CHUNK_OVERLAP_TOKENS: int = 150
-
-    OCR_TIMEOUT_SECONDS: int = 300
-    WHISPER_TIMEOUT_SECONDS: int = 600
-    LIBREOFFICE_TIMEOUT_SECONDS: int = 120
-    PROCESSING_MAX_RETRIES: int = 2
-
     IMAGE_GENERATION_ENDPOINT: Optional[str] = None
     WEB_SEARCH_ENDPOINT: Optional[str] = None
     WEB_SCRAPE_ENDPOINT: Optional[str] = None
     WEB_IMAGE_SEARCH_ENDPOINT: Optional[str] = "http://16.16.144.216:8001/scrape"
+
+    ENABLE_PROMETHEUS: bool = False
 
     # Vertex AI Configuration
     VERTEX_PROJECT_ID: str = ""
@@ -160,7 +139,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _resolve_paths_and_cross_validate(self):
-        for attr in ("CHROMA_DIR", "UPLOAD_DIR", "MODELS_DIR", "TEMPLATES_DIR",
+        for attr in ("CHROMA_DIR", "MODELS_DIR", "UPLOAD_DIR", "TEMPLATES_DIR",
                      "GENERATED_OUTPUT_DIR",
                      "WORKSPACE_BASE_DIR"):
             val = getattr(self, attr)
